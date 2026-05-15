@@ -1,0 +1,13 @@
+{
+  "name": "myeditor",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/playground",
+    "build": "npm run build --workspace=packages/timeline",
+    "typecheck": "tsc --build"
+  }
+}

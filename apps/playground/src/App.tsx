@@ -1,0 +1,240 @@
+import { useEffect, useRef } from 'react'
+import {
+  Timeline,
+  useTracksStore,
+  usePlaybackStore,
+  useSelectionStore,
+  splitClipAtPlayhead,
+  type TimelineRef,
+} from '@myeditor/timeline'
+
+const FPS = 30
+
+export default function App() {
+  const timelineRef = useRef<TimelineRef>(null)
+  const frameDisplayRef = useRef<HTMLSpanElement>(null)
+  const canUndo = useTracksStore((s) => s.canUndo)
+  const canRedo = useTracksStore((s) => s.canRedo)
+  const isPlaying = usePlaybackStore((s) => s.isPlaying)
+  const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
+  const zoom = usePlaybackStore((s) => s.zoom)
+  const setZoom = usePlaybackStore((s) => s.setZoom)
+  const selectedClipIds = useSelectionStore((s) => s.selectedClipIds)
+  const hasSelection = selectedClipIds.size === 1
+
+  // Write frame counter directly to the DOM — no React render on every tick.
+  useEffect(() => {
+    return usePlaybackStore.subscribe((state) => {
+      if (frameDisplayRef.current) {
+        frameDisplayRef.current.textContent =
+          `Frame ${state.currentFrame} | ${(state.currentFrame / FPS).toFixed(2)}s`
+      }
+    })
+  }, [])
+
+  const engine = () => timelineRef.current?.engine
+  console.log(engine()?.getProject())
+
+  const addVideoTrack = () => {
+    engine()?.addTrack('video')
+  }
+
+  const addAudioTrack = () => {
+    engine()?.addTrack('audio')
+  }
+
+  const addTextTrack = () => {
+    engine()?.addTrack('text')
+  }
+
+  const addVideoClip = () => {
+    const e = engine()
+    if (!e) return
+    const tracks = e.getProject().tracks.filter((t) => t.kind === 'video')
+    if (tracks.length === 0) {
+      alert('Add a video track first')
+      return
+    }
+    const track = tracks[0]
+    const existing = e.getClipsOnTrack(track.id)
+    const startFrame =
+      existing.length > 0
+        ? existing[existing.length - 1].startFrame +
+          existing[existing.length - 1].durationFrames
+        : 0
+    e.addClip({
+      trackId: track.id,
+      type: 'video',
+      name: `Clip ${existing.length + 1}`,
+      startFrame,
+      durationFrames: FPS * 3, // 3 seconds
+    })
+  }
+
+  const addAudioClip = () => {
+    const e = engine()
+    if (!e) return
+    const tracks = e.getProject().tracks.filter((t) => t.kind === 'audio')
+    if (tracks.length === 0) {
+      alert('Add an audio track first')
+      return
+    }
+    const track = tracks[0]
+    const existing = e.getClipsOnTrack(track.id)
+    const startFrame =
+      existing.length > 0
+        ? existing[existing.length - 1].startFrame +
+          existing[existing.length - 1].durationFrames
+        : 0
+    e.addClip({
+      trackId: track.id,
+      type: 'audio',
+      name: `Audio ${existing.length + 1}`,
+      startFrame,
+      durationFrames: FPS * 4,
+    })
+  }
+
+  const addTextClip = () => {
+    const e = engine()
+    if (!e) return
+    const tracks = e.getProject().tracks.filter((t) => t.kind === 'text')
+    console.log( "engine",{engine: engine()?.getProject()})
+    if (tracks.length === 0) {
+      alert('Add a text track first')
+      return
+    }
+
+    const track = tracks[0]
+    const existing = e.getClipsOnTrack(track.id)
+    const startFrame =
+      existing.length > 0
+        ? existing[existing.length - 1].startFrame +
+          existing[existing.length - 1].durationFrames
+        : 0
+    const n = existing.length + 1
+    e.addClip({
+      trackId: track.id,
+      type: 'text',
+      name: `Text ${n}`,
+      content: `Layer ${n}`,
+      startFrame,
+      durationFrames: FPS * 2,
+    })
+  }
+
+  const splitAtPlayhead = () => {
+    const e = engine()
+    if (!e) return
+    const result = splitClipAtPlayhead(e)
+    if (!result.ok) {
+      console.warn('[playground] split failed:', result.reason)
+    }
+  }
+
+  const btnStyle = (disabled = false): React.CSSProperties => ({
+    padding: '6px 14px',
+    background: disabled ? '#333' : '#2a2a2a',
+    color: disabled ? '#555' : '#ddd',
+    border: '1px solid #3a3a3a',
+    borderRadius: 6,
+    fontSize: 12,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    fontFamily: 'monospace',
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      {/* Toolbar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          background: '#151515',
+          borderBottom: '1px solid #2a2a2a',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#888', fontFamily: 'monospace', marginRight: 8 }}>
+          @myeditor/timeline
+        </span>
+
+        <button style={btnStyle()} onClick={addVideoTrack}>+ Video Track</button>
+        <button style={btnStyle()} onClick={addAudioTrack}>+ Audio Track</button>
+        <button style={btnStyle()} onClick={addTextTrack}>+ Text Track</button>
+        <button style={btnStyle()} onClick={addVideoClip}>+ Video Clip</button>
+        <button style={btnStyle()} onClick={addAudioClip}>+ Audio Clip</button>
+        <button style={btnStyle()} onClick={addTextClip}>+ Text Clip</button>
+        <button
+          style={btnStyle(!hasSelection)}
+          disabled={!hasSelection}
+          onClick={splitAtPlayhead}
+        >
+          ✂ Split
+        </button>
+
+        <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+
+        <button
+          style={{
+            ...btnStyle(),
+            minWidth: 68,
+            background: isPlaying ? '#1a3a1a' : '#2a2a2a',
+            borderColor: isPlaying ? '#2d6a2d' : '#3a3a3a',
+            color: isPlaying ? '#6fcf6f' : '#ddd',
+          }}
+          onClick={togglePlayPause}
+        >
+          {isPlaying ? '⏸ Pause' : '▶ Play'}
+        </button>
+
+        <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+
+        <button
+          style={btnStyle(!canUndo)}
+          disabled={!canUndo}
+          onClick={() => engine()?.undo()}
+        >
+          Undo
+        </button>
+        <button
+          style={btnStyle(!canRedo)}
+          disabled={!canRedo}
+          onClick={() => engine()?.redo()}
+        >
+          Redo
+        </button>
+
+        <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+
+        <label style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>
+          Zoom
+          <input
+            type="range"
+            min={1}
+            max={20}
+            step={0.5}
+            value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            style={{ marginLeft: 8, width: 80 }}
+          />
+          {zoom.toFixed(1)}px/f
+        </label>
+
+        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
+          <span ref={frameDisplayRef}>Frame 0 | 0.00s</span>
+          &nbsp;|&nbsp; Ctrl+scroll to zoom · Ctrl+Z/Y to undo/redo
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <Timeline
+        ref={timelineRef}
+        fps={FPS}
+        style={{ flex: 1 }}
+      />
+    </div>
+  )
+}

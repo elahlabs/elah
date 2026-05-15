@@ -1,0 +1,104 @@
+/**
+ * All shared types for @myeditor/timeline.
+ * Time is always represented as integer frame counts — never float seconds.
+ * FPS is a project-level constant stored in Project.fps.
+ */
+
+/** An exact frame position. Always a non-negative integer. */
+export type FrameCount = number
+
+export type ClipType = 'video' | 'audio' | 'text' | 'image'
+
+export type TrackKind = 'video' | 'audio' | 'text'
+
+/**
+ * A single clip placed on the timeline.
+ * startFrame + durationFrames define its position and length on the timeline.
+ * sourceStartFrame + sourceDurationFrames define the trim window into the source.
+ */
+export interface Clip {
+  id: string
+  trackId: string
+  type: ClipType
+  name: string
+
+  /** Position on the timeline (frame where this clip starts) */
+  startFrame: FrameCount
+  /** How many frames this clip occupies on the timeline */
+  durationFrames: FrameCount
+
+  /** Trim in-point into the source asset */
+  sourceStartFrame: FrameCount
+  /** Length of the source asset (used for trim constraints) */
+  sourceDurationFrames: FrameCount
+
+  /** Source URL for video / audio / image clips */
+  src?: string
+  /** Text content for text clips */
+  content?: string
+
+  volume?: number   // 0 – 1
+  opacity?: number  // 0 – 1
+  locked?: boolean
+  disabled?: boolean
+}
+
+/** A track lane that holds clips */
+export interface Track {
+  id: string
+  name: string
+  kind: TrackKind
+  /** Render order: lower = closer to top of timeline */
+  order: number
+  /** Height in pixels */
+  height: number
+  locked: boolean
+  disabled: boolean
+  muted: boolean
+  solo: boolean
+}
+
+/**
+ * The full project state. This is the engine's source of truth.
+ * Passed to Immer for structural-sharing mutations.
+ */
+export interface Project {
+  id: string
+  /** Frames per second — integer (e.g. 24, 30, 60) */
+  fps: number
+  tracks: Track[]
+  /** clips indexed by trackId, sorted by startFrame */
+  clips: Record<string, Clip[]>
+  version: number
+}
+
+/** Config passed when creating a TimelineEngine instance */
+export interface TimelineConfig {
+  fps: number
+  /** Default height for new tracks in pixels */
+  defaultTrackHeight?: number
+  /** Max undo steps kept in history */
+  maxHistorySize?: number
+}
+
+/** Events emitted by TimelineEngine */
+export type EngineEvent =
+  | 'change'
+  | 'track:added'
+  | 'track:removed'
+  | 'clip:added'
+  | 'clip:removed'
+  | 'clip:updated'
+  | 'clip:split'
+  | 'history:change'
+
+export type EngineEventPayload = {
+  change: Project
+  'track:added': Track
+  'track:removed': string
+  'clip:added': Clip
+  'clip:removed': { clipId: string; trackId: string }
+  'clip:updated': Clip
+  'clip:split': { leftId: string; rightId: string; trackId: string }
+  'history:change': { canUndo: boolean; canRedo: boolean }
+}
