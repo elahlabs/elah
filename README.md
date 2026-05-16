@@ -1,6 +1,6 @@
 # Reelforge
 
-> **A browser-native, frame-accurate portrait/reels video editor — engine-first, renderer-agnostic, scalable from MVP to production.**
+> **A browser-native, frame-accurate video editor for any aspect ratio (9:16 reels, 16:9 YouTube, 1:1, and beyond) — engine-first, renderer-agnostic, scalable from MVP to production.**
 
 > Working name. See [Repo name candidates](#repo-name-candidates) below — pick one before the first public push.
 
@@ -8,7 +8,7 @@
 
 ## What this is
 
-Reelforge is an open architecture for building a **browser-native vertical-video editor** (Reels / Shorts / TikTok-style 9:16 content) on top of React. It is **not** a UI framework or a clone of a specific product; it is the **engine, resolver, and timeline SDK** that any modern reels editor should sit on.
+Reelforge is an open architecture for building a **browser-native video editor** on top of React. It is aspect-ratio agnostic by design — the same engine drives **9:16 vertical content** (Reels / Shorts / TikTok), **16:9 landscape content** (YouTube, long-form), **1:1 square**, or any custom stage size. It is **not** a UI framework or a clone of a specific product; it is the **engine, resolver, and timeline SDK** that any modern web-based video editor should sit on.
 
 Three goals shape every decision:
 
@@ -90,7 +90,7 @@ docs/
 
 ```bash
 git clone <repo-url>
-cd MyEditorPackage
+cd video-editor
 npm install
 npm run dev      # starts apps/playground at http://localhost:5173
 npm run typecheck
@@ -171,30 +171,7 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for branch/commit conventions.
 
 ---
 
-## Repo name candidates
 
-The working name is **Reelforge**. Other strong candidates — pick one before the first public push:
-
-| Name | Vibe | Why |
-|---|---|---|
-| **`reelforge`** | Crafted, durable | Implies you *forge* reels; works as both repo and npm scope |
-| **`framecut`** | Precise, technical | Reflects the frame-based foundation; pairs with editor verbs |
-| **`tilt`** | Modern, ultra-short | References portrait orientation; memorable, brandable |
-| **`stagecut`** | Architectural | Mirrors the "stage" concept (9:16 portrait stage) in the engine |
-| **`reelkit`** | Toolkit-y | Honest framing: this is the SDK, not the editor |
-| **`portra`** | Classy, photographic | Short for "portrait"; evocative of Kodak Portra film |
-
-**Recommendation:** `reelforge` if you want a product feel, `framecut` if you want a technical feel, `tilt` if you want a brand. Pick whichever you'd be happy putting on a homepage in two years.
-
-To rename:
-
-```bash
-# In package.json (root)
-"name": "<chosen-name>"
-# In packages/timeline/package.json
-"name": "@<chosen-name>/timeline"
-# Update imports across apps/playground/src/**
-```
 
 ---
 

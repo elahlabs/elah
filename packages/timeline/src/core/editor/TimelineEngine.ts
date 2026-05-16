@@ -9,7 +9,7 @@ import type {
   TrackKind,
 } from '../../types'
 import { generateId } from '../../utils/id'
-import { getTotalFrames, toFrame } from '../../utils/frames'
+import { getTotalFrames, toFrame, findOverlaps } from '../../utils/frames'
 import { createTrack, type CreateTrackOptions } from '../track/track'
 import { createClip, type CreateClipOptions } from '../elements/base'
 import { addClip } from '../visitor/add'
@@ -207,7 +207,8 @@ export class TimelineEngine {
 
   /**
    * Move a clip to a new position, optionally onto a different track.
-   * The move is validated against overlaps before committing.
+   * Rejects silently (no history entry, no event) when the destination range
+   * overlaps an existing clip on the target track.
    */
   moveClip(
     clipId: string,
@@ -215,19 +216,31 @@ export class TimelineEngine {
     toTrackId: string,
     startFrame: number,
   ): void {
-    this.commit((draft) => {
-      const fromClips = draft.clips[fromTrackId]
-      if (!fromClips) return
+    const fromClips = this.project.clips[fromTrackId]
+    if (!fromClips) return
 
-      const idx = fromClips.findIndex((c) => c.id === clipId)
+    const clip = fromClips.find((c) => c.id === clipId)
+    if (!clip) return
+
+    const newStart = toFrame(startFrame)
+    const candidate = { startFrame: newStart, durationFrames: clip.durationFrames }
+    const destClips = this.project.clips[toTrackId] ?? []
+    // Exclude the clip itself so same-track moves don't self-overlap
+    if (findOverlaps(destClips, candidate, clipId).length > 0) return
+
+    this.commit((draft) => {
+      const fromClipsDraft = draft.clips[fromTrackId]
+      if (!fromClipsDraft) return
+
+      const idx = fromClipsDraft.findIndex((c) => c.id === clipId)
       if (idx === -1) return
 
-      const [clip] = fromClips.splice(idx, 1)
-      clip.startFrame = toFrame(startFrame)
-      clip.trackId = toTrackId
+      const [movedClip] = fromClipsDraft.splice(idx, 1)
+      movedClip.startFrame = newStart
+      movedClip.trackId = toTrackId
 
       if (!draft.clips[toTrackId]) draft.clips[toTrackId] = []
-      draft.clips[toTrackId].push(clip)
+      draft.clips[toTrackId].push(movedClip)
       draft.clips[toTrackId].sort((a, b) => a.startFrame - b.startFrame)
     }, 'Move clip')
   }
@@ -241,6 +254,10 @@ export class TimelineEngine {
    * freely. The cap is enforced here so every caller — drag handles,
    * keyboard shortcuts, scripts, undo/redo — honors it without repeating
    * the rule.
+   *
+   * Rejects silently (no history entry, no event) when the trimmed range
+   * would overlap an existing clip on the same track, or when a left-extend
+   * would reach beyond the source's available frames.
    */
   trimClip(
     clipId: string,
@@ -248,21 +265,41 @@ export class TimelineEngine {
     startFrame: number,
     durationFrames: number,
   ): void {
+    // Read from the current project snapshot so we can validate before committing.
+    const trackClips = this.project.clips[trackId]
+    const existing = trackClips?.find((c) => c.id === clipId)
+    if (!existing) return
+
+    const isText = existing.type === 'text'
+
+    const maxDuration = isText ? Infinity : existing.sourceDurationFrames
+    const clampedDuration = Math.min(maxDuration, Math.max(1, toFrame(durationFrames)))
+
+    // For media clips, the left edge can't extend further left than the source
+    // has available frames (i.e., existing.sourceStartFrame frames to the left).
+    // Text clips have no source constraint and are always allowed to grow left.
+    const rawStart = Math.max(0, toFrame(startFrame))
+    const minAllowedStart = isText
+      ? 0
+      : Math.max(0, existing.startFrame - existing.sourceStartFrame)
+    const newStart = Math.max(minAllowedStart, rawStart)
+
+    // Reject if the trimmed range would overlap another clip on this track.
+    const candidate = { startFrame: newStart, durationFrames: clampedDuration }
+    if (findOverlaps(trackClips, candidate, clipId).length > 0) return
+
+    // startDelta > 0 → left-edge trim (start moved right); < 0 → left edge moved left
+    const startDelta = newStart - existing.startFrame
+    // Text clips have no real source media, skip the source window adjustment.
+    const sourceStartFrame = isText
+      ? existing.sourceStartFrame
+      : Math.max(0, existing.sourceStartFrame + startDelta)
+
     this.commit((draft) => {
-      const trackClips = draft.clips[trackId]
-      const existing = trackClips?.find((c) => c.id === clipId)
-      if (!existing) return
-
-      const maxDuration =
-        existing.type === 'text' ? Infinity : existing.sourceDurationFrames
-      const clampedDuration = Math.min(
-        maxDuration,
-        Math.max(1, toFrame(durationFrames)),
-      )
-
       updateClip(draft, clipId, trackId, {
-        startFrame: Math.max(0, toFrame(startFrame)),
+        startFrame: newStart,
         durationFrames: clampedDuration,
+        sourceStartFrame,
       })
     }, 'Trim clip')
   }

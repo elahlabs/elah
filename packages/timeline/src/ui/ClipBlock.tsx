@@ -118,19 +118,28 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
   const handleLeftTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
+      selectClip(clip.id)
+
       const startX = e.clientX
       const originalStart = clip.startFrame
       const originalDuration = clip.durationFrames
+      // The right edge is fixed during a left-trim; the left edge moves toward it.
+      const anchorEnd = originalStart + originalDuration
       // Text clips have no source asset, so they may grow freely.
       const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
+      // Minimum frames to keep both handles grabbable at the current zoom level.
+      const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcLeftTrim = (clientX: number) => {
         const deltaFrames = Math.round((clientX - startX) / zoom)
+        // Left edge moves, but can't cross the right edge minus minDuration.
         let newStart = Math.max(0, originalStart + deltaFrames)
-        let newDuration = Math.max(1, originalDuration - (newStart - originalStart))
+        newStart = Math.min(newStart, anchorEnd - minDuration)
+        let newDuration = anchorEnd - newStart
+        // Cap against source length (left-extend limit).
         if (newDuration > maxDuration) {
           newDuration = maxDuration
-          newStart = originalStart + originalDuration - maxDuration
+          newStart = anchorEnd - maxDuration
         }
         return { newStart, newDuration }
       }
@@ -148,32 +157,47 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
         window.removeEventListener('mouseup', handleUp)
 
         const { newStart, newDuration } = calcLeftTrim(upEvent.clientX)
-        engine.trimClip(clip.id, clip.trackId, newStart, newDuration)
 
+        // Skip the commit when nothing changed to avoid a no-op history entry.
+        if (newStart !== originalStart || newDuration !== originalDuration) {
+          engine.trimClip(clip.id, clip.trackId, newStart, newDuration)
+        }
+
+        // Restore inline styles to the authoritative post-commit clip values.
+        // Clearing to '' is unsafe: if no React re-render fires (e.g. the trim
+        // was rejected or clamped to the same value), the DOM keeps the
+        // imperatively-written drag values and the clip collapses visually.
         if (blockRef.current) {
-          blockRef.current.style.left = ''
-          blockRef.current.style.width = ''
+          const live = engine.findClip(clip.id)?.clip
+          const liveStart = live?.startFrame ?? originalStart
+          const liveDuration = live?.durationFrames ?? originalDuration
+          blockRef.current.style.left = `${liveStart * zoom}px`
+          blockRef.current.style.width = `${Math.max(liveDuration * zoom, 4)}px`
         }
       }
 
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine],
+    [clip, zoom, engine, selectClip],
   )
 
   // --- Right trim handle ---
   const handleRightTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
+      selectClip(clip.id)
+
       const startX = e.clientX
       const originalDuration = clip.durationFrames
       // Text clips have no source asset, so they may grow freely.
       const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
+      // Minimum frames to keep both handles grabbable at the current zoom level.
+      const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcRightTrim = (clientX: number) => {
         const deltaFrames = Math.round((clientX - startX) / zoom)
-        return Math.min(maxDuration, Math.max(1, originalDuration + deltaFrames))
+        return Math.min(maxDuration, Math.max(minDuration, originalDuration + deltaFrames))
       }
 
       const handleMove = (moveEvent: MouseEvent) => {
@@ -188,17 +212,27 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
         window.removeEventListener('mouseup', handleUp)
 
         const newDuration = calcRightTrim(upEvent.clientX)
-        engine.trimClip(clip.id, clip.trackId, clip.startFrame, newDuration)
 
+        // Skip the commit when nothing changed to avoid a no-op history entry.
+        if (newDuration !== originalDuration) {
+          engine.trimClip(clip.id, clip.trackId, clip.startFrame, newDuration)
+        }
+
+        // Restore inline style to the authoritative post-commit clip value.
+        // Clearing to '' is unsafe: if no React re-render fires (e.g. the trim
+        // was rejected or clamped to the same value), the DOM keeps the
+        // imperatively-written drag width and the clip collapses visually.
         if (blockRef.current) {
-          blockRef.current.style.width = ''
+          const live = engine.findClip(clip.id)?.clip
+          const liveDuration = live?.durationFrames ?? originalDuration
+          blockRef.current.style.width = `${Math.max(liveDuration * zoom, 4)}px`
         }
       }
 
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine],
+    [clip, zoom, engine, selectClip],
   )
 
   const baseColor = CLIP_COLORS[clip.type] ?? '#555'

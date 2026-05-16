@@ -33,7 +33,6 @@ export default function App() {
   }, [])
 
   const engine = () => timelineRef.current?.engine
-  console.log(engine()?.getProject())
 
   const addVideoTrack = () => {
     engine()?.addTrack('video')
