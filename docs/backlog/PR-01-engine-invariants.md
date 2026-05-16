@@ -1,6 +1,6 @@
 # PR-01 · Engine invariants: `moveClip` + `trimClip`
 
-**Status:** 🔴 Not started
+**Status:** 🟢 Merged
 **Risk:** Low
 **Estimated effort:** 1–2 hours
 **Blocks:** PR-04 (DnD will hit these immediately)

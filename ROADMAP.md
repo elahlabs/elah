@@ -20,7 +20,7 @@ Status snapshot — update as PRs land.
 
 | PR | Title | Status | Risk | Estimated effort |
 |---|---|---|---|---|
-| 01 | [Engine invariants: `moveClip` + `trimClip`](./docs/backlog/PR-01-engine-invariants.md) | 🔴 Not started | Low | 1–2 hours |
+| 01 | [Engine invariants: `moveClip` + `trimClip`](./docs/backlog/PR-01-engine-invariants.md) | 🟢 Merged | Low | 1–2 hours |
 | 02 | [`resolveTimeline` tests](./docs/backlog/PR-02-resolver-tests.md) | 🔴 Not started | Low | 1–2 hours |
 | 03 | [Schema: `Project.stage` + `Clip.transform?`](./docs/backlog/PR-03-schema-stage-transform.md) | 🔴 Not started | Medium | 2–3 hours |
 | 04 | [`MediaLibrary` skeleton + asset model](./docs/backlog/PR-04-media-library-skeleton.md) | 🔴 Not started | Medium | 2–3 hours |
