@@ -3,33 +3,48 @@
 **Status:** 🔴 Not started
 **Risk:** Medium-High (refactors `Timeline.tsx` and `App.tsx` simultaneously)
 **Estimated effort:** 3–4 hours
-**Blocks:** PR-08 (Gallery as Timeline sibling), PR-10 (Preview as Timeline sibling)
+**Blocks:** PR-08 (AssetPanel as Timeline sibling), PR-10 (Preview as Timeline sibling)
+**Depends on:** PR-04 (package rename to `@elah/editor` + `core/` / `timeline/` / `editor/` layering must be merged first)
 
 ---
 
 ## Goal
 
-Lift `TimelineEngine` and `PlaybackEngine` out of `Timeline.tsx` and into a top-level `<EditorProvider>`. Expose them via context hooks (`useTimelineEngine()`, `usePlaybackEngine()`). After this PR, `<Timeline>`, `<Gallery>`, and `<Preview>` can all be **siblings** that consume the same engines — without ref gymnastics.
+Lift `TimelineEngine` and `PlaybackEngine` out of `Timeline.tsx` and into a top-level `<EditorProvider>` in the **`editor/` composition layer**. Expose them via context hooks (`useTimelineEngine()`, `usePlaybackEngine()`). After this PR, `<Timeline>`, `<AssetPanel>`, and `<Preview>` can all be **siblings** that consume the same engines — without ref gymnastics.
+
+This is also the PR that populates the `editor/` layer for the first time. Before this PR the folder exists but is empty; after this PR it owns the composition shell.
 
 ## Why this PR matters
 
-Today, both engines are instantiated *inside* the `<Timeline>` component (`packages/timeline/src/ui/Timeline.tsx:52` and `:58`). This means:
+Today, both engines are instantiated *inside* the `<Timeline>` component (`packages/editor/src/timeline/Timeline.tsx`, in `useMemo` calls). This means:
 
 - If `<Timeline>` unmounts (fullscreen preview, panel rearrange), playback dies.
-- The `<MediaGallery>` (PR-08) and `<Preview>` (PR-10) can't get to the engines except through `TimelineRef` prop drilling.
+- The `<AssetPanel>` (PR-08) and `<Preview>` (PR-10) can't get to the engines except through `TimelineRef` prop drilling.
 - The two sync effects (engine→store, store→engine, persisted init) live in `Timeline.tsx` and would have to move if you ever rendered a Preview without a Timeline.
 
 The prior two attempts (Oxide-Editor, render-kit) collapsed at exactly this point — gallery + preview + timeline needed each other and ended up tangled because there was no shared provider.
+
+## Layering
+
+The provider belongs in the **editor composition layer**. The timeline layer must not depend on the editor layer (PR-04 dependency rule: `core → timeline → editor`). So `<Timeline>` reads from the context but does **not** import the provider — only the context hooks, which live in `editor/` and are surfaced through the package barrel.
+
+Wait — that creates a loop: `timeline/` would need to import the context hook from `editor/`. Resolve it by putting the **context itself** in `core/` (it's just a React context value type + a `useContext` wrapper, no React runtime logic). The **provider** stays in `editor/`. This keeps the dependency direction clean:
+
+- `core/editor-context.ts` — context object, `useEditor()`, `useTimelineEngine()`, `usePlaybackEngine()` hooks.
+- `editor/EditorProvider.tsx` — `<EditorProvider>` component that wires engines and supplies the context value.
+
+`timeline/Timeline.tsx` imports the hooks from `core/`; `apps/playground` imports `<EditorProvider>` from the package barrel.
 
 ## Scope
 
 | File | Change |
 |---|---|
-| `packages/timeline/src/ui/EditorProvider.tsx` (new) | Owns engine instances + sync effects |
-| `packages/timeline/src/ui/editor-context.ts` (new) | React context + `useTimelineEngine()` / `usePlaybackEngine()` hooks |
-| `packages/timeline/src/ui/Timeline.tsx` | Stop instantiating engines; consume from provider; keep `TimelineRef` for back-compat |
-| `packages/timeline/src/ui/engine-context.ts` | Keep `useTimeline()` for back-compat (alias to `useTimelineEngine`) |
-| `packages/timeline/src/index.ts` | Export `EditorProvider`, `useTimelineEngine`, `usePlaybackEngine` |
+| `packages/editor/src/core/editor-context.ts` (new) | React context + `useEditor()` / `useTimelineEngine()` / `usePlaybackEngine()` hooks |
+| `packages/editor/src/editor/EditorProvider.tsx` (new) | Owns engine instances + sync effects; supplies context value |
+| `packages/editor/src/editor/index.ts` (new) | Barrel for the composition layer |
+| `packages/editor/src/timeline/Timeline.tsx` | Stop instantiating engines; consume from context via `useTimelineEngine()` / `usePlaybackEngine()`; keep `TimelineRef` for back-compat |
+| `packages/editor/src/timeline/engine-context.ts` | Keep `useTimeline()` for back-compat (alias to `useTimelineEngine`) |
+| `packages/editor/src/index.ts` | Export `EditorProvider`, `useEditor`, `useTimelineEngine`, `usePlaybackEngine` under the `// --- Editor: composition ---` section |
 | `apps/playground/src/App.tsx` | Wrap `<Timeline>` in `<EditorProvider>` |
 
 ## Acceptance criteria
@@ -40,32 +55,35 @@ The prior two attempts (Oxide-Editor, render-kit) collapsed at exactly this poin
   - Zustand store → Engine (with persisted-state init at top, and echo guard).
   - Tracks engine `change` / `history:change` → `useTracksStore.sync(...)`.
 - [ ] `EditorProvider` calls `playback.destroy()` and `engine.off(...)` on unmount.
+- [ ] Context + hooks live in `core/editor-context.ts`; the provider lives in `editor/EditorProvider.tsx`. `timeline/` imports only the hooks (from `core/`), never the provider.
 - [ ] `useTimelineEngine(): TimelineEngine` and `usePlaybackEngine(): PlaybackEngine` hooks work from any descendant.
 - [ ] `useTimeline()` (existing export) continues to work — alias `useTimelineEngine()`.
 - [ ] `<Timeline>` no longer instantiates engines; it reads them from context via the new hooks. The component is roughly **50–80 lines shorter**.
 - [ ] `TimelineRef` still has `{ engine, playback }`; values are read from context inside the component and exposed via `useImperativeHandle`.
 - [ ] `App.tsx` wraps everything in `<EditorProvider fps={30}>`; all existing toolbar interactions still work (add tracks, add clips, play/pause, undo/redo, zoom).
+- [ ] Dependency rule check: no file in `core/` or `timeline/` imports from `editor/`.
 - [ ] `npx tsc --noEmit` clean.
 - [ ] `npm run test` — all tests still pass (no test changes needed).
 - [ ] Playground smoke test: every existing keyboard shortcut and toolbar button still works.
 
 ## Out of scope
 
-- **Do not move the Zustand stores.** They keep their current names and locations.
+- **Do not move the Zustand stores.** They keep their `core/stores/` location from PR-04.
 - **Do not change the public API of `TimelineEngine` or `PlaybackEngine`.**
 - **Do not change the schema.** This is a pure refactor of where state lives.
 - **Do not introduce `MediaLibrary` into `EditorProvider`** — that's PR-08+. Keep the provider focused on the two engines.
 - **No prop drilling cleanup** beyond what's necessary for the lift itself.
+- **Do not add `<EditorSDK>` / `<AssetPanel>` / `<Preview>` shells.** Those land in later PRs.
 
 ## Implementation notes
 
-### Context shape
+### Context shape (lives in `core/`)
 
 ```tsx
-// packages/timeline/src/ui/editor-context.ts
+// packages/editor/src/core/editor-context.ts
 import { createContext, useContext } from 'react'
-import type { TimelineEngine } from '../core/editor/TimelineEngine'
-import type { PlaybackEngine } from '../core/playback/PlaybackEngine'
+import type { TimelineEngine } from './editor/TimelineEngine'
+import type { PlaybackEngine } from './playback/PlaybackEngine'
 
 export interface EditorContextValue {
   engine: TimelineEngine
@@ -84,16 +102,16 @@ export const useTimelineEngine = (): TimelineEngine => useEditor().engine
 export const usePlaybackEngine = (): PlaybackEngine => useEditor().playback
 ```
 
-### Provider
+### Provider (lives in `editor/`)
 
 ```tsx
-// packages/timeline/src/ui/EditorProvider.tsx
+// packages/editor/src/editor/EditorProvider.tsx
 import { useEffect, useMemo, type ReactNode } from 'react'
 import { TimelineEngine } from '../core/editor/TimelineEngine'
 import { PlaybackEngine } from '../core/playback/PlaybackEngine'
-import { useTracksStore } from '../stores/tracks.store'
-import { usePlaybackStore } from '../stores/playback.store'
-import { EditorContext } from './editor-context'
+import { useTracksStore } from '../core/stores/tracks.store'
+import { usePlaybackStore } from '../core/stores/playback.store'
+import { EditorContext } from '../core/editor-context'
 
 export interface EditorProviderProps {
   fps: number
@@ -215,12 +233,12 @@ export const Timeline = memo(forwardRef<TimelineRef, TimelineProps>(function Tim
 ### Back-compat for `useTimeline()`
 
 ```ts
-// packages/timeline/src/ui/engine-context.ts
-import { useTimelineEngine } from './editor-context'
+// packages/editor/src/timeline/engine-context.ts
+import { useTimelineEngine } from '../core/editor-context'
 export const useTimeline = useTimelineEngine  // back-compat alias
 ```
 
-Or, delete the old context file entirely and re-export from `editor-context.ts`. Either is acceptable — keep imports working.
+Or, delete the old context file entirely and re-export from `core/editor-context.ts`. Either is acceptable — keep imports working.
 
 ### Playground update
 
@@ -259,10 +277,12 @@ The `ref` keeps working; `engine()` helper in App.tsx still works because `Timel
 ## Copy-paste prompt for the implementation agent
 
 ```text
-You are working on @myeditor/timeline. Your job is to lift TimelineEngine
-and PlaybackEngine out of <Timeline> and into a new <EditorProvider> at
-the app level. This is a pure refactor — no behavior changes, no schema
-changes, no new abstractions.
+You are working on @elah/editor (the single package in the monorepo).
+PR-04 has merged: src/ is laid out as core/ + timeline/ + editor/.
+Your job is to lift TimelineEngine and PlaybackEngine out of <Timeline>
+and into a new <EditorProvider> in the editor/ composition layer.
+This is a pure refactor — no behavior changes, no schema changes, no
+new abstractions.
 
 REPO: d:/opensource/ReferenceProjects/MyEditorPackage
 
@@ -273,12 +293,16 @@ HARD CONSTRAINTS:
 - Do NOT move Zustand stores or rename them.
 - Do NOT introduce MediaLibrary into the provider (that comes later).
 - Do NOT add new packages.
+- Honor the layering: core/ must not import from timeline/ or editor/;
+  timeline/ must not import from editor/. The context object + hooks go
+  in core/editor-context.ts; only the <EditorProvider> component goes
+  in editor/EditorProvider.tsx.
 - The diff should be smaller in net lines than the lines moved.
 
 ================================================================
-TASK 1 — Create editor-context.ts
+TASK 1 — Create core/editor-context.ts
 ================================================================
-File: packages/timeline/src/ui/editor-context.ts (new)
+File: packages/editor/src/core/editor-context.ts (new)
 
 Export:
   interface EditorContextValue { engine: TimelineEngine; playback: PlaybackEngine }
@@ -288,9 +312,9 @@ Export:
   usePlaybackEngine(): PlaybackEngine
 
 ================================================================
-TASK 2 — Create EditorProvider.tsx
+TASK 2 — Create editor/EditorProvider.tsx
 ================================================================
-File: packages/timeline/src/ui/EditorProvider.tsx (new)
+File: packages/editor/src/editor/EditorProvider.tsx (new)
 
 Owns:
 - TimelineEngine instance (via useMemo, [])
@@ -312,7 +336,7 @@ Props: { fps: number; stage?: {width;height}; defaultTrackHeight?: number;
 ================================================================
 TASK 3 — Slim down Timeline.tsx
 ================================================================
-File: packages/timeline/src/ui/Timeline.tsx
+File: packages/editor/src/timeline/Timeline.tsx
 
 Remove:
 - useMemo for `engine`
@@ -332,26 +356,30 @@ Keep:
 ================================================================
 TASK 4 — Preserve useTimeline() for back-compat
 ================================================================
-File: packages/timeline/src/ui/engine-context.ts
+File: packages/editor/src/timeline/engine-context.ts
 
 Make useTimeline an alias of useTimelineEngine:
 
-  import { useTimelineEngine } from './editor-context'
+  import { useTimelineEngine } from '../core/editor-context'
   export const useTimeline = useTimelineEngine
 
-(Or delete the old file and re-export from editor-context. Either works,
-but ensure `import { useTimeline } from '@myeditor/timeline'` keeps
+(Or delete the old file and re-export from core/editor-context. Either
+works, but ensure `import { useTimeline } from '@elah/editor'` keeps
 working.)
 
 ================================================================
 TASK 5 — Update the public API
 ================================================================
-File: packages/timeline/src/index.ts
+File: packages/editor/src/index.ts
 
-Add exports:
-  export { EditorProvider } from './ui/EditorProvider'
-  export type { EditorProviderProps } from './ui/EditorProvider'
-  export { useTimelineEngine, usePlaybackEngine } from './ui/editor-context'
+Under the existing `// --- Editor: composition ---` section header, add:
+  export { EditorProvider } from './editor/EditorProvider'
+  export type { EditorProviderProps } from './editor/EditorProvider'
+  export {
+    useEditor,
+    useTimelineEngine,
+    usePlaybackEngine,
+  } from './core/editor-context'
 
 ================================================================
 TASK 6 — Update the playground
@@ -395,5 +423,6 @@ NON-GOALS
 - No MediaLibrary work.
 - No schema changes.
 - No package splits.
+- No <EditorSDK>, <AssetPanel>, or <Preview> shells — later PRs.
 - Do not "improve" unrelated code while you're in there.
 ```

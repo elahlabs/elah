@@ -3,13 +3,20 @@
 **Status:** 🔴 Not started
 **Risk:** Low (types-and-hooks only; no logic)
 **Estimated effort:** 1–2 hours
-**Blocks:** PR-08 (Gallery), PR-09 (DnD), PR-10 (Preview renderer)
+**Blocks:** PR-08 (AssetPanel), PR-09 (DnD), PR-10 (Preview renderer)
+**Depends on:** PR-04 (`@elah/editor` + layered restructure), PR-05 (`EditorProvider` + context hooks in `core/`)
 
 ---
 
 ## Goal
 
 Lay the final "empty seats" the gallery, DnD, and renderer PRs will fill. This is a small, types-and-stubs PR that closes out the foundation phase. After it merges, every subsequent PR is fill-in-the-blank.
+
+The three stubs are split across the layers per PR-04's dependency rule (`core → timeline → editor`):
+
+- `Renderer` interface → **`core/`** (it's a contract, React-agnostic, consumed by both `editor/` and future workers).
+- `useResolvedScene` hook → **`editor/`** (React, consumed by `<Preview>`, depends on `EditorProvider` context).
+- `useTimelineDrop` hook → **`timeline/`** (timeline-specific UI concern).
 
 ## Why this PR matters
 
@@ -25,10 +32,10 @@ Locking the seams now means PR-08, PR-09, and PR-10 can be picked up in any orde
 
 | File | Change |
 |---|---|
-| `packages/timeline/src/core/renderer/types.ts` (new) | `Renderer` interface |
-| `packages/timeline/src/core/renderer/useResolvedScene.ts` (new) | React hook |
-| `packages/timeline/src/ui/useTimelineDrop.ts` (new) | Drop hook signature + stub |
-| `packages/timeline/src/index.ts` | Export all three |
+| `packages/editor/src/core/renderer/types.ts` (new) | `Renderer` interface |
+| `packages/editor/src/editor/useResolvedScene.ts` (new) | React hook (composition layer — uses `EditorProvider` context) |
+| `packages/editor/src/timeline/useTimelineDrop.ts` (new) | Drop hook signature + stub |
+| `packages/editor/src/index.ts` | Export all three under their respective layer sections |
 
 ## Acceptance criteria
 
@@ -40,10 +47,11 @@ Locking the seams now means PR-08, PR-09, and PR-10 can be picked up in any orde
     dispose(): void
   }
   ```
-- [ ] `useResolvedScene(frameOverride?: number): Scene` — reads the timeline engine from `useTimelineEngine()`, reads the playhead frame from `usePlaybackStore` (or `frameOverride` if passed), calls `resolveTimeline`, and memoizes on `(frame, project)` identity.
+- [ ] `useResolvedScene(frameOverride?: number): Scene` — lives in `editor/`, reads the timeline engine from `useTimelineEngine()` (imported from `core/editor-context`), reads the playhead frame from `usePlaybackStore` (or `frameOverride` if passed), calls `resolveTimeline`, and memoizes on `(frame, project)` identity.
 - [ ] The hook re-resolves whenever either input changes; when both are reference-equal to the previous call, it returns the previous `Scene` reference (allowing downstream `useEffect` deps to skip).
-- [ ] `useTimelineDrop(trackId: string, lane: HTMLElement | null): void` — exported with a JSDoc explaining future behavior. Body is a no-op with a `// TODO: PR-09` comment. **It must not throw, even if called.**
-- [ ] All three are exported from `packages/timeline/src/index.ts`.
+- [ ] `useTimelineDrop(trackId: string, lane: HTMLElement | null): void` — lives in `timeline/`, exported with a JSDoc explaining future behavior. Body is a no-op with a `// TODO: PR-09` comment. **It must not throw, even if called.**
+- [ ] All three are exported from `packages/editor/src/index.ts` under the correct layer sections (`// --- Core: renderer ---`, `// --- Editor: composition ---`, `// --- Timeline: hooks ---`).
+- [ ] Dependency rule check: `core/renderer/` does not import from `timeline/` or `editor/`; `timeline/useTimelineDrop.ts` does not import from `editor/`.
 - [ ] `npx tsc --noEmit` clean.
 - [ ] `npm run test` — all tests still pass.
 - [ ] No playground or component behavior changes.
@@ -57,10 +65,10 @@ Locking the seams now means PR-08, PR-09, and PR-10 can be picked up in any orde
 
 ## Implementation notes
 
-### `Renderer` interface
+### `Renderer` interface (lives in `core/`)
 
 ```ts
-// packages/timeline/src/core/renderer/types.ts
+// packages/editor/src/core/renderer/types.ts
 import type { Scene } from '../resolver/scene'
 
 /**
@@ -83,16 +91,16 @@ export interface Renderer {
 }
 ```
 
-### `useResolvedScene`
+### `useResolvedScene` (lives in `editor/`)
 
 ```ts
-// packages/timeline/src/core/renderer/useResolvedScene.ts
+// packages/editor/src/editor/useResolvedScene.ts
 import { useMemo, useRef } from 'react'
-import { useTimelineEngine } from '../../ui/editor-context'
-import { useTracksStore } from '../../stores/tracks.store'
-import { usePlaybackStore } from '../../stores/playback.store'
-import { resolveTimeline } from '../resolver/resolveTimeline'
-import type { Scene } from '../resolver/scene'
+import { useTimelineEngine } from '../core/editor-context'
+import { useTracksStore } from '../core/stores/tracks.store'
+import { usePlaybackStore } from '../core/stores/playback.store'
+import { resolveTimeline } from '../core/resolver/resolveTimeline'
+import type { Scene } from '../core/resolver/scene'
 
 /**
  * Returns a memoized Scene for the current frame (or `frameOverride` if given).
@@ -133,10 +141,10 @@ export function useResolvedScene(frameOverride?: number): Scene {
 
 > **Note:** the `useTracksStore((s) => s.tracks)` selector is purely to subscribe; the value is unused. This guarantees the hook re-runs when the project changes (since `useTracksStore` is sync'd from engine events). Alternative implementations using `useSyncExternalStore` directly on the engine are fine but heavier.
 
-### `useTimelineDrop` stub
+### `useTimelineDrop` stub (lives in `timeline/`)
 
 ```tsx
-// packages/timeline/src/ui/useTimelineDrop.ts
+// packages/editor/src/timeline/useTimelineDrop.ts
 import { useEffect } from 'react'
 
 /**
@@ -163,10 +171,16 @@ The `void trackId; void lane;` lines suppress unused-arg lints while keeping the
 ### Public API
 
 ```ts
-// packages/timeline/src/index.ts — add
+// packages/editor/src/index.ts — add under the existing section headers
+
+// --- Core: renderer ---
 export type { Renderer } from './core/renderer/types'
-export { useResolvedScene } from './core/renderer/useResolvedScene'
-export { useTimelineDrop } from './ui/useTimelineDrop'
+
+// --- Timeline: hooks ---
+export { useTimelineDrop } from './timeline/useTimelineDrop'
+
+// --- Editor: composition ---
+export { useResolvedScene } from './editor/useResolvedScene'
 ```
 
 ## Verification
@@ -175,7 +189,7 @@ export { useTimelineDrop } from './ui/useTimelineDrop'
 2. `npm run test` — all tests pass.
 3. In a temp test file or browser console after `npm run dev`, confirm:
    ```ts
-   import { useResolvedScene } from '@myeditor/timeline'
+   import { useResolvedScene } from '@elah/editor'
    // Render a child of EditorProvider that calls useResolvedScene(0)
    // → returns a Scene object with the expected shape.
    ```
@@ -187,9 +201,11 @@ export { useTimelineDrop } from './ui/useTimelineDrop'
 ## Copy-paste prompt for the implementation agent
 
 ```text
-You are working on @myeditor/timeline. Your job is to add three stable
-"empty seats" that the next feature PRs will fill: a Renderer interface,
-a useResolvedScene hook, and a useTimelineDrop hook stub.
+You are working on @elah/editor. PR-04 and PR-05 have merged: the package
+is laid out as core/ + timeline/ + editor/, and <EditorProvider> + the
+context hooks already exist. Your job is to add three stable "empty seats"
+that the next feature PRs will fill: a Renderer interface, a useResolvedScene
+hook, and a useTimelineDrop hook stub. Each lands in the correct layer.
 
 REPO: d:/opensource/ReferenceProjects/MyEditorPackage
 
@@ -199,11 +215,17 @@ HARD CONSTRAINTS:
 - Do NOT add a Preview component.
 - Do NOT change any existing behavior.
 - No new runtime dependencies.
+- Honor the layering:
+    Renderer interface       → core/renderer/    (React-agnostic)
+    useResolvedScene         → editor/           (depends on context)
+    useTimelineDrop          → timeline/         (timeline-specific UI)
+  core/ may not import from timeline/ or editor/.
+  timeline/ may not import from editor/.
 
 ================================================================
 TASK 1 — Renderer interface
 ================================================================
-File: packages/timeline/src/core/renderer/types.ts (new)
+File: packages/editor/src/core/renderer/types.ts (new)
 
   import type { Scene } from '../resolver/scene'
 
@@ -222,17 +244,17 @@ Add JSDoc explaining the contract:
 ================================================================
 TASK 2 — useResolvedScene hook
 ================================================================
-File: packages/timeline/src/core/renderer/useResolvedScene.ts (new)
+File: packages/editor/src/editor/useResolvedScene.ts (new)
 
 Signature:
   export function useResolvedScene(frameOverride?: number): Scene
 
 Implementation:
-- import useTimelineEngine from '../../ui/editor-context'
-- import useTracksStore from '../../stores/tracks.store'
-- import usePlaybackStore from '../../stores/playback.store'
-- import resolveTimeline from '../resolver/resolveTimeline'
-- import type { Scene } from '../resolver/scene'
+- import useTimelineEngine from '../core/editor-context'
+- import useTracksStore from '../core/stores/tracks.store'
+- import usePlaybackStore from '../core/stores/playback.store'
+- import resolveTimeline from '../core/resolver/resolveTimeline'
+- import type { Scene } from '../core/resolver/scene'
 
 - Subscribe to useTracksStore((s) => s.tracks) (unused value) so the hook
   re-renders when the project changes.
@@ -248,7 +270,7 @@ Implementation:
 ================================================================
 TASK 3 — useTimelineDrop stub
 ================================================================
-File: packages/timeline/src/ui/useTimelineDrop.ts (new)
+File: packages/editor/src/timeline/useTimelineDrop.ts (new)
 
 Signature:
   export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
@@ -269,12 +291,18 @@ JSDoc must explain:
 ================================================================
 TASK 4 — Update public API
 ================================================================
-File: packages/timeline/src/index.ts
+File: packages/editor/src/index.ts
 
-Add:
+Add the three exports under the existing layer-section headers:
+
+  // --- Core: renderer ---
   export type { Renderer } from './core/renderer/types'
-  export { useResolvedScene } from './core/renderer/useResolvedScene'
-  export { useTimelineDrop } from './ui/useTimelineDrop'
+
+  // --- Timeline: hooks ---
+  export { useTimelineDrop } from './timeline/useTimelineDrop'
+
+  // --- Editor: composition ---
+  export { useResolvedScene } from './editor/useResolvedScene'
 
 ================================================================
 VERIFICATION
@@ -299,6 +327,7 @@ NON-GOALS
 - No DomRenderer implementation. PR-10.
 - No drop-handler body. PR-09.
 - No Preview component. PR-10.
-- No package splits. Everything lives in @myeditor/timeline.
+- No package splits. Everything lives in @elah/editor.
 - Do not add memoization beyond the single useRef in useResolvedScene.
+- Do not break the layering: re-check imports before declaring done.
 ```

@@ -1,6 +1,8 @@
 # PR-07 onwards · Post-foundation roadmap
 
 > Sketches, not full tickets. After PR-06 lands, plan PR-07 in detail with fresh eyes and create a dedicated `PR-07-*.md` ticket then. This file exists so you know what's coming and can keep the foundation honest.
+>
+> **Package layout assumed:** single package `@elah/editor`, internally laid out as `core/` + `timeline/` + `editor/` (established in PR-04). All file paths below are under `packages/editor/src/`.
 
 ---
 
@@ -17,30 +19,36 @@ Take `File[]` (from `<input>` or drop), build `MediaAsset`s, register them in `u
 - Generate thumbnails (video: seek + drawImage; image: direct draw). Main thread is fine.
 - Optionally extract `sourceFps` via `mediabunny` or `MP4Box.js` (deferrable; default to `project.fps` if unknown).
 
+**Lands in:** `core/media/importFiles.ts` (pure logic) and re-exported from the package barrel.
+
 **Acceptance:** `await importFiles(files)` returns assets; `useMediaLibraryStore.assets` is populated; thumbnails appear asynchronously.
 
-### PR-08 — `<MediaGallery />` UI
+### PR-08 — `<AssetPanel />` UI
 
-A panel that lists `useMediaLibraryStore.order` items as draggable thumbnails.
+A panel that lists `useMediaLibraryStore.order` items as draggable thumbnails. Renders inside `<EditorProvider>` as a sibling of `<Timeline>` and `<Preview>`.
 
 - File `<input>` for browsing.
-- Drop zone on the gallery itself for drag-from-OS.
+- Drop zone on the panel itself for drag-from-OS.
 - Each thumbnail is `draggable` with `dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify({kind:'media-asset', assetId}))`.
 - No grid virtualization yet (first 100 assets handled by CSS grid is fine).
 
-**Acceptance:** drop files onto the gallery → thumbnails appear; drag a thumbnail and see the OS drag cursor.
+**Lands in:** `editor/AssetPanel/` (composition layer — depends on `core/media/`).
+
+**Acceptance:** drop files onto the panel → thumbnails appear; drag a thumbnail and see the OS drag cursor.
 
 ### PR-09 — `useTimelineDrop` implementation
 
-Fill in the stub from PR-06.
+Fill in the stub from PR-06 (`timeline/useTimelineDrop.ts`).
 
 - Listen for `dragover` (accept payloads of `MEDIA_DRAG_MIME`).
-- Listen for `drop`: parse JSON, resolve `assetId → MediaAsset`, compute drop frame from `event.clientX - lane.getBoundingClientRect().left + lane.scrollLeft` divided by `zoom`.
+- Listen for `drop`: parse JSON, resolve `assetId → MediaAsset` via `useMediaLibrary().getAsset`, compute drop frame from `event.clientX - lane.getBoundingClientRect().left + lane.scrollLeft` divided by `zoom`.
 - Check track-kind compatibility (video/image on video tracks; audio on audio tracks).
 - Call `engine.addClip({ ..., assetId, src: asset.src, startFrame, durationFrames: round(asset.durationSec * project.fps), sourceStartFrame: 0, sourceDurationFrames: same })`.
 - Snap to playhead / clip edges if `usePlaybackStore.snapEnabled`.
 
-**Acceptance:** drag a thumbnail from the gallery onto a track lane → a clip is created at the drop point with correct duration.
+**Lands in:** `timeline/useTimelineDrop.ts` (body filled in; signature already established by PR-06).
+
+**Acceptance:** drag a thumbnail from `<AssetPanel>` onto a track lane → a clip is created at the drop point with correct duration.
 
 ### PR-10 — `<Preview />` + `DomRenderer`
 
@@ -60,13 +68,25 @@ The big one. The first time pixels move.
   - On clips no longer in scene: pause + `display: none` (don't remove; pool).
 - Audio plays through a shared `AudioContext` (see PR-12 for proper anchoring).
 
-**Acceptance:** add a video clip from the gallery, press Play → the video plays in the Preview pane. Audio plays.
+**Lands in:** `editor/Preview/Preview.tsx` and `editor/renderer/DomRenderer.ts`. `DomRenderer` implements the `Renderer` interface from `core/renderer/types.ts`. May import from `core/`; must not pull from `timeline/`.
 
-### PR-11 — Wire `<Preview />` into the playground
+**Acceptance:** add a video clip from the asset panel, press Play → the video plays in the Preview pane. Audio plays.
 
-Add `<Preview />` as a sibling of `<Timeline />` and `<MediaGallery />` inside `<EditorProvider>` in `App.tsx`. Fix any layout issues.
+### PR-11 — Wire `<EditorSDK />` into the playground
 
-**Acceptance:** the demo app is now a working three-pane editor.
+Introduce `<EditorSDK />` as the top-level shell (`editor/EditorSDK.tsx`) and use it in `App.tsx`:
+
+```tsx
+<EditorSDK>
+  <AssetPanel />
+  <Timeline />
+  <Preview />
+</EditorSDK>
+```
+
+`<EditorSDK>` is a thin wrapper around `<EditorProvider>` + a default layout. Fix any layout issues at the playground level.
+
+**Acceptance:** the demo app is now a working three-pane editor using the composition pattern.
 
 ---
 
@@ -125,24 +145,28 @@ Don't do these until profiling proves the need.
 
 ---
 
-## Phase 5 · Package split (when forced)
+## Phase 5 · Package extraction (when forced — not now)
 
-Currently everything lives in `@myeditor/timeline`. Split into separate packages **only when**:
+The single package `@elah/editor` is **already internally layered** into `core/` + `timeline/` + `editor/` (PR-04). That layering is the architecture. External package extraction is a separate decision, and the current direction is to **defer it** until real pressure exists.
 
-1. The build time exceeds ~5s.
-2. A renderer needs its own dependency graph (e.g. `@mediabunny/*` for export).
-3. Multiple downstream apps need different subsets.
+Extract into separate npm packages **only when** at least one is true:
 
-When the time comes:
-- `@myeditor/core` — types + frame math + id (peer-less).
-- `@myeditor/engine` — `TimelineEngine` + visitors + stores.
-- `@myeditor/playback` — `PlaybackEngine` + clock.
-- `@myeditor/resolver` — `resolveTimeline` + Scene.
-- `@myeditor/media` — MediaLibrary.
-- `@myeditor/renderer-dom`, `@myeditor/renderer-gpu`, `@myeditor/export`.
-- `@myeditor/ui` — `<Timeline>`, `<EditorProvider>`, `<MediaGallery>`, `<Preview>`.
+1. A non-React consumer ships (Node CLI, worker-only export pipeline, Electron preload).
+2. Build time crosses a threshold that bothers contributors (~5s+ steady).
+3. Independent adoption: a downstream app wants `timeline` without `editor`, or `core` without React.
+4. A renderer needs its own dependency graph (e.g. `@mediabunny/*` for export) that the rest of the package shouldn't carry.
 
-Add a CI script (Freecut-style) that fails the build on cross-package imports outside declared deps.
+When the time comes, the layered folder names map directly to package names:
+
+- `@elah/core`    ← `core/`     (types, engine, playback, resolver, stores, actions, media, utils)
+- `@elah/timeline` ← `timeline/` (Timeline UI + hooks + drop)
+- `@elah/editor`  ← `editor/`   (EditorProvider, EditorSDK, AssetPanel, Preview, useResolvedScene, DomRenderer)
+- `@elah/player`   — future, if a non-React player runtime is needed
+- `@elah/renderer` — future renderers (GPU, export)
+
+Because the layering is enforced from PR-04 onwards (dependency rule: `core → timeline → editor`), the extraction itself is a mechanical move-files-and-update-imports operation. Until then, **do not pre-split**. Premature extraction was the failure mode of `Oxide-Editor` and `render-kit`.
+
+> When extraction does happen, add a CI rule that fails the build on cross-package imports outside declared deps (Freecut-style). Until extraction, review-enforce the layering and consider an ESLint `no-restricted-imports` boundary rule once the layout stabilizes.
 
 ---
 
@@ -153,5 +177,7 @@ Add a CI script (Freecut-style) that fails the build on cross-package imports ou
 - A second state library.
 - A "core types" library that's used by one consumer.
 - A WASM module that hasn't been profiled to need it.
+- Splitting `@elah/editor` into multiple packages before the criteria above are met.
+- Exposing raw `useEditorStore.setState(...)` as the recommended API instead of named hooks (`useAssets`, `usePlayback`).
 
 See [`ARCHITECTURE.md` § 9](../../ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns).

@@ -6,7 +6,7 @@ import {
   useSelectionStore,
   splitClipAtPlayhead,
   type TimelineRef,
-} from '@myeditor/timeline'
+} from '@elah/editor'
 
 const FPS = 30
 
@@ -157,7 +157,7 @@ export default function App() {
         }}
       >
         <span style={{ fontSize: 13, fontWeight: 700, color: '#888', fontFamily: 'monospace', marginRight: 8 }}>
-          @myeditor/timeline
+          @elah/editor
         </span>
 
         <button style={btnStyle()} onClick={addVideoTrack}>+ Video Track</button>
