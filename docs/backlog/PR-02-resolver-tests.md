@@ -1,6 +1,6 @@
 # PR-02 · `resolveTimeline` tests
 
-**Status:** 🔴 Not started
+**Status:** 🟢 Merged
 **Risk:** Low
 **Estimated effort:** 1–2 hours
 **Blocks:** PR-10 (renderer; the resolver runs under it 60×/sec)

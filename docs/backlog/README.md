@@ -11,7 +11,7 @@ Each ticket is designed to be picked up cold — by you, by a teammate, or by an
 | # | Title | Status | Why this PR matters |
 |---|---|---|---|
 | [PR-01](./PR-01-engine-invariants.md) | Engine invariants: `moveClip` + `trimClip` | 🟢 Merged | Drag/drop will exercise both functions immediately; bugs become reproducible-by-user-gesture |
-| [PR-02](./PR-02-resolver-tests.md) | `resolveTimeline` tests | 🔴 Not started | The resolver runs 60×/sec under the renderer; bugs are invisible without tests |
+| [PR-02](./PR-02-resolver-tests.md) | `resolveTimeline` tests | 🟢 Merged| The resolver runs 60×/sec under the renderer; bugs are invisible without tests |
 | [PR-03](./PR-03-schema-stage-transform.md) | Schema: `Project.stage` + `Clip.transform?` | 🔴 Not started | Schema changes are cheapest before consumers exist |
 | [PR-04](./PR-04-media-library-skeleton.md) | `MediaLibrary` skeleton + asset model | 🔴 Not started | Every later PR imports from these types; settle the shape once |
 | [PR-05](./PR-05-editor-provider.md) | `EditorProvider` and engine lift | 🔴 Not started | Gallery + Preview need to live as Timeline siblings, not its children |

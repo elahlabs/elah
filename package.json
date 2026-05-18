@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=apps/playground",
     "build": "npm run build --workspace=packages/timeline",
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --build",
+    "test": "npm run test --workspace=packages/timeline"
   }
 }
