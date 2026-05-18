@@ -1,6 +1,12 @@
 # PR-03 · Schema: `Project.stage` + `Clip.transform?`
 
-**Status:** 🔴 Not started
+**Status:** 
+
+```markdown
+🟢 **Merged**
+```
+
+
 **Risk:** Medium (schema change touches multiple files)
 **Estimated effort:** 2–3 hours
 **Blocks:** PR-10 (renderer needs to know stage size); future text overlay editor
@@ -22,29 +28,31 @@ Schema changes are cheapest **before** consumers exist. Today, only the resolver
 
 ## Scope
 
-| File | Change |
-|---|---|
-| `packages/timeline/src/types/index.ts` | Add `Transform` type; add `stage` to `Project`; add `transform?` to `Clip` |
-| `packages/timeline/src/core/editor/TimelineEngine.ts` | Default `stage` in `buildEmptyProject`; accept optional `stage` in `TimelineConfig` |
-| `packages/timeline/src/core/elements/base.ts` | Pass `transform` through in clip factory (no default; remains optional) |
-| `packages/timeline/src/core/resolver/scene.ts` | Add optional `transform` to `ActiveClipBase`; export `Transform` type |
-| `packages/timeline/src/core/resolver/resolveTimeline.ts` | Pass `clip.transform` through to `ActiveClipBase.transform` |
-| `packages/timeline/src/core/resolver/resolveTimeline.test.ts` | Add 1 test for `transform` passthrough (optional but recommended) |
-| `packages/timeline/src/index.ts` | Export `Transform` type |
-| `docs/glossary.md` | Confirm "Stage" and "Transform" entries are still accurate after this PR |
+
+| File                                                          | Change                                                                              |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `packages/timeline/src/types/index.ts`                        | Add `Transform` type; add `stage` to `Project`; add `transform?` to `Clip`          |
+| `packages/timeline/src/core/editor/TimelineEngine.ts`         | Default `stage` in `buildEmptyProject`; accept optional `stage` in `TimelineConfig` |
+| `packages/timeline/src/core/elements/base.ts`                 | Pass `transform` through in clip factory (no default; remains optional)             |
+| `packages/timeline/src/core/resolver/scene.ts`                | Add optional `transform` to `ActiveClipBase`; export `Transform` type               |
+| `packages/timeline/src/core/resolver/resolveTimeline.ts`      | Pass `clip.transform` through to `ActiveClipBase.transform`                         |
+| `packages/timeline/src/core/resolver/resolveTimeline.test.ts` | Add 1 test for `transform` passthrough (optional but recommended)                   |
+| `packages/timeline/src/index.ts`                              | Export `Transform` type                                                             |
+| `docs/glossary.md`                                            | Confirm "Stage" and "Transform" entries are still accurate after this PR            |
+
 
 ## Acceptance criteria
 
-- [ ] `Project.stage: { width: number; height: number }` exists. New projects default to `{ width: 1080, height: 1920 }`.
-- [ ] `TimelineConfig` (passed to `new TimelineEngine(...)`) accepts an optional `stage`; if omitted, `1080×1920` is used.
-- [ ] `Clip.transform?: Transform` exists where `Transform = { x: number; y: number; scale: number; rotation: number; anchor: { x: number; y: number } }`. All fields are numbers; **`x`, `y`, `anchor.x`, `anchor.y` are normalized 0..1**; `scale` is unitless (1 = native); `rotation` is in radians.
-- [ ] `Clip.transform` is optional everywhere (no default, no required init). Existing code that constructs clips without it keeps working.
-- [ ] `ActiveClipBase.transform?: Transform` exists in `scene.ts`. When `clip.transform` is set, the resolver puts it on the active clip. When absent, the resolver leaves it absent (no default object).
-- [ ] `Transform` is exported from the public API in `index.ts`.
-- [ ] All existing tests (PR-02) still pass.
-- [ ] No render-time behavior changes (no renderer exists yet).
-- [ ] `npx tsc --noEmit` passes.
-- [ ] Playground continues to work without modification.
+- `Project.stage: { width: number; height: number }` exists. New projects default to `{ width: 1080, height: 1920 }`.
+- `TimelineConfig` (passed to `new TimelineEngine(...)`) accepts an optional `stage`; if omitted, `1080×1920` is used.
+- `Clip.transform?: Transform` exists where `Transform = { x: number; y: number; scale: number; rotation: number; anchor: { x: number; y: number } }`. All fields are numbers; `**x`, `y`, `anchor.x`, `anchor.y` are normalized 0..1**; `scale` is unitless (1 = native); `rotation` is in radians.
+- `Clip.transform` is optional everywhere (no default, no required init). Existing code that constructs clips without it keeps working.
+- `ActiveClipBase.transform?: Transform` exists in `scene.ts`. When `clip.transform` is set, the resolver puts it on the active clip. When absent, the resolver leaves it absent (no default object).
+- `Transform` is exported from the public API in `index.ts`.
+- All existing tests (PR-02) still pass.
+- No render-time behavior changes (no renderer exists yet).
+- `npx tsc --noEmit` passes.
+- Playground continues to work without modification.
 
 ## Out of scope
 
@@ -133,6 +141,7 @@ export interface TimelineConfig {
 ```
 
 In the constructor:
+
 ```ts
 const stage = config.stage ?? { width: 1080, height: 1920 }
 this.project = buildEmptyProject(config.fps, stage)
@@ -313,3 +322,4 @@ NON-GOALS
 - No migration code for persisted projects (there's no persistence yet).
 - Don't compute an "effective transform" or interpolate anything.
 ```
+
