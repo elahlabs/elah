@@ -32,11 +32,15 @@ interface HistoryEntry {
 
 type Listener<E extends EngineEvent> = (payload: EngineEventPayload[E]) => void
 
-function buildEmptyProject(fps: number): Project {
+function buildEmptyProject(
+  fps: number,
+  stage: { width: number; height: number },
+): Project {
   const firstTrack = createTrack({ kind: 'video', name: 'Track 1', order: 0 })
   return {
     id: generateId(),
     fps,
+    stage,
     tracks: [firstTrack],
     clips: {},
     version: 1,
@@ -80,7 +84,8 @@ export class TimelineEngine {
   private listeners = new Map<EngineEvent, Set<(payload: any) => void>>()
 
   constructor(config: TimelineConfig) {
-    this.project = buildEmptyProject(config.fps)
+    const stage = config.stage ?? { width: 1080, height: 1920 }
+    this.project = buildEmptyProject(config.fps, stage)
     this.maxHistorySize = config.maxHistorySize ?? 100
     this.defaultTrackHeight = config.defaultTrackHeight ?? 64
   }

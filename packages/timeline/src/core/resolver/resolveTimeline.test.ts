@@ -6,6 +6,7 @@ function makeProject(overrides?: Partial<Project>): Project {
   return {
     id: 'p1',
     fps: 30,
+    stage: { width: 1080, height: 1920 },
     tracks: [],
     clips: {},
     version: 1,
@@ -268,6 +269,19 @@ describe('resolveTimeline', () => {
     expect(scene.audios.length).toBe(0)
     expect(scene.texts.length).toBe(0)
     expect(scene.images.length).toBe(0)
+  })
+
+  it('passes Clip.transform through to ActiveClipBase.transform', () => {
+    const transform = {
+      x: 0.5, y: 0.5, scale: 1.5, rotation: 0,
+      anchor: { x: 0.5, y: 0.5 },
+    }
+    const project = makeProject({
+      tracks: [makeTrack()],
+      clips: { t1: [makeClip({ transform })] },
+    })
+    const scene = resolveTimeline(0, project)
+    expect(scene.videos[0].transform).toEqual(transform)
   })
 
   it('still excludes a disabled clip even when its track is solo', () => {

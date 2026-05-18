@@ -1,3 +1,5 @@
+import type { Transform } from '../../types'
+
 /**
  * Scene — the output type of resolveTimeline().
  *
@@ -9,7 +11,6 @@
  *
  * This structure is intentionally minimal today but shaped to support:
  * - transitions (reserved array, types TBD)
- * - animations (add `transform` to ActiveClipBase when needed)
  * - effects / filters (add `effects` array to ActiveClipBase when needed)
  * - WebGL/WebGPU (typed array of draw commands, same Scene as input)
  * - WASM export pipelines (pure data, no DOM references)
@@ -33,6 +34,8 @@ export interface ActiveClipBase {
    * ascending order and the last (highest zIndex) element wins.
    */
   zIndex: number
+  /** Spatial transform from the source clip; undefined means the renderer applies its own default */
+  transform?: Transform
 }
 
 export interface ActiveVideoClip extends ActiveClipBase {

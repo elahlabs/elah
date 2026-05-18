@@ -73,6 +73,7 @@ export type {
   Clip,
   Track,
   Project,
+  Transform,
   ClipType,
   TrackKind,
   FrameCount,

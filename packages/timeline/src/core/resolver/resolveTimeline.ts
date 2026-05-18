@@ -105,6 +105,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           opacity,
           volume,
           zIndex,
+          ...(clip.transform ? { transform: clip.transform } : {}),
         }
         scene.videos.push(active)
       } else if (clip.type === 'audio' && clip.src) {
@@ -118,6 +119,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           opacity: 1,
           volume,
           zIndex,
+          ...(clip.transform ? { transform: clip.transform } : {}),
         }
         scene.audios.push(active)
       } else if (clip.type === 'text') {
@@ -130,6 +132,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           sourceFrame,
           opacity,
           zIndex,
+          ...(clip.transform ? { transform: clip.transform } : {}),
         }
         scene.texts.push(active)
       } else if (clip.type === 'image' && clip.src) {
@@ -142,6 +145,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           sourceFrame,
           opacity,
           zIndex,
+          ...(clip.transform ? { transform: clip.transform } : {}),
         }
         scene.images.push(active)
       }

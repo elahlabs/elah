@@ -7,6 +7,23 @@
 /** An exact frame position. Always a non-negative integer. */
 export type FrameCount = number
 
+/**
+ * Spatial transform applied to a clip at render time.
+ * All values are normalized so they remain resolution-independent.
+ */
+export interface Transform {
+  /** Horizontal position, normalized 0..1 relative to stage width */
+  x: number
+  /** Vertical position, normalized 0..1 relative to stage height */
+  y: number
+  /** Uniform scale factor; 1 = native size */
+  scale: number
+  /** Rotation in radians; positive = clockwise */
+  rotation: number
+  /** Anchor point within the clip's own bounding box, normalized 0..1 */
+  anchor: { x: number; y: number }
+}
+
 export type ClipType = 'video' | 'audio' | 'text' | 'image'
 
 export type TrackKind = 'video' | 'audio' | 'text'
@@ -15,6 +32,7 @@ export type TrackKind = 'video' | 'audio' | 'text'
  * A single clip placed on the timeline.
  * startFrame + durationFrames define its position and length on the timeline.
  * sourceStartFrame + sourceDurationFrames define the trim window into the source.
+ * Use `transform` to position / scale / rotate the clip in the stage coordinate space.
  */
 export interface Clip {
   id: string
@@ -41,6 +59,8 @@ export interface Clip {
   opacity?: number  // 0 – 1
   locked?: boolean
   disabled?: boolean
+  /** Optional spatial transform; undefined means the renderer applies its own default */
+  transform?: Transform
 }
 
 /** A track lane that holds clips */
@@ -61,11 +81,14 @@ export interface Track {
 /**
  * The full project state. This is the engine's source of truth.
  * Passed to Immer for structural-sharing mutations.
+ * `stage` defines the output canvas dimensions; defaults to 1080×1920 (portrait).
  */
 export interface Project {
   id: string
   /** Frames per second — integer (e.g. 24, 30, 60) */
   fps: number
+  /** Output canvas dimensions in pixels */
+  stage: { width: number; height: number }
   tracks: Track[]
   /** clips indexed by trackId, sorted by startFrame */
   clips: Record<string, Clip[]>
@@ -75,6 +98,8 @@ export interface Project {
 /** Config passed when creating a TimelineEngine instance */
 export interface TimelineConfig {
   fps: number
+  /** Output canvas dimensions; defaults to 1080×1920 (portrait) */
+  stage?: { width: number; height: number }
   /** Default height for new tracks in pixels */
   defaultTrackHeight?: number
   /** Max undo steps kept in history */
