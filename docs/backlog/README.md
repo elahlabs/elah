@@ -19,6 +19,8 @@ packages/editor/src/
 
 **Dependency rule:** `core → timeline → editor`. One-way only.
 
+> For the full `core/` module reference, type relationships, store contracts, and data-flow diagrams, see [docs/architecture/core.md](../architecture/core.md).
+
 - `core/` is the authoritative editor runtime; React-agnostic where possible. Runtime state (tracks / playback / selection) is owned here.
 - `timeline/` consumes runtime contracts from `core/`; it does **not** own playback or the resolver.
 - `editor/` composes the integrated editing experience.

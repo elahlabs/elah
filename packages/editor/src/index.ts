@@ -69,6 +69,9 @@ export type {
   ActiveClipBase,
 } from './core/resolver/scene'
 
+// --- Core: renderer ---
+export type { Renderer } from './core/renderer/types'
+
 // --- Core: media ---
 export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME } from './core/media'
 export type { MediaAsset, MediaKind, DragMediaPayload } from './core/media'
@@ -102,6 +105,7 @@ export { useTimeline } from './timeline/engine-context'
 export { useTracks } from './timeline/hooks/useTracks'
 export { usePlayback } from './timeline/hooks/usePlayback'
 export { useSelection } from './timeline/hooks/useSelection'
+export { useTimelineDrop } from './timeline/useTimelineDrop'
 
 // --- Editor: composition ---
 export { EditorProvider } from './editor/EditorProvider'
@@ -111,3 +115,4 @@ export {
   useTimelineEngine,
   usePlaybackEngine,
 } from './core/editor-context'
+export { useResolvedScene } from './editor/useResolvedScene'
