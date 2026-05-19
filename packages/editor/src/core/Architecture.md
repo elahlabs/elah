@@ -4,7 +4,7 @@
 > implementation agent working on `@elah/editor`. Load this file and you will
 > not need to re-explore `packages/editor/src/core/` from scratch.
 >
-> **Last updated:** PR-07 (`importFiles` + main-thread thumbnail generation).
+> **Last updated:** PR-09 (`useTimelineDrop` in `timeline/`; `assetId` on `CreateClipOptions`).
 
 ---
 
@@ -132,6 +132,7 @@ flowchart LR
     PS --> URS
     RT --> URS
     URS --> PV["Preview PR-10"]
+    EP --> AP["AssetPanel PR-08"]
   end
 ```
 
@@ -234,7 +235,7 @@ Knowing what is absent is as important as knowing what is present:
 |---------|----------|
 | `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `timeline/` |
 | `useTimeline`, `useTracks`, `usePlayback`, `useSelection` hooks (public API) | `timeline/hooks/` |
-| `useTimelineDrop` drop-target stub | `timeline/` (PR-06) |
+| `useTimelineDrop` drop handler | `timeline/` (PR-09 — implemented) |
 | `<EditorProvider>` | `editor/` |
 | `useResolvedScene` | `editor/` (PR-06) |
 | `<Preview>` component | `editor/` (PR-10) |
@@ -247,7 +248,6 @@ Knowing what is absent is as important as knowing what is present:
 
 | PR | Change in `core/` |
 |----|-------------------|
-| PR-07 | `importFiles` in `core/media/importFiles.ts` — metadata probe + main-thread thumbnail generation; sets `thumbnailUrl` asynchronously via `updateAsset` (Worker deferred to Phase 4 if profiling demands) |
-| PR-08 | `AssetPanel` reads from `useMediaLibrary` (no `core/` changes expected) |
-| PR-09 | `useTimelineDrop` body fills in; may add a `MEDIA_DRAG_MIME` handler path |
 | PR-10 | `DomRenderer` implements `Renderer` interface from `core/renderer/types.ts` |
+
+**Landed (PR-07 → PR-09):** `importFiles` + media store; `AssetPanel` in `editor/`; `useTimelineDrop` accepts `MEDIA_DRAG_MIME` drags and calls `engine.addClip` with `assetId` + `src` (PR-09 also added `assetId?` to `CreateClipOptions` in `core/elements/base.ts`).

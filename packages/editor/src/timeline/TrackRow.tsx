@@ -1,8 +1,9 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import type { Track } from '../core/types'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { useSelectionStore } from '../core/stores/selection.store'
 import { ClipBlock } from './ClipBlock'
+import { useTimelineDrop } from './useTimelineDrop'
 
 interface TrackRowProps {
   track: Track
@@ -25,6 +26,9 @@ export const TrackRow = memo(function TrackRow({
   const clips = useTracksStore((s) => s.clips[track.id]) ?? []
   const isActive = useSelectionStore((s) => s.activeTrackId === track.id)
   const setActiveTrack = useSelectionStore((s) => s.setActiveTrack)
+  const [laneEl, setLaneEl] = useState<HTMLDivElement | null>(null)
+
+  useTimelineDrop(track.id, laneEl)
 
   // Minimum pixel width so there is always a usable timeline on small screens.
   // flex:1 grows it to fill the container when the container is larger.
@@ -73,6 +77,7 @@ export const TrackRow = memo(function TrackRow({
 
       {/* Clip area */}
       <div
+        ref={setLaneEl}
         style={{
           position: 'relative',
           flex: 1,

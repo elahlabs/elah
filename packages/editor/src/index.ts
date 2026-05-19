@@ -116,3 +116,5 @@ export {
   usePlaybackEngine,
 } from './core/editor-context'
 export { useResolvedScene } from './editor/useResolvedScene'
+export { AssetPanel } from './editor/AssetPanel'
+export type { AssetPanelProps } from './editor/AssetPanel'

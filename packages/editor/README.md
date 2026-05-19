@@ -54,13 +54,47 @@ async function onFilesSelected(files: FileList | File[]) {
 - Registers assets in `useMediaLibraryStore` synchronously
 - Generates JPEG thumbnails on the main thread and patches `thumbnailUrl` asynchronously
 
+## AssetPanel (PR-08)
+
+Browse, drop, and drag media assets from a sidebar panel. Render as a sibling of `<Timeline>` inside `<EditorProvider>`:
+
+```tsx
+import { EditorProvider, Timeline, AssetPanel } from '@elah/editor'
+
+function App() {
+  return (
+    <EditorProvider fps={30}>
+      <div style={{ display: 'flex', height: '100vh' }}>
+        <AssetPanel style={{ width: 220 }} />
+        <Timeline style={{ flex: 1 }} />
+      </div>
+    </EditorProvider>
+  )
+}
+```
+
+- **Add** opens a file picker; **drop** onto the panel imports via `importFiles`
+- Thumbnails appear asynchronously after import (PR-07)
+- Drag a thumbnail onto a timeline track lane to create a clip (see Timeline drop below)
+
+## Timeline drop (PR-09)
+
+With `<AssetPanel>` and `<Timeline>` as siblings inside `<EditorProvider>`, drag a thumbnail onto any track lane:
+
+- Drop position becomes the clip `startFrame` (respects timeline zoom)
+- Clip duration comes from the asset (`durationSec × project.fps`; images default to 5 seconds)
+- Video/image assets go on video tracks; audio on audio tracks
+- When snap is enabled (`usePlaybackStore.snapEnabled`), the drop snaps to the playhead and nearby clip edges
+
+No extra wiring beyond `TrackRow` — `useTimelineDrop` is attached automatically per lane.
+
 ## Package layout
 
 ```
 src/
   core/       types, engine, playback, resolver, stores, media, actions
   timeline/   Timeline UI + hooks
-  editor/     EditorProvider, useResolvedScene (Preview arrives PR-10)
+  editor/     EditorProvider, AssetPanel, useResolvedScene (Preview arrives PR-10)
 ```
 
 ## Scripts

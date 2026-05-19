@@ -28,7 +28,7 @@ Three goals shape every decision:
 | `resolveTimeline(frame, project) → Scene` (pure resolver) | ✅ Stable, solo/mute/zIndex correct |
 | Timeline UI (`Timeline`, `Ruler`, `TrackRow`, `ClipBlock`, `Playhead`) | ✅ Working |
 | Media import + library store | ✅ Working (PR-07) |
-| Media gallery UI + drag-drop | 🟡 Panel + drop pending (PR-08/09) |
+| Media gallery UI + drag-drop | ✅ Working (PR-09) |
 | Preview renderer (DOM) | 🟡 Designed, not built |
 | Text overlays + transforms | 🟡 Schema ready, no UI |
 | Export pipeline | ⚪ Not started |
@@ -49,7 +49,7 @@ For the full architecture document, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 ## Repository layout
 
 ```
-MyEditorPackage/
+video-editor/
 ├── README.md                     # this file
 ├── ARCHITECTURE.md               # the engine architecture in depth
 ├── ROADMAP.md                    # sequenced PR plan
@@ -57,20 +57,11 @@ MyEditorPackage/
 ├── apps/
 │   └── playground/               # Vite + React demo app
 └── packages/
-    └── timeline/                 # @myeditor/timeline SDK
+    └── editor/                   # @elah/editor SDK
         └── src/
-            ├── core/
-            │   ├── editor/       # TimelineEngine
-            │   ├── playback/     # PlaybackEngine
-            │   ├── resolver/     # resolveTimeline + Scene
-            │   ├── elements/     # clip factories
-            │   ├── track/        # track factories
-            │   └── visitor/      # add / remove / update / split / clone
-            ├── stores/           # Zustand mirrors (tracks / playback / selection)
-            ├── ui/               # Timeline, Ruler, TrackRow, ClipBlock, Playhead
-            ├── utils/            # frames math, snap, id
-            ├── actions/          # composed ops (e.g. splitClipAtPlayhead)
-            └── types/            # Clip, Track, Project, EngineEvent
+            ├── core/             # types, engine, playback, resolver, stores, media
+            ├── timeline/         # Timeline, Ruler, TrackRow, ClipBlock, hooks
+            └── editor/           # EditorProvider, AssetPanel, useResolvedScene
 docs/
 ├── glossary.md                   # terminology
 ├── references.md                 # study guide for related repos
@@ -112,7 +103,7 @@ Then in the playground, add a video track, add a clip, hit **Space** to play. Ke
 ## How to use the SDK in your own app
 
 ```tsx
-import { Timeline, useTracksStore, usePlaybackStore, type TimelineRef } from '@myeditor/timeline'
+import { EditorProvider, Timeline, AssetPanel, type TimelineRef } from '@elah/editor'
 import { useRef } from 'react'
 
 function App() {
@@ -132,10 +123,13 @@ function App() {
   }
 
   return (
-    <>
+    <EditorProvider fps={30}>
       <button onClick={addClip}>Add clip</button>
-      <Timeline ref={ref} fps={30} style={{ height: 400 }} />
-    </>
+      <div style={{ display: 'flex', height: 400 }}>
+        <AssetPanel style={{ width: 220 }} />
+        <Timeline ref={ref} fps={30} style={{ flex: 1 }} />
+      </div>
+    </EditorProvider>
   )
 }
 ```
@@ -143,7 +137,7 @@ function App() {
 To consume the resolver directly (for a preview component or export pipeline):
 
 ```ts
-import { resolveTimeline } from '@myeditor/timeline'
+import { resolveTimeline } from '@elah/editor'
 
 const scene = resolveTimeline(currentFrame, engine.getProject())
 // scene.videos, scene.audios, scene.texts, scene.images, scene.transitions

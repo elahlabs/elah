@@ -10,6 +10,8 @@ export interface CreateClipOptions {
   durationFrames: number
   /** Source URL (video / audio / image) */
   src?: string
+  /** Reference to a MediaAsset in the MediaLibrary */
+  assetId?: string
   /** Text content (text clips) */
   content?: string
   volume?: number
@@ -36,6 +38,7 @@ export function createClip(options: CreateClipOptions): Clip {
     sourceStartFrame: 0,
     sourceDurationFrames: durationFrames,
     src: options.src,
+    assetId: options.assetId,
     content: options.content,
     volume: options.volume ?? 1,
     opacity: options.opacity ?? 1,

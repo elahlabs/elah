@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import {
+  AssetPanel,
   EditorProvider,
   Timeline,
   useTracksStore,
@@ -230,12 +231,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Timeline */}
-        <Timeline
-          ref={timelineRef}
-          fps={FPS}
-          style={{ flex: 1 }}
-        />
+        {/* Asset panel + timeline */}
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          <AssetPanel style={{ width: 220, flexShrink: 0 }} />
+          <Timeline
+            ref={timelineRef}
+            fps={FPS}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+        </div>
       </div>
     </EditorProvider>
   )
