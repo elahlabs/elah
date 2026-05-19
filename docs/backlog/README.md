@@ -35,7 +35,7 @@ Multi-package extraction (`@elah/core`, `@elah/timeline`, etc.) is deferred unti
 | [PR-01](./PR-01-engine-invariants.md) | Engine invariants: `moveClip` + `trimClip` | 🟢 Merged | Drag/drop will exercise both functions immediately; bugs become reproducible-by-user-gesture |
 | [PR-02](./PR-02-resolver-tests.md) | `resolveTimeline` tests | 🟢 Merged | The resolver runs 60×/sec under the renderer; bugs are invisible without tests |
 | [PR-03](./PR-03-schema-stage-transform.md) | Schema: `Project.stage` + `Clip.transform?` | 🟢 Merged | Schema changes are cheapest before consumers exist |
-| [PR-04](./PR-04-media-library-skeleton.md) | Package rename + 3-layer restructure + `MediaLibrary` skeleton | 🔴 Not started | Establish the layered architecture and the asset model in one atomic move |
+| [PR-04](./PR-04-media-library-skeleton.md) | Package rename + 3-layer restructure + `MediaLibrary` skeleton |  🟢 **Merged** | Establish the layered architecture and the asset model in one atomic move |
 | [PR-05](./PR-05-editor-provider.md) | `EditorProvider` and engine lift (lands in `editor/`) | 🔴 Not started | AssetPanel + Preview need to live as Timeline siblings, not its children |
 | [PR-06](./PR-06-render-contract.md) | Render contract + drag plumbing seams (split across all three layers) | 🔴 Not started | The final "empty seats" the next agent fills in |
 

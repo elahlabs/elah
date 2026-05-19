@@ -1,6 +1,6 @@
 # PR-04 · Package rename + 3-layer restructure + `MediaLibrary` skeleton
 
-**Status:** 🔴 Not started
+**Status:**  🟢 **Merged**
 **Risk:** High (single package rename + folder restructure + new module — touches every import in the repo)
 **Estimated effort:** 4–6 hours
 **Blocks:** PR-05 (EditorProvider lands in `editor/`), PR-06 (Renderer/useResolvedScene/useTimelineDrop split across layers), PR-07+ (file import, gallery, DnD, preview)
