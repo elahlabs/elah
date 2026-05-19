@@ -104,4 +104,10 @@ export { usePlayback } from './timeline/hooks/usePlayback'
 export { useSelection } from './timeline/hooks/useSelection'
 
 // --- Editor: composition ---
-// (empty until PR-05)
+export { EditorProvider } from './editor/EditorProvider'
+export type { EditorProviderProps } from './editor/EditorProvider'
+export {
+  useEditor,
+  useTimelineEngine,
+  usePlaybackEngine,
+} from './core/editor-context'
