@@ -4,7 +4,7 @@
 > implementation agent working on `@elah/editor`. Load this file and you will
 > not need to re-explore `packages/editor/src/core/` from scratch.
 >
-> **Last updated:** PR-06 (Renderer interface + useResolvedScene + useTimelineDrop stubs).
+> **Last updated:** PR-07 (`importFiles` + main-thread thumbnail generation).
 
 ---
 
@@ -39,7 +39,7 @@ core  ←  timeline  ←  editor
 | `core/resolver/` | Pure, deterministic frame resolver. `resolveTimeline(frame, project) → Scene`. No DOM, no React. | `resolveTimeline`, `Scene` (and sub-types) |
 | `core/renderer/` | `Renderer` interface contract — added PR-06. No implementation yet. Implementations arrive in PR-10 (`DomRenderer`). | `Renderer` |
 | `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore` |
-| `core/media/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. | `useMediaLibrary`, `useMediaLibraryStore`, `MEDIA_DRAG_MIME`, `MediaAsset` |
+| `core/media/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
 | `core/elements/` | Clip factory functions. Pure constructors, no side-effects. | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip` |
 | `core/track/` | Track factory. | `createTrack` |
 | `core/actions/` | Compound operations (multi-step mutations + engine calls). Currently: `splitClipAtPlayhead`. | `splitClipAtPlayhead` |
@@ -203,12 +203,26 @@ The engine is a typed event emitter. Listeners registered with `.on(event, handl
 
 ## 8. `MediaLibrary` (`core/media/`)
 
-In-memory registry of source assets. Not yet persisted (PR-07+ adds thumbnails and optional persistence).
+In-memory registry of source assets. Not yet persisted (IndexedDB/OPFS arrives in Phase 3).
 
-- `useMediaLibrary()` — React hook, full library operations (`addAsset`, `removeAsset`, `getAsset`, etc.)
-- `useMediaLibraryStore` — raw Zustand store for granular subscriptions
+- `importFiles(files, opts?)` — takes `File[]`, creates object URLs, probes metadata via `<video>` / `<audio>` / `<img>`, registers `MediaAsset`s in the store, and generates thumbnails asynchronously on the main thread (`thumbnailUrl` patched via `updateAsset`)
+- `useMediaLibrary()` — React hook for reading assets in insertion order (`getAsset`, ordered `assets` list)
+- `useMediaLibraryStore` — raw Zustand store for granular subscriptions and imperative access (`addAsset`, `removeAsset`, `updateAsset`, `getAsset`)
 - `MEDIA_DRAG_MIME = 'application/x-elah-media'` — MIME type placed on `dataTransfer` when dragging from `AssetPanel`
 - `DragMediaPayload = { kind: 'media-asset'; assetId: string }` — JSON-encoded payload
+
+**Import flow:**
+
+```
+File[] → importFiles()
+  ├─ infer kind from MIME (video/audio/image; skip unknown)
+  ├─ URL.createObjectURL(file) → asset.src
+  ├─ probe metadata (duration, width, height)
+  ├─ addAsset() — returns immediately (no thumbnailUrl yet)
+  └─ scheduleThumbnail() — fire-and-forget; updateAsset({ thumbnailUrl }) when ready
+```
+
+`sourceFps` extraction (mediabunny / MP4Box.js) and audio waveform peaks are deferred to later PRs.
 
 ---
 
@@ -233,7 +247,7 @@ Knowing what is absent is as important as knowing what is present:
 
 | PR | Change in `core/` |
 |----|-------------------|
-| PR-07 | Thumbnail generation → adds `thumbnailUrl` to `MediaAsset` via a Worker |
+| PR-07 | `importFiles` in `core/media/importFiles.ts` — metadata probe + main-thread thumbnail generation; sets `thumbnailUrl` asynchronously via `updateAsset` (Worker deferred to Phase 4 if profiling demands) |
 | PR-08 | `AssetPanel` reads from `useMediaLibrary` (no `core/` changes expected) |
 | PR-09 | `useTimelineDrop` body fills in; may add a `MEDIA_DRAG_MIME` handler path |
 | PR-10 | `DomRenderer` implements `Renderer` interface from `core/renderer/types.ts` |

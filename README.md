@@ -27,7 +27,8 @@ Three goals shape every decision:
 | `PlaybackEngine` (RAF clock + subscribe) | ✅ Stable |
 | `resolveTimeline(frame, project) → Scene` (pure resolver) | ✅ Stable, solo/mute/zIndex correct |
 | Timeline UI (`Timeline`, `Ruler`, `TrackRow`, `ClipBlock`, `Playhead`) | ✅ Working |
-| Media gallery + drag-drop | 🟡 Designed, not built (see [ROADMAP](./ROADMAP.md)) |
+| Media import + library store | ✅ Working (PR-07) |
+| Media gallery UI + drag-drop | 🟡 Panel + drop pending (PR-08/09) |
 | Preview renderer (DOM) | 🟡 Designed, not built |
 | Text overlays + transforms | 🟡 Schema ready, no UI |
 | Export pipeline | ⚪ Not started |
