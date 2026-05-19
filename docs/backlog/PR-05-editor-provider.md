@@ -1,6 +1,6 @@
 # PR-05 · `EditorProvider` and engine lift
 
-**Status:** 🔴 Not started
+**Status:** 🟢 **Merged**
 **Risk:** Medium-High (refactors `Timeline.tsx` and `App.tsx` simultaneously)
 **Estimated effort:** 3–4 hours
 **Blocks:** PR-08 (AssetPanel as Timeline sibling), PR-10 (Preview as Timeline sibling)
