@@ -1,12 +1,13 @@
 /**
- * PlaybackEngine — owns the RAF loop and playback position.
+ * PlaybackEngine — anchor-and-integrate playback clock.
  *
  * Framework-agnostic: no React, no Zustand imports.
  * Timeline.tsx wires it to the Zustand store via subscribe().
  *
  * Design contract:
  *  - play / pause / seek / setPlaybackRate are the only mutation entry-points
- *  - subscribe() delivers a snapshot on every state change + every frame tick
+ *  - subscribe() delivers a snapshot on transport events + integer frame advances
+ *  - subscribeTimeupdate() delivers throttled snapshots (~10 Hz) for UI labels
  *  - destroy() must be called when the engine is no longer needed (stops RAF)
  */
 
@@ -15,44 +16,87 @@ export interface PlaybackSnapshot {
   isPlaying: boolean
   playbackRate: number
   loop: boolean
+  epoch: number
 }
 
 export interface PlaybackEngineConfig {
   fps: number
   /** Called each tick to know when to loop/stop. */
   getTotalFrames: () => number
+  /** Optional — inject for deterministic tests. */
+  now?: () => number
 }
 
 type PlaybackListener = (snapshot: PlaybackSnapshot) => void
 
 export class PlaybackEngine {
-  private _frame = 0
+  private anchorFrame = 0
+  private anchorTime = 0
   private _playing = false
   private _rate = 1
   private _loop = false
+  private _epoch = 0
+  private _lastNotifiedFrame = 0
+  private _lastTimeupdateAt = -Infinity
 
   private readonly fps: number
   private readonly getTotalFrames: () => number
+  private readonly now: () => number
 
   private rafId: number | null = null
-  private lastTimestamp: number | null = null
-  private frameAcc = 0
-
   private listeners = new Set<PlaybackListener>()
+  private timeupdateListeners = new Set<PlaybackListener>()
+
+  private readonly onVisibility = (): void => {
+    // Why: blur is treated as implicit pause for the editor preview. Re-anchoring
+    // on hidden freezes the integrated position; re-anchoring time on visible restarts
+    // the clock without catch-up. Same UX as the old 0.25s elapsed clamp.
+    if (typeof document === 'undefined' || !this._playing) return
+    const t = this.now()
+    if (document.hidden) {
+      this.anchorFrame = this.integratedFrameAt(t)
+      this.anchorTime = t
+    } else {
+      this.anchorTime = t
+    }
+  }
 
   constructor(config: PlaybackEngineConfig) {
     this.fps = config.fps
     this.getTotalFrames = config.getTotalFrames
+    this.now =
+      config.now ??
+      (() => {
+        // TODO(when audio lands): if an AudioContext is attached and state === 'running',
+        // return ctx.currentTime. Until then, performance.now()/1000 is the single source.
+        return performance.now() / 1000
+      })
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.onVisibility)
+    }
   }
 
   // ── Getters ──────────────────────────────────────────────────────────────
 
+  /** Float frame at time t (defaults to now()). The renderer reads this. */
+  getFrameAt(t: number = this.now()): number {
+    if (!this._playing) return this.anchorFrame
+    if (typeof document !== 'undefined' && document.hidden) return this.anchorFrame
+    return this.integratedFrameAt(t)
+  }
+
+  private integratedFrameAt(t: number): number {
+    return this.anchorFrame + (t - this.anchorTime) * this.fps * this._rate
+  }
+
+  /** Integer frame for the store / UI. */
   get currentFrame(): number {
-    return this._frame
+    return Math.floor(this.getFrameAt())
   }
 
   get currentTime(): number {
-    return this._frame / this.fps
+    return this.currentFrame / this.fps
   }
 
   get isPlaying(): boolean {
@@ -71,33 +115,46 @@ export class PlaybackEngine {
 
   play(): void {
     if (this._playing) return
+    this.anchorTime = this.now()
     this._playing = true
+    this._epoch++
     this.notify()
     this.startRAF()
   }
 
   pause(): void {
     if (!this._playing) return
+    this.anchorFrame = this.getFrameAt()
+    this.anchorTime = this.now()
     this._playing = false
+    this._epoch++
     this.notify()
-    // RAF loop self-terminates on next tick when it sees _playing === false
   }
 
   seek(frame: number): void {
     const next = Math.max(0, Math.floor(frame))
-    if (next === this._frame) return
-    this._frame = next
+    // Note: NO same-frame early return. Always bump the epoch so loop-to-start
+    // and re-seek-to-same-frame retrigger one-shot effects.
+    this.anchorFrame = next
+    this.anchorTime = this.now()
+    this._epoch++
     this.notify()
   }
 
   setPlaybackRate(rate: number): void {
+    if (rate === this._rate) return
+    this.anchorFrame = this.getFrameAt()
+    this.anchorTime = this.now()
     this._rate = rate
+    this._epoch++
     this.notify()
   }
 
   setLoop(loop: boolean): void {
+    if (loop === this._loop) return
     this._loop = loop
-    // No notify — this only affects end-of-timeline branching behavior
+    this._epoch++
+    this.notify()
   }
 
   // ── Subscription ─────────────────────────────────────────────────────────
@@ -107,6 +164,11 @@ export class PlaybackEngine {
     return () => this.listeners.delete(listener)
   }
 
+  subscribeTimeupdate(listener: PlaybackListener): () => void {
+    this.timeupdateListeners.add(listener)
+    return () => this.timeupdateListeners.delete(listener)
+  }
+
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
   destroy(): void {
@@ -114,71 +176,86 @@ export class PlaybackEngine {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
     }
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.onVisibility)
+    }
     this.listeners.clear()
+    this.timeupdateListeners.clear()
   }
 
   // ── Private ──────────────────────────────────────────────────────────────
 
   private startRAF(): void {
-    if (this.rafId !== null) return // already running
-    this.lastTimestamp = null
-    this.frameAcc = 0
+    if (this.rafId !== null) return
 
-    const tick = (timestamp: number) => {
+    const tick = () => {
       if (!this._playing) {
         this.rafId = null
-        this.lastTimestamp = null
-        this.frameAcc = 0
         return
       }
 
       this.rafId = requestAnimationFrame(tick)
 
-      if (this.lastTimestamp === null) {
-        this.lastTimestamp = timestamp
+      const f = this.getFrameAt()
+      const intF = Math.floor(f)
+
+      const totalF = Math.max(this.getTotalFrames(), this.fps * 10)
+      if (intF >= totalF) {
+        if (this._loop) {
+          this.anchorFrame = 0
+          this.anchorTime = this.now()
+          this._lastNotifiedFrame = 0
+          this._epoch++
+          this.notify()
+        } else {
+          this.anchorFrame = totalF - 1
+          this.anchorTime = this.now()
+          this._playing = false
+          this.rafId = null
+          this._lastNotifiedFrame = totalF - 1
+          this._epoch++
+          this.notify()
+        }
         return
       }
 
-      // Clamp elapsed — prevents a backgrounded tab from fast-forwarding
-      // thousands of frames on resume.
-      const elapsed = Math.min((timestamp - this.lastTimestamp) / 1000, 0.25)
-      this.lastTimestamp = timestamp
-
-      this.frameAcc += elapsed * this.fps * this._rate
-      const whole = Math.floor(this.frameAcc)
-      this.frameAcc -= whole
-      if (whole === 0) return
-
-      const totalF = Math.max(this.getTotalFrames(), this.fps * 10)
-      const next = this._frame + whole
-
-      if (next >= totalF) {
-        if (this._loop) {
-          this._frame = next % totalF
-        } else {
-          this._frame = totalF - 1
-          this._playing = false
-          this.rafId = null
-          this.lastTimestamp = null
-          this.frameAcc = 0
-        }
-      } else {
-        this._frame = next
+      // Notify only when the integer frame advanced — avoids notify storms on
+      // displays running faster than fps (60 Hz display × 30 fps timeline).
+      if (intF !== this._lastNotifiedFrame) {
+        this._lastNotifiedFrame = intF
+        this.notify()
       }
-
-      this.notify()
     }
 
+    this._lastNotifiedFrame = Math.floor(this.getFrameAt())
     this.rafId = requestAnimationFrame(tick)
   }
 
   private notify(): void {
     const snapshot: PlaybackSnapshot = {
-      currentFrame: this._frame,
+      currentFrame: this.currentFrame,
       isPlaying: this._playing,
       playbackRate: this._rate,
       loop: this._loop,
+      epoch: this._epoch,
     }
-    this.listeners.forEach((fn) => fn(snapshot))
+
+    this.emit(this.listeners, snapshot)
+
+    const t = this.now()
+    if (t - this._lastTimeupdateAt >= 0.1) {
+      this._lastTimeupdateAt = t
+      this.emit(this.timeupdateListeners, snapshot)
+    }
+  }
+
+  private emit(set: Set<PlaybackListener>, snapshot: PlaybackSnapshot): void {
+    set.forEach((fn) => {
+      try {
+        fn(snapshot)
+      } catch {
+        // One broken listener must not stall the clock.
+      }
+    })
   }
 }

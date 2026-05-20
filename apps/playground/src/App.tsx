@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import MediaLimitsLab from './MediaLimitsLab'
 import {
   AssetPanel,
   EditorProvider,
@@ -11,6 +12,7 @@ import {
 } from '@elah/editor'
 
 const FPS = 30
+const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
 
 export default function App() {
   const timelineRef = useRef<TimelineRef>(null)
@@ -145,7 +147,9 @@ export default function App() {
   })
 
   return (
-    <EditorProvider fps={FPS}>
+    <>
+      {SHOW_LAB && <MediaLimitsLab />}
+      <EditorProvider fps={FPS}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         {/* Toolbar */}
         <div
@@ -242,5 +246,6 @@ export default function App() {
         </div>
       </div>
     </EditorProvider>
+    </>
   )
 }
