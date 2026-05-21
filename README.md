@@ -1,4 +1,4 @@
-# Reelforge
+# Elah
 
 > **A browser-native, frame-accurate video editor for any aspect ratio (9:16 reels, 16:9 YouTube, 1:1, and beyond) — engine-first, renderer-agnostic, scalable from MVP to production.**
 
@@ -8,7 +8,7 @@
 
 ## What this is
 
-Reelforge is an open architecture for building a **browser-native video editor** on top of React. It is aspect-ratio agnostic by design — the same engine drives **9:16 vertical content** (Reels / Shorts / TikTok), **16:9 landscape content** (YouTube, long-form), **1:1 square**, or any custom stage size. It is **not** a UI framework or a clone of a specific product; it is the **engine, resolver, and timeline SDK** that any modern web-based video editor should sit on.
+Elah is an open architecture for building a **browser-native video editor** on top of React. It is aspect-ratio agnostic by design — the same engine drives **9:16 vertical content** (Reels / Shorts / TikTok), **16:9 landscape content** (YouTube, long-form), **1:1 square**, or any custom stage size. It is **not** a UI framework or a clone of a specific product; it is the **engine, resolver, and timeline SDK** that any modern web-based video editor should sit on.
 
 Three goals shape every decision:
 
