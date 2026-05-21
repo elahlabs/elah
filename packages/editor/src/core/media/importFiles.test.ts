@@ -101,8 +101,13 @@ function createStubCanvas(): StubCanvasElement {
   }
 }
 
-function makeFile(name: string, type: string, size = 1024): File {
-  return new File(['x'.repeat(size)], name, { type })
+function makeFile(
+  name: string,
+  type: string,
+  size = 1024,
+  lastModified = 1_700_000_000_000,
+): File {
+  return new File(['x'.repeat(size)], name, { type, lastModified })
 }
 
 describe('importFiles', () => {
@@ -178,37 +183,46 @@ describe('importFiles', () => {
     expect(imageEl).toBeDefined()
     imageEl.onload?.()
 
-    const assets = await importPromise
+    const result = await importPromise
 
-    expect(assets).toHaveLength(2)
-    expect(assets[0]).toMatchObject({
+    expect(result.imported).toHaveLength(2)
+    expect(result.skipped).toEqual([])
+    expect(result.imported[0]).toMatchObject({
       kind: 'video',
       name: 'clip.mp4',
       durationSec: 12.5,
       width: 1920,
       height: 1080,
       src: 'blob:mock-1',
+      lastModified: 1_700_000_000_000,
     })
-    expect(assets[1]).toMatchObject({
+    expect(result.imported[1]).toMatchObject({
       kind: 'image',
       name: 'photo.png',
       durationSec: 0,
       width: 800,
       height: 600,
       src: 'blob:mock-2',
+      lastModified: 1_700_000_000_000,
     })
 
     const store = useMediaLibraryStore.getState()
     expect(Object.keys(store.assets)).toHaveLength(2)
-    expect(store.order).toEqual([assets[0].id, assets[1].id])
+    expect(store.order).toEqual([result.imported[0].id, result.imported[1].id])
   })
 
   it('skips unsupported mime types with a warning', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    const assets = await importFiles([makeFile('notes.txt', 'text/plain')])
+    const result = await importFiles([makeFile('notes.txt', 'text/plain')])
 
-    expect(assets).toEqual([])
+    expect(result.imported).toEqual([])
+    expect(result.skipped).toEqual([
+      expect.objectContaining({
+        reason: 'unsupported',
+        file: expect.objectContaining({ name: 'notes.txt' }),
+      }),
+    ])
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Skipping unsupported file type'),
     )
@@ -222,15 +236,15 @@ describe('importFiles', () => {
     const audioEl = createdMedia.find((el) => el.tagName === 'AUDIO')
     audioEl!._emit('loadedmetadata')
 
-    const assets = await importPromise
+    const result = await importPromise
 
-    expect(assets).toHaveLength(1)
-    expect(assets[0]).toMatchObject({
+    expect(result.imported).toHaveLength(1)
+    expect(result.imported[0]).toMatchObject({
       kind: 'audio',
       name: 'voice.mp3',
       durationSec: 12.5,
     })
-    expect(assets[0].thumbnailUrl).toBeUndefined()
+    expect(result.imported[0].thumbnailUrl).toBeUndefined()
   })
 
   it('updates thumbnailUrl asynchronously for video imports', async () => {
@@ -239,8 +253,8 @@ describe('importFiles', () => {
     await Promise.resolve()
     createdMedia[0]._emit('loadedmetadata')
 
-    const assets = await importPromise
-    expect(assets[0].thumbnailUrl).toBeUndefined()
+    const result = await importPromise
+    expect(result.imported[0].thumbnailUrl).toBeUndefined()
     expect(createdMedia).toHaveLength(2)
 
     const thumbVideo = createdMedia[1]
@@ -249,7 +263,7 @@ describe('importFiles', () => {
     thumbVideo._emit('seeked')
 
     await vi.waitFor(() => {
-      const updated = useMediaLibraryStore.getState().getAsset(assets[0].id)
+      const updated = useMediaLibraryStore.getState().getAsset(result.imported[0].id)
       expect(updated?.thumbnailUrl).toBe('data:image/jpeg;base64,thumb')
     })
   })
@@ -270,10 +284,53 @@ describe('importFiles', () => {
       img.onload?.()
     }
 
-    const assets = await importPromise
+    const result = await importPromise
 
-    expect(assets).toHaveLength(3)
-    expect(assets.map((asset) => asset.kind)).toEqual(['video', 'audio', 'image'])
+    expect(result.imported).toHaveLength(3)
+    expect(result.skipped).toEqual([])
+    expect(result.imported.map((asset) => asset.kind)).toEqual(['video', 'audio', 'image'])
+  })
+
+  it('skips duplicate files within the same import batch', async () => {
+    const file = makeFile('clip.mp4', 'video/mp4')
+    const importPromise = importFiles([file, file])
+
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const result = await importPromise
+
+    expect(result.imported).toHaveLength(1)
+    expect(result.skipped).toHaveLength(1)
+    expect(result.skipped[0]).toMatchObject({
+      reason: 'duplicate',
+      file,
+    })
+    expect(result.skipped[0].existingAssetId).toBeUndefined()
+    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(1)
+  })
+
+  it('skips files that match an asset already in the store', async () => {
+    const file = makeFile('clip.mp4', 'video/mp4', 1024, 1_700_000_000_001)
+    const importPromise = importFiles([file])
+
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const first = await importPromise
+    expect(first.imported).toHaveLength(1)
+
+    const duplicatePromise = importFiles([makeFile('clip.mp4', 'video/mp4', 1024, 1_700_000_000_001)])
+
+    const duplicate = await duplicatePromise
+
+    expect(duplicate.imported).toEqual([])
+    expect(duplicate.skipped).toHaveLength(1)
+    expect(duplicate.skipped[0]).toMatchObject({
+      reason: 'duplicate',
+      existingAssetId: first.imported[0].id,
+    })
+    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(1)
   })
 })
 

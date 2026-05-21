@@ -9,6 +9,17 @@ export interface ImportFilesOptions {
   thumbnailMaxDim?: number
 }
 
+export interface SkippedImport {
+  file: File
+  reason: 'duplicate' | 'unsupported'
+  existingAssetId?: string
+}
+
+export interface ImportFilesResult {
+  imported: MediaAsset[]
+  skipped: SkippedImport[]
+}
+
 interface ProbedMetadata {
   durationSec: number
   width?: number
@@ -16,6 +27,10 @@ interface ProbedMetadata {
 }
 
 const DEFAULT_THUMBNAIL_MAX_DIM = 240
+
+function dedupeKey(file: { name: string; size: number; lastModified: number }): string {
+  return `${file.name}|${file.size}|${file.lastModified}`
+}
 
 function inferKind(mimeType: string): MediaKind | null {
   if (mimeType.startsWith('video/')) return 'video'
@@ -242,14 +257,9 @@ function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
 
 async function importSingleFile(
   file: File,
+  kind: MediaKind,
   thumbnailMaxDim: number,
-): Promise<MediaAsset | null> {
-  const kind = inferKind(file.type)
-  if (!kind) {
-    console.warn(`[importFiles] Skipping unsupported file type "${file.type}" (${file.name})`)
-    return null
-  }
-
+): Promise<MediaAsset> {
   const src = URL.createObjectURL(file)
   const metadata = await probeMetadata(kind, src)
 
@@ -262,6 +272,7 @@ async function importSingleFile(
     width: metadata.width,
     height: metadata.height,
     byteSize: file.size,
+    lastModified: file.lastModified,
     addedAt: Date.now(),
   }
 
@@ -269,6 +280,51 @@ async function importSingleFile(
   scheduleThumbnail(asset, thumbnailMaxDim)
 
   return asset
+}
+
+function partitionFiles(
+  files: File[],
+): { toImport: Array<{ file: File; kind: MediaKind }>; skipped: SkippedImport[] } {
+  const storeAssets = useMediaLibraryStore.getState().assets
+  const existingByKey = new Map<string, string>()
+  for (const asset of Object.values(storeAssets)) {
+    existingByKey.set(
+      dedupeKey({ name: asset.name, size: asset.byteSize, lastModified: asset.lastModified }),
+      asset.id,
+    )
+  }
+
+  const batchKeys = new Set<string>()
+  const toImport: Array<{ file: File; kind: MediaKind }> = []
+  const skipped: SkippedImport[] = []
+
+  for (const file of files) {
+    const kind = inferKind(file.type)
+    if (!kind) {
+      console.warn(`[importFiles] Skipping unsupported file type "${file.type}" (${file.name})`)
+      skipped.push({ file, reason: 'unsupported' })
+      continue
+    }
+
+    const key = dedupeKey(file)
+    const existingAssetId = existingByKey.get(key)
+    if (existingAssetId) {
+      console.info(`[importFiles] Skipping duplicate "${file.name}" (already in library)`)
+      skipped.push({ file, reason: 'duplicate', existingAssetId })
+      continue
+    }
+
+    if (batchKeys.has(key)) {
+      console.info(`[importFiles] Skipping duplicate "${file.name}" (duplicate in batch)`)
+      skipped.push({ file, reason: 'duplicate' })
+      continue
+    }
+
+    batchKeys.add(key)
+    toImport.push({ file, kind })
+  }
+
+  return { toImport, skipped }
 }
 
 /**
@@ -281,12 +337,13 @@ async function importSingleFile(
 export async function importFiles(
   files: File[],
   opts?: ImportFilesOptions,
-): Promise<MediaAsset[]> {
+): Promise<ImportFilesResult> {
   const thumbnailMaxDim = opts?.thumbnailMaxDim ?? DEFAULT_THUMBNAIL_MAX_DIM
+  const { toImport, skipped } = partitionFiles(files)
 
-  const results = await Promise.all(
-    files.map((file) => importSingleFile(file, thumbnailMaxDim)),
+  const imported = await Promise.all(
+    toImport.map(({ file, kind }) => importSingleFile(file, kind, thumbnailMaxDim)),
   )
 
-  return results.filter((asset): asset is MediaAsset => asset !== null)
+  return { imported, skipped }
 }

@@ -5,7 +5,7 @@ export type { MediaAsset, MediaKind, DragMediaPayload } from './types'
 export { MEDIA_DRAG_MIME } from './types'
 export { useMediaLibraryStore } from './store'
 export { importFiles } from './importFiles'
-export type { ImportFilesOptions } from './importFiles'
+export type { ImportFilesOptions, ImportFilesResult, SkippedImport } from './importFiles'
 
 /**
  * Public hook for reading the media library.

@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -11,6 +12,7 @@ import {
   MEDIA_DRAG_MIME,
   useMediaLibrary,
 } from '../../core/media'
+import type { SkippedImport } from '../../core/media'
 import type { DragMediaPayload, MediaAsset, MediaKind } from '../../core/media/types'
 
 export interface AssetPanelProps {
@@ -31,6 +33,46 @@ function formatDuration(sec: number): string {
   return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}s`
 }
 
+const THUMB_SIZE = 52
+const TOAST_DISMISS_MS = 3000
+
+interface ImportToast {
+  message: string
+  tone: 'info' | 'warn'
+}
+
+function formatFileNames(files: File[], maxNames = 3): string {
+  const names = files.map((file) => file.name)
+  if (names.length <= maxNames) return names.join(', ')
+  const shown = names.slice(0, maxNames).join(', ')
+  return `${shown} +${names.length - maxNames} more`
+}
+
+function buildImportToast(skipped: SkippedImport[]): ImportToast | null {
+  if (skipped.length === 0) return null
+
+  const duplicates = skipped.filter((entry) => entry.reason === 'duplicate')
+  const unsupported = skipped.filter((entry) => entry.reason === 'unsupported')
+  const lines: string[] = []
+
+  if (duplicates.length > 0) {
+    lines.push(
+      `Skipped ${duplicates.length} duplicate file${duplicates.length === 1 ? '' : 's'}: ${formatFileNames(duplicates.map((entry) => entry.file))}`,
+    )
+  }
+
+  if (unsupported.length > 0) {
+    lines.push(
+      `Skipped ${unsupported.length} unsupported file${unsupported.length === 1 ? '' : 's'}: ${formatFileNames(unsupported.map((entry) => entry.file))}`,
+    )
+  }
+
+  return {
+    message: lines.join('\n'),
+    tone: unsupported.length > 0 ? 'warn' : 'info',
+  }
+}
+
 function AssetThumbnail({ asset }: { asset: MediaAsset }) {
   const onDragStart = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -48,18 +90,24 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
       title={asset.name}
       style={{
         display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
+        alignItems: 'center',
+        gap: 8,
+        padding: '5px 8px',
+        borderRadius: 5,
         cursor: 'grab',
         userSelect: 'none',
+        background: '#1a1a1a',
+        border: '1px solid #2a2a2a',
       }}
     >
       <div
         style={{
           position: 'relative',
-          aspectRatio: '16 / 9',
-          background: '#1e1e1e',
-          borderRadius: 6,
+          width: THUMB_SIZE,
+          height: THUMB_SIZE,
+          flexShrink: 0,
+          background: '#111',
+          borderRadius: 4,
           border: '1px solid #333',
           overflow: 'hidden',
         }}
@@ -84,41 +132,45 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 28,
+              fontSize: 20,
               color: '#555',
             }}
           >
             {KIND_ICONS[asset.kind]}
           </div>
         )}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          minWidth: 0,
+        }}
+      >
         <span
           style={{
-            position: 'absolute',
-            bottom: 4,
-            right: 4,
+            fontSize: 10,
+            color: '#ccc',
+            fontFamily: 'monospace',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {asset.name}
+        </span>
+        <span
+          style={{
             fontSize: 9,
             fontFamily: 'monospace',
-            color: '#ccc',
-            background: 'rgba(0,0,0,0.65)',
-            padding: '1px 4px',
-            borderRadius: 3,
+            color: '#666',
           }}
         >
           {formatDuration(asset.durationSec)}
         </span>
       </div>
-      <span
-        style={{
-          fontSize: 10,
-          color: '#aaa',
-          fontFamily: 'monospace',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {asset.name}
-      </span>
     </div>
   )
 }
@@ -134,13 +186,21 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [toast, setToast] = useState<ImportToast | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = globalThis.setTimeout(() => setToast(null), TOAST_DISMISS_MS)
+    return () => globalThis.clearTimeout(timer)
+  }, [toast])
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const list = Array.from(files)
     if (list.length === 0) return
     setImporting(true)
     try {
-      await importFiles(list)
+      const { skipped } = await importFiles(list)
+      setToast(buildImportToast(skipped))
     } finally {
       setImporting(false)
     }
@@ -251,8 +311,33 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
           outline: isDragOver ? '2px dashed #4a7fd4' : 'none',
           outlineOffset: -4,
           borderRadius: 4,
+          position: 'relative',
         }}
       >
+        {toast && (
+          <div
+            role="status"
+            style={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              right: 8,
+              zIndex: 2,
+              padding: '8px 10px',
+              borderRadius: 6,
+              fontSize: 10,
+              fontFamily: 'monospace',
+              lineHeight: 1.4,
+              whiteSpace: 'pre-line',
+              color: toast.tone === 'warn' ? '#f5d0a9' : '#c8d8f0',
+              background: toast.tone === 'warn' ? '#3a2418' : '#1a2433',
+              border: `1px solid ${toast.tone === 'warn' ? '#7a4a2a' : '#355070'}`,
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+            }}
+          >
+            {toast.message}
+          </div>
+        )}
         {assets.length === 0 ? (
           <div
             style={{
@@ -278,9 +363,9 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
         ) : (
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
             }}
           >
             {assets.map((asset) => (

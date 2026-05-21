@@ -24,6 +24,8 @@ export interface MediaAsset {
   /** Pre-decoded waveform peaks for audio. Placeholder until PR-07+. */
   waveform?: Float32Array
   byteSize: number
+  /** File last-modified timestamp from the source `File`. Used for dedupe. */
+  lastModified: number
   /** Epoch ms. Used for display order and tie-breaking. */
   addedAt: number
 }

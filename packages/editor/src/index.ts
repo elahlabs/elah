@@ -74,7 +74,7 @@ export type { Renderer } from './core/renderer/types'
 
 // --- Core: media ---
 export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/media'
-export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions } from './core/media'
+export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/media'
 
 // --- Core: stores (low-level; prefer the hooks below) ---
 export { useTracksStore } from './core/stores/tracks.store'
