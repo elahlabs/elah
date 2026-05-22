@@ -414,7 +414,7 @@ describe('thumbnail helpers', () => {
       HAVE_CURRENT_DATA: 2,
     })
 
-    const thumbPromise = makeVideoThumbnail('blob:test-video', 10, 240)
+    const thumbPromise = makeVideoThumbnail('blob:test-video', 240)
     el._emit('loadedmetadata')
     await Promise.resolve()
     el._emit('seeked')

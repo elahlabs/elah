@@ -163,12 +163,10 @@ function drawToThumbnail(
 
 export async function makeVideoThumbnail(
   src: string,
-  durationSec: number,
   maxDim: number,
 ): Promise<string> {
   const el = await loadMediaElement<HTMLVideoElement>('video', src, (video) => {
-    const seekTime = Math.min(1, durationSec > 0 ? durationSec / 2 : 0)
-    video.currentTime = seekTime
+    video.currentTime = 0
   })
 
   return new Promise((resolve, reject) => {
@@ -180,9 +178,7 @@ export async function makeVideoThumbnail(
     const onSeeked = () => {
       cleanup()
       try {
-        resolve(
-          drawToThumbnail(el, el.videoWidth, el.videoHeight, maxDim),
-        )
+        resolve(drawToThumbnail(el, el.videoWidth, el.videoHeight, maxDim))
       } catch (err) {
         reject(err)
       }
@@ -236,7 +232,7 @@ async function generateThumbnail(
 ): Promise<string | undefined> {
   switch (asset.kind) {
     case 'video':
-      return makeVideoThumbnail(asset.src, asset.durationSec, maxDim)
+      return makeVideoThumbnail(asset.src, maxDim)
     case 'image':
       return makeImageThumbnail(asset.src, maxDim)
     case 'audio':
@@ -301,7 +297,7 @@ function partitionFiles(
   for (const file of files) {
     const kind = inferKind(file.type)
     if (!kind) {
-      console.warn(`[importFiles] Skipping unsupported file type "${file.type}" (${file.name})`)
+      console.warn(`[importFiles] Skipping unsupported file type: "${file.type}" (${file.name})`)
       skipped.push({ file, reason: 'unsupported' })
       continue
     }
@@ -309,13 +305,11 @@ function partitionFiles(
     const key = dedupeKey(file)
     const existingAssetId = existingByKey.get(key)
     if (existingAssetId) {
-      console.info(`[importFiles] Skipping duplicate "${file.name}" (already in library)`)
       skipped.push({ file, reason: 'duplicate', existingAssetId })
       continue
     }
 
     if (batchKeys.has(key)) {
-      console.info(`[importFiles] Skipping duplicate "${file.name}" (duplicate in batch)`)
       skipped.push({ file, reason: 'duplicate' })
       continue
     }
@@ -340,7 +334,6 @@ export async function importFiles(
 ): Promise<ImportFilesResult> {
   const thumbnailMaxDim = opts?.thumbnailMaxDim ?? DEFAULT_THUMBNAIL_MAX_DIM
   const { toImport, skipped } = partitionFiles(files)
-
   const imported = await Promise.all(
     toImport.map(({ file, kind }) => importSingleFile(file, kind, thumbnailMaxDim)),
   )
