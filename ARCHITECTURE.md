@@ -58,10 +58,10 @@ State is organized in three concentric rings. The rule is **outer rings read inn
                 │   (immutable, owned by classes)      │
                 │                                      │
                 │   • TimelineEngine.project           │
-                │   • PlaybackEngine.clock             │
-                │   • MediaLibrary.assets   (planned)  │
+                │   • PlaybackEngine clock             │
+                │   • MediaLibrary (in-memory assets)  │
                 └──────────────┬───────────────────────┘
-                               │ events: 'change', 'tick', 'history:change'
+                               │ events: 'change', 'history:change'; playback subscribe
                                ▼
                 ┌──────────────────────────────────────┐
                 │   Ring 1 — Reactive mirror           │
@@ -69,7 +69,7 @@ State is organized in three concentric rings. The rule is **outer rings read inn
                 │                                      │
                 │   • useTracksStore                   │
                 │   • usePlaybackStore                 │
-                │   • useMediaLibraryStore  (planned)  │
+                │   • useMediaLibraryStore             │
                 └──────────────┬───────────────────────┘
                                │ selectors / subscribe
                                ▼
@@ -94,6 +94,48 @@ State is organized in three concentric rings. The rule is **outer rings read inn
 - Ring 0 reading from Ring 1 or Ring 2.
 - Engine state living in `useState` / `useRef` instead of Ring 0.
 
+### TimelineEngine state flow
+
+Every project mutation funnels through `TimelineEngine.commit()`. The engine emits events; `EditorProvider` mirrors the result into `useTracksStore`. Components never write `Project` directly.
+
+```mermaid
+flowchart TB
+  subgraph ui ["UI / actions"]
+    ACT["addClip · moveClip · trimClip · split · undo · redo"]
+    DROP["useTimelineDrop → engine.addClip"]
+  end
+
+  subgraph ring0 ["Ring 0 — TimelineEngine"]
+    VIS["visitor (Immer draft)"]
+    COMMIT["commit() — produce + history"]
+    PROJ["project (immutable ref)"]
+    ACT --> VIS
+    DROP --> VIS
+    VIS --> COMMIT
+    COMMIT --> PROJ
+    COMMIT -->|"emit('change', project)"| EVT
+    COMMIT -->|"emit('history:change')"| EVT
+  end
+
+  subgraph bridge ["EditorProvider"]
+    EVT["on('change' | 'history:change')"]
+    SYNC["useTracksStore.sync(project, meta)"]
+    EVT --> SYNC
+  end
+
+  subgraph ring1 ["Ring 1 — useTracksStore"]
+    TS["tracks · clips · totalFrames · canUndo · canRedo"]
+    SYNC --> TS
+  end
+
+  subgraph consumers ["React consumers"]
+    TL["Timeline · ClipBlock · TrackRow"]
+    URS["useResolvedScene → resolveTimeline(frame, project)"]
+    TS --> TL
+    PROJ --> URS
+  end
+```
+
 ---
 
 ## 3. Time, frames, and the playback clock
@@ -104,14 +146,15 @@ Storing time as floating-point seconds creates cumulative error: after enough sp
 
 ### The `PlaybackEngine` contract
 
-`PlaybackEngine` owns the RAF loop and emits snapshots:
+`PlaybackEngine` is an **anchor-and-integrate clock**. It owns the RAF loop and emits snapshots:
 
 ```ts
 interface PlaybackSnapshot {
-  currentFrame: number
+  currentFrame: number   // Math.floor(getFrameAt())
   isPlaying: boolean
   playbackRate: number
   loop: boolean
+  epoch: number          // bumped on every transport mutation
 }
 
 class PlaybackEngine {
@@ -121,22 +164,26 @@ class PlaybackEngine {
   setPlaybackRate(rate: number): void
   setLoop(loop: boolean): void
   subscribe(fn: (s: PlaybackSnapshot) => void): () => void
+  subscribeTimeupdate(fn: (s: PlaybackSnapshot) => void): () => void  // ~10 Hz
   destroy(): void
   // getters: currentFrame, currentTime, isPlaying, playbackRate, loop
+  getFrameAt(t?: number): number   // float frame; renderer reads this
 }
 ```
 
 Internals worth knowing:
 
-- **Sub-frame accumulator.** RAF elapsed time × fps may not be a whole number. We accumulate fractional frames so timing doesn't drift.
-- **Elapsed clamp (250ms).** If the tab is backgrounded for 30 seconds, we don't fast-forward 900 frames on resume.
-- **No notify-on-no-op.** `seek()` returns early when frame is unchanged; subscriber storms are explicitly avoided.
+- **Anchor-and-integrate.** Two scalars — `anchorFrame` and `anchorTime` — define position. While playing, `getFrameAt(t) = anchorFrame + (t - anchorTime) × fps × rate`. Pause/play/rate-change re-anchor at the current integrated position so there is no drift.
+- **Integer vs float frames.** The store and UI use `Math.floor(getFrameAt())`. The renderer (when it lands) should call `getFrameAt()` directly for sub-frame-accurate seeking.
+- **Tab visibility.** When `document.hidden`, the integrated position freezes (re-anchor on hide). On visible again, time re-anchors without catch-up. Same UX goal as the old elapsed clamp, but tied to visibility rather than a fixed ms threshold.
+- **Notify-on-integer-advance.** During RAF, subscribers fire only when the integer frame changes — avoids storms on 60 Hz displays running a 30 fps timeline.
+- **Epoch always bumps on seek.** `seek()` does *not* early-return on same frame. Repeat seeks to the same frame must retrigger one-shot effects (loop-to-start, scrub-while-paused). The store mirrors this with `currentFrameEpoch`.
 
 ### The clock ↔ Zustand bridge
 
-`Timeline.tsx` wires two effects:
+`EditorProvider` wires two effects (not `<Timeline>` — the timeline is a pure UI consumer):
 
-1. **Engine → Store:** every snapshot updates `usePlaybackStore` (only when the frame actually changed, to avoid an epoch storm).
+1. **Engine → Store:** every snapshot updates `usePlaybackStore` (frame only when it actually changed; play/pause state synced).
 2. **Store → Engine:** every store change (toolbar play, ruler scrub, persisted state) is dispatched into the engine.
 
 This dual-sync is the trickiest piece of plumbing in the codebase. The reason it doesn't loop infinitely:
@@ -144,7 +191,58 @@ This dual-sync is the trickiest piece of plumbing in the codebase. The reason it
 - Engine pushes frame `X` → `store.currentFrame = X`.
 - Store listener checks `state.currentFrame !== playback.currentFrame` → equal → no echo seek.
 
-Persistence (`zustand/persist`) restores `loop` and `playbackRate` on mount, and the store→engine effect pushes those into the engine **before** subscribing (otherwise the engine would silently start with defaults). See `Timeline.tsx` for the implementation.
+The store uses `currentFrameEpoch` (monotonic counter) so subscribers detect repeat seeks to the same frame — e.g. scrubbing back to frame 0 while paused. Persistence (`zustand/persist`) restores `loop`, `playbackRate`, and `zoom` on mount; the store→engine effect pushes those into the engine **before** subscribing (otherwise the engine would silently start with defaults). See `packages/editor/src/editor/EditorProvider.tsx`.
+
+### PlaybackEngine state flow
+
+`PlaybackEngine` owns the clock (Ring 0). `usePlaybackStore` is the React mirror (Ring 1). `EditorProvider` wires both directions; the echo guard prevents an infinite seek loop.
+
+```mermaid
+flowchart TB
+  subgraph ui ["UI / transport"]
+    RULER["Ruler.onSeek"]
+    TOOLBAR["Play · Pause · loop · rate"]
+  end
+
+  subgraph ring1 ["Ring 1 — usePlaybackStore"]
+    SF["setCurrentFrame() — bumps currentFrameEpoch"]
+    TP["togglePlayPause() · setLoop() · setPlaybackRate()"]
+    PS["currentFrame · epoch · isPlaying · loop · rate"]
+    RULER --> SF
+    TOOLBAR --> TP
+    SF --> PS
+    TP --> PS
+  end
+
+  subgraph bridge ["EditorProvider bridge"]
+    S2E["store → engine subscribe"]
+    E2S["engine → store subscribe"]
+    GUARD{"epoch changed AND\nframe ≠ engine.currentFrame?"}
+    PS --> S2E
+    S2E --> GUARD
+  end
+
+  subgraph ring0 ["Ring 0 — PlaybackEngine"]
+    SEEK["seek(frame) — always bumps epoch"]
+    PLAY["play() · pause() · setLoop() · setRate()"]
+    CLOCK["anchorFrame + anchorTime"]
+    RAF["RAF sampler: getFrameAt()"]
+    GUARD -->|"yes"| SEEK
+    GUARD -->|"no — skip echo seek"| PLAY
+    S2E --> PLAY
+    SEEK --> CLOCK
+    PLAY --> CLOCK
+    CLOCK --> RAF
+    RAF -->|"notify on integer frame advance"| E2S
+    SEEK --> E2S
+    PLAY --> E2S
+  end
+
+  E2S -->|"setCurrentFrame if frame changed"| PS
+  E2S -->|"sync isPlaying"| PS
+```
+
+While playing, the RAF loop samples `getFrameAt()` — it does not integrate frames internally. Subscribers fire only when the integer frame advances, so a 60 Hz display running a 30 fps timeline does not cause a notify storm.
 
 ### Why not anchor to `AudioContext.currentTime`?
 
@@ -158,7 +256,7 @@ Eventually we should. `AudioContext.currentTime` is the hardware audio clock; an
 interface Project {
   id: string
   fps: number                                       // integer (24, 30, 60)
-  stage: { width: number; height: number }          // planned (PR-03), default 1080×1920
+  stage: { width: number; height: number }          // default 1080×1920 (portrait)
   tracks: Track[]
   clips: Record<string /* trackId */, Clip[]>       // sorted by startFrame, no overlap
   version: number
@@ -191,20 +289,31 @@ interface Clip {
   sourceDurationFrames: number
 
   // Media reference
-  src?: string                                      // direct URL (today)
-  assetId?: string                                  // planned (PR-04) — MediaLibrary key
+  src?: string                                      // direct URL (blob URL or remote)
+  assetId?: string                                  // MediaLibrary key (preferred when set)
   content?: string                                  // text clips only
 
   // Compositing
   volume?: number                                   // 0..1
   opacity?: number                                  // 0..1
-  transform?: Transform                             // planned (PR-03), normalized 0..1
+  transform?: Transform                             // normalized 0..1, resolution-independent
 
   // Flags
   locked?: boolean
   disabled?: boolean
 }
+
+interface MediaAsset {
+  id: string
+  kind: 'video' | 'audio' | 'image'
+  name: string
+  src: string              // blob URL after import
+  durationSec: number
+  width?, height?, sourceFps?, thumbnailUrl?, byteSize, addedAt
+}
 ```
+
+`MediaAsset` lives in the in-memory `MediaLibrary` (`useMediaLibraryStore`). Clips reference assets via `assetId`; `src` is duplicated on the clip today so the resolver and future renderer can work without a library lookup. Both can coexist during migration to an assetId-only model.
 
 ### Invariants
 
@@ -212,7 +321,7 @@ interface Clip {
 - `startFrame >= 0`, `durationFrames >= 1`.
 - For media clips: `durationFrames <= sourceDurationFrames` (text clips are exempt).
 - `sourceStartFrame + durationFrames <= sourceDurationFrames`.
-- These invariants are enforced inside `TimelineEngine` mutation methods. `moveClip` and `trimClip` are getting tightened in PR-01.
+- These invariants are enforced inside `TimelineEngine` mutation methods, including `moveClip` and `trimClip`.
 
 ### Why two coordinate systems
 
@@ -225,7 +334,7 @@ This separation is what makes trims, splits, and slips possible without re-encod
 
 ## 5. The timeline resolver
 
-`resolveTimeline(frame, project) → Scene` is the most important function in the codebase.
+`resolveTimeline(frame, project) → Scene` is the most important function in the codebase. It has a full test suite in `resolveTimeline.test.ts`.
 
 ### Contract
 
@@ -248,7 +357,7 @@ interface ActiveClipBase {
   sourceFrame: number              // exact frame inside source to display
   opacity: number
   zIndex: number                   // higher = closer to viewer
-  // transform?: Transform         // planned (PR-03)
+  transform?: Transform            // passed through from Clip.transform
 }
 ```
 
@@ -260,6 +369,7 @@ interface ActiveClipBase {
    - `track.disabled === true` → skip entire track.
    - `clip.disabled === true` → skip clip.
    - `track.muted === true` and type ∈ {video, audio} → emit clip with `volume = 0`.
+   - empty `src` on media clips → skip.
 4. **Solo** — if any track of kind `K` has `solo === true`, only solo tracks of kind `K` contribute. Image clips piggyback on video solo.
 5. **Z-index** — `zIndex = (maxOrder - track.order) * 1000`. So `track.order = 0` (topmost in UI) has the highest zIndex (front-most on screen). Arrays are sorted ascending: lower zIndex first, last element on top.
 
@@ -271,7 +381,7 @@ The `* 1000` multiplier reserves room for sub-layer offsets (e.g. text "above it
 
 - Unit-testable without a DOM.
 - Worker-safe (export can run in a Web Worker).
-- Memoizable (future optimization — `Project` reference equality from Immer makes this nearly free).
+- Memoizable — `useResolvedScene` caches by `(frame, project)` reference equality.
 - Renderer-agnostic.
 
 ### What renderers see
@@ -281,6 +391,8 @@ A `DomRenderer` consumes `Scene.videos`, looks up `<video>` elements by clip id 
 ---
 
 ## 6. The render abstraction
+
+The `Renderer` interface lives in `packages/editor/src/core/renderer/types.ts`:
 
 ```ts
 interface Renderer {
@@ -292,15 +404,26 @@ interface Renderer {
 
 That's it. Three methods. Renderers are interchangeable — at any time, swap a `DomRenderer` for a `GpuRenderer` and nothing else changes.
 
+### Current status
+
+| Piece | Status |
+|---|---|
+| `Renderer` interface | ✅ shipped |
+| `useResolvedScene()` hook | ✅ shipped — memoized `resolveTimeline(frame, project)` |
+| `DomRenderer` implementation | ⚪ PR-10 — not yet built |
+| `<Preview>` component | ⚪ PR-10 — not yet built |
+
+Today the playground renders resolved `Scene` JSON for debugging. Pressing Play moves the playhead and updates the frame counter, but **no pixels are drawn yet**. That is the gap PR-10 closes.
+
 ### MVP renderer: DOM
 
 The first implementation will be a `DomRenderer` that:
 
 - Maintains a pool of `<video>` elements keyed by clip id.
-- Seeks each active video to `sourceFrame / fps`.
+- Seeks each active video to `sourceFrame / fps` (using `PlaybackEngine.getFrameAt()` for sub-frame accuracy).
 - Manages a single `AudioContext` for `<audio>` mixing.
 - Renders text clips as absolutely-positioned `<div>`s with computed transforms.
-- Listens directly to `PlaybackEngine.subscribe` so it never re-renders through React.
+- Subscribes directly to `PlaybackEngine.subscribe` (or receives `Scene` from `<Preview>`) so it never re-renders through React.
 
 ### Future renderers
 
@@ -313,6 +436,85 @@ All four would implement the same `Renderer` interface and consume the same `Sce
 ---
 
 ## 7. Data flow end-to-end
+
+### Runtime overview
+
+How the two engines, stores, resolver, and UI layers connect. Constructed and wired by `EditorProvider`.
+
+```mermaid
+flowchart LR
+  subgraph engines ["Engines (Ring 0)"]
+    TE["TimelineEngine\ncore/editor/"]
+    PE["PlaybackEngine\ncore/playback/"]
+  end
+
+  subgraph stores ["Zustand stores (Ring 1)"]
+    TS["useTracksStore\n.tracks / .clips / .totalFrames"]
+    PS["usePlaybackStore\n.currentFrame / .zoom / .isPlaying"]
+    MS["useMediaLibraryStore\n.assets / .order"]
+    SS["useSelectionStore\n.selectedClipIds (Ring 2)"]
+  end
+
+  subgraph resolver ["Resolver (core/resolver/)"]
+    RT["resolveTimeline(frame, project)"]
+    SC["Scene"]
+  end
+
+  subgraph rendererLayer ["Renderer (core/renderer/)"]
+    RI["Renderer interface"]
+    DR["DomRenderer (PR-10)"]
+  end
+
+  EP["EditorProvider\neditor/"]
+
+  TE --> EP
+  PE --> EP
+  EP -->|"emit change → sync()"| TS
+  EP -->|"subscribe ↔ store"| PS
+  TE -->|"getProject()"| RT
+  PS -->|"currentFrame"| RT
+  RT --> SC
+  SC --> RI
+  RI --> DR
+
+  TS --> TL["Timeline UI\ntimeline/"]
+  PS --> TL
+  SS --> TL
+  MS --> AP["AssetPanel\neditor/"]
+  TS --> URS["useResolvedScene"]
+  PS --> URS
+  RT --> URS
+  URS --> PV["Preview (PR-10)"]
+  PV --> DR
+```
+
+### Media import flow (user uploads a file)
+
+```
+User drops file on AssetPanel ──► importFiles(File[])
+                                        │
+                                  probe metadata (<video>/<audio>/<img>)
+                                        │
+                                  useMediaLibraryStore.addAsset()
+                                        │
+                                  scheduleThumbnail() (async, fire-and-forget)
+                                        │
+                            AssetPanel renders draggable thumbnail
+```
+
+### Drag-to-timeline flow (user places an asset)
+
+```
+Drag thumbnail ──► dataTransfer(MEDIA_DRAG_MIME, { assetId })
+                          │
+              useTimelineDrop on track lane
+                          │
+              resolve assetId → MediaAsset
+                          │
+              engine.addClip({ assetId, src, startFrame, durationFrames, ... })
+                          │
+              commit() → emit('change') → useTracksStore.sync()
+```
 
 ### Mutation flow (user edits a clip)
 
@@ -328,7 +530,7 @@ User clicks "Add Clip" ──► engine.addClip({...})
                                   │
                             emit('change')
                                   │
-                       useTracksStore.sync() — Ring 1 updated
+              EditorProvider listener → useTracksStore.sync()
                                   │
                        React selectors fire → UI re-renders
 ```
@@ -336,20 +538,20 @@ User clicks "Add Clip" ──► engine.addClip({...})
 ### Playback flow (a single RAF tick)
 
 ```
-RAF tick ──► PlaybackEngine.tick(timestamp)
+RAF tick ──► PlaybackEngine.getFrameAt()
                   │
-            advance _frame
+            integer frame advanced?
                   │
             notify(snapshot)
                   │
        ┌──────────┴──────────┐
        ▼                     ▼
- store mirror sync     <Preview> subscriber  (planned)
+ EditorProvider sync    <Preview> subscriber  (planned PR-10)
        │                     │
- React UI re-paints    resolveTimeline(frame, project)
+ React UI re-paints    useResolvedScene() → Scene
  (playhead, scrubber)        │
                              ▼
-                       DomRenderer.render(scene)
+                       DomRenderer.render(scene)  (planned PR-10)
                              │
                        <video>.currentTime = sourceFrame / fps
                        <audio>.gain.value = volume
@@ -360,41 +562,56 @@ RAF tick ──► PlaybackEngine.tick(timestamp)
 
 ```
 Ruler click ──► usePlaybackStore.setCurrentFrame(frame)
+                          │  (bumps currentFrameEpoch)
                           │
-              store → engine effect
+              EditorProvider store → engine effect
                           │
                   playback.seek(frame)
                           │
                   notify(snapshot)
                           │
-              echo guard: store.currentFrame === playback.currentFrame
+              echo guard: state.currentFrame !== playback.currentFrame
                           │
                        no loop
                           │
-                  Preview re-renders at new frame
+                  useResolvedScene re-resolves at new frame
 ```
 
 ---
 
 ## 8. What lives where (package boundaries)
 
-Today everything is in one package: `@myeditor/timeline`. This is **intentional** — premature package splits create import-resolution overhead, build orchestration complexity, and version-skew bugs. The boundaries below are *logical* and will only become *physical* if and when they need to.
+Everything lives in one package: `@elah/editor` (`packages/editor/`). This is **intentional** — premature package splits create import-resolution overhead, build orchestration complexity, and version-skew bugs. The boundaries below are *logical* and organized as three source layers:
 
-| Logical area | Path inside `packages/timeline/src/` | Status |
+```
+packages/editor/src/
+  core/       ← runtime; React-agnostic where possible
+  timeline/   ← timeline UI surface; may import from core/, not editor/
+  editor/     ← composition: EditorProvider, hooks, Preview, AssetPanel
+
+Dependency rule:  core  ←  timeline  ←  editor
+```
+
+| Logical area | Path | Status |
 |---|---|---|
-| Types | `types/` | ✅ |
+| Types | `core/types/` | ✅ |
 | Engine | `core/editor/`, `core/track/`, `core/visitor/`, `core/elements/` | ✅ |
 | Playback | `core/playback/` | ✅ |
-| Resolver | `core/resolver/` | ✅ |
-| State mirrors | `stores/` | ✅ |
-| UI primitives | `ui/` | ✅ |
-| Utilities | `utils/` | ✅ |
-| Actions | `actions/` | ✅ |
-| Media library | `core/media/` | 🟡 PR-04 |
-| Renderer interface | `core/renderer/` | 🟡 PR-06 |
-| Renderer implementation | TBD (`packages/renderer-dom/` later) | ⚪ post-foundation |
+| Resolver + tests | `core/resolver/` | ✅ |
+| State mirrors | `core/stores/` | ✅ |
+| Media library | `core/media/` (`importFiles`, `useMediaLibraryStore`) | ✅ |
+| Renderer interface | `core/renderer/types.ts` | ✅ |
+| Engine context hooks | `core/editor-context.ts` | ✅ |
+| Actions | `core/actions/` | ✅ |
+| Utilities | `core/utils/` | ✅ |
+| Timeline UI | `timeline/` (`Timeline`, `TrackRow`, `ClipBlock`, `useTimelineDrop`) | ✅ |
+| Editor composition | `editor/` (`EditorProvider`, `AssetPanel`, `useResolvedScene`) | ✅ |
+| Renderer implementation | `editor/renderer/DomRenderer.ts` (planned) | ⚪ PR-10 |
+| `<Preview>` component | `editor/Preview/` (planned) | ⚪ PR-10 |
 
-**Rule of thumb:** if a file logically belongs to a layer but doesn't have peers yet, it lives in `packages/timeline/src/core/<layer>/`. When a layer accumulates 3+ files and gains its own dependencies, *then* extract it into its own package.
+**Rule of thumb:** if a file logically belongs to a layer but doesn't have peers yet, it lives in `packages/editor/src/core/<layer>/`. When a layer accumulates 3+ files and gains its own dependencies, *then* extract it into its own package.
+
+For a cold-start implementation reference scoped to `core/`, see [`packages/editor/src/core/Architecture.md`](./packages/editor/src/core/Architecture.md).
 
 ---
 
@@ -418,7 +635,7 @@ Good: `<Preview>` calls `resolveTimeline(frame, project)` and renders the result
 
 Bad: `<Timeline>` has the `useEffect` with `requestAnimationFrame`. Unmount it and playback dies.
 
-Good: `PlaybackEngine` lives at app level (or in an `EditorProvider`, planned in PR-05). Any number of consumers subscribe.
+Good: `PlaybackEngine` lives in `EditorProvider`. Any number of consumers subscribe. `<Timeline>` is a UI surface only.
 
 ### A4. The "pure" function with side effects.
 
@@ -467,5 +684,6 @@ Good: extract before it's painful. The cost of refactoring scales superlinearly 
 ## See also
 
 - [`ROADMAP.md`](./ROADMAP.md) — the sequenced PR plan that gets us from here to a working editor.
+- [`packages/editor/src/core/Architecture.md`](./packages/editor/src/core/Architecture.md) — cold-start reference for `core/` implementation agents.
 - [`docs/glossary.md`](./docs/glossary.md) — terminology in one place.
-- [`docs/backlog/`](./docs/backlog/) — self-contained tickets for each foundation PR.
+- [`docs/backlog/`](./docs/backlog/) — post-foundation PR sketches (PR-07 onwards).

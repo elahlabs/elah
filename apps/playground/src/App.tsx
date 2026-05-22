@@ -7,12 +7,35 @@ import {
   useTracksStore,
   usePlaybackStore,
   useSelectionStore,
+  useResolvedScene,
   splitClipAtPlayhead,
   type TimelineRef,
 } from '@elah/editor'
 
 const FPS = 30
 const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
+
+function ResolvedSceneDebug() {
+  const scene = useResolvedScene()
+
+  return (
+    <pre
+      style={{
+        fontSize: 10,
+        maxHeight: 120,
+        overflow: 'auto',
+        margin: 0,
+        padding: '8px 12px',
+        background: '#0d0d0d',
+        borderTop: '1px solid #2a2a2a',
+        color: '#8f8',
+        fontFamily: 'monospace',
+      }}
+    >
+      {JSON.stringify(scene, null, 2)}
+    </pre>
+  )
+}
 
 export default function App() {
   const timelineRef = useRef<TimelineRef>(null)
@@ -150,102 +173,104 @@ export default function App() {
     <>
       {SHOW_LAB && <MediaLimitsLab />}
       <EditorProvider fps={FPS}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-        {/* Toolbar */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 12px',
-            background: '#151515',
-            borderBottom: '1px solid #2a2a2a',
-            flexWrap: 'wrap',
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#888', fontFamily: 'monospace', marginRight: 8 }}>
-            @elah/editor
-          </span>
-
-          <button style={btnStyle()} onClick={addVideoTrack}>+ Video Track</button>
-          <button style={btnStyle()} onClick={addAudioTrack}>+ Audio Track</button>
-          <button style={btnStyle()} onClick={addTextTrack}>+ Text Track</button>
-          <button style={btnStyle()} onClick={addVideoClip}>+ Video Clip</button>
-          <button style={btnStyle()} onClick={addAudioClip}>+ Audio Clip</button>
-          <button style={btnStyle()} onClick={addTextClip}>+ Text Clip</button>
-          <button
-            style={btnStyle(!hasSelection)}
-            disabled={!hasSelection}
-            onClick={splitAtPlayhead}
-          >
-            ✂ Split
-          </button>
-
-          <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
-
-          <button
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+          {/* Toolbar */}
+          <div
             style={{
-              ...btnStyle(),
-              minWidth: 68,
-              background: isPlaying ? '#1a3a1a' : '#2a2a2a',
-              borderColor: isPlaying ? '#2d6a2d' : '#3a3a3a',
-              color: isPlaying ? '#6fcf6f' : '#ddd',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              background: '#151515',
+              borderBottom: '1px solid #2a2a2a',
+              flexWrap: 'wrap',
             }}
-            onClick={togglePlayPause}
           >
-            {isPlaying ? '⏸ Pause' : '▶ Play'}
-          </button>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#888', fontFamily: 'monospace', marginRight: 8 }}>
+              @elah/editor
+            </span>
 
-          <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+            <button style={btnStyle()} onClick={addVideoTrack}>+ Video Track</button>
+            <button style={btnStyle()} onClick={addAudioTrack}>+ Audio Track</button>
+            <button style={btnStyle()} onClick={addTextTrack}>+ Text Track</button>
+            <button style={btnStyle()} onClick={addVideoClip}>+ Video Clip</button>
+            <button style={btnStyle()} onClick={addAudioClip}>+ Audio Clip</button>
+            <button style={btnStyle()} onClick={addTextClip}>+ Text Clip</button>
+            <button
+              style={btnStyle(!hasSelection)}
+              disabled={!hasSelection}
+              onClick={splitAtPlayhead}
+            >
+              ✂ Split
+            </button>
 
-          <button
-            style={btnStyle(!canUndo)}
-            disabled={!canUndo}
-            onClick={() => engine()?.undo()}
-          >
-            Undo
-          </button>
-          <button
-            style={btnStyle(!canRedo)}
-            disabled={!canRedo}
-            onClick={() => engine()?.redo()}
-          >
-            Redo
-          </button>
+            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
 
-          <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+            <button
+              style={{
+                ...btnStyle(),
+                minWidth: 68,
+                background: isPlaying ? '#1a3a1a' : '#2a2a2a',
+                borderColor: isPlaying ? '#2d6a2d' : '#3a3a3a',
+                color: isPlaying ? '#6fcf6f' : '#ddd',
+              }}
+              onClick={togglePlayPause}
+            >
+              {isPlaying ? '⏸ Pause' : '▶ Play'}
+            </button>
 
-          <label style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>
-            Zoom
-            <input
-              type="range"
-              min={1}
-              max={20}
-              step={0.5}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              style={{ marginLeft: 8, width: 80 }}
-            />
-            {zoom.toFixed(1)}px/f
-          </label>
+            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
 
-          <div style={{ marginLeft: 'auto', fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
-            <span ref={frameDisplayRef}>Frame 0 | 0.00s</span>
-            &nbsp;|&nbsp; Ctrl+scroll to zoom · Ctrl+Z/Y to undo/redo
+            <button
+              style={btnStyle(!canUndo)}
+              disabled={!canUndo}
+              onClick={() => engine()?.undo()}
+            >
+              Undo
+            </button>
+            <button
+              style={btnStyle(!canRedo)}
+              disabled={!canRedo}
+              onClick={() => engine()?.redo()}
+            >
+              Redo
+            </button>
+
+            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+
+            <label style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>
+              Zoom
+              <input
+                type="range"
+                min={1}
+                max={20}
+                step={0.5}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                style={{ marginLeft: 8, width: 80 }}
+              />
+              {zoom.toFixed(1)}px/f
+            </label>
+
+            <div style={{ marginLeft: 'auto', fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
+              <span ref={frameDisplayRef}>Frame 0 | 0.00s</span>
+              &nbsp;|&nbsp; Ctrl+scroll to zoom · Ctrl+Z/Y to undo/redo
+            </div>
           </div>
-        </div>
 
-        {/* Asset panel + timeline */}
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          <AssetPanel style={{ width: 220, flexShrink: 0 }} />
-          <Timeline
-            ref={timelineRef}
-            fps={FPS}
-            style={{ flex: 1, minWidth: 0 }}
-          />
+          {/* Asset panel + timeline */}
+          <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+            <AssetPanel style={{ width: 220, flexShrink: 0 }} />
+            <Timeline
+              ref={timelineRef}
+              fps={FPS}
+              style={{ flex: 1, minWidth: 0 }}
+            />
+          </div>
+
+          <ResolvedSceneDebug />
         </div>
-      </div>
-    </EditorProvider>
+      </EditorProvider>
     </>
   )
 }
