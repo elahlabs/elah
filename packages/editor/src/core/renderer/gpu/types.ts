@@ -5,6 +5,8 @@
  * shared between GpuRenderer, RenderGraph, and future layer modules.
  */
 
+import type { VideoFrameProviderFactory } from './layers/VideoLayer'
+
 /** Physical canvas backing-store dimensions in pixels (after DPR scaling). */
 export interface Viewport {
   width: number
@@ -13,10 +15,12 @@ export interface Viewport {
 
 /** Options passed to the GpuRenderer constructor. */
 export interface RendererOptions {
-  /** Hard cap on live GL textures; reserved for future VideoLayer use. */
+  /** Hard cap on live GL textures. Default 16. */
   maxTextures?: number
   /** Clear colour as [r, g, b, a] in 0..1 range. Defaults to opaque black. */
   clearColor?: [number, number, number, number]
+  /** Override frame provider factory (tests / custom decode backends). */
+  providerFactory?: VideoFrameProviderFactory
 }
 
 /**

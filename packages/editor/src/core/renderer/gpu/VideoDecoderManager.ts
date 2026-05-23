@@ -80,10 +80,11 @@ export class VideoDecoderManager {
   private readonly _inFlightFrames = new Set<number>()
   private _decodeQueue: number[] = []
   private _processingQueue = false
+  private _outputFrames: VideoFrame[] = []
 
   constructor(options: VideoDecoderManagerOptions = {}) {
     this._demuxerFactory = options.demuxerFactory
-    this._decoderFactory = options.decoderFactory ?? createDefaultDecoder
+    this._decoderFactory = options.decoderFactory ?? (() => this._createDefaultDecoder())
     this._idleTimeoutMs = options.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS
     this._onStateChange = options.onStateChange ?? null
     this._onError = options.onError ?? null
@@ -316,14 +317,65 @@ export class VideoDecoderManager {
   }
 
   private async _decodeFrame(sourceFrame: number): Promise<VideoFrame> {
+    this._outputFrames = []
     const timeUs = sourceFrame * (1_000_000 / 30)
-    const timeRange: [number, number] = [timeUs, timeUs + (1_000_000 / 30)] as [number, number]
+    const timeRange: [number, number] = [timeUs, timeUs + (1_000_000 / 30)] as [
+      number,
+      number,
+    ]
 
     for await (const chunk of this._demuxer!.packets(timeRange)) {
       this._decoder!.decode(chunk)
     }
 
-    return createDecodedFrame(sourceFrame)
+    await this._decoder!.flush()
+
+    const frame = this._pickOutputFrame(sourceFrame, timeUs)
+    this._outputFrames = []
+    return frame
+  }
+
+  private _pickOutputFrame(sourceFrame: number, timeUs: number): VideoFrame {
+    if (this._outputFrames.length > 0) {
+      const matched =
+        this._outputFrames.find(
+          (f) => Math.abs(f.timestamp - timeUs) < 1_000,
+        ) ?? this._outputFrames[this._outputFrames.length - 1]!
+
+      for (const frame of this._outputFrames) {
+        if (frame !== matched) {
+          frame.close()
+        }
+      }
+
+      return matched
+    }
+
+    return this._createFallbackFrame(sourceFrame, timeUs)
+  }
+
+  private _createDefaultDecoder(): VideoDecoderLike {
+    if (typeof VideoDecoder === 'undefined') {
+      throw new Error('VideoDecoderManager: VideoDecoder not available')
+    }
+
+    return new VideoDecoder({
+      output: (frame: VideoFrame) => {
+        this._outputFrames.push(frame)
+      },
+      error: (error: DOMException) => {
+        this._handleError(error)
+      },
+    }) as unknown as VideoDecoderLike
+  }
+
+  private _createFallbackFrame(sourceFrame: number, timeUs: number): VideoFrame {
+    return {
+      displayWidth: 640,
+      displayHeight: 360,
+      close: () => {},
+      timestamp: timeUs,
+    } as unknown as VideoFrame
   }
 
   private _resolveFrame(sourceFrame: number, frame: VideoFrame): void {
@@ -341,23 +393,4 @@ export class VideoDecoderManager {
       waiter.reject(error)
     }
   }
-}
-
-function createDefaultDecoder(): VideoDecoderLike {
-  if (typeof VideoDecoder === 'undefined') {
-    throw new Error('VideoDecoderManager: VideoDecoder not available')
-  }
-  return new VideoDecoder({
-    output: () => {},
-    error: () => {},
-  }) as unknown as VideoDecoderLike
-}
-
-function createDecodedFrame(sourceFrame: number): VideoFrame {
-  return {
-    displayWidth: 640,
-    displayHeight: 360,
-    close: () => {},
-    timestamp: sourceFrame * (1_000_000 / 30),
-  } as unknown as VideoFrame
 }

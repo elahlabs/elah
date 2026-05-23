@@ -71,6 +71,8 @@ export type {
 
 // --- Core: renderer ---
 export type { Renderer } from './core/renderer/types'
+export { GpuRenderer } from './core/renderer/gpu/GpuRenderer'
+export type { RendererOptions } from './core/renderer/gpu/types'
 
 // --- Core: media ---
 export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/media'

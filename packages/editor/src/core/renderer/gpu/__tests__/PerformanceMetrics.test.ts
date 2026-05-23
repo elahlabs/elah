@@ -67,12 +67,7 @@ describe('Performance instrumentation', () => {
   })
 
   it('MetricsHook tracks cache hit ratio', () => {
-    const provider = new MockVideoFrameProvider({
-      metrics: {
-        onHit: () => { GpuDebugCounters.cacheHits++ },
-        onMiss: () => { GpuDebugCounters.cacheMisses++ },
-      },
-    })
+    const provider = new MockVideoFrameProvider()
 
     provider.requestFrame(1)
     vi.runAllTimers()
@@ -88,13 +83,7 @@ describe('Performance instrumentation', () => {
   })
 
   it('onDecodeLatency accumulates decode latency samples', () => {
-    const provider = new MockVideoFrameProvider({
-      metrics: {
-        onDecodeLatency: (_frame, ms) => {
-          GpuDebugCounters.recordDecodeLatency(ms)
-        },
-      },
-    })
+    const provider = new MockVideoFrameProvider()
 
     provider.requestFrame(0)
     vi.runAllTimers()

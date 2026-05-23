@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import MediaLimitsLab from './MediaLimitsLab'
+import { GpuPreview } from './GpuPreview'
 import {
   AssetPanel,
   EditorProvider,
@@ -14,6 +15,7 @@ import {
 
 const FPS = 30
 const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
+const SHOW_SCENE_DEBUG = new URLSearchParams(window.location.search).has('debug')
 
 function ResolvedSceneDebug() {
   const scene = useResolvedScene()
@@ -268,7 +270,8 @@ export default function App() {
             />
           </div>
 
-          <ResolvedSceneDebug />
+          {SHOW_SCENE_DEBUG && <ResolvedSceneDebug />}
+          <GpuPreview debugMode />
         </div>
       </EditorProvider>
     </>

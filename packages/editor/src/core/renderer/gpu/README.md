@@ -2,34 +2,51 @@
 
 WebGL2 GPU renderer — the concrete implementation of the `Renderer` interface that composites a `Scene` onto a hardware-accelerated canvas.
 
+End-to-end pipeline:
+
+```
+Scene → RenderGraph → VideoLayer → VideoFrameProvider → VideoTexture
+     → TexturePool → ShaderProgram → WebGL draw → canvas output
+```
+
 ---
 
 ## Folder map
 
 ```
 gpu/
-├── README.md               ← you are here
-├── WebGLContext.ts         ← canvas + GL context lifecycle (Phase 1 ✓)
-├── ShaderProgram.ts        ← compile/link/uniform helper (Phase 1 ✓)
-├── GpuRenderer.ts          ← Renderer impl: mount/resize/render/dispose (Phase 3 ✓)
-├── RenderGraph.ts          ← Scene diffing + layer dispatch (Phase 3 ✓)
-├── types.ts                ← internal Viewport, RendererOptions, SceneDiff (Phase 3 ✓)
-├── TexturePool.ts          ← LRU texture allocator (Phase 2 ✓)
-├── VideoTexture.ts         ← per-clip texture handle (Phase 2 ✓)
-├── VideoFrameProvider.ts   ← sync best-effort getter + async prefetch (Phase 4)
-├── VideoDecoderManager.ts  ← VideoDecoder state machine per source (Phase 4)
-├── FrameCache.ts           ← ring buffer of decoded VideoFrames (Phase 4)
+├── README.md                ← you are here
+├── GpuRenderer.ts           ← Renderer impl (mount/resize/render/dispose/setDebug)
+├── RenderGraph.ts           ← Scene diffing + layer dispatch
+├── WebGLContext.ts          ← canvas + GL context lifecycle
+├── ShaderProgram.ts         ← compile/link/uniform helper
+├── TexturePool.ts           ← LRU texture allocator
+├── VideoTexture.ts          ← per-clip texture handle
+├── VideoFrameProvider.ts    ← Mock + Synthetic providers; default factory
+├── VideoDecoderManager.ts   ← per-source decoder state machine
+├── FrameCache.ts            ← ring buffer of decoded VideoFrames
+├── types.ts                 ← Viewport, RendererOptions, SceneDiff
 ├── shaders/
-│   ├── quad.vert.ts        ← textured quad vertex shader (Phase 1 ✓)
-│   └── quad.frag.ts        ← textured quad fragment shader (Phase 1 ✓)
+│   ├── quad.vert.ts         ← textured quad vertex shader
+│   └── quad.frag.ts         ← textured quad fragment shader
 ├── layers/
-│   ├── types.ts            ← Layer<TItem> + LayerContext interfaces (Phase 1 ✓)
-│   └── VideoLayer.ts       ← ActiveVideoClip → texture → draw (Phase 4)
-└── demuxer/
-    └── MediabunnyDemuxer.ts ← lazy mediabunny adapter (Phase 4)
+│   ├── types.ts             ← Layer<TItem> + LayerContext interfaces
+│   ├── VideoLayer.ts        ← ActiveVideoClip → texture → draw
+│   └── TestLayer.ts         ← solid-colour quads (debug renderer only)
+├── demuxer/
+│   ├── MediabunnyDemuxer.ts ← lazy mediabunny adapter (real backend stub)
+│   └── mediabunny.d.ts
+├── debug/
+│   ├── GpuRendererDebugPanel.ts ← production renderer DOM overlay
+│   ├── DebugGpuRenderer.ts      ← isolated debug pipeline using TestLayer
+│   ├── DebugOverlay.ts          ← FPS + bounding boxes for scenarios
+│   ├── GpuDebugCounters.ts      ← metric counters (cache hits, latency, …)
+│   ├── GpuDebugGlobal.ts        ← optional `window.__GPU_DEBUG__`
+│   ├── playground.ts            ← `loadDebugScenario()` manual harness
+│   ├── scenarios.ts             ← validation scenarios A–E
+│   └── types.ts
+└── __tests__/                   ← 18 vitest suites (162 tests)
 ```
-
-Legend: `✓` = implemented, no label = not yet written.
 
 ---
 
@@ -45,171 +62,169 @@ This entire folder may only import from:
 
 ---
 
-## Module responsibilities
+## `GpuRenderer.ts`
 
-### `WebGLContext.ts` (Phase 1)
-
-The **only** file that calls `canvas.getContext('webgl2')`. Owns:
-
-- Canvas element creation and attachment.
-- WebGL2 context acquisition with WebGL1 fallback.
-- `webglcontextlost` / `webglcontextrestored` event handling. On loss it nulls the context and fires `onLost`; on restore it re-acquires, re-initialises GL state, and fires `onRestore` so callers rebuild their GPU objects.
-- Physical canvas resize (backing-store = CSS pixels × DPR) and `gl.viewport` sync.
-- Global GL state: premultiplied-alpha blend, clear colour.
+Implements `Renderer`. Owns `WebGLContext`, `TexturePool`, `RenderGraph`, and a single `VideoLayer` registered against `scene.videos`.
 
 ```ts
-const ctx = new WebGLContext({ onLost, onRestore })
-ctx.resize(cssW, cssH, window.devicePixelRatio)
-ctx.clear()
-const gl = ctx.gl  // null while lost — always guard
+const renderer = new GpuRenderer({ maxTextures: 16, clearColor: [0, 0, 0, 1] })
+renderer.mount(container)
+renderer.resize(cssW, cssH, window.devicePixelRatio)
+renderer.render(scene)   // synchronous, idempotent on equal scene refs
+renderer.setDebug(true)  // optional DOM overlay
+renderer.dispose()
 ```
 
-### `ShaderProgram.ts` (Phase 1)
+**`RendererOptions`:**
 
-Compile / link helper with a per-instance `WebGLUniformLocation` cache. Shaders are detached and deleted after link. Provides typed setters (`setUniform1f`, `setUniformMatrix3fv`, …) so call sites never touch raw GL uniform APIs.
+- `maxTextures?: number` — pool cap (default 16).
+- `clearColor?: [r, g, b, a]` — default opaque black.
+- `providerFactory?: (src) => VideoFrameProvider` — inject test/custom providers.
 
-```ts
-const prog = ShaderProgram.create(gl, QUAD_VERT_SRC, QUAD_FRAG_SRC)
-prog.use(gl)
-prog.setUniform1i(gl, 'uTexture', 0)
-prog.setUniform1f(gl, 'uOpacity', clip.opacity)
-prog.setUniformMatrix3fv(gl, 'uTransform', false, mat)
-```
+**Lifecycle:**
 
-### `shaders/quad.vert.ts` + `shaders/quad.frag.ts` (Phase 1)
-
-GLSL `#version 300 es` sources for a textured quad drawn as `TRIANGLE_STRIP` over 4 vertices. The vertex shader uses `gl_VertexID` — no VBO required. The fragment shader samples `uTexture` and multiplies by `uOpacity` for premultiplied-alpha compositing. Reused by every layer that draws a rectangular region (VideoLayer, future ImageLayer, future TextLayer).
-
-### `layers/types.ts` (Phase 1)
-
-`Layer<TItem>` and `LayerContext` interfaces. A Layer encapsulates all GPU resources and draw logic for one clip kind. `RenderGraph` holds a registry of Layer instances and calls `acquire` / `release` / `draw` based on Scene diffs. Adding a new clip kind (text, image, effect) means writing a new `Layer` implementation — no changes to RenderGraph.
-
-```ts
-interface Layer<TItem> {
-  acquire(item: TItem, ctx: LayerContext): void   // item entered Scene
-  release(itemId: string): void                   // item left Scene
-  draw(item: TItem, ctx: LayerContext): void       // called once per frame per item
-  dispose(): void
-}
-```
-
-### `TexturePool.ts` (Phase 2)
-
-Capped LRU allocator for `WebGLTexture` handles keyed by `{ width, height, internalFormat }`. Hard cap defaults to 16 textures. `acquire()` reuses a matching free entry or allocates fresh; when the cap is hit it evicts the oldest released texture before allocating. `release()` returns a handle to the pool. `handleContextLost()` clears bookkeeping without GL deletes.
-
-```ts
-const pool = new TexturePool({ maxTextures: 16 })
-const entry = pool.acquire(gl, 1920, 1080)  // null if pool exhausted
-pool.release(entry)
-pool.handleContextLost()  // on webglcontextlost
-pool.dispose(gl)
-```
-
-### `VideoTexture.ts` (Phase 2)
-
-Thin per-clip handle bound to a shared `TexturePool`. `upload(gl, frame)` is the single `texImage2D` abstraction — it uploads pixel data and **immediately** calls `frame.close()` (frame ownership rule). Re-acquires from the pool when dimensions change. `bind(gl, unit)` activates the texture for drawing; returns `-1` if nothing uploaded yet.
-
-```ts
-const texture = new VideoTexture(pool)
-if (texture.upload(gl, videoFrame)) {
-  texture.bind(gl, 0)
-  prog.setUniform1i(gl, 'uTexture', 0)
-}
-texture.release()
-```
+- `mount(container)` — creates canvas, GL context, texture pool, video layer, and render graph. Guards against double-mount.
+- `resize(w, h, dpr)` — updates the backing-store and viewport; does not re-allocate textures.
+- `render(scene)` — measures FPS and render duration, clears, then executes the render graph. No-ops on equal scene refs or a lost context.
+- `setDebug(enabled)` — mounts/unmounts a polling DOM overlay (FPS, frame, clips, textures, cache hit ratio, render duration).
+- `dispose()` — disposes the render graph (which releases textures back to the pool), then disposes the pool, then the GL context. Order matters: pool disposal must come **after** the graph so acquired textures get returned before GL-delete.
 
 ---
 
-## Phase 3 modules (implemented)
+## `RenderGraph.ts`
 
-### `types.ts` (Phase 3)
-
-Internal types shared between `GpuRenderer` and `RenderGraph`. Not exported from the package root.
-
-- `Viewport` — physical canvas backing-store dimensions.
-- `RendererOptions` — constructor options (`maxTextures`, `clearColor`).
-- `SceneDiff<TItem>` — entering/leaving item sets produced by RenderGraph diffing.
-
-### `RenderGraph.ts` (Phase 3)
-
-Stateful scene diff engine. Holds a registry of `Layer` instances registered via `registerLayer()`. On each `execute(scene, ctx)`:
+Stateful scene-diff engine. On each `execute(scene, ctx)`:
 
 1. Diff each layer's active items against the current Scene slice.
 2. Call `acquire()` for entering items, `release()` for leaving items.
 3. Build a flat draw list sorted stable by `zIndex` ascending.
-4. Issue `draw()` on each active item in order.
+4. Issue `draw()` on each active item.
 
-```ts
-const graph = new RenderGraph()
-graph.registerLayer(videoLayer, (s) => s.videos, (v) => v.id, (v) => v.zIndex)
-graph.execute(scene, layerContext)
-graph.notifyContextLost()  // on webglcontextlost
-graph.dispose()
-```
-
-### `GpuRenderer.ts` (Phase 3)
-
-Implements `Renderer`. Owns `WebGLContext`, `RenderGraph`, and layer instances. Entry point for the GPU pipeline.
-
-```ts
-const renderer = new GpuRenderer({ clearColor: [0, 0, 0, 1] })
-renderer.mount(container)
-renderer.resize(cssW, cssH, window.devicePixelRatio)
-renderer.render(scene)   // synchronous, idempotent on equal scene refs
-renderer.dispose()
-```
-
-**Lifecycle:**
-
-- `mount(container)` — create canvas, GL context, RenderGraph, register layers. Idempotent guard against double-mount.
-- `resize(w, h, dpr)` — update backing-store and viewport; does not re-allocate textures.
-- `render(scene)` — early-out on equal refs or lost context; clear canvas; execute RenderGraph.
-- `dispose()` — tear down layers, GL context, and DOM canvas.
-
-**PlaceholderVideoLayer** (private, Phase 3 only):
-
-A stand-in for `VideoLayer` that draws solid-colour scissor rects via `gl.scissor + gl.clear`. No shaders or textures required, so nothing needs rebuilding on context restore. Each clip gets a colour from a fixed palette on `acquire()`. Full-viewport clears stacked in zIndex order verify compositing — the highest-zIndex clip's colour wins.
-
-Replaced by `VideoLayer` when the decode/texture pipeline lands in Phase 4.
+`registerLayer()` lets you add a new clip kind without modifying RenderGraph itself.
 
 ---
 
-## Phase 4 modules (not yet written)
+## `WebGLContext.ts`
 
-### `VideoFrameProvider.ts`
-
-Per-source orchestrator combining `VideoDecoderManager` + `FrameCache`. Exposes:
-- `getCurrent(sourceFrame)` — synchronous best-effort getter (returns `null` if not decoded yet).
-- `requestFrame(sourceFrame)` — fire-and-forget async decode.
-- `prefetch(from, count)` — forward prefetch hint.
-
-### `VideoDecoderManager.ts`
-
-One `VideoDecoder` + one `MediabunnyDemuxer` per unique source URL. State machine: `Idle → Opening → Ready → Decoding → Seeking → Draining`. Keyed by `src` so two clips that trim the same file share one decoder.
-
-### `FrameCache.ts`
-
-Ring buffer of decoded `VideoFrame`s keyed by source frame number. Hard cap (e.g. 8 frames). Evicts in source-frame order; closes evicted frames. **Frame ownership rule:** the cache owns every `VideoFrame` until it is uploaded to a texture, at which point `VideoTexture.upload` closes it.
-
-### `demuxer/MediabunnyDemuxer.ts`
-
-Thin adapter that **lazy-imports** `mediabunny` (so the dependency is never in the main bundle until a video clip plays). Exposes `open(src)` → `{ config, packets(timeRange) }`. Single seam for swapping demuxers.
-
-### `layers/VideoLayer.ts`
-
-Implements `Layer<ActiveVideoClip>`. Owns a `VideoFrameProvider` per unique `src` (not per clip). On `draw`: calls `getCurrent`, uploads to `VideoTexture` if a frame is available (keeps last texture otherwise to prevent flicker), then issues a quad draw with `uTransform` + `uOpacity`. Drops in via `RenderGraph.registerLayer()` — no RenderGraph changes needed.
+The **only** file that calls `canvas.getContext('webgl2')`. Handles canvas creation, WebGL2 (with WebGL1 fallback), `webglcontextlost`/`webglcontextrestored`, resize (CSS × DPR), and global GL state (premultiplied-alpha blend, clear colour).
 
 ---
 
-## Context loss recovery checklist
+## `ShaderProgram.ts`
 
-When `WebGLContext.onRestore` fires, every module that holds GL objects must rebuild them:
+Compile / link helper with a per-instance uniform-location cache. Typed setters (`setUniform1f`, `setUniformMatrix3fv`, …) so call sites never touch raw GL uniform APIs.
 
-- [ ] `ShaderProgram` — re-compile via `ShaderProgram.create`
-- [x] `TexturePool` — `handleContextLost()` clears all handles; re-allocate on next `acquire`
-- [x] `VideoTexture` — `handleContextLost()` nulls handle; re-upload on next `upload`
-- [x] `RenderGraph` — `notifyContextLost()` releases all active items; next `execute()` re-acquires
-- [x] `GpuRenderer` — resets `_lastScene`; PlaceholderVideoLayer needs no GL rebuild
-- [ ] Vertex buffers (if any are added) — re-create and re-upload
+## `shaders/`
 
-`FrameCache` and `VideoDecoderManager` do **not** hold GL objects; they survive context loss unchanged.
+`#version 300 es` textured quad: vertex shader uses `gl_VertexID` (no VBO required) and applies `uTransform` (mat3). Fragment shader samples `uTexture` × `uOpacity` with premultiplied output. Reused by every quad layer.
+
+---
+
+## `TexturePool.ts`
+
+Capped LRU allocator for `WebGLTexture` handles keyed by `{ width, height, internalFormat }`. Default cap 16. `acquire()` reuses a matching free entry, allocates fresh up to the cap, or evicts the oldest free entry. `handleContextLost()` clears bookkeeping without GL deletes; `dispose(gl)` deletes every free entry.
+
+## `VideoTexture.ts`
+
+Per-clip handle backed by `TexturePool`. `upload(gl, frame)` is the single `texImage2D` abstraction — it uploads pixel data and **immediately** calls `frame.close()` (frame-ownership rule). Re-acquires from the pool when dimensions change. `bind(gl, unit)` returns `-1` if nothing has been uploaded yet.
+
+---
+
+## `layers/VideoLayer.ts`
+
+Implements `Layer<ActiveVideoClip>`:
+
+- One `VideoFrameProvider` **per unique `src`** (shared across clips, ref-counted).
+- One `VideoTexture` **per clip id**.
+- `draw()` is synchronous: tries `provider.getCurrent(sourceFrame)`; uploads on hit, schedules `provider.requestFrame(sourceFrame)` on miss. Keeps the previous texture content to prevent flicker.
+- Issues a quad draw with `uTransform` (built from `transform.x/y/scale/anchor/rotation`) and `uOpacity`.
+- `notifyContextLost()` nulls the shader program / VAO so `_ensurePipeline()` rebuilds on the next acquire.
+
+## `VideoFrameProvider.ts`
+
+Sync `getCurrent()` + async `requestFrame()` contract. Two concrete providers:
+
+- **`MockVideoFrameProvider`** — `setTimeout(0)` based, returns non-drawable frame stubs. Used in jsdom/vitest where `OffscreenCanvas`/`VideoFrame` are unavailable.
+- **`SyntheticVideoFrameProvider`** — paints a unique colour + frame number on an `OffscreenCanvas` and wraps it in a real `VideoFrame`. Drawable in the browser without mediabunny — the basis for visual validation.
+
+`createVideoFrameProvider(src)` is the default factory; it feature-detects `OffscreenCanvas` + `VideoFrame` and picks the synthetic provider when available.
+
+## `VideoDecoderManager.ts`
+
+One `VideoDecoder` + one `MediabunnyDemuxer` per unique source URL. State machine: `Idle → Opening → Ready → Decoding → Seeking → Draining → Idle` (`Errored` on failure, `Disposed` terminal). Frames emitted by `VideoDecoder.output` are buffered and matched by timestamp inside `_decodeFrame`. Survives context loss unchanged (no GL objects).
+
+## `FrameCache.ts`
+
+Bounded map of decoded `VideoFrame`s keyed by source frame number. Evicts lowest source frame when over capacity; closes evicted frames. Owns every frame until a consumer (e.g. `VideoTexture.upload`) closes it.
+
+## `demuxer/MediabunnyDemuxer.ts`
+
+Thin adapter that lazy-imports `mediabunny`. Exposes `open(src)` → `{ config, packets(timeRange), seekToKeyframe(timeUs), dispose() }`. Tests inject `DemuxerFactory`; the real backend is currently a stub (`createDefaultBackend` throws).
+
+---
+
+## `debug/`
+
+All optional, importable without affecting the production pipeline.
+
+| File | Role |
+|---|---|
+| `GpuRendererDebugPanel.ts` | DOM overlay used by `GpuRenderer.setDebug(true)`. Polls a `DebugPanelSnapshot` getter every 100 ms — no GL coupling. |
+| `DebugGpuRenderer.ts` | Parallel renderer wired to `TestLayer` (solid-colour quads). Exercises shader/transform/zIndex paths with no decode. |
+| `DebugOverlay.ts` | FPS + bounding boxes for scenario rendering. |
+| `GpuDebugCounters.ts` | Static counters: cache hits/misses, decode latency, upload timing. Used by debug overlay + tests. |
+| `GpuDebugGlobal.ts` | Optional `window.__GPU_DEBUG__` getter for live inspection. |
+| `playground.ts` | `loadDebugScenario(container, 'A'..'E')` mounts the debug renderer + overlay. |
+| `scenarios.ts` | Validation scenarios A–E: overlap, transform, opacity, full-stage. |
+
+`apps/playground/src/GpuPreview.tsx` is the production wiring example — RAF loop, `playback.getFrameAt()`, `resolveTimeline()`, and `renderer.render(scene)`.
+
+---
+
+## Tests
+
+Suites under `__tests__/` (all mock GL + DOM):
+
+| File | Focus |
+|---|---|
+| `GpuRenderer` is exercised indirectly via | `RenderSynchronization`, `PlaybackStress`, `DebugGpuRenderer` |
+| `RenderSynchronization.test.ts` | sourceFrame correctness, seek recovery, idempotent render, context-loss re-acquire |
+| `PlaybackStress.test.ts` | 200-render spam, clip enter/leave balance, pool exhaustion, seek spam |
+| `RenderGraph.test.ts` | zIndex order, diff/acquire/release |
+| `VideoLayer.test.ts` | provider sharing, transform/opacity uniforms, draw synchrony |
+| `VideoFrameProvider.test.ts` | sync getCurrent / async requestFrame / lifecycle |
+| `VideoDecoderManager.test.ts` | state machine + coalescing + seek-cancel |
+| `DecodeScheduling.test.ts` | provider/manager interaction under scrubbing |
+| `MediabunnyDemuxer.test.ts` | adapter contract |
+| `FrameCache.test.ts` | LRU eviction + borrow semantics |
+| `VideoFrameOwnership.test.ts` | frame.close() called exactly once per upload/evict |
+| `ErrorHandling.test.ts` | errored decoder, pool exhaustion, isolation |
+| `PerformanceMetrics.test.ts` | counters + `__GPU_DEBUG__` |
+| `CanvasValidation.test.ts` | helpers (`captureFrame`, `hashFrame`, `samplePixel`, `expectPixelApprox`) |
+| `TestLayer.test.ts` | debug quad lifecycle |
+| `DebugGpuRenderer.test.ts` | debug renderer lifecycle |
+
+Helpers in `__tests__/helpers/`: `mockDemuxer.ts`, `trackingFrame.ts`, `canvasValidation.ts`.
+
+---
+
+## Context loss recovery
+
+`GpuRenderer._handleContextLost()` runs in this order (it matters):
+
+1. `texturePool.handleContextLost()` — clear bookkeeping without GL deletes.
+2. `videoLayer.notifyContextLost()` — null each `VideoTexture._entry`, null shader program / VAO references.
+3. `renderGraph.notifyContextLost()` — release every active item (no-op for textures since step 2 already neutered them).
+4. Reset `_lastScene` so the next render re-acquires everything.
+
+On `_handleContextRestored()`, the next `render()` triggers `VideoLayer._ensurePipeline()` which recompiles the shader program and rebuilds the VAO. `FrameCache` and `VideoDecoderManager` hold no GL objects and survive unchanged.
+
+| Module | Holds GL? | Recovery |
+|---|---|---|
+| `WebGLContext` | yes (the context itself) | re-acquires on `webglcontextrestored`, re-runs `_initGLState()` |
+| `TexturePool` | yes | `handleContextLost()` clears handles |
+| `VideoTexture` | yes (entry ref) | `handleContextLost()` nulls `_entry`; next `upload()` re-acquires |
+| `VideoLayer` | yes (program + VAO) | `notifyContextLost()` nulls them; `_ensurePipeline()` rebuilds on next acquire |
+| `RenderGraph` | no (just bookkeeping) | `notifyContextLost()` releases active items |
+| `FrameCache` | no | unchanged |
+| `VideoDecoderManager` | no | unchanged |
