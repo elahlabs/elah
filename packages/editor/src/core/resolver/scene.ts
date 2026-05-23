@@ -81,10 +81,17 @@ export interface SceneTransition {
  * zIndex semantics: higher value = closer to the viewer (front), matching
  * CSS / canvas conventions. The resolver computes zIndex so that the
  * topmost track in the editor UI gets the highest zIndex value.
+ *
+ * `fps` and `stage` are part of the render contract — the renderer must
+ * never ask the engine or project directly for these values.
  */
 export interface Scene {
   /** The frame this Scene was resolved at. */
   frame: number
+  /** Frames per second from the project. Renderers use this for timing. */
+  fps: number
+  /** Logical output canvas dimensions in pixels. */
+  stage: { width: number; height: number }
   videos: ActiveVideoClip[]
   audios: ActiveAudioClip[]
   texts: ActiveTextClip[]

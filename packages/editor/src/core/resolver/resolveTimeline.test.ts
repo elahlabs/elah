@@ -50,11 +50,21 @@ describe('resolveTimeline', () => {
     const scene = resolveTimeline(0, project)
 
     expect(scene.frame).toBe(0)
+    expect(scene.fps).toBe(30)
+    expect(scene.stage).toEqual({ width: 1080, height: 1920 })
     expect(scene.videos.length).toBe(0)
     expect(scene.audios.length).toBe(0)
     expect(scene.texts.length).toBe(0)
     expect(scene.images.length).toBe(0)
     expect(scene.transitions.length).toBe(0)
+  })
+
+  it('propagates fps and stage from project into every Scene', () => {
+    const project = makeProject({ fps: 60, stage: { width: 1920, height: 1080 }, tracks: [], clips: {} })
+    const scene = resolveTimeline(42, project)
+
+    expect(scene.fps).toBe(60)
+    expect(scene.stage).toEqual({ width: 1920, height: 1080 })
   })
 
   it('includes a clip only when frame is inside its half-open range', () => {

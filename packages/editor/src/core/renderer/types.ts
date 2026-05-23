@@ -23,6 +23,17 @@ export interface Renderer {
   /** Attach the renderer to a DOM element. May be called once per instance. */
   mount(container: HTMLElement): void
   /**
+   * Notify the renderer that the host container's CSS size has changed.
+   * The renderer updates the canvas backing-store dimensions and GL viewport.
+   * `Scene.stage` is the logical coordinate space; `resize` controls the
+   * physical pixel size. The renderer fits stage into canvas (contain/letterbox).
+   *
+   * @param cssWidth  Container width in CSS pixels.
+   * @param cssHeight Container height in CSS pixels.
+   * @param dpr       Device pixel ratio (defaults to 1).
+   */
+  resize(cssWidth: number, cssHeight: number, dpr?: number): void
+  /**
    * Render a single scene. Idempotent: calling with the same Scene reference
    * is a no-op (implementations may check reference equality to skip work).
    */

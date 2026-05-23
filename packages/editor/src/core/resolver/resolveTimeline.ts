@@ -45,6 +45,8 @@ import type {
 export function resolveTimeline(frame: number, project: Project): Scene {
   const scene: Scene = {
     frame,
+    fps: project.fps,
+    stage: project.stage,
     videos: [],
     audios: [],
     texts: [],
