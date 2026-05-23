@@ -9,7 +9,7 @@ Renderer abstraction layer. Defines the contract every renderer must honour and 
 | Path | Role |
 |---|---|
 | `types.ts` | `Renderer` interface — the only public contract |
-| `gpu/` | WebGL/WebGPU GPU renderer (Phase 1 foundation, MVP in progress) |
+| `gpu/` | WebGL2 GPU renderer — Phase 1 foundation + Phase 2 texture pipeline |
 
 ---
 

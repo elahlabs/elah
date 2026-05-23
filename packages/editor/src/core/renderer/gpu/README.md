@@ -13,8 +13,8 @@ gpu/
 ├── ShaderProgram.ts        ← compile/link/uniform helper (Phase 1 ✓)
 ├── GpuRenderer.ts          ← Renderer impl: mount/resize/render/dispose (Phase 2)
 ├── RenderGraph.ts          ← Scene diffing + layer dispatch (Phase 2)
-├── TexturePool.ts          ← LRU texture allocator (Phase 2)
-├── VideoTexture.ts         ← per-clip texture handle (Phase 2)
+├── TexturePool.ts          ← LRU texture allocator (Phase 2 ✓)
+├── VideoTexture.ts         ← per-clip texture handle (Phase 2 ✓)
 ├── VideoFrameProvider.ts   ← sync best-effort getter + async prefetch (Phase 2)
 ├── VideoDecoderManager.ts  ← VideoDecoder state machine per source (Phase 2)
 ├── FrameCache.ts           ← ring buffer of decoded VideoFrames (Phase 2)
@@ -92,6 +92,31 @@ interface Layer<TItem> {
 }
 ```
 
+### `TexturePool.ts` (Phase 2)
+
+Capped LRU allocator for `WebGLTexture` handles keyed by `{ width, height, internalFormat }`. Hard cap defaults to 16 textures. `acquire()` reuses a matching free entry or allocates fresh; when the cap is hit it evicts the oldest released texture before allocating. `release()` returns a handle to the pool. `handleContextLost()` clears bookkeeping without GL deletes.
+
+```ts
+const pool = new TexturePool({ maxTextures: 16 })
+const entry = pool.acquire(gl, 1920, 1080)  // null if pool exhausted
+pool.release(entry)
+pool.handleContextLost()  // on webglcontextlost
+pool.dispose(gl)
+```
+
+### `VideoTexture.ts` (Phase 2)
+
+Thin per-clip handle bound to a shared `TexturePool`. `upload(gl, frame)` is the single `texImage2D` abstraction — it uploads pixel data and **immediately** calls `frame.close()` (frame ownership rule). Re-acquires from the pool when dimensions change. `bind(gl, unit)` activates the texture for drawing; returns `-1` if nothing uploaded yet.
+
+```ts
+const texture = new VideoTexture(pool)
+if (texture.upload(gl, videoFrame)) {
+  texture.bind(gl, 0)
+  prog.setUniform1i(gl, 'uTexture', 0)
+}
+texture.release()
+```
+
 ---
 
 ## Phase 2 modules (not yet written)
@@ -103,14 +128,6 @@ Implements `Renderer`. Owns `WebGLContext`, `RenderGraph`, and all Layer instanc
 ### `RenderGraph.ts`
 
 Receives `Scene`, diffs it against the previous Scene to detect entering/leaving clip ids, drives `acquire`/`release`/`draw` on each Layer in ascending `zIndex` order. Single chokepoint for compositing decisions.
-
-### `TexturePool.ts`
-
-LRU pool of `WebGLTexture` handles keyed by `{width, height, format}`. Hard cap (e.g. 16 textures). `acquire()` returns a texture; `release()` returns it to the pool. Prevents per-frame texture alloc/free churn.
-
-### `VideoTexture.ts`
-
-Thin handle binding one pool texture to a clip id. `upload(gl, videoFrame)` calls `gl.texImage2D` then immediately `videoFrame.close()` (frame ownership rule — see §6 of the plan).
 
 ### `VideoFrameProvider.ts`
 
@@ -142,8 +159,8 @@ Implements `Layer<ActiveVideoClip>`. Owns a `VideoFrameProvider` per unique `src
 When `WebGLContext.onRestore` fires, every module that holds GL objects must rebuild them:
 
 - [ ] `ShaderProgram` — re-compile via `ShaderProgram.create`
-- [ ] `TexturePool` — evict all handles, re-allocate on next `acquire`
-- [ ] `VideoTexture` — mark dirty, re-upload on next `draw`
+- [x] `TexturePool` — `handleContextLost()` clears all handles; re-allocate on next `acquire`
+- [x] `VideoTexture` — `handleContextLost()` nulls handle; re-upload on next `upload`
 - [ ] Vertex buffers (if any are added) — re-create and re-upload
 
 `FrameCache` and `VideoDecoderManager` do **not** hold GL objects; they survive context loss unchanged.
