@@ -13,12 +13,35 @@
 
 const DEFAULT_MAX_FRAMES = 30
 
+export interface FrameCacheHooks {
+  onPut?: (sourceFrame: number) => void
+  onEvict?: (sourceFrame: number) => void
+  onClear?: () => void
+}
+
+export interface FrameCacheOptions {
+  maxFrames?: number
+  hooks?: FrameCacheHooks
+}
+
 export class FrameCache {
   private readonly _maxFrames: number
+  private readonly _hooks: FrameCacheHooks
   private readonly _frames = new Map<number, VideoFrame>()
 
-  constructor(maxFrames?: number) {
-    this._maxFrames = maxFrames ?? DEFAULT_MAX_FRAMES
+  constructor(maxFramesOrOptions?: number | FrameCacheOptions) {
+    if (typeof maxFramesOrOptions === 'number' || maxFramesOrOptions === undefined) {
+      this._maxFrames = maxFramesOrOptions ?? DEFAULT_MAX_FRAMES
+      this._hooks = {}
+    } else {
+      this._maxFrames = maxFramesOrOptions.maxFrames ?? DEFAULT_MAX_FRAMES
+      this._hooks = maxFramesOrOptions.hooks ?? {}
+    }
+  }
+
+  /** Current number of cached frames. */
+  get size(): number {
+    return this._frames.size
   }
 
   /** Return a borrowed frame reference, or null if not cached. Do not close. */
@@ -32,11 +55,13 @@ export class FrameCache {
     if (existing) {
       existing.close()
       this._frames.delete(sourceFrame)
+      this._hooks.onEvict?.(sourceFrame)
     } else if (this._frames.size >= this._maxFrames) {
       this._evictOldest()
     }
 
     this._frames.set(sourceFrame, frame)
+    this._hooks.onPut?.(sourceFrame)
   }
 
   has(sourceFrame: number): boolean {
@@ -49,6 +74,7 @@ export class FrameCache {
       if (key < sourceFrame) {
         this._frames.get(key)!.close()
         this._frames.delete(key)
+        this._hooks.onEvict?.(key)
       }
     }
   }
@@ -59,6 +85,7 @@ export class FrameCache {
       frame.close()
     }
     this._frames.clear()
+    this._hooks.onClear?.()
   }
 
   /** Close and remove every cached frame. Alias for clear(). */
@@ -81,6 +108,7 @@ export class FrameCache {
     if (oldestKey !== null) {
       this._frames.get(oldestKey)!.close()
       this._frames.delete(oldestKey)
+      this._hooks.onEvict?.(oldestKey)
     }
   }
 }

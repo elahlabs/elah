@@ -12,6 +12,8 @@
 
 import { DebugGpuRenderer } from './DebugGpuRenderer'
 import { DebugOverlay } from './DebugOverlay'
+import { GpuDebugCounters } from './GpuDebugCounters'
+import { installGpuDebugGlobal, uninstallGpuDebugGlobal } from './GpuDebugGlobal'
 import { loadScenario } from './scenarios'
 import type { DebugRenderItem, DebugScenario } from './types'
 import { DEBUG_STAGE } from './types'
@@ -23,6 +25,8 @@ export interface PlaygroundOptions {
   showOverlay?: boolean
   /** Device pixel ratio for initial resize. Defaults to window.devicePixelRatio ?? 1. */
   dpr?: number
+  /** Install window.__GPU_DEBUG__ with live counter snapshot. Defaults to false. */
+  enableGpuDebug?: boolean
 }
 
 export interface PlaygroundHandle {
@@ -54,13 +58,23 @@ export function renderDebugScene(
   renderer.resize(cssWidth, cssHeight, dpr)
   renderer.render(items)
 
+  let currentItems = items
   let overlay: DebugOverlay | null = null
   if (options.showOverlay) {
     overlay = new DebugOverlay(container, stage)
     overlay.update(items, 0, stage)
   }
 
-  let currentItems = items
+  if (options.enableGpuDebug) {
+    installGpuDebugGlobal(() => ({
+      decoderStates: {},
+      cacheSizes: {},
+      textureCount: 0,
+      activeClipIds: currentItems.map((item) => item.id),
+      counters: GpuDebugCounters.snapshot(),
+    }))
+  }
+
   let lastFrameTime = typeof performance !== 'undefined' ? performance.now() : 0
 
   const handle: PlaygroundHandle = {
@@ -84,6 +98,9 @@ export function renderDebugScene(
     dispose() {
       overlay?.dispose()
       overlay = null
+      if (options.enableGpuDebug) {
+        uninstallGpuDebugGlobal()
+      }
       renderer.dispose()
     },
   }

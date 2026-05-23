@@ -38,6 +38,12 @@ export interface VideoFrameProvider {
   dispose(): void
 }
 
+export interface MetricsHook {
+  onHit?: (sourceFrame: number) => void
+  onMiss?: (sourceFrame: number) => void
+  onDecodeLatency?: (sourceFrame: number, ms: number) => void
+}
+
 export interface MockVideoFrameProviderOptions {
   /** Max frames held in the internal cache. Default 30. */
   maxFrames?: number
@@ -46,6 +52,10 @@ export interface MockVideoFrameProviderOptions {
   /** Mock frame dimensions. Default 320×240. */
   frameWidth?: number
   frameHeight?: number
+  /** Optional instrumentation hooks. */
+  metrics?: MetricsHook
+  /** Optional FrameCache instrumentation hooks. */
+  cacheHooks?: import('./FrameCache').FrameCacheHooks
 }
 
 type ProviderState = 'active' | 'idle' | 'disposed'
@@ -63,6 +73,7 @@ export class MockVideoFrameProvider implements VideoFrameProvider {
   private readonly _idleTimeoutMs: number
   private readonly _frameWidth: number
   private readonly _frameHeight: number
+  private readonly _metrics: MetricsHook
 
   private _state: ProviderState = 'active'
   private readonly _pending = new Set<number>()
@@ -70,10 +81,14 @@ export class MockVideoFrameProvider implements VideoFrameProvider {
   private _idleCallback: (() => void) | null = null
 
   constructor(options: MockVideoFrameProviderOptions = {}) {
-    this._cache = new FrameCache(options.maxFrames)
+    this._cache = new FrameCache({
+      maxFrames: options.maxFrames,
+      hooks: options.cacheHooks,
+    })
     this._idleTimeoutMs = options.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS
     this._frameWidth = options.frameWidth ?? DEFAULT_FRAME_WIDTH
     this._frameHeight = options.frameHeight ?? DEFAULT_FRAME_HEIGHT
+    this._metrics = options.metrics ?? {}
   }
 
   /** For testing: register a callback invoked when idle timeout fires. */
@@ -83,7 +98,13 @@ export class MockVideoFrameProvider implements VideoFrameProvider {
 
   getCurrent(sourceFrame: number): VideoFrame | null {
     if (this._state === 'disposed') return null
-    return this._cache.get(sourceFrame)
+    const frame = this._cache.get(sourceFrame)
+    if (frame !== null) {
+      this._metrics.onHit?.(sourceFrame)
+    } else {
+      this._metrics.onMiss?.(sourceFrame)
+    }
+    return frame
   }
 
   requestFrame(sourceFrame: number): void {
@@ -92,6 +113,7 @@ export class MockVideoFrameProvider implements VideoFrameProvider {
     if (this._cache.has(sourceFrame)) return
 
     this._pending.add(sourceFrame)
+    const startedAt = performance.now()
 
     setTimeout(() => {
       if (this._state === 'disposed') {
@@ -102,6 +124,7 @@ export class MockVideoFrameProvider implements VideoFrameProvider {
       const frame = this._createMockFrame()
       this._cache.put(sourceFrame, frame)
       this._pending.delete(sourceFrame)
+      this._metrics.onDecodeLatency?.(sourceFrame, performance.now() - startedAt)
     }, 0)
   }
 
@@ -143,6 +166,11 @@ export class MockVideoFrameProvider implements VideoFrameProvider {
   /** Exposed for testing: current lifecycle state. */
   get state(): ProviderState {
     return this._state
+  }
+
+  /** Exposed for testing: internal cache size. */
+  get cacheSize(): number {
+    return this._cache.size
   }
 
   // ---------------------------------------------------------------------------
