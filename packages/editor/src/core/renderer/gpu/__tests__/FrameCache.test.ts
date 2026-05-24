@@ -35,7 +35,7 @@ describe('FrameCache', () => {
     expect(cache.get(10)).toBe(frame)
   })
 
-  it('evicts the oldest sourceFrame first (deterministic)', () => {
+  it('evicts frame furthest from pivot (forward-playback: pivot = current frame)', () => {
     const cache = new FrameCache(3)
     const f0 = mockFrame()
     const f1 = mockFrame()
@@ -45,6 +45,7 @@ describe('FrameCache', () => {
     cache.put(0, f0)
     cache.put(5, f1)
     cache.put(10, f2)
+    cache.setPivot(15)
     cache.put(15, f3)
 
     expect(cache.has(0)).toBe(false)
@@ -58,6 +59,7 @@ describe('FrameCache', () => {
 
     cache.put(1, mockFrame())
     cache.put(2, mockFrame())
+    cache.setPivot(3)
     cache.put(3, mockFrame())
 
     expect(cache.has(1)).toBe(false)
@@ -73,6 +75,7 @@ describe('FrameCache', () => {
 
     cache.put(0, f0)
     cache.put(1, f1)
+    cache.setPivot(2)
     cache.put(2, f2)
 
     expect(f0.close).toHaveBeenCalledTimes(1)

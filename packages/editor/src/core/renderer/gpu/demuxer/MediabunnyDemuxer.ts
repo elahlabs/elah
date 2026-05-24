@@ -89,17 +89,40 @@ export class MediabunnyDemuxer {
 }
 
 async function createDefaultBackend(): Promise<DemuxerBackend> {
-  // Lazy import keeps mediabunny out of the main bundle until playback.
-  // Module is optional at build time; inject DemuxerFactory in tests/production wiring.
-  const moduleName = 'mediabunny'
-  const mediabunny = await import(/* @vite-ignore */ moduleName)
-  return createBackendFromModule(mediabunny)
-}
+  // The lazy-import path is a last resort. Prefer injecting a DemuxerFactory
+  // via GpuRenderer options so the factory owns blobResolver and mediabunny imports.
+  let mediabunny: unknown
+  try {
+    const moduleName = 'mediabunny'
+    mediabunny = await import(/* @vite-ignore */ moduleName)
+  } catch {
+    throw new Error(
+      [
+        'MediabunnyDemuxer: mediabunny could not be loaded automatically.',
+        '',
+        'To enable real video decode, inject a DemuxerFactory into GpuRenderer:',
+        '',
+        '  // In your app (e.g. apps/playground/src/createPlaygroundDemuxerFactory.ts):',
+        '  import * as mediabunny from "mediabunny"',
+        '  import { createMediabunnyBackend } from "@elah/editor"',
+        '',
+        '  const renderer = new GpuRenderer({',
+        '    demuxerFactory: () => createMediabunnyBackend(mediabunny),',
+        '  })',
+        '',
+        'Without this, the renderer falls back to SyntheticVideoFrameProvider (dev mode).',
+        'See: apps/playground/src/createPlaygroundDemuxerFactory.ts',
+      ].join('\n'),
+    )
+  }
 
-function createBackendFromModule(
-  _mediabunny: unknown,
-): DemuxerBackend {
-  throw new Error(
-    'MediabunnyDemuxer: real mediabunny backend not yet implemented. Inject a DemuxerFactory for tests.',
-  )
+  const { createMediabunnyBackend, isMediabunnyCompatible } = await import('./createMediabunnyBackend')
+  if (!isMediabunnyCompatible(mediabunny)) {
+    throw new Error(
+      'MediabunnyDemuxer: mediabunny module does not expose the expected API ' +
+      '(needs Input, BlobSource, EncodedPacketSink, ALL_FORMATS). ' +
+      'See createMediabunnyBackend.ts.',
+    )
+  }
+  return createMediabunnyBackend(mediabunny as Parameters<typeof createMediabunnyBackend>[0])
 }

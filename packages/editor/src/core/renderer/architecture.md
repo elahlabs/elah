@@ -117,11 +117,12 @@ flowchart TB
     end
 
     subgraph frames[Frame pipeline]
-        VFP[VideoFrameProvider<br/>Mock | Synthetic]
+        VFP[VideoFrameProvider<br/>Mock | Synthetic | DecoderBacked]
         VT[VideoTexture]
         FC[FrameCache]
         VDM[VideoDecoderManager]
         DMX[MediabunnyDemuxer]
+        DBP[DecoderBackedVideoFrameProvider]
     end
 
     subgraph dbg[debug/]
@@ -149,22 +150,20 @@ flowchart TB
     VT --> TP
 
     VFP --> FC
-    VFP -.future.-> VDM
+    VFP -->|demuxerFactory provided| DBP
+    DBP --> VDM
     VDM --> DMX
     VDM --> FC
 
     Panel --> Cnt
     VFP --> Cnt
     VT --> Cnt
-
-    classDef future stroke-dasharray:4 3,color:#aaa
-    class VDM,DMX future
 ```
 
-> The dotted edge `VideoFrameProvider → VideoDecoderManager` is the
-> not-yet-wired real backend; today `createVideoFrameProvider()` returns
-> `SyntheticVideoFrameProvider` (in browsers) or `MockVideoFrameProvider`
-> (in jsdom).
+> **Phase 1 wired** (2026-05-23): `createVideoFrameProvider(src, deps)` returns
+> `DecoderBackedVideoFrameProvider` when `deps.demuxerFactory` is provided.
+> `SyntheticVideoFrameProvider` (browser dev) and `MockVideoFrameProvider` (jsdom)
+> remain for environments without a real demuxer.
 
 ---
 
@@ -306,6 +305,139 @@ Cache rules (see [`FrameCache.ts`](./gpu/FrameCache.ts)):
 - When full, the entry with the **lowest** `sourceFrame` is evicted and closed.
 - `VideoTexture.upload` is the only consumer that closes a borrowed frame —
   and only in a `finally` block, so the rule still holds end-to-end.
+
+### 6.1 Decode pipeline (Phase 1 — wired)
+
+Full sequence from render tick miss to frame available on the next tick:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant VL as VideoLayer.draw
+    participant DBVFP as DecoderBackedVideoFrameProvider
+    participant FC as FrameCache
+    participant VDM as VideoDecoderManager
+    participant DMX as MediabunnyDemuxer
+
+    Note over VL,DMX: Synchronous render tick (inside render())
+    VL->>DBVFP: getCurrent(sourceFrame) [sync]
+    DBVFP->>FC: cache.get(sourceFrame)
+    FC-->>DBVFP: null (miss)
+    DBVFP-->>VL: null
+
+    VL->>DBVFP: requestFrame(sourceFrame) [fire-and-forget]
+    Note over DBVFP: coalesce check: pending? cache? cap exceeded? → no-op
+    DBVFP->>VDM: manager.requestFrame(sourceFrame) [returns Promise]
+
+    Note over VL,DMX: Async — microtask / decoder callback (off render tick)
+    VDM->>DMX: packets([timeUs, timeUs+usPerFrame])
+    DMX-->>VDM: EncodedVideoChunk stream
+    VDM->>VDM: decoder.decode(chunk) + decoder.flush()
+    VDM->>VDM: _pickOutputFrame() → VideoFrame
+    VDM-->>DBVFP: resolve(frame) [ownership transferred]
+    DBVFP->>FC: cache.put(sourceFrame, frame) [I10: FC owns now]
+
+    Note over VL,DMX: Next render tick
+    VL->>DBVFP: getCurrent(sourceFrame)
+    DBVFP->>FC: cache.get(sourceFrame)
+    FC-->>DBVFP: VideoFrame (borrowed)
+    DBVFP-->>VL: VideoFrame
+    VL->>VL: VideoTexture.upload → frame.close() in finally [I10]
+```
+
+### 6.2 Blob-resolve step (Phase 1 Real Playback)
+
+`createMediabunnyBackend` bridges the `DemuxerBackend.open(src: string)` API to
+mediabunny's blob-based `Input + BlobSource`:
+
+```mermaid
+sequenceDiagram
+    participant VDM as VideoDecoderManager
+    participant CMB as createMediabunnyBackend
+    participant BR as blobResolver
+    participant MB as mediabunny
+
+    VDM->>CMB: open(src)
+    CMB->>BR: blobResolver(src)
+    BR-->>CMB: Blob
+    CMB->>MB: new Input({ source: new BlobSource(blob) })
+    CMB->>MB: input.getPrimaryVideoTrack()
+    MB-->>CMB: VideoTrack
+    CMB->>MB: track.getDecoderConfig()
+    MB-->>CMB: VideoDecoderConfig | null
+    Note over CMB: null → actionable error thrown
+    CMB->>MB: new EncodedPacketSink(track)
+    CMB-->>VDM: backend opened
+```
+
+Default `blobResolver` is `fetch(src).blob()`. Override it in the playground
+factory (`createPlaygroundDemuxerFactory`) to skip the fetch round-trip for
+freshly-imported local files by passing the `File` object directly.
+
+### 6.3 Playback lifecycle (import → pixels)
+
+End-to-end flow from file import to rendered pixels:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant AssetPanel
+    participant Store as MediaLibraryStore
+    participant Timeline
+    participant Resolver as resolveTimeline
+    participant GR as GpuRenderer
+    participant VL as VideoLayer
+    participant DBP as DecoderBackedVideoFrameProvider
+    participant CMB as createMediabunnyBackend
+    participant MB as mediabunny
+    participant FC as FrameCache
+    participant VT as VideoTexture
+
+    User->>AssetPanel: drop file
+    AssetPanel->>Store: importFiles → addAsset({ src: objectUrl })
+    User->>Timeline: drag asset → drop on video track
+    Timeline->>Store: addClip({ assetId, src: objectUrl })
+
+    Note over Resolver,GR: RAF tick
+    GR->>Resolver: resolveTimeline(frame, project)
+    Resolver-->>GR: Scene { videos: [ActiveVideoClip { src }] }
+
+    GR->>VL: draw(scene)
+    VL->>DBP: getCurrent(frame) → null (cache miss)
+    VL->>DBP: requestFrame(frame) [fire-and-forget]
+
+    Note over DBP,MB: out-of-band async
+    DBP->>CMB: open(src)
+    CMB->>MB: fetch + BlobSource + Input
+    MB-->>CMB: VideoTrack + DecoderConfig
+    CMB-->>DBP: backend ready
+
+    DBP->>CMB: seekToKeyframe(µs)
+    CMB->>MB: sink.getKeyPacket(sec)
+    DBP->>CMB: packets([startµs, endµs])
+    CMB->>MB: sink.getNextPacket → EncodedVideoChunk
+    DBP->>DBP: VideoDecoder.decode + flush → VideoFrame
+    DBP->>FC: cache.put(frame, VideoFrame)
+
+    Note over GR,VT: next RAF tick
+    GR->>VL: draw(scene)
+    VL->>DBP: getCurrent(frame) → VideoFrame (cache hit)
+    VL->>VT: upload(VideoFrame) → gl.texImage2D [frame.close() in finally]
+    VT-->>GR: texture bound
+    GR->>GR: gl.drawArrays → pixels on canvas
+```
+
+### 6.4 Outstanding decode coalescing
+
+`DecoderBackedVideoFrameProvider` enforces three coalescing rules in `requestFrame()`:
+
+| Rule | Condition | Action |
+|---|---|---|
+| Cache hit | `cache.has(n)` | No-op |
+| In-flight | `_pending.has(n)` | No-op — existing promise will resolve |
+| Cap exceeded | `_pending.size >= maxOutstanding` | No-op — back-pressure |
+
+`maxOutstanding` defaults to 4, configurable via `RendererOptions.maxOutstandingDecodes`.
 
 ---
 
@@ -520,19 +652,30 @@ graph LR
     end
 
     subgraph next[Next]
-        N1[Wire VideoDecoderManager into provider]
-        N2[Implement createDefaultBackend mediabunny]
         N3[DomRenderer for cheap MVP]
         N4[ExportRenderer Worker + VideoEncoder]
         N5[Wire setDebug into apps/playground/GpuPreview]
+        N6[AudioScheduler Phase 2]
+        N7[TextLayer Phase 3]
     end
 
     done --> next
 
+    subgraph phase1[Phase 1 — wired 2026-05-23]
+        P1[DecoderBackedVideoFrameProvider]
+        P2[createVideoFrameProvider demuxerFactory path]
+        P3[fps parameterization in VideoDecoderManager]
+        P4[droppedFrames + outstandingDecodes in GpuDebugCounters]
+        P5[createMediabunnyBackend adapter + actionable error]
+        P6[RecordingGl golden-frame test harness]
+    end
+
     classDef done fill:#1f6f1f,stroke:#0a0,color:#fff
+    classDef phase1 fill:#1a4a6f,stroke:#07f,color:#fff
     classDef next fill:#444,stroke:#888,color:#ccc,stroke-dasharray:4 3
     class D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13 done
-    class N1,N2,N3,N4,N5 next
+    class P1,P2,P3,P4,P5,P6 phase1
+    class N3,N4,N5,N6,N7 next
 ```
 
 ---
@@ -553,5 +696,8 @@ graph LR
 | Decoded-frame cache       | [`gpu/FrameCache.ts`](./gpu/FrameCache.ts)                           |
 | Decoder + state machine   | [`gpu/VideoDecoderManager.ts`](./gpu/VideoDecoderManager.ts)         |
 | Demuxer adapter           | [`gpu/demuxer/MediabunnyDemuxer.ts`](./gpu/demuxer/MediabunnyDemuxer.ts) |
+| mediabunny backend adapter | [`gpu/demuxer/createMediabunnyBackend.ts`](./gpu/demuxer/createMediabunnyBackend.ts) |
+| Real decode provider      | [`gpu/DecoderBackedVideoFrameProvider.ts`](./gpu/DecoderBackedVideoFrameProvider.ts) |
 | Debug renderer & overlay  | [`gpu/debug/`](./gpu/debug)                                          |
-| Tests (162 across 18 files) | [`gpu/__tests__/`](./gpu/__tests__)                                |
+| Recording GL (test only)  | [`gpu/debug/RecordingGl.ts`](./gpu/debug/RecordingGl.ts)            |
+| Tests (23+ suites)        | [`gpu/__tests__/`](./gpu/__tests__)                                  |

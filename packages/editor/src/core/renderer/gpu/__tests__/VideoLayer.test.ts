@@ -102,11 +102,16 @@ function makeMockProvider(): VideoFrameProvider & {
 }
 
 function mockFrame(): VideoFrame {
-  return {
+  const frame = {
     close: vi.fn(),
     displayWidth: 640,
     displayHeight: 360,
-  } as unknown as VideoFrame
+    // VideoLayer.draw() clones the cached frame before handing it to
+    // VideoTexture.upload() (which consumes it). clone() must return an
+    // independent reference per the WebCodecs spec.
+    clone: vi.fn(() => mockFrame()),
+  }
+  return frame as unknown as VideoFrame
 }
 
 function makeClip(overrides: Partial<ActiveVideoClip> = {}): ActiveVideoClip {

@@ -31,6 +31,7 @@ describe('VideoFrame ownership', () => {
 
     cache.put(0, f0)
     cache.put(5, f1)
+    cache.setPivot(10)
     cache.put(10, f2)
 
     expect(f0.closeCount()).toBe(1)

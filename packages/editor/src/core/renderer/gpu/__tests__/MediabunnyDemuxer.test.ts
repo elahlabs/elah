@@ -116,6 +116,19 @@ describe('MediabunnyDemuxer adapter', () => {
     expect(manager.state).toBe('Errored')
   })
 
+  it('createMediabunnyBackend throws actionable error when module lacks expected API', async () => {
+    // Simulate a mediabunny-shaped object missing required exports.
+    // This tests the isMediabunnyCompatible + _assertMediabunnyApi path.
+    const { createMediabunnyBackend } = await import('../demuxer/createMediabunnyBackend')
+
+    const badModule = { Input: 'not-a-constructor' } as unknown
+    expect(() =>
+      createMediabunnyBackend(
+        badModule as Parameters<typeof createMediabunnyBackend>[0],
+      ),
+    ).toThrow(/Input, BlobSource, EncodedPacketSink/)
+  })
+
   it('configure flow wires demuxer config to decoder', async () => {
     const config: VideoDecoderConfig = {
       codec: 'vp09.00.10.08',

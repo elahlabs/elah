@@ -269,6 +269,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
         accept="video/*,audio/*,image/*"
         style={{ display: 'none' }}
         onChange={onFileInputChange}
+        data-testid="asset-file-input"
       />
 
       <div

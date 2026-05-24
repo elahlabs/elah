@@ -20,6 +20,7 @@ import { VideoTexture } from '../VideoTexture'
 import {
   createVideoFrameProvider,
   type VideoFrameProvider,
+  type VideoFrameProviderDeps,
 } from '../VideoFrameProvider'
 import type { Layer, LayerContext } from './types'
 
@@ -150,6 +151,8 @@ export type VideoFrameProviderFactory = (src: string) => VideoFrameProvider
 export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _pool: TexturePool
   private readonly _providerFactory: VideoFrameProviderFactory
+  /** Decode deps forwarded to createVideoFrameProvider when no providerFactory override. */
+  private readonly _deps: VideoFrameProviderDeps | undefined
 
   private _program: ShaderProgram | null = null
   private _vao: WebGLVertexArrayObject | null = null
@@ -162,10 +165,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
 
   constructor(
     pool: TexturePool,
-    providerFactory: VideoFrameProviderFactory = createVideoFrameProvider,
+    providerFactoryOrDeps?: VideoFrameProviderFactory | VideoFrameProviderDeps,
   ) {
     this._pool = pool
-    this._providerFactory = providerFactory
+    if (typeof providerFactoryOrDeps === 'function') {
+      this._providerFactory = providerFactoryOrDeps
+      this._deps = undefined
+    } else {
+      this._deps = providerFactoryOrDeps
+      this._providerFactory = (src: string) => createVideoFrameProvider(src, this._deps)
+    }
   }
 
   acquire(item: ActiveVideoClip, ctx: LayerContext): void {
@@ -178,10 +187,13 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
 
     let entry = this._providers.get(item.src)
     if (!entry) {
-      entry = {
-        provider: this._providerFactory(item.src),
-        refCount: 0,
-      }
+      // When real decode deps are available, merge the scene fps so the
+      // decoder computes frame timestamps correctly for any project frame rate.
+      // Custom providerFactory overrides (tests) are used as-is.
+      const provider = this._deps
+        ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
+        : this._providerFactory(item.src)
+      entry = { provider, refCount: 0 }
       this._providers.set(item.src, entry)
     }
 
@@ -220,7 +232,18 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     const frame = provider.getCurrent(item.sourceFrame)
 
     if (frame !== null) {
-      const uploaded = texture.upload(ctx.gl, frame)
+      // provider.getCurrent() returns a borrowed reference — the FrameCache
+      // retains ownership and is responsible for closing it on eviction.
+      // VideoTexture.upload() consumes (closes) its argument, so we hand it
+      // a cheap reference-clone. Both the cache's original and our clone must
+      // be closed independently; the cache will close on evict/dispose, the
+      // clone is closed in VideoTexture.upload()'s finally block.
+      // Without this clone the cached frame is closed after the first upload
+      // and every subsequent texImage2D fails with
+      //   INVALID_OPERATION: can't texture a closed VideoFrame
+      // leaving the canvas black.
+      const uploadFrame = frame.clone()
+      const uploaded = texture.upload(ctx.gl, uploadFrame)
       if (uploaded) {
         this._contentSizeByItemId.set(item.id, {
           width: frame.displayWidth,
@@ -229,6 +252,14 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       }
     } else {
       provider.requestFrame(item.sourceFrame)
+      // Prefetch only if the request queue has room. When the queue is already
+      // saturated (e.g. mid-seek burst), skip prefetch so the seek-target slot
+      // is never pushed out by prefetch siblings.
+      const pendingCount = provider.pendingCount ?? 0
+      const maxPrefetch = Math.min(Math.max(1, Math.ceil(ctx.fps / 6)), 5)
+      if (pendingCount < this._getMaxOutstanding(provider) - 1) {
+        provider.prefetch(item.sourceFrame + 1, maxPrefetch)
+      }
     }
 
     if (!texture.hasContent || !this._program || !this._vao) {
@@ -323,6 +354,26 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     return this._textures.size
   }
 
+  /** Number of unique src providers currently alive (including idle). */
+  getProviderCount(): number {
+    return this._providers.size
+  }
+
+  /**
+   * Snapshot of `src → decoderState` for all live providers.
+   * Used by the debug panel. Returns `{}` when no providers are alive.
+   */
+  getDecoderStates(): Record<string, string> {
+    const out: Record<string, string> = {}
+    for (const [src, entry] of this._providers) {
+      const provider = entry.provider as VideoFrameProvider & { decoderState?: string }
+      if (typeof provider.decoderState === 'string') {
+        out[src] = provider.decoderState
+      }
+    }
+    return out
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -337,5 +388,11 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       throw new Error('VideoLayer: gl.createVertexArray() returned null')
     }
     this._vao = vao
+  }
+
+  private _getMaxOutstanding(provider: VideoFrameProvider): number {
+    // DecoderBackedVideoFrameProvider exposes _maxOutstanding; access via
+    // duck-typing since the interface doesn't mandate it.
+    return (provider as { _maxOutstanding?: number })._maxOutstanding ?? 4
   }
 }

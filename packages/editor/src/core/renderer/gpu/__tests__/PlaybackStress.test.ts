@@ -120,11 +120,14 @@ function makeClip(id: string, src = 'video://shared'): ActiveVideoClip {
 }
 
 function mockFrame(): VideoFrame {
-  return {
+  const frame = {
     displayWidth: 640,
     displayHeight: 360,
     close: vi.fn(),
-  } as unknown as VideoFrame
+    // VideoLayer.draw() clones cached frames before upload — mirror that.
+    clone: vi.fn(() => mockFrame()),
+  }
+  return frame as unknown as VideoFrame
 }
 
 function createStressProvider() {

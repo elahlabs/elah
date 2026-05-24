@@ -150,9 +150,12 @@ describe('Performance instrumentation', () => {
 })
 
 function mockFrame(): VideoFrame {
-  return {
+  const frame = {
     displayWidth: 640,
     displayHeight: 360,
     close: () => {},
-  } as unknown as VideoFrame
+    // VideoLayer.draw() clones cached frames before upload — mirror that.
+    clone: () => mockFrame(),
+  }
+  return frame as unknown as VideoFrame
 }

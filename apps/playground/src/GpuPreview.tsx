@@ -1,12 +1,27 @@
 import { useEffect, useRef } from 'react'
 import {
   GpuRenderer,
+  GpuDebugCounters,
   resolveTimeline,
   usePlaybackEngine,
   usePlaybackStore,
   useTimelineEngine,
   useTracksStore,
+  type CounterSnapshot,
 } from '@elah/editor'
+import { createPlaygroundDemuxerFactory } from './createPlaygroundDemuxerFactory'
+
+/** Dev-only handle exposed on window.__GPU__ for Playwright integration tests. */
+interface GpuDevHandle {
+  /** Read the current canvas pixels and return a SHA-256 hex digest. */
+  readCanvas(): Promise<string>
+  /** Read a small region of the canvas and return the raw RGBA bytes. */
+  readPixelRegion(x: number, y: number, w: number, h: number): Uint8Array
+  /** Snapshot of decode/cache counters. Used by tests to assert real decode happened. */
+  counters(): CounterSnapshot
+  /** Current canvas drawing buffer size (deterministic in headless Playwright). */
+  canvasSize(): { width: number; height: number }
+}
 
 export interface GpuPreviewProps {
   debugMode?: boolean
@@ -29,9 +44,57 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
     const container = containerRef.current
     if (!container) return
 
-    const renderer = new GpuRenderer()
+    const renderer = new GpuRenderer({
+      demuxerFactory: createPlaygroundDemuxerFactory(),
+      maxOutstandingDecodes: 4,
+      // Required so window.__GPU__.readCanvas() (Playwright golden-pixel tests
+      // + future dev tools) can call gl.readPixels() outside the RAF tick.
+      // The default WebGL behaviour clears the drawing buffer after every
+      // compositing op, which makes JS-side readbacks return all zeros even
+      // though the canvas is visibly painted.
+      preserveDrawingBuffer: true,
+    })
     renderer.mount(container)
     renderer.setDebug(debugMode)
+
+    // Dev-only helper consumed by Playwright E2E tests.
+    // window.__GPU__ exposes pixel readbacks + decode counters so tests can
+    // (a) assert real decoded frames landed on the canvas (not just black)
+    // and (b) compute golden-pixel hashes for regression detection.
+    if (import.meta.env.DEV) {
+      const readGl = () => {
+        const canvas = renderer.getCanvas()
+        if (!canvas) throw new Error('__GPU__: renderer not mounted')
+        const gl = canvas.getContext('webgl2')
+        if (!gl) throw new Error('__GPU__: no WebGL2 context')
+        return { canvas, gl }
+      }
+      ;(window as Window & { __GPU__?: GpuDevHandle }).__GPU__ = {
+        async readCanvas(): Promise<string> {
+          const { canvas, gl } = readGl()
+          const { width, height } = canvas
+          const pixels = new Uint8Array(width * height * 4)
+          gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+          const hash = await crypto.subtle.digest('SHA-256', pixels)
+          return Array.from(new Uint8Array(hash))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('')
+        },
+        readPixelRegion(x, y, w, h): Uint8Array {
+          const { gl } = readGl()
+          const pixels = new Uint8Array(w * h * 4)
+          gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+          return pixels
+        },
+        counters(): CounterSnapshot {
+          return GpuDebugCounters.snapshot()
+        },
+        canvasSize(): { width: number; height: number } {
+          const { canvas } = readGl()
+          return { width: canvas.width, height: canvas.height }
+        },
+      }
+    }
 
     const resize = () => {
       const dpr = window.devicePixelRatio ?? 1
@@ -55,6 +118,9 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
       cancelAnimationFrame(rafId)
       observer.disconnect()
       renderer.dispose()
+      if (import.meta.env.DEV) {
+        delete (window as Window & { __GPU__?: GpuDevHandle }).__GPU__
+      }
     }
   }, [engine, playback, debugMode])
 
@@ -73,7 +139,8 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
         display: 'flex',
         flexDirection: 'column',
         background: '#0d0d0d',
-        borderTop: '1px solid #2a2a2a',
+        borderBottom: '1px solid #2a2a2a',
+        minHeight: 0, // critical so flex children can shrink correctly
         ...style,
       }}
     >
@@ -84,6 +151,7 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
           gap: 8,
           padding: '6px 12px',
           borderBottom: '1px solid #222',
+          flexShrink: 0,
         }}
       >
         <span
@@ -129,7 +197,8 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
         style={{
           position: 'relative',
           width: '100%',
-          height: 240,
+          flex: 1,
+          minHeight: 240,
           background: '#000',
         }}
       />

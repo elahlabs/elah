@@ -123,12 +123,15 @@ function makeClip(overrides: Partial<ActiveVideoClip> = {}): ActiveVideoClip {
 }
 
 function mockFrame(sourceFrame = 0): VideoFrame {
-  return {
+  const frame = {
     displayWidth: 640,
     displayHeight: 360,
     timestamp: sourceFrame * (1_000_000 / 30),
     close: vi.fn(),
-  } as unknown as VideoFrame
+    // VideoLayer.draw() clones cached frames before upload — mirror that.
+    clone: vi.fn(() => mockFrame(sourceFrame)),
+  }
+  return frame as unknown as VideoFrame
 }
 
 function createTrackingProvider() {
@@ -249,7 +252,10 @@ describe('Render synchronization', () => {
     renderer.render(makeScene(60, [{ ...clip, sourceFrame: 60 }]))
 
     expect(tracking.getCurrentCalls).toEqual([60])
-    expect(tracking.requestFrameCalls).toEqual([60])
+    // Frame 60 must be the first requested frame (cache miss on the current frame).
+    // Subsequent entries are prefetch look-ahead frames — that is expected behaviour.
+    expect(tracking.requestFrameCalls[0]).toBe(60)
+    expect(tracking.requestFrameCalls).not.toContain(0) // no stale frame 0
     expect(tracking.cache.has(0)).toBe(false)
 
     renderer.dispose()

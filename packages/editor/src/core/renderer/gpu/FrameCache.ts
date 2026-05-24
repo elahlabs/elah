@@ -7,8 +7,9 @@
  * **Borrowing:** `get()` returns a borrowed reference only. Callers must NOT
  * close or retain frames across render ticks.
  *
- * Eviction is deterministic: when the cache is full, the entry with the
- * lowest sourceFrame key (oldest) is evicted first.
+ * Eviction is deterministic: when the cache is full, the entry furthest from
+ * the current pivot is evicted first; pivot defaults to 0 and must be updated
+ * via setPivot() before each put during real playback.
  */
 
 const DEFAULT_MAX_FRAMES = 30
@@ -28,6 +29,7 @@ export class FrameCache {
   private readonly _maxFrames: number
   private readonly _hooks: FrameCacheHooks
   private readonly _frames = new Map<number, VideoFrame>()
+  private _pivot = 0
 
   constructor(maxFramesOrOptions?: number | FrameCacheOptions) {
     if (typeof maxFramesOrOptions === 'number' || maxFramesOrOptions === undefined) {
@@ -44,6 +46,11 @@ export class FrameCache {
     return this._frames.size
   }
 
+  /** Set the playhead pivot used by eviction. Call from getCurrent() on every lookup. */
+  setPivot(sourceFrame: number): void {
+    this._pivot = sourceFrame
+  }
+
   /** Return a borrowed frame reference, or null if not cached. Do not close. */
   get(sourceFrame: number): VideoFrame | null {
     return this._frames.get(sourceFrame) ?? null
@@ -57,7 +64,7 @@ export class FrameCache {
       this._frames.delete(sourceFrame)
       this._hooks.onEvict?.(sourceFrame)
     } else if (this._frames.size >= this._maxFrames) {
-      this._evictOldest()
+      this._evictFurthest()
     }
 
     this._frames.set(sourceFrame, frame)
@@ -97,18 +104,21 @@ export class FrameCache {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private _evictOldest(): void {
-    let oldestKey: number | null = null
+  private _evictFurthest(): void {
+    let victimKey: number | null = null
+    let maxDist = -1
     for (const key of this._frames.keys()) {
-      if (oldestKey === null || key < oldestKey) {
-        oldestKey = key
+      const dist = Math.abs(key - this._pivot)
+      if (dist > maxDist || (dist === maxDist && victimKey !== null && key < victimKey)) {
+        maxDist = dist
+        victimKey = key
       }
     }
 
-    if (oldestKey !== null) {
-      this._frames.get(oldestKey)!.close()
-      this._frames.delete(oldestKey)
-      this._hooks.onEvict?.(oldestKey)
+    if (victimKey !== null) {
+      this._frames.get(victimKey)!.close()
+      this._frames.delete(victimKey)
+      this._hooks.onEvict?.(victimKey)
     }
   }
 }

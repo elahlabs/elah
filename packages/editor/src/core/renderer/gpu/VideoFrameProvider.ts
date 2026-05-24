@@ -17,6 +17,9 @@
 
 import { FrameCache } from './FrameCache'
 import { GpuDebugCounters } from './debug/GpuDebugCounters'
+import { DecoderBackedVideoFrameProvider } from './DecoderBackedVideoFrameProvider'
+import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
+import type { VideoDecoderFactory } from './VideoDecoderManager'
 
 /** Frame access contract for VideoLayer. */
 export interface VideoFrameProvider {
@@ -37,6 +40,9 @@ export interface VideoFrameProvider {
 
   /** Release all resources. Provider must not be used after dispose. */
   dispose(): void
+
+  /** Current number of in-flight decode requests. Optional — not all providers expose this. */
+  pendingCount?: number
 }
 
 export interface MetricsHook {
@@ -368,9 +374,39 @@ export class SyntheticVideoFrameProvider implements VideoFrameProvider {
   }
 }
 
-/** Default factory used by VideoLayer when none is supplied. */
-export function createVideoFrameProvider(src: string): VideoFrameProvider {
-  void src
+/** Options for wiring a real decode backend into the provider factory. */
+export interface VideoFrameProviderDeps {
+  /** Injected demuxer factory. When provided, returns DecoderBackedVideoFrameProvider. */
+  demuxerFactory?: DemuxerFactory
+  /** Optional decoder factory override (for tests). */
+  decoderFactory?: VideoDecoderFactory
+  /** Frames per second. Default 30. */
+  fps?: number
+  /** Max outstanding decode requests before new ones are dropped. Default 4. */
+  maxOutstanding?: number
+}
+
+/**
+ * Default factory used by VideoLayer when none is supplied.
+ *
+ * Selection:
+ *  1. deps.demuxerFactory provided → DecoderBackedVideoFrameProvider (real decode)
+ *  2. OffscreenCanvas + VideoFrame available → SyntheticVideoFrameProvider (visual dev)
+ *  3. otherwise → MockVideoFrameProvider (jsdom / test environment)
+ */
+export function createVideoFrameProvider(
+  src: string,
+  deps?: VideoFrameProviderDeps,
+): VideoFrameProvider {
+  if (deps?.demuxerFactory) {
+    return new DecoderBackedVideoFrameProvider({
+      src,
+      fps: deps.fps,
+      maxOutstanding: deps.maxOutstanding,
+      demuxerFactory: deps.demuxerFactory,
+      decoderFactory: deps.decoderFactory,
+    })
+  }
   if (canUseSyntheticFrames()) {
     return new SyntheticVideoFrameProvider()
   }

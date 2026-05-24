@@ -12,6 +12,14 @@ export interface DebugPanelSnapshot {
   cacheHitRatio: number
   renderDurationMs: number
   decoderStates: Record<string, string>
+  /** Total frames dropped due to decode failure (not seek/drain cancellation). */
+  droppedFrames: number
+  /** Current in-flight decode requests across all providers. */
+  outstandingDecodes: number
+  /** Number of unique-src providers currently alive in VideoLayer. */
+  activeProviders: number
+  /** Consecutive render() calls that skipped work (scene === lastScene). */
+  noOpTicks: number
 }
 
 export class GpuRendererDebugPanel {
@@ -76,6 +84,10 @@ export class GpuRendererDebugPanel {
       `Textures: ${s.textureCount}`,
       `Cache hit: ${(s.cacheHitRatio * 100).toFixed(0)}%`,
       `Render: ${s.renderDurationMs.toFixed(2)}ms`,
+      `No-op ticks: ${s.noOpTicks}`,
+      `Dropped: ${s.droppedFrames}`,
+      `Outstanding: ${s.outstandingDecodes}`,
+      `Active providers: ${s.activeProviders}`,
       `Decoders:\n${decoderLines}`,
     ].join('\n')
   }

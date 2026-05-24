@@ -442,7 +442,7 @@ Recommended execution order: **Phase 1 → Phase 5 (partial) → Phase 2 → Pha
 
 ---
 
-### Phase 1 — Video Pipeline Stabilization
+### Phase 1 — Video Pipeline Stabilization ✓ Done (2026-05-23)
 
 **Goal**: Make the existing GPU renderer production-capable with real media.
 
@@ -915,6 +915,10 @@ invariants it must preserve.
 | S7 | Cloud / distributed rendering | Export worker's `(Scene, frame) → pixels` contract exposed as a remote RPC | Identical contract to local export; worker-safe invariants already hold | I7, I8 |
 | S8 | Headless rendering | `GpuRenderer` receives `OffscreenCanvas` from `headless-gl` or WebGPU Node adapter | Renderer never imports `document` or `window` (already enforced by I2, I8) | I2, I8 |
 | S9 | Public SDK / runtime API | Public surface: `{ TimelineEngine, resolveTimeline, Renderer, GpuRenderer }` | No React types in public exports; `Scene` and `Project` are plain TypeScript interfaces | All invariants I1–I12 |
+| S10 | Worker decode migration | `VideoDecoderManager` moves behind a `MessagePort`; `DecoderBackedVideoFrameProvider` posts requests and receives `VideoFrame` objects | `getCurrent()` / `requestFrame()` interface unchanged; ownership rule I10 preserved because `VideoFrame.transfer()` is destructive — exactly one owner at all times | I1 (sync render), I10 (ownership) |
+| S11 | Transferable `VideoFrame` | Decoded frames cross `postMessage` via `VideoFrame.transfer()` from a decode worker | Ownership transfers atomically; the receiving thread is sole owner; `FrameCache.put()` call site unchanged | I10 |
+| S12 | Hardware acceleration paths | `VideoDecoderConfig.hardwareAcceleration` sourced from a project-level preference; forwarded through `RendererOptions` → `VideoDecoderManagerOptions` | No renderer or provider interface changes; decoder configuration is an internal detail of `VideoDecoderManager` | I2 (renderer sees only Scene) |
+| S13 | Multi-stream decode scaling | Per-src `VideoDecoderManager` cap (max N active managers); LRU eviction of idle managers via the existing `markIdle` / idle-timeout path | Provider factory remains `(src, deps?) => VideoFrameProvider`; eviction is transparent to `VideoLayer` | I5 (RenderGraph owns layer lifecycle) |
 
 ---
 
@@ -1159,3 +1163,88 @@ They require that §3 never be violated.
 ---
 
 _Last updated: 2026-05-23. Cross-references validated against [`architecture.md`](./architecture.md) (renderer internals), [`video-editor/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) (engine), [`video-editor/ROADMAP.md`](../../../../ROADMAP.md) (PR sequencing), and study docs `01–09` at the workspace root._
+
+---
+
+## 11. Change Log
+
+### 2026-05-23 — Phase 1: Video Pipeline Stabilization
+
+**Subsystems wired / added**:
+
+- `DecoderBackedVideoFrameProvider` — real `VideoDecoderManager`-backed provider replacing `SyntheticVideoFrameProvider` as the production default. Receives a `DemuxerFactory` via `RendererOptions`; falls back to synthetic when not provided.
+- `createVideoFrameProvider(src, deps?)` — factory extended to accept `VideoFrameProviderDeps` for demuxer/decoder injection.
+- `VideoDecoderManager` — `fps` parameter added (previously hardcoded to 30). `onDecodeLatency` and `onDroppedFrame` hooks added.
+- `GpuDebugCounters` — new counters: `droppedFrames`, `outstandingDecodes`, `decoderStateTransitions`. `incDropped()` and `recordDecoderTransition()` helpers added.
+- `GpuRendererDebugPanel` / `DebugPanelSnapshot` — surfaces `droppedFrames` and `outstandingDecodes`.
+- `RendererOptions` — extended with `demuxerFactory`, `decoderFactory`, `maxOutstandingDecodes`.
+- `VideoLayer` — accepts `VideoFrameProviderDeps` as an alternative to a full `VideoFrameProviderFactory`.
+- `createMediabunnyBackend` — optional adapter wrapping the mediabunny npm package into `DemuxerBackend`. Ships with `isMediabunnyCompatible()` guard and a comprehensive actionable error message.
+- `MediabunnyDemuxer` — `createDefaultBackend()` replaced with a lazy import path that validates the module shape and delegates to `createMediabunnyBackend`.
+- `RecordingGl` (test-only) — `WebGL2RenderingContext` stub that records draw calls into a byte log for SHA-256 golden-frame hashing.
+
+**New test suites** (added to `gpu/__tests__/`):
+- `DecoderBackedVideoFrameProvider.test.ts` — happy path, coalescing, cap, dispose.
+- `RapidSeekStress.test.ts` — 100+ seek cycles, leak counters, non-stuck assertion.
+- `FrameOwnership.test.ts` — FrameCache ownership invariant, multi-clip, double-close detection.
+- `ProviderDisposal.test.ts` — lifecycle state machine, idle timer, error-state cleanup.
+- `GoldenFrameHash.test.ts` — deterministic hash across 3 runs and context-loss cycle.
+- Extended `VideoDecoderManager.test.ts` — fps parameterization, hook invocation, drain cancellation.
+- Extended `MediabunnyDemuxer.test.ts` — actionable error when mediabunny absent.
+
+**Invariants preserved**:
+- I1: `render(scene)` remains synchronous. `DecoderBackedVideoFrameProvider.requestFrame()` is fire-and-forget. `getCurrent()` never awaits.
+- I3: `scene === lastScene` guard untouched. Validated by `GoldenFrameHash` 3-run test.
+- I4: cache miss returns `null`; last uploaded texture drawn; `requestFrame` is fire-and-forget.
+- I5: `RenderGraph` is the sole orchestrator. `VideoLayer` accepts deps; no orchestration bypass.
+- I9: GL handles live behind context-loss contract; `DecoderBackedVideoFrameProvider` holds no GL objects (immune to context loss).
+- I10: `FrameCache` owns frames; `cache.put()` transfers ownership from decoder; `upload()` closes in `finally`.
+- I11: Integer frame model preserved; `fps` parameter ensures correct microsecond timestamps.
+
+**Architectural tradeoffs**:
+- mediabunny is optional (peer, not a dep): keeps the package footprint small; consumers opt in. Tradeoff: consumers must wire the factory; the error message is comprehensive enough to guide them.
+- `maxOutstanding` cap (default 4) is a conservative bound; high-throughput use cases may increase it. Frame drops are observable via `GpuDebugCounters.droppedFrames`.
+- `RecordingGl` is a call-recording stub, not a pixel-rendering stub. Golden hashes encode draw order and uniform values, not pixel bytes. True pixel hashes require a real GPU (deferred to Phase 4 CI / Playwright).
+
+**Future implications** (new seams documented, §7 S10–S13):
+- S10: Worker decode migration — `DecoderBackedVideoFrameProvider` is the natural seam. The provider interface does not change; the manager moves behind a `MessagePort`.
+- S11: Transferable `VideoFrame` — `VideoFrame.transfer()` is destructive; I10 is preserved at the transfer site.
+- S12: Hardware acceleration — forwarded through `RendererOptions` without touching the renderer.
+- S13: Multi-stream scaling — idle manager eviction is already modelled via `markIdle` / idle-timeout.
+
+**Known risks**:
+- `VideoDecoderManager._decodeFrame` iterates `packets()` sequentially. High-bitrate sources or slow demuxers may take > 1 frame budget; the provider coalesces so the renderer is not blocked, but visible lag may increase.
+- The `DecoderBackedVideoFrameProvider` does not attempt recovery from `Errored` decoder state automatically. Callers must dispose and recreate the provider. Recovery automation is deferred to Phase 1.5 or Phase 5 stabilization.
+
+---
+
+### 2026-05-23 — Phase 1: Real Playback Integration ✓ Done
+
+**Goal**: Wire the completed pipeline end-to-end so the playground plays real MP4/WebM files decoded through `DecoderBackedVideoFrameProvider → VideoDecoderManager → FrameCache`. Validate with a Playwright real-Chrome pixel-hash golden test.
+
+**Subsystems wired / added**:
+
+- `createMediabunnyBackend` (**rewritten**) — rewrote the stub against the real mediabunny v1.x API (`Input`, `BlobSource`, `EncodedPacketSink`, `ALL_FORMATS`). Timing bridge: VideoDecoderManager uses integer µs; mediabunny uses floating-point seconds. Conversion is entirely inside this file. `blobResolver` option added for callers who can provide a `File` object directly (avoiding a fetch round-trip). Default resolver is `fetch(src).blob()` — compatible with object URLs, http:, and data: URIs.
+- `createPlaygroundDemuxerFactory` (new, playground-only) — the only file that statically imports `mediabunny`. Creates a per-clip `DemuxerBackend` with a fetch-based `blobResolver`.
+- `GpuPreview.tsx` — wired with `demuxerFactory: createPlaygroundDemuxerFactory(), maxOutstandingDecodes: 4`. Added `window.__GPU__.readCanvas()` dev helper (DEV-only) for Playwright pixel reads.
+- `VideoLayer.getProviderCount()` — new read-only accessor; one line.
+- `DebugPanelSnapshot.activeProviders` + `GpuRendererDebugPanel` — shows "Active providers: N" in the overlay. `GpuRenderer._buildDebugSnapshot()` populates the field.
+- `GpuRenderer.getCanvas()` — returns the canvas element for dev-tool and Playwright access.
+- `TexturePool.getLeasedCount()` — test-only accessor: `_allocated - _lruFree.length`.
+- `@elah/editor` `index.ts` — re-exports `createMediabunnyBackend`, `isMediabunnyCompatible`, `MediabunnyModule`, `CreateMediabunnyBackendOpts`, `DemuxerBackend`, `DemuxerFactory`.
+
+**New test suites**:
+- `MediabunnyBackend.test.ts` — unit tests for the rewritten backend: µs→sec conversion, `getKeyPacket` seek caching, dispose, null codec error, `isMediabunnyCompatible`.
+- `PlaybackRestart.test.ts` — 10 play/pause cycles; `TexturePool.getLeasedCount()` returns to 0 after each cycle.
+- `MultiClipOverlap.playback.test.ts` — two clips at same src: one provider, coalesced requests, bounded pending count.
+- `ProviderObjectUrlCleanup.test.ts` — dispose before open; in-flight frame closed on disposal; double-dispose; post-error no-op.
+- `e2e/realPlayback.spec.ts` — Playwright: import MP4 fixture, seek to frame 15, SHA-256 hash pixels via `window.__GPU__.readCanvas()`, assert stable across 3 runs and after WebGL context loss.
+
+**Architectural tradeoffs**:
+- **Blob-fetch round-trip**: object URLs created by `URL.createObjectURL(file)` are fetched back as a Blob in `createMediabunnyBackend`. This creates a temporary in-memory copy. Future optimisation: maintain a `Map<objectUrl, File>` in the playground and pass the `File` directly via `blobResolver`, skipping the fetch. The `blobResolver` parameter already supports this without API change.
+- **Container-format tree-shake**: `ALL_FORMATS` is passed to `Input` for maximum compatibility in the playground. Production apps that know their format can pass a specific format array to reduce bundle size.
+- **mediabunny in playground only**: `@elah/editor` remains free of the mediabunny dependency. Only `apps/playground/src/createPlaygroundDemuxerFactory.ts` imports it statically. This was a deliberate trade-off: the editor SDK stays lean; the playground pays the bundle cost.
+
+**Known risks before audio phase**:
+- **Clock drift**: `PlaybackEngine` uses `performance.now()`. When the audio phase ships a `VideoDecoder` + `AudioContext` timeline, the video-frame clock must be disciplined to `AudioContext.currentTime`. A drift of > 1 frame (~33ms) becomes visible. The architecture supports the upgrade; a seam for it exists at `PlaybackEngine.getFrameAt()`.
+- **Back-pressure signal gap**: `VideoLayer` currently has no back-pressure signal to providers when GPU upload is slow (texture pool full). When the pool is exhausted, `acquire()` returns `null` and the frame is skipped silently. A future `onPoolPressure` callback from `TexturePool` to `DecoderBackedVideoFrameProvider` would allow the provider to throttle `requestFrame` calls. Deferred to Phase 2.

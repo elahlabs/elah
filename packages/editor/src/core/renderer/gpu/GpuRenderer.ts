@@ -43,6 +43,7 @@ export class GpuRenderer implements Renderer {
   private _lastRenderTime = 0
   private _fps = 0
   private _lastRenderDurationMs = 0
+  private _noOpTicks = 0
 
   constructor(options: RendererOptions = {}) {
     this._options = options
@@ -58,6 +59,7 @@ export class GpuRenderer implements Renderer {
     this._glCtx = new WebGLContext({
       onLost: () => this._handleContextLost(),
       onRestore: () => this._handleContextRestored(),
+      preserveDrawingBuffer: this._options.preserveDrawingBuffer,
     })
 
     this._glCtx.setClearColor(...clearColor)
@@ -73,10 +75,20 @@ export class GpuRenderer implements Renderer {
     this._texturePool = new TexturePool({
       maxTextures: this._options.maxTextures,
     })
-    this._videoLayer = new VideoLayer(
-      this._texturePool,
-      this._options.providerFactory,
-    )
+
+    // If a providerFactory override is set, use it directly (tests / headless).
+    // Otherwise build deps from demuxerFactory/decoderFactory/maxOutstandingDecodes
+    // so that VideoLayer creates DecoderBackedVideoFrameProvider for real decode.
+    const videoLayerArg = this._options.providerFactory
+      ?? (this._options.demuxerFactory
+        ? {
+            demuxerFactory: this._options.demuxerFactory,
+            decoderFactory: this._options.decoderFactory,
+            maxOutstanding: this._options.maxOutstandingDecodes,
+          }
+        : undefined)
+
+    this._videoLayer = new VideoLayer(this._texturePool, videoLayerArg)
 
     this._renderGraph = new RenderGraph()
     this._renderGraph.registerLayer(
@@ -106,7 +118,11 @@ export class GpuRenderer implements Renderer {
   render(scene: Scene): void {
     if (!this._mounted || !this._glCtx || !this._renderGraph) return
     if (this._glCtx.isLost) return
-    if (scene === this._lastScene) return
+    if (scene === this._lastScene) {
+      this._lastRenderDurationMs = 0
+      this._noOpTicks++
+      return
+    }
 
     const gl = this._glCtx.gl
     if (!gl) return
@@ -129,6 +145,14 @@ export class GpuRenderer implements Renderer {
 
     this._lastRenderDurationMs = performance.now() - renderStart
     this._lastScene = scene
+  }
+
+  /**
+   * Returns the canvas element used for rendering, or null if not mounted.
+   * Intended for dev tools and Playwright tests (window.__GPU__.readCanvas).
+   */
+  getCanvas(): HTMLCanvasElement | null {
+    return this._glCtx?.canvas ?? null
   }
 
   /** Enable or disable the development-only DOM debug overlay. */
@@ -171,6 +195,7 @@ export class GpuRenderer implements Renderer {
     this._lastRenderTime = 0
     this._fps = 0
     this._lastRenderDurationMs = 0
+    this._noOpTicks = 0
   }
 
   /** Exposed for tests: underlying video layer instance. */
@@ -223,7 +248,11 @@ export class GpuRenderer implements Renderer {
       textureCount: this._videoLayer?.getTextureCount() ?? 0,
       cacheHitRatio: counters.cacheHitRatio,
       renderDurationMs: this._lastRenderDurationMs,
-      decoderStates: {},
+      decoderStates: this._videoLayer?.getDecoderStates() ?? {},
+      droppedFrames: counters.droppedFrames,
+      outstandingDecodes: counters.outstandingDecodes,
+      activeProviders: this._videoLayer?.getProviderCount() ?? 0,
+      noOpTicks: this._noOpTicks,
     }
   }
 
