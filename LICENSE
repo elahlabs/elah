@@ -1,21 +1,133 @@
-MIT License
+# Elah Community License (ECL) v1.0
 
-Copyright (c) 2026 Paul Spaurgen
+Copyright (c) 2026 Elah
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+All rights reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## 1. Purpose
+
+The Elah Community License (ECL) is intended to support open development, community adoption, and commercial sustainability of the Elah video editing engine and related software.
+
+This license allows developers and organizations to use, modify, and integrate the Software into their own applications while protecting the Software from unauthorized resale, rebranding, or competing hosted platforms.
+
+---
+
+## 2. Definitions
+
+* **"Software"** means the source code, binaries, assets, examples, documentation, and related materials distributed under this license.
+* **"Licensor"** means Elah and its contributors.
+* **"You"** means any individual or legal entity using the Software.
+* **"Derivative Work"** means any modified version, extension, adaptation, or enhancement of the Software.
+* **"Hosted Service"** means a commercial product or platform where the Software itself is exposed as a primary service, editor, API, infrastructure layer, or SaaS offering to third parties over a network.
+
+---
+
+## 3. Permitted Uses
+
+Subject to the terms of this license, you may:
+
+* Use the Software for personal, educational, research, and commercial internal purposes.
+* Modify and extend the Software.
+* Integrate or embed the Software into your own applications, platforms, or workflows.
+* Use the Software in commercial products that are not primarily competing video editing platforms.
+* Self-host the Software for internal use.
+* Create plugins, integrations, extensions, or tooling around the Software.
+* Distribute Derivative Works under this same license.
+* Provide consulting, support, training, or integration services related to the Software.
+
+---
+
+## 4. Restrictions
+
+You may not:
+
+* Sell, sublicense, or redistribute the Software as a standalone product.
+* Rebrand the Software and present it as your own core editor engine or framework.
+* Offer the Software, or substantially similar functionality derived from it, as a commercial Hosted Service or SaaS platform without prior written permission from the Licensor.
+* Build or operate a competing commercial browser-based video editor primarily derived from the Software.
+* Remove or alter copyright notices, attribution notices, or license terms included with the Software.
+* Misrepresent your relationship with the Licensor or imply official partnership without permission.
+
+---
+
+## 5. Attribution
+
+Any public distribution of the Software or Derivative Works must include:
+
+* A copy of this license
+* Appropriate copyright notices
+* Clear indication of modifications made to the Software
+* Attribution to Elah
+
+Suggested attribution:
+
+> Powered by Elah
+
+---
+
+## 6. Commercial Licensing
+
+A separate commercial license is required for:
+
+* Hosted editor platforms or SaaS offerings
+* White-label editing platforms
+* Commercial infrastructure services built primarily around the Software
+* Enterprise redistribution agreements
+* Uses outside the permissions granted by this license
+
+Commercial licensing inquiries:
+
+[contact@elah.dev](mailto:contact@elah.dev)
+
+---
+
+## 7. Contributions
+
+Unless otherwise agreed in writing, any contribution intentionally submitted for inclusion in the Software shall be licensed under the terms of this license.
+
+---
+
+## 8. Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+---
+
+## 9. Limitation of Liability
+
+IN NO EVENT SHALL THE LICENSOR OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+---
+
+## 10. Termination
+
+This license automatically terminates if you fail to comply with its terms. Upon termination, all rights granted under this license immediately cease.
+
+---
+
+## 11. Governing Law
+
+This license shall be governed by the laws applicable in the Licensor's jurisdiction, without regard to conflict of law principles.
+
+---
+
+## 12. Entire Agreement
+
+This license constitutes the complete agreement regarding the Software and supersedes all prior agreements relating to its subject matter.
+
+---
+
+## 13. License Updates
+
+The Licensor may publish updated versions of this license in the future. Continued use of the Software after such updates constitutes acceptance of the updated license terms.
+
+---
+
+## 14. Contact
+
+For licensing questions or commercial inquiries:
+
+* Email: [contact@elah.dev](mailto:contact@elah.dev)
+* Website: https://elah.dev
