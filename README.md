@@ -171,5 +171,4 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for branch/commit conventions.
 ---
 
 ## License
-
-To be decided. MIT or Apache-2.0 recommended for maximum reuse.
+Check Licence.MD
