@@ -127,6 +127,13 @@ export class GpuRenderer implements Renderer {
     const gl = this._glCtx.gl
     if (!gl) return
 
+    if (scene.frame !== this._lastScene?.frame) {
+      console.log(
+        `[GPU-TRACE] GpuRenderer.render  frame=${scene.frame}  videoClips=${scene.videos.length}`,
+        scene.videos.map((v) => ({ id: v.id, sourceFrame: v.sourceFrame, src: v.src.split('/').pop() })),
+      )
+    }
+
     const now = performance.now()
     if (this._lastRenderTime > 0) {
       const dt = now - this._lastRenderTime

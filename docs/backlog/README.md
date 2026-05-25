@@ -51,6 +51,23 @@ Multi-package extraction (`@elah/core`, `@elah/timeline`, etc.) is deferred unti
 
 ---
 
+## Media + Renderer Split (MVP)
+
+Sequential tickets that fix the wedged decode bridge and add the layers needed for MVP. **Do not parallelize** — each builds on the previous.
+
+| # | Title | Status | Why this PR matters |
+|---|---|---|---|
+| [Split-01](./PR-media-split-01-structural-move.md) | Move media decode out of `renderer/gpu` | 🔴 Not started | Establishes the boundary so the rewrite has somewhere to live |
+| [Split-02](./PR-media-split-02-streaming-producer.md) | Push-based `StreamingFrameProducer` | 🔴 Not started | Fixes the wedged async/sync bridge; video actually plays |
+| [Split-03](./PR-media-split-03-text-layer.md) | `TextLayer` | 🔴 Not started | First non-video layer; proves the layer registration extension story |
+| [Split-04](./PR-media-split-04-audio-playback.md) | Single-track audio playback | 🔴 Not started | Completes the MVP audiovisual loop |
+
+Master plan (architecture reference): `.cursor/plans/media-renderer-split-mvp_c1e1a43a.plan.md`
+
+After Split-04, plan **polish sessions** separately: ImageLayer + video/text transitions, then decoder robustness + CI perf guards.
+
+---
+
 ## How to use a ticket
 
 1. **Read the whole ticket.** Each one has Goal, Why, Scope, Acceptance Criteria, Out-of-Scope, Implementation Notes, Verification, and Copy-paste prompt.

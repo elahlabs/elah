@@ -16,7 +16,7 @@ import {
 
 const FPS = 30
 const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
-const SHOW_SCENE_DEBUG = new URLSearchParams(window.location.search).has('debug')
+const SHOW_SCENE_DEBUG = true
 
 function ResolvedSceneDebug() {
   const scene = useResolvedScene()

@@ -162,6 +162,8 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _textures = new Map<string, VideoTexture>()
   private readonly _srcByItemId = new Map<string, string>()
   private readonly _contentSizeByItemId = new Map<string, { width: number; height: number }>()
+  /** Last sourceFrame logged per clip — prevents flooding at 60 fps on a frozen playhead. */
+  private readonly _lastLoggedSourceFrameByItemId = new Map<string, number>()
 
   constructor(
     pool: TexturePool,
@@ -210,6 +212,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._textures.delete(itemId)
     this._srcByItemId.delete(itemId)
     this._contentSizeByItemId.delete(itemId)
+    this._lastLoggedSourceFrameByItemId.delete(itemId)
 
     const entry = this._providers.get(src)
     if (!entry) return
@@ -230,6 +233,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
 
     const { provider } = entry
     const frame = provider.getCurrent(item.sourceFrame)
+
+    const pendingCount = provider.pendingCount ?? 0
+    const cacheSize = (provider as { _cache?: { size: number } })._cache?.size ?? '?'
+
+    if (this._lastLoggedSourceFrameByItemId.get(item.id) !== item.sourceFrame) {
+      this._lastLoggedSourceFrameByItemId.set(item.id, item.sourceFrame)
+      console.log(
+        `[GPU-TRACE] VideoLayer.draw  clipId=${item.id}  sourceFrame=${item.sourceFrame}  gotFrame=${frame !== null}  pendingCount=${pendingCount}  cacheSize=${cacheSize}`,
+      )
+    }
 
     if (frame !== null) {
       // provider.getCurrent() returns a borrowed reference — the FrameCache
@@ -255,7 +268,6 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       // Prefetch only if the request queue has room. When the queue is already
       // saturated (e.g. mid-seek burst), skip prefetch so the seek-target slot
       // is never pushed out by prefetch siblings.
-      const pendingCount = provider.pendingCount ?? 0
       const maxPrefetch = Math.min(Math.max(1, Math.ceil(ctx.fps / 6)), 5)
       if (pendingCount < this._getMaxOutstanding(provider) - 1) {
         provider.prefetch(item.sourceFrame + 1, maxPrefetch)
