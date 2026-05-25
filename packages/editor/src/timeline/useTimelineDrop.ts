@@ -4,8 +4,8 @@ import {
   MEDIA_DRAG_MIME,
   type DragMediaPayload,
   type MediaKind,
-} from '../core/media/types'
-import { useMediaLibraryStore } from '../core/media/store'
+} from '../core/assets/types'
+import { useMediaLibraryStore } from '../core/assets/store'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { usePlaybackStore } from '../core/stores/playback.store'
 import { buildSnapPoints, snapFrame } from '../core/utils/snap'

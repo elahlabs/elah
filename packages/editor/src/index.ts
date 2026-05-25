@@ -84,9 +84,9 @@ export { createMediabunnyBackend, isMediabunnyCompatible } from './core/renderer
 export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './core/renderer/gpu/demuxer/createMediabunnyBackend'
 export type { DemuxerBackend, DemuxerFactory } from './core/renderer/gpu/demuxer/MediabunnyDemuxer'
 
-// --- Core: media ---
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/media'
-export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/media'
+// --- Core: assets ---
+export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/assets'
+export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/assets'
 
 // --- Core: stores (low-level; prefer the hooks below) ---
 export { useTracksStore } from './core/stores/tracks.store'

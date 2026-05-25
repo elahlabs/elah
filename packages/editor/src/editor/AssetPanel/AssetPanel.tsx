@@ -11,9 +11,9 @@ import {
   importFiles,
   MEDIA_DRAG_MIME,
   useMediaLibrary,
-} from '../../core/media'
-import type { SkippedImport } from '../../core/media'
-import type { DragMediaPayload, MediaAsset, MediaKind } from '../../core/media/types'
+} from '../../core/assets'
+import type { SkippedImport } from '../../core/assets'
+import type { DragMediaPayload, MediaAsset, MediaKind } from '../../core/assets/types'
 
 export interface AssetPanelProps {
   style?: CSSProperties
