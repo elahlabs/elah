@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FrameCache } from '../FrameCache'
-import { TexturePool } from '../TexturePool'
-import { VideoTexture } from '../VideoTexture'
-import { GpuDebugCounters } from '../debug/GpuDebugCounters'
+import { TexturePool } from '../../../renderer/gpu/TexturePool'
+import { VideoTexture } from '../../../renderer/gpu/VideoTexture'
+import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import {
   createTrackingFrame,
   resetTrackingFrameCounter,
-} from './helpers/trackingFrame'
+} from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
 
 describe('VideoFrame ownership', () => {
   beforeEach(() => {

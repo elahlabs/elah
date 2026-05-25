@@ -16,7 +16,7 @@
  */
 
 import { FrameCache } from './FrameCache'
-import { GpuDebugCounters } from './debug/GpuDebugCounters'
+import { GpuDebugCounters } from '../../renderer/gpu/debug/GpuDebugCounters'
 import { DecoderBackedVideoFrameProvider } from './DecoderBackedVideoFrameProvider'
 import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
 import type { VideoDecoderFactory } from './VideoDecoderManager'

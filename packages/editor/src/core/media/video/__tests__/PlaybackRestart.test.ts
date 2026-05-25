@@ -10,10 +10,10 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
-import { TexturePool } from '../TexturePool'
-import { GpuDebugCounters } from '../debug/GpuDebugCounters'
+import { TexturePool } from '../../../renderer/gpu/TexturePool'
+import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
-import { resetTrackingFrameCounter } from './helpers/trackingFrame'
+import { resetTrackingFrameCounter } from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
 
 // Minimal WebGL2 stub for TexturePool — only what acquire/release/dispose use.
 function makeGlStub(): WebGL2RenderingContext {

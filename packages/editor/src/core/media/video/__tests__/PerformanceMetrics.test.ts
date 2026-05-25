@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FrameCache } from '../FrameCache'
 import { MockVideoFrameProvider } from '../VideoFrameProvider'
-import { GpuDebugCounters } from '../debug/GpuDebugCounters'
+import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import {
   installGpuDebugGlobal,
   uninstallGpuDebugGlobal,
   type GpuDebugState,
-} from '../debug/GpuDebugGlobal'
+} from '../../../renderer/gpu/debug/GpuDebugGlobal'
 
 describe('Performance instrumentation', () => {
   beforeEach(() => {

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveVideoClip } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
 import { TexturePool } from '../TexturePool'
-import type { VideoFrameProvider } from '../VideoFrameProvider'
+import type { VideoFrameProvider } from '../../../media/video'
 import { VideoLayer } from '../layers/VideoLayer'
 
 // ---------------------------------------------------------------------------

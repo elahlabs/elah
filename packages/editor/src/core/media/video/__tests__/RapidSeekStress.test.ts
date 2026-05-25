@@ -12,9 +12,9 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
-import { GpuDebugCounters } from '../debug/GpuDebugCounters'
+import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
-import { createTrackingFrame, resetTrackingFrameCounter } from './helpers/trackingFrame'
+import { createTrackingFrame, resetTrackingFrameCounter } from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
 
 const STUCK_STATES = ['Errored'] as const
 

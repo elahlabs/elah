@@ -21,7 +21,7 @@ import {
   createVideoFrameProvider,
   type VideoFrameProvider,
   type VideoFrameProviderDeps,
-} from '../VideoFrameProvider'
+} from '../../../media/video'
 import type { Layer, LayerContext } from './types'
 
 /** Per-src provider entry with reference counting. */

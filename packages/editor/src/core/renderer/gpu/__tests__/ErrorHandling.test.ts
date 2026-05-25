@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveVideoClip } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
 import { TexturePool } from '../TexturePool'
-import type { VideoFrameProvider } from '../VideoFrameProvider'
+import type { VideoFrameProvider } from '../../../media/video'
 import { VideoLayer } from '../layers/VideoLayer'
 import { VideoTexture } from '../VideoTexture'
-import { VideoDecoderManager } from '../VideoDecoderManager'
+import { VideoDecoderManager } from '../../../media/video/VideoDecoderManager'
 import {
   createMockChunk,
   createMockDecoder,
   createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+} from '../../../media/video/__tests__/helpers/mockDemuxer'
 import { createTrackingFrame } from './helpers/trackingFrame'
 
 describe('Error handling', () => {

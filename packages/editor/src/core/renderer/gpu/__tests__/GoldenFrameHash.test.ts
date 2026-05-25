@@ -26,7 +26,7 @@ import { TexturePool } from '../TexturePool'
 import type { Scene, ActiveVideoClip } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
 import { GpuDebugCounters } from '../debug/GpuDebugCounters'
-import type { VideoFrameProvider } from '../VideoFrameProvider'
+import type { VideoFrameProvider } from '../../../media/video'
 
 /**
  * A deterministic synchronous provider that never fires async timers.

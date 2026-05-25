@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveVideoClip, Scene } from '../../../resolver/scene'
-import type { VideoFrameProvider } from '../VideoFrameProvider'
+import type { VideoFrameProvider } from '../../../media/video'
 
 // ---------------------------------------------------------------------------
 // WebGL + DOM stubs

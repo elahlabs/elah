@@ -71,7 +71,7 @@ function createMockGL(): WebGL2RenderingContext {
   } as unknown as WebGL2RenderingContext
 }
 
-vi.mock('../WebGLContext', () => ({
+vi.mock('../../../renderer/gpu/WebGLContext', () => ({
   WebGLContext: vi.fn().mockImplementation(() => ({
     canvas: mockCanvas,
     get gl() {
@@ -86,7 +86,7 @@ vi.mock('../WebGLContext', () => ({
   })),
 }))
 
-import { GpuRenderer } from '../GpuRenderer'
+import { GpuRenderer } from '../../../renderer/gpu/GpuRenderer'
 
 // ---------------------------------------------------------------------------
 // Helpers

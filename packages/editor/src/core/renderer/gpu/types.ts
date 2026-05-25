@@ -6,8 +6,8 @@
  */
 
 import type { VideoFrameProviderFactory } from './layers/VideoLayer'
-import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
-import type { VideoDecoderFactory } from './VideoDecoderManager'
+import type { DemuxerFactory } from '../../media/video/demuxer/MediabunnyDemuxer'
+import type { VideoDecoderFactory } from '../../media/video/VideoDecoderManager'
 
 /** Physical canvas backing-store dimensions in pixels (after DPR scaling). */
 export interface Viewport {

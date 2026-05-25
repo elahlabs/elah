@@ -15,6 +15,32 @@ The renderer is the **last** stage of the pipeline. It reads only an immutable
 `Scene` and writes to a canvas. It never touches `Project`, `Track`,
 `TimelineEngine`, `PlaybackEngine`, Zustand, or React.
 
+The editor `core/` namespace is split into three honest layers:
+
+| Layer | Role | Key modules |
+|---|---|---|
+| `core/assets/` | Asset/file manager — import, metadata, thumbnails | `useMediaLibrary`, `importFiles`, `MediaAsset` |
+| `core/media/` | Frame/sample producers — decode, caches, future audio/text/image | `core/media/video/` (`VideoFrameProvider`, `FrameCache`, demuxer) |
+| `core/renderer/` | Compositing only — imports `core/media/` **interfaces** via the public barrel | `GpuRenderer`, `VideoLayer`, `RenderGraph` |
+
+```mermaid
+flowchart TB
+    Assets[core/assets] --> Resolver
+    Media[core/media/video] --> RendererLayer[core/renderer/gpu]
+    Resolver[resolveTimeline] --> Scene[(Scene)]
+    Scene --> RendererLayer
+    RendererLayer --> Canvas[(Canvas)]
+```
+
+### Layer boundaries
+
+Import rules are enforced by
+[`core/media/__tests__/ImportBoundary.test.ts`](../media/__tests__/ImportBoundary.test.ts):
+
+- `core/renderer/**` may import `core/media/video` only via the public barrel or `VideoFrameProvider` type module.
+- `core/media/**` must not import from `core/renderer/**` (temporary exception: `GpuDebugCounters` during Split-01).
+- `core/assets/**` must not import from `core/renderer/**` or `core/media/**`.
+
 ```mermaid
 flowchart LR
     Project[Project / Tracks / Clips] --> Resolver[resolveTimeline]
@@ -116,13 +142,16 @@ flowchart TB
         TL[TestLayer]
     end
 
-    subgraph frames[Frame pipeline]
+    subgraph frames[Frame pipeline — core/media/video/]
         VFP[VideoFrameProvider<br/>Mock | Synthetic | DecoderBacked]
-        VT[VideoTexture]
         FC[FrameCache]
         VDM[VideoDecoderManager]
         DMX[MediabunnyDemuxer]
         DBP[DecoderBackedVideoFrameProvider]
+    end
+
+    subgraph compositing[Compositing — core/renderer/gpu/]
+        VT[VideoTexture]
     end
 
     subgraph dbg[debug/]
@@ -298,7 +327,7 @@ flowchart LR
     style async fill:#332,stroke:#b80
 ```
 
-Cache rules (see [`FrameCache.ts`](./gpu/FrameCache.ts)):
+Cache rules (see [`FrameCache.ts`](../media/video/FrameCache.ts)):
 
 - `put` transfers ownership to the cache.
 - `get` returns a **borrowed** reference — callers must not close it.
@@ -692,12 +721,15 @@ graph LR
 | Shader helper             | [`gpu/ShaderProgram.ts`](./gpu/ShaderProgram.ts) + [`gpu/shaders/`](./gpu/shaders) |
 | Video layer               | [`gpu/layers/VideoLayer.ts`](./gpu/layers/VideoLayer.ts)             |
 | Per-clip GPU texture      | [`gpu/VideoTexture.ts`](./gpu/VideoTexture.ts)                       |
-| Frame access boundary     | [`gpu/VideoFrameProvider.ts`](./gpu/VideoFrameProvider.ts)           |
-| Decoded-frame cache       | [`gpu/FrameCache.ts`](./gpu/FrameCache.ts)                           |
-| Decoder + state machine   | [`gpu/VideoDecoderManager.ts`](./gpu/VideoDecoderManager.ts)         |
-| Demuxer adapter           | [`gpu/demuxer/MediabunnyDemuxer.ts`](./gpu/demuxer/MediabunnyDemuxer.ts) |
-| mediabunny backend adapter | [`gpu/demuxer/createMediabunnyBackend.ts`](./gpu/demuxer/createMediabunnyBackend.ts) |
-| Real decode provider      | [`gpu/DecoderBackedVideoFrameProvider.ts`](./gpu/DecoderBackedVideoFrameProvider.ts) |
+| Frame access boundary     | [`../media/video/VideoFrameProvider.ts`](../media/video/VideoFrameProvider.ts) |
+| Decoded-frame cache       | [`../media/video/FrameCache.ts`](../media/video/FrameCache.ts)     |
+| Decoder + state machine   | [`../media/video/VideoDecoderManager.ts`](../media/video/VideoDecoderManager.ts) |
+| Demuxer adapter           | [`../media/video/demuxer/MediabunnyDemuxer.ts`](../media/video/demuxer/MediabunnyDemuxer.ts) |
+| mediabunny backend adapter | [`../media/video/demuxer/createMediabunnyBackend.ts`](../media/video/demuxer/createMediabunnyBackend.ts) |
+| Real decode provider      | [`../media/video/DecoderBackedVideoFrameProvider.ts`](../media/video/DecoderBackedVideoFrameProvider.ts) |
+| Media layer overview      | [`../media/README.md`](../media/README.md)                           |
 | Debug renderer & overlay  | [`gpu/debug/`](./gpu/debug)                                          |
 | Recording GL (test only)  | [`gpu/debug/RecordingGl.ts`](./gpu/debug/RecordingGl.ts)            |
-| Tests (23+ suites)        | [`gpu/__tests__/`](./gpu/__tests__)                                  |
+| Renderer tests            | [`gpu/__tests__/`](./gpu/__tests__)                                  |
+| Media/decode tests        | [`../media/video/__tests__/`](../media/video/__tests__)              |
+| Import boundary tests     | [`../media/__tests__/ImportBoundary.test.ts`](../media/__tests__/ImportBoundary.test.ts) |

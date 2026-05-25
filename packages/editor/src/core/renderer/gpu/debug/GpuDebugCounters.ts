@@ -6,7 +6,7 @@
  * Zero overhead when not imported. No React or store coupling.
  */
 
-import type { DecoderState } from '../VideoDecoderManager'
+import type { DecoderState } from '../../../media/video/VideoDecoderManager'
 
 const MAX_LATENCY_SAMPLES = 256
 

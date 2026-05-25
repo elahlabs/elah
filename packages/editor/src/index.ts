@@ -80,9 +80,13 @@ export type { CounterSnapshot } from './core/renderer/gpu/debug/GpuDebugCounters
 
 // --- Core: renderer / demuxer (optional integration surface) ---
 // Import mediabunny separately in your app; this file never depends on it.
-export { createMediabunnyBackend, isMediabunnyCompatible } from './core/renderer/gpu/demuxer/createMediabunnyBackend'
-export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './core/renderer/gpu/demuxer/createMediabunnyBackend'
-export type { DemuxerBackend, DemuxerFactory } from './core/renderer/gpu/demuxer/MediabunnyDemuxer'
+export { createMediabunnyBackend, isMediabunnyCompatible } from './core/media/video/demuxer/createMediabunnyBackend'
+export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './core/media/video/demuxer/createMediabunnyBackend'
+export type { DemuxerBackend, DemuxerFactory } from './core/media/video/demuxer/MediabunnyDemuxer'
+
+// --- Core: media (frame producers) ---
+export type { VideoFrameProvider, VideoFrameProviderDeps } from './core/media/video'
+export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from './core/media/video'
 
 // --- Core: assets ---
 export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/assets'

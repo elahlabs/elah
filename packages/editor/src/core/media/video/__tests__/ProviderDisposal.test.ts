@@ -14,7 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
-import { GpuDebugCounters } from '../debug/GpuDebugCounters'
+import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import {
   createMockChunk,
   createMockDecoder,
