@@ -238,13 +238,6 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     provider.setPlayhead(item.sourceFrame)
     const frame = provider.getCurrent(item.sourceFrame)
 
-    if (this._lastLoggedSourceFrameByItemId.get(item.id) !== item.sourceFrame) {
-      this._lastLoggedSourceFrameByItemId.set(item.id, item.sourceFrame)
-      console.log(
-        `[GPU-TRACE] VideoLayer.draw  clipId=${item.id}  sourceFrame=${item.sourceFrame}  gotFrame=${frame !== null}`,
-      )
-    }
-
     if (frame !== null) {
       // provider.getCurrent() returns a borrowed reference — the FrameCache
       // retains ownership and is responsible for closing it on eviction.

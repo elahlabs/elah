@@ -62,6 +62,11 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
     // (a) assert real decoded frames landed on the canvas (not just black)
     // and (b) compute golden-pixel hashes for regression detection.
     if (import.meta.env.DEV) {
+      // Manual frame stepping from DevTools: window.__elahSeek(5)
+      ;(window as Window & { __elahSeek?: (frame: number) => void }).__elahSeek = (frame: number) => {
+        playback.seek(frame)
+      }
+
       const readGl = () => {
         const canvas = renderer.getCanvas()
         if (!canvas) throw new Error('__GPU__: renderer not mounted')
@@ -120,6 +125,7 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
       renderer.dispose()
       if (import.meta.env.DEV) {
         delete (window as Window & { __GPU__?: GpuDevHandle }).__GPU__
+        delete (window as Window & { __elahSeek?: (frame: number) => void }).__elahSeek
       }
     }
   }, [engine, playback, debugMode])

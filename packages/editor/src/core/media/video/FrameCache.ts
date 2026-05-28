@@ -51,9 +51,29 @@ export class FrameCache {
     this._pivot = sourceFrame
   }
 
-  /** Return a borrowed frame reference, or null if not cached. Do not close. */
-  get(sourceFrame: number): VideoFrame | null {
-    return this._frames.get(sourceFrame) ?? null
+  /**
+   * Return a borrowed frame reference, or null if not cached.
+   *
+   * When maxLookback > 0 and the exact key is missing, returns the frame with
+   * the largest key ≤ sourceFrame within maxLookback steps. This bridges
+   * fps-mismatch gaps (e.g. 24fps video indexed at 30fps skips every 5th slot)
+   * without returning content from an unrelated part of the timeline.
+   * Do not close the returned frame.
+   */
+  get(sourceFrame: number, maxLookback = 0): VideoFrame | null {
+    const exact = this._frames.get(sourceFrame)
+    if (exact !== undefined) return exact
+    if (maxLookback <= 0) return null
+
+    let bestKey = sourceFrame - maxLookback - 1
+    let best: VideoFrame | null = null
+    for (const [key, frame] of this._frames) {
+      if (key <= sourceFrame && key > bestKey) {
+        bestKey = key
+        best = frame
+      }
+    }
+    return best
   }
 
   /** Store a frame. Transfers ownership to the cache. */

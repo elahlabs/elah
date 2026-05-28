@@ -103,6 +103,8 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   private _highestDecodedFrame = -1
   /** True while an async reset is in progress. Prevents concurrent resets. */
   private _resetInProgress = false
+  /** Last sourceFrame that produced a [SFP-TRACE] setPlayhead log. Suppresses identical steady-state spam. */
+  private _lastLoggedPlayhead: number | null = null
 
   private _idleTimer: ReturnType<typeof setTimeout> | null = null
   private _idleCallback: (() => void) | null = null
@@ -172,6 +174,22 @@ export class StreamingFrameProducer implements VideoFrameProvider {
         frame.close()
         return
       }
+
+      // Gap detector: fires once per missing index, not per RAF.
+      // rawIndex is the unrounded value — e.g. 3.75 rounds to 4, skipping 3.
+      // A pattern of rawIndex = N + 0.75 every 5 frames means fps mismatch
+      // (video encoded at fps_v but decoder indexing at fps_p ≠ fps_v).
+      const prevHighest = this._highestDecodedFrame
+      if (prevHighest >= 0 && sourceFrameIdx > prevHighest + 1) {
+        _sfpTrace('onFrame INDEX GAP', {
+          expected: prevHighest + 1,
+          got: sourceFrameIdx,
+          skipped: sourceFrameIdx - prevHighest - 1,
+          rawTimestampUs: frame.timestamp,
+          rawIndex: frame.timestamp / this._usPerFrame,
+        })
+      }
+
       this._cache.put(sourceFrameIdx, frame)
       if (sourceFrameIdx > this._highestDecodedFrame) {
         this._highestDecodedFrame = sourceFrameIdx
@@ -188,6 +206,12 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     this._openPromise = this._manager.open(this._src).catch((err: Error) => {
       this._openError = err
     })
+
+    _sfpTrace('init', {
+      fps: this._fps,
+      usPerFrame: this._usPerFrame,
+      lookaheadFrames: this._lookaheadFrames,
+    })
   }
 
   // ---------------------------------------------------------------------------
@@ -202,7 +226,9 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     if (this._state === 'disposed') return null
 
     this._cache.setPivot(sourceFrame)
-    const frame = this._cache.get(sourceFrame)
+    // maxLookback=2 bridges fps-mismatch index gaps (e.g. 24fps video on 30fps
+    // project skips one slot every 5 frames). See known-bugs.md: KB-001.
+    const frame = this._cache.get(sourceFrame, 2)
     if (frame !== null) {
       GpuDebugCounters.cacheHits++
     } else {
@@ -281,16 +307,21 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       Math.abs(sourceFrame - this._lastPlayhead) > lookahead ||
       stalled
 
-    _sfpTrace('setPlayhead', {
-      sourceFrame,
-      lastPlayhead: this._lastPlayhead,
-      watermark: this._feedWatermark,
-      highestDecoded: this._highestDecodedFrame,
-      managerState: this._manager.state,
-      cacheSize: this._cache.size,
-      stalled,
-      isDiscontinuity,
-    })
+    // Only log when the frame advances, or when something interesting happens
+    // (discontinuity, stall). Suppresses the 60fps steady-state spam.
+    if (isDiscontinuity || stalled || sourceFrame !== this._lastLoggedPlayhead) {
+      _sfpTrace('setPlayhead', {
+        sourceFrame,
+        lastPlayhead: this._lastPlayhead,
+        watermark: this._feedWatermark,
+        highestDecoded: this._highestDecodedFrame,
+        managerState: this._manager.state,
+        cacheSize: this._cache.size,
+        stalled,
+        isDiscontinuity,
+      })
+      this._lastLoggedPlayhead = sourceFrame
+    }
 
     if (isDiscontinuity) {
       this._resetInProgress = true
@@ -445,34 +476,14 @@ export class StreamingFrameProducer implements VideoFrameProvider {
    */
   private _feedWindow(N: number, lookahead: number): void {
     if (this._state === 'disposed') return
-    if (this._manager.state !== 'Ready') {
-      _sfpTrace('_feedWindow skipped — manager not Ready', {
-        N,
-        managerState: this._manager.state,
-      })
-      return
-    }
+    if (this._manager.state !== 'Ready') return
 
     const windowEnd = N + lookahead
-    if (windowEnd <= this._feedWatermark) {
-      _sfpTrace('_feedWindow skipped — windowEnd <= watermark', {
-        N,
-        windowEnd,
-        watermark: this._feedWatermark,
-      })
-      return
-    }
+    if (windowEnd <= this._feedWatermark) return
 
     // Pick up from where we left off (or from N on first call / after reset).
     const feedStart = Math.max(this._feedWatermark + 1, N)
-    if (feedStart > windowEnd) {
-      _sfpTrace('_feedWindow skipped — feedStart > windowEnd', {
-        N,
-        feedStart,
-        windowEnd,
-      })
-      return
-    }
+    if (feedStart > windowEnd) return
 
     const startUs = Math.round(feedStart * this._usPerFrame)
     const endUs = Math.round((windowEnd + 1) * this._usPerFrame)
