@@ -1,19 +1,18 @@
 /**
- * ProviderDisposal — provider lifecycle and cleanup tests.
+ * ProviderDisposal — StreamingFrameProducer lifecycle and cleanup tests.
  *
  * Validates:
- *  - Provider disposed mid-decode: pending decodes reject quietly
- *  - cacheSize === 0 after disposal
+ *  - Provider disposed after open: state is disposed, cacheSize is 0
  *  - Idempotent dispose
  *  - markIdle does NOT dispose; only the explicit dispose() does
  *  - Provider correctly tracks idle/active/disposed state
+ *  - open error: openError is surfaced, provider is still disposable
  *
- * @see architecture.md § 7 (VideoLayer provider & texture bookkeeping)
- * @see EVOLUTION.md § 4 Phase 1 (provider lifecycle cleanup)
+ * @see StreamingFrameProducer.ts — lifecycle management
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
+import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import {
   createMockChunk,
@@ -21,16 +20,15 @@ import {
   createMockDemuxerBackend,
 } from './helpers/mockDemuxer'
 
-function makeProvider(
-  overrides: Partial<ConstructorParameters<typeof DecoderBackedVideoFrameProvider>[0]> = {},
+function makeProducer(
+  overrides: Partial<ConstructorParameters<typeof StreamingFrameProducer>[0]> = {},
 ) {
   const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-  return new DecoderBackedVideoFrameProvider({
+  return new StreamingFrameProducer({
     src: 'video://lifecycle.mp4',
     fps: 30,
-    maxOutstanding: 4,
     demuxerFactory: () => demuxerBackend,
-    decoderFactory: () => createMockDecoder(),
+    decoderFactory: createMockDecoder().factory,
     ...overrides,
   })
 }
@@ -46,130 +44,116 @@ describe('ProviderDisposal', () => {
 
   describe('dispose', () => {
     it('sets state to disposed', async () => {
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.dispose()
-      expect(provider.state).toBe('disposed')
+      producer.dispose()
+      expect(producer.state).toBe('disposed')
     })
 
     it('is idempotent — multiple dispose calls are safe', async () => {
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
       expect(() => {
-        provider.dispose()
-        provider.dispose()
-        provider.dispose()
+        producer.dispose()
+        producer.dispose()
+        producer.dispose()
       }).not.toThrow()
 
-      expect(provider.state).toBe('disposed')
+      expect(producer.state).toBe('disposed')
     })
 
     it('resets cacheSize to 0', async () => {
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.dispose()
+      producer.dispose()
       expect(GpuDebugCounters.cacheSize).toBe(0)
-      expect(provider.cacheSize).toBe(0)
-    })
-
-    it('clears all pending requests', async () => {
-      const provider = makeProvider({ maxOutstanding: 4 })
-      await provider.openPromise
-
-      provider.requestFrame(1)
-      provider.requestFrame(2)
-      provider.requestFrame(3)
-
-      provider.dispose()
-
-      // Pending are cleared synchronously on dispose
-      expect(provider.pendingCount).toBe(0)
-    })
-
-    it('reject pending decodes mid-flight (dispose before resolution)', async () => {
-      const provider = makeProvider({ maxOutstanding: 4 })
-      await provider.openPromise
-
-      provider.requestFrame(5)
-
-      // Dispose synchronously — the request is still in-flight
-      provider.dispose()
-
-      // Let all microtasks run; the resolve callback should guard on disposed state
-      await Promise.resolve()
-      await Promise.resolve()
-      await Promise.resolve()
-
-      expect(provider.state).toBe('disposed')
-      expect(provider.cacheSize).toBe(0)
+      expect(producer.cacheSize).toBe(0)
     })
 
     it('getCurrent returns null after dispose', async () => {
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.dispose()
-      expect(provider.getCurrent(0)).toBeNull()
+      producer.dispose()
+      expect(producer.getCurrent(0)).toBeNull()
     })
 
-    it('requestFrame is a no-op after dispose', async () => {
-      const provider = makeProvider()
-      await provider.openPromise
+    it('setPlayhead is a no-op after dispose', async () => {
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.dispose()
-      expect(() => provider.requestFrame(99)).not.toThrow()
-      expect(provider.pendingCount).toBe(0)
+      producer.dispose()
+      expect(() => producer.setPlayhead(99)).not.toThrow()
+    })
+
+    it('in-flight frames emitted after dispose are closed immediately', async () => {
+      const producer = makeProducer()
+      await producer.openPromise
+
+      // Trigger decode
+      producer.setPlayhead(0)
+
+      // Dispose before onFrame callback fires
+      producer.dispose()
+
+      // Let all pending microtasks run
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(producer.state).toBe('disposed')
+      expect(producer.cacheSize).toBe(0)
     })
   })
 
   describe('markIdle / markActive lifecycle', () => {
     it('markIdle does not dispose the provider', async () => {
       vi.useFakeTimers()
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.markIdle()
+      producer.markIdle()
       vi.advanceTimersByTime(10_000)
 
       // Idle callback fires, but the provider is NOT disposed
-      expect(provider.state).toBe('idle')
+      expect(producer.state).toBe('idle')
 
-      provider.dispose()
+      producer.dispose()
       vi.useRealTimers()
     })
 
     it('markActive cancels idle timer before it fires', async () => {
       vi.useFakeTimers()
       const idleCb = vi.fn()
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.setIdleCallback(idleCb)
-      provider.markIdle()
+      producer.setIdleCallback(idleCb)
+      producer.markIdle()
 
       vi.advanceTimersByTime(2000)
-      provider.markActive()
+      producer.markActive()
       vi.advanceTimersByTime(10_000)
 
       expect(idleCb).not.toHaveBeenCalled()
-      expect(provider.state).toBe('active')
+      expect(producer.state).toBe('active')
 
-      provider.dispose()
+      producer.dispose()
       vi.useRealTimers()
     })
 
     it('markIdle then dispose clears the idle timer', async () => {
       vi.useFakeTimers()
       const idleCb = vi.fn()
-      const provider = makeProvider()
-      await provider.openPromise
+      const producer = makeProducer()
+      await producer.openPromise
 
-      provider.setIdleCallback(idleCb)
-      provider.markIdle()
-      provider.dispose()
+      producer.setIdleCallback(idleCb)
+      producer.markIdle()
+      producer.dispose()
 
       vi.advanceTimersByTime(10_000)
       // Timer should have been cleared by dispose
@@ -180,47 +164,46 @@ describe('ProviderDisposal', () => {
   })
 
   describe('open error paths', () => {
-    it('provider with open error disposes cleanly', async () => {
+    it('provider with open error surfaces openError and is still disposable', async () => {
       const badDemuxer = createMockDemuxerBackend({
         openError: new Error('file not found'),
       })
-      const provider = new DecoderBackedVideoFrameProvider({
+      const producer = new StreamingFrameProducer({
         src: 'video://missing.mp4',
         fps: 30,
         demuxerFactory: () => badDemuxer,
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: createMockDecoder().factory,
       })
 
-      await provider.openPromise
+      await producer.openPromise
 
-      expect(provider.openError?.message).toContain('file not found')
+      expect(producer.openError?.message).toContain('file not found')
 
       // Should not throw
-      expect(() => provider.dispose()).not.toThrow()
-      expect(provider.state).toBe('disposed')
+      expect(() => producer.dispose()).not.toThrow()
+      expect(producer.state).toBe('disposed')
     })
 
-    it('requestFrame is a no-op when manager is in Errored state', async () => {
+    it('setPlayhead after open error is a no-op (does not throw)', async () => {
       const badDemuxer = createMockDemuxerBackend({
         openError: new Error('broken'),
       })
-      const provider = new DecoderBackedVideoFrameProvider({
+      const producer = new StreamingFrameProducer({
         src: 'video://errored.mp4',
         fps: 30,
         demuxerFactory: () => badDemuxer,
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: createMockDecoder().factory,
       })
 
-      await provider.openPromise
+      await producer.openPromise
 
-      // decoderState should be Errored
-      expect(provider.decoderState).toBe('Errored')
+      // setPlayhead should not throw even after an open error
+      expect(() => producer.setPlayhead(0)).not.toThrow()
 
-      // requestFrame should silently no-op (not throw)
-      expect(() => provider.requestFrame(0)).not.toThrow()
-      expect(provider.pendingCount).toBe(0)
+      await Promise.resolve()
+      await Promise.resolve()
 
-      provider.dispose()
+      producer.dispose()
     })
   })
 })

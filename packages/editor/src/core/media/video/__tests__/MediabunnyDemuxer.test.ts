@@ -109,7 +109,7 @@ describe('MediabunnyDemuxer adapter', () => {
     })
     const manager = new VideoDecoderManager({
       demuxerFactory: () => backend,
-      decoderFactory: () => createMockDecoder(),
+      decoderFactory: createMockDecoder().factory,
     })
 
     await expect(manager.open('video://broken')).rejects.toThrow('broken source')
@@ -139,13 +139,13 @@ describe('MediabunnyDemuxer adapter', () => {
     const decoder = createMockDecoder()
     const manager = new VideoDecoderManager({
       demuxerFactory: () => backend,
-      decoderFactory: () => decoder,
+      decoderFactory: decoder.factory,
     })
 
     await manager.open('video://webm')
 
     expect(backend.getConfig).toHaveBeenCalled()
-    expect(decoder.configure).toHaveBeenCalledWith(config)
+    expect(decoder.lastDecoder.configure).toHaveBeenCalledWith(config)
     expect(manager.state).toBe('Ready')
   })
 })

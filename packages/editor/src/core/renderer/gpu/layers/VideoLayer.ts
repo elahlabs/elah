@@ -4,7 +4,7 @@
  * Architecture:
  *  - One VideoFrameProvider per unique src (shared across clips)
  *  - One VideoTexture per clip id
- *  - Synchronous draw(); async frame scheduling via provider.requestFrame()
+ *  - Synchronous draw(); async frame scheduling via provider.setPlayhead()
  *
  * VideoLayer talks ONLY to VideoFrameProvider, TexturePool/VideoTexture,
  * and ShaderProgram. No decoder, PlaybackEngine, TimelineEngine, or React.
@@ -232,15 +232,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     if (!texture || !entry) return
 
     const { provider } = entry
-    const frame = provider.getCurrent(item.sourceFrame)
 
-    const pendingCount = provider.pendingCount ?? 0
-    const cacheSize = (provider as { _cache?: { size: number } })._cache?.size ?? '?'
+    // Push the playhead before reading the cache so the producer can fill
+    // the lookahead window for this tick and upcoming ticks.
+    provider.setPlayhead(item.sourceFrame)
+    const frame = provider.getCurrent(item.sourceFrame)
 
     if (this._lastLoggedSourceFrameByItemId.get(item.id) !== item.sourceFrame) {
       this._lastLoggedSourceFrameByItemId.set(item.id, item.sourceFrame)
       console.log(
-        `[GPU-TRACE] VideoLayer.draw  clipId=${item.id}  sourceFrame=${item.sourceFrame}  gotFrame=${frame !== null}  pendingCount=${pendingCount}  cacheSize=${cacheSize}`,
+        `[GPU-TRACE] VideoLayer.draw  clipId=${item.id}  sourceFrame=${item.sourceFrame}  gotFrame=${frame !== null}`,
       )
     }
 
@@ -263,16 +264,9 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
           height: frame.displayHeight,
         })
       }
-    } else {
-      provider.requestFrame(item.sourceFrame)
-      // Prefetch only if the request queue has room. When the queue is already
-      // saturated (e.g. mid-seek burst), skip prefetch so the seek-target slot
-      // is never pushed out by prefetch siblings.
-      const maxPrefetch = Math.min(Math.max(1, Math.ceil(ctx.fps / 6)), 5)
-      if (pendingCount < this._getMaxOutstanding(provider) - 1) {
-        provider.prefetch(item.sourceFrame + 1, maxPrefetch)
-      }
     }
+    // On cache miss: setPlayhead() already triggered decode for this frame.
+    // The provider keeps the last uploaded texture content — no flicker.
 
     if (!texture.hasContent || !this._program || !this._vao) {
       return
@@ -402,9 +396,4 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._vao = vao
   }
 
-  private _getMaxOutstanding(provider: VideoFrameProvider): number {
-    // DecoderBackedVideoFrameProvider exposes _maxOutstanding; access via
-    // duck-typing since the interface doesn't mandate it.
-    return (provider as { _maxOutstanding?: number })._maxOutstanding ?? 4
-  }
 }

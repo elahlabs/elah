@@ -21,7 +21,7 @@ describe('Error handling', () => {
       })
       const manager = new VideoDecoderManager({
         demuxerFactory: () => createMockDemuxerBackend(),
-        decoderFactory: () => decoder,
+        decoderFactory: decoder.factory,
       })
 
       await expect(manager.open('video://bad')).rejects.toThrow('invalid codec')
@@ -33,7 +33,7 @@ describe('Error handling', () => {
         demuxerFactory: () => createMockDemuxerBackend({
           openError: new Error('broken source'),
         }),
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: createMockDecoder().factory,
       })
 
       await expect(manager.open('video://missing')).rejects.toThrow('broken source')
@@ -41,24 +41,30 @@ describe('Error handling', () => {
     })
 
     it('failed packet stream transitions to Errored', async () => {
+      const onError = vi.fn()
       const manager = new VideoDecoderManager({
         demuxerFactory: () => createMockDemuxerBackend({
           chunks: [createMockChunk()],
           packetsError: new Error('stream broken'),
         }),
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: createMockDecoder().factory,
+        onError,
       })
 
       await manager.open('video://test')
-      await expect(manager.requestFrame(0)).rejects.toThrow('stream broken')
+      manager.feed([0, 33333])
+      // Allow async feed loop to process and surface the error.
+      await new Promise(resolve => setTimeout(resolve, 0))
+
       expect(manager.state).toBe('Errored')
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'stream broken' }))
     })
 
     it('dispose() from Errored cleans up safely', async () => {
       const decoder = createMockDecoder({ configureError: new Error('fail') })
       const manager = new VideoDecoderManager({
         demuxerFactory: () => createMockDemuxerBackend(),
-        decoderFactory: () => decoder,
+        decoderFactory: decoder.factory,
       })
 
       await expect(manager.open('video://fail')).rejects.toThrow()
@@ -105,7 +111,7 @@ describe('Error handling', () => {
         layer.draw(goodClip, ctx)
       }).not.toThrow()
 
-      expect(badProvider.requestFrame).toHaveBeenCalledWith(0)
+      expect(badProvider.setPlayhead).toHaveBeenCalledWith(0)
       expect(gl.drawArrays).toHaveBeenCalled()
     })
 
@@ -148,7 +154,7 @@ describe('Error handling', () => {
       layer.draw(clipA, ctx)
       layer.draw(clipB, ctx)
 
-      expect(providerA.requestFrame).toHaveBeenCalled()
+      expect(providerA.setPlayhead).toHaveBeenCalled()
       expect(gl.drawArrays).toHaveBeenCalledTimes(1)
 
       layer.dispose()
@@ -172,16 +178,14 @@ describe('Error handling', () => {
 
 function makeMockProvider(): VideoFrameProvider & {
   getCurrent: ReturnType<typeof vi.fn>
-  requestFrame: ReturnType<typeof vi.fn>
-  prefetch: ReturnType<typeof vi.fn>
+  setPlayhead: ReturnType<typeof vi.fn>
   markIdle: ReturnType<typeof vi.fn>
   markActive: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
 } {
   return {
     getCurrent: vi.fn(() => null),
-    requestFrame: vi.fn(),
-    prefetch: vi.fn(),
+    setPlayhead: vi.fn(),
     markIdle: vi.fn(),
     markActive: vi.fn(),
     dispose: vi.fn(),

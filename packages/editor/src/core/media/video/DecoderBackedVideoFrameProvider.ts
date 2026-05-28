@@ -23,6 +23,9 @@
  *
  * @see EVOLUTION.md § 4 Phase 1
  * @see architecture.md § 6 (async frame pipeline)
+ *
+ * @deprecated Replaced by StreamingFrameProducer (PR-02). Kept for one release
+ * cycle before deletion. createVideoFrameProvider() no longer returns this class.
  */
 
 import { FrameCache, type FrameCacheHooks } from './FrameCache'
@@ -118,27 +121,10 @@ export class DecoderBackedVideoFrameProvider implements VideoFrameProvider {
       fps: this._fps,
       demuxerFactory: opts.demuxerFactory,
       decoderFactory: opts.decoderFactory,
-      // Production code MUST reject zero-output decodes — see
-      // VideoDecoderManager.ts strictNoOutput jsdoc for the texImage2D
-      // failure mode this prevents. Tests can opt out via options.strictNoOutput.
-      strictNoOutput: opts.strictNoOutput ?? true,
-      decodeTimeoutMs: opts.decodeTimeoutMs,
-      onDecodeLatency: (sourceFrame, ms) => {
-        GpuDebugCounters.recordDecodeLatency(ms)
-        GpuDebugCounters.pendingDecodeRequests = Math.max(
-          0,
-          GpuDebugCounters.pendingDecodeRequests - 1,
-        )
-        void sourceFrame
-      },
-      onDroppedFrame: (sourceFrame) => {
+      onDroppedFrame: () => {
         GpuDebugCounters.incDropped()
-        this._pending.delete(sourceFrame)
       },
       onError: (_err) => {
-        // A single decode failure must not permanently brick playback.
-        // Reopen the manager so subsequent requestFrame() calls can succeed
-        // once the decoder is back in Ready state.
         if (this._state === 'disposed' || this._reopening) return
         this._reopening = true
         this._openPromise = this._manager
@@ -181,67 +167,25 @@ export class DecoderBackedVideoFrameProvider implements VideoFrameProvider {
   }
 
   /**
-   * Schedule async decode for sourceFrame. Fire-and-forget.
-   *
-   * Coalescing rules (I4 stress guardrails):
-   *  - No-op if frame is already in cache.
-   *  - No-op if frame is already in-flight (_pending).
-   *  - No-op if _pending.size >= maxOutstanding (back-pressure).
-   *  - No-op if manager is not yet open or is in error/disposed state.
+   * DEPRECATED. Push-based replacement: setPlayhead().
+   * Kept as a class method (not on VideoFrameProvider interface) for one
+   * release cycle. Does nothing with the new VideoDecoderManager API.
    */
-  requestFrame(sourceFrame: number): void {
-    if (this._state === 'disposed') return
-    if (this._cache.has(sourceFrame)) return
-    if (this._pending.has(sourceFrame)) return
-
-    const managerState = this._manager.state
-    if (
-      managerState === 'Disposed' ||
-      managerState === 'Errored' ||
-      managerState === 'Opening' ||
-      managerState === 'Idle'
-    ) {
-      return
-    }
-
-    // Detect non-contiguous jump (seek) before back-pressure so a scrub can
-    // cancel stuck in-flight decodes even when _pending is full.
-    const isDiscontinuity =
-      this._lastRequested !== null && Math.abs(sourceFrame - this._lastRequested) > 1
-
-    if (
-      isDiscontinuity &&
-      (managerState === 'Ready' || managerState === 'Decoding')
-    ) {
-      this._pending.clear()
-      this._lastRequested = sourceFrame
-
-      void this._manager
-        .seek(sourceFrame)
-        .then(() => {
-          this._enqueueRequestFrame(sourceFrame)
-        })
-        .catch(() => {
-          // seek() may fail if state transitions under us; enqueue proceeds anyway.
-          this._enqueueRequestFrame(sourceFrame)
-        })
-      return
-    }
-
-    if (this._pending.size >= this._maxOutstanding) return
-
-    this._lastRequested = sourceFrame
-    this._enqueueRequestFrame(sourceFrame)
+  requestFrame(_sourceFrame: number): void {
+    // no-op: this class is deprecated. Use StreamingFrameProducer.
   }
 
-  /** Fire-and-forget prefetch of a bounded window of frames. */
-  prefetch(fromSourceFrame: number, count: number): void {
-    if (this._state === 'disposed') return
-    // Respect maxOutstanding across the entire prefetch window.
-    for (let i = 0; i < count; i++) {
-      if (this._pending.size >= this._maxOutstanding) break
-      this.requestFrame(fromSourceFrame + i)
-    }
+  /** DEPRECATED. See requestFrame(). */
+  prefetch(_fromSourceFrame: number, _count: number): void {
+    // no-op: this class is deprecated.
+  }
+
+  /**
+   * Push-based interface method (PR-02). No-op in the deprecated provider;
+   * StreamingFrameProducer implements this correctly.
+   */
+  setPlayhead(_sourceFrame: number, _opts?: { lookaheadFrames?: number }): void {
+    // no-op: DecoderBackedVideoFrameProvider is deprecated.
   }
 
   markIdle(): void {
@@ -326,61 +270,9 @@ export class DecoderBackedVideoFrameProvider implements VideoFrameProvider {
     }
   }
 
-  /** Enqueue a decode after guards pass. May run after an async seek completes. */
-  private _enqueueRequestFrame(sourceFrame: number): void {
-    if (this._state === 'disposed') return
-    if (this._cache.has(sourceFrame)) return
-    if (this._pending.has(sourceFrame)) return
-    if (this._pending.size >= this._maxOutstanding) return
-
-    const managerState = this._manager.state
-    if (
-      managerState === 'Disposed' ||
-      managerState === 'Errored' ||
-      managerState === 'Opening' ||
-      managerState === 'Idle' ||
-      managerState === 'Seeking'
-    ) {
-      return
-    }
-
-    this._pending.add(sourceFrame)
-    GpuDebugCounters.pendingDecodeRequests++
-
-    this._manager
-      .requestFrame(sourceFrame)
-      .then((frame) => {
-        if (this._state === 'disposed') {
-          frame.close()
-          return
-        }
-        this._cache.put(sourceFrame, frame)
-        GpuDebugCounters.cacheSize = this._cache.size
-      })
-      .catch((err: Error) => {
-        if (!_isCancellation(err) && this._state !== 'disposed') {
-          GpuDebugCounters.incDropped()
-        }
-      })
-      .finally(() => {
-        this._pending.delete(sourceFrame)
-      })
+  /** DEPRECATED stub. No-op — see setPlayhead() and StreamingFrameProducer. */
+  private _enqueueRequestFrame(_sourceFrame: number): void {
+    // no-op: this class is deprecated.
   }
 }
 
-/**
- * Returns true when an error from VideoDecoderManager.requestFrame() is a
- * deliberate cancellation (seek, drain, dispose) rather than a genuine failure.
- * Genuine failures should count as dropped frames; cancellations should not.
- */
-function _isCancellation(err: Error): boolean {
-  const msg = err.message
-  return (
-    msg.includes('seek cancelled') ||
-    msg.includes('drain cancelled') ||
-    msg.includes('disposed') ||
-    // The manager already counts no-output drops via onDroppedFrame; treat
-    // the rejection as a "non-error" here so we don't double-count.
-    msg.includes('no output produced')
-  )
-}

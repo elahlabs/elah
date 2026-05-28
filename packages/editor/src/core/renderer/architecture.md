@@ -143,11 +143,11 @@ flowchart TB
     end
 
     subgraph frames[Frame pipeline — core/media/video/]
-        VFP[VideoFrameProvider<br/>Mock | Synthetic | DecoderBacked]
+        VFP[VideoFrameProvider<br/>Mock | Synthetic | StreamingFrameProducer]
         FC[FrameCache]
         VDM[VideoDecoderManager]
         DMX[MediabunnyDemuxer]
-        DBP[DecoderBackedVideoFrameProvider]
+        SFP[StreamingFrameProducer]
     end
 
     subgraph compositing[Compositing — core/renderer/gpu/]
@@ -179,18 +179,20 @@ flowchart TB
     VT --> TP
 
     VFP --> FC
-    VFP -->|demuxerFactory provided| DBP
-    DBP --> VDM
+    VFP -->|demuxerFactory provided| SFP
+    SFP --> VDM
+    SFP --> FC
     VDM --> DMX
-    VDM --> FC
 
     Panel --> Cnt
     VFP --> Cnt
     VT --> Cnt
 ```
 
-> **Phase 1 wired** (2026-05-23): `createVideoFrameProvider(src, deps)` returns
-> `DecoderBackedVideoFrameProvider` when `deps.demuxerFactory` is provided.
+> **PR-02 wired** (2026-05-25): `createVideoFrameProvider(src, deps)` returns
+> `StreamingFrameProducer` when `deps.demuxerFactory` is provided.
+> The producer uses a push-based `setPlayhead` + `feed/onFrame` pipeline —
+> `requestFrame` and per-frame `flush` are gone.
 > `SyntheticVideoFrameProvider` (browser dev) and `MockVideoFrameProvider` (jsdom)
 > remain for environments without a real demuxer.
 
@@ -264,6 +266,7 @@ sequenceDiagram
 
         loop per draw entry
             RG->>VL: draw(item, ctx)
+            VL->>VFP: setPlayhead(sourceFrame) [fire-and-forget]
             VL->>VFP: getCurrent(sourceFrame) [sync]
             alt cache hit
                 VFP-->>VL: VideoFrame (borrowed)
@@ -272,7 +275,6 @@ sequenceDiagram
                 VT->>VT: frame.close() (always)
             else cache miss
                 VFP-->>VL: null
-                VL->>VFP: requestFrame(sourceFrame) [fire-and-forget]
                 Note over VL: keeps last texture content → no flicker
             end
             VL->>GL: program.use + bind VAO + uniforms + drawArrays
@@ -296,32 +298,33 @@ The provider is the boundary between the synchronous render thread and the
 asynchronous decode/generation work. Everything below the dashed line happens
 on its own schedule and reports back via the cache.
 
+Push-based contract (PR-02): VideoLayer calls `setPlayhead(N)` before
+`getCurrent(N)` on every tick. The provider drives decode internally; the
+render path never schedules individual frame requests.
+
 ```mermaid
 flowchart LR
     subgraph sync [Synchronous — inside render tick]
         VL[VideoLayer.draw]
-        VL -- getCurrent(N) --> VFP
-        VFP -- frame or null --> VL
+        VL -- setPlayhead N --> SFP
+        VL -- getCurrent N --> FC
+        FC -- frame or null --> VL
     end
 
-    VFP[(VideoFrameProvider)]
+    SFP[StreamingFrameProducer]
     FC[(FrameCache<br/>LRU, owns frames)]
-    VFP --- FC
+    SFP --- FC
 
-    subgraph async [Asynchronous — setTimeout / future decoder]
-        REQ[requestFrame N]
-        SYN[Synthetic: paint to OffscreenCanvas<br/>→ new VideoFrame]
-        REAL[Future: VideoDecoderManager<br/>→ VideoDecoder.output]
+    subgraph async [Asynchronous — feed/onFrame loop]
+        FEED[manager.feed timeRangeUs]
+        DECODE[VideoDecoder.output → onFrame]
+        PUT[cache.put N frame]
     end
 
-    VFP -- requestFrame(N) --> REQ
-    REQ --> SYN
-    REQ -. future .-> REAL
-    SYN -- put(N, frame) --> FC
-    REAL -. put(N, frame) .-> FC
-
-    classDef future stroke-dasharray:4 3,color:#aaa
-    class REAL future
+    SFP -- feed on discontinuity/lookahead --> FEED
+    FEED --> DECODE
+    DECODE --> PUT
+    PUT --> FC
 
     style sync fill:#143,stroke:#3a3
     style async fill:#332,stroke:#b80
@@ -331,46 +334,51 @@ Cache rules (see [`FrameCache.ts`](../media/video/FrameCache.ts)):
 
 - `put` transfers ownership to the cache.
 - `get` returns a **borrowed** reference — callers must not close it.
-- When full, the entry with the **lowest** `sourceFrame` is evicted and closed.
+- When full, the entry furthest from the current pivot is evicted and closed.
 - `VideoTexture.upload` is the only consumer that closes a borrowed frame —
   and only in a `finally` block, so the rule still holds end-to-end.
 
-### 6.1 Decode pipeline (Phase 1 — wired)
+### 6.1 Decode pipeline (PR-02 — push-based)
 
-Full sequence from render tick miss to frame available on the next tick:
+Full sequence from first `setPlayhead` call to frame available on the next tick:
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant VL as VideoLayer.draw
-    participant DBVFP as DecoderBackedVideoFrameProvider
+    participant SFP as StreamingFrameProducer
     participant FC as FrameCache
     participant VDM as VideoDecoderManager
     participant DMX as MediabunnyDemuxer
 
     Note over VL,DMX: Synchronous render tick (inside render())
-    VL->>DBVFP: getCurrent(sourceFrame) [sync]
-    DBVFP->>FC: cache.get(sourceFrame)
-    FC-->>DBVFP: null (miss)
-    DBVFP-->>VL: null
+    VL->>SFP: setPlayhead(sourceFrame) [fire-and-forget]
+    Note over SFP: |Δ|>1 or first call → discontinuity → async reset
+    SFP->>VDM: manager.reset(keyframeUs) [async, off render tick]
+    VDM->>DMX: seekToKeyframe(keyframeUs)
+    VDM->>VDM: decoder.reset() + configure()
 
-    VL->>DBVFP: requestFrame(sourceFrame) [fire-and-forget]
-    Note over DBVFP: coalesce check: pending? cache? cap exceeded? → no-op
-    DBVFP->>VDM: manager.requestFrame(sourceFrame) [returns Promise]
+    VL->>SFP: getCurrent(sourceFrame) [sync]
+    SFP->>FC: cache.get(sourceFrame)
+    FC-->>SFP: null (miss — decoder warming up)
+    SFP-->>VL: null
+    Note over VL: keeps last texture content → no flicker
 
-    Note over VL,DMX: Async — microtask / decoder callback (off render tick)
-    VDM->>DMX: packets([timeUs, timeUs+usPerFrame])
+    Note over VL,DMX: After reset completes (microtask)
+    SFP->>VDM: manager.feed([startUs, endUs]) [fire-and-forget]
+    VDM->>DMX: packets([startUs, endUs])
     DMX-->>VDM: EncodedVideoChunk stream
-    VDM->>VDM: decoder.decode(chunk) + decoder.flush()
-    VDM->>VDM: _pickOutputFrame() → VideoFrame
-    VDM-->>DBVFP: resolve(frame) [ownership transferred]
-    DBVFP->>FC: cache.put(sourceFrame, frame) [I10: FC owns now]
+    VDM->>VDM: decoder.decode(chunk) [no per-frame flush]
+    VDM->>VDM: VideoDecoder.output fires → onFrame callback
+    VDM-->>SFP: onFrame(VideoFrame, sourceFrameIdx) [ownership transferred]
+    SFP->>FC: cache.put(sourceFrameIdx, frame) [I10: FC owns now]
 
-    Note over VL,DMX: Next render tick
-    VL->>DBVFP: getCurrent(sourceFrame)
-    DBVFP->>FC: cache.get(sourceFrame)
-    FC-->>DBVFP: VideoFrame (borrowed)
-    DBVFP-->>VL: VideoFrame
+    Note over VL,DMX: Next render tick (~1-3 ticks after setPlayhead)
+    VL->>SFP: setPlayhead(sourceFrame+1) [contiguous → no reset]
+    VL->>SFP: getCurrent(sourceFrame)
+    SFP->>FC: cache.get(sourceFrame)
+    FC-->>SFP: VideoFrame (borrowed)
+    SFP-->>VL: VideoFrame
     VL->>VL: VideoTexture.upload → frame.close() in finally [I10]
 ```
 
@@ -416,7 +424,7 @@ sequenceDiagram
     participant Resolver as resolveTimeline
     participant GR as GpuRenderer
     participant VL as VideoLayer
-    participant DBP as DecoderBackedVideoFrameProvider
+    participant SFP as StreamingFrameProducer
     participant CMB as createMediabunnyBackend
     participant MB as mediabunny
     participant FC as FrameCache
@@ -432,41 +440,45 @@ sequenceDiagram
     Resolver-->>GR: Scene { videos: [ActiveVideoClip { src }] }
 
     GR->>VL: draw(scene)
-    VL->>DBP: getCurrent(frame) → null (cache miss)
-    VL->>DBP: requestFrame(frame) [fire-and-forget]
+    VL->>SFP: setPlayhead(frame) [fire-and-forget; triggers open-time reset]
+    VL->>SFP: getCurrent(frame) → null (cache miss — decoder warming up)
+    Note over VL: keeps last texture content → no flicker
 
-    Note over DBP,MB: out-of-band async
-    DBP->>CMB: open(src)
+    Note over SFP,MB: out-of-band async (first setPlayhead triggers open + reset)
+    SFP->>CMB: open(src)
     CMB->>MB: fetch + BlobSource + Input
     MB-->>CMB: VideoTrack + DecoderConfig
-    CMB-->>DBP: backend ready
-
-    DBP->>CMB: seekToKeyframe(µs)
+    CMB-->>SFP: backend ready
+    SFP->>CMB: seekToKeyframe(µs)
     CMB->>MB: sink.getKeyPacket(sec)
-    DBP->>CMB: packets([startµs, endµs])
+    SFP->>CMB: feed([startµs, endµs])
     CMB->>MB: sink.getNextPacket → EncodedVideoChunk
-    DBP->>DBP: VideoDecoder.decode + flush → VideoFrame
-    DBP->>FC: cache.put(frame, VideoFrame)
+    SFP->>SFP: VideoDecoder.decode [no per-frame flush]
+    SFP->>SFP: onFrame(VideoFrame) → cache.put(frame, VideoFrame)
 
-    Note over GR,VT: next RAF tick
+    Note over GR,VT: next RAF tick (~1-3 ticks later)
     GR->>VL: draw(scene)
-    VL->>DBP: getCurrent(frame) → VideoFrame (cache hit)
+    VL->>SFP: setPlayhead(frame) [contiguous → no reset]
+    VL->>SFP: getCurrent(frame) → VideoFrame (cache hit)
     VL->>VT: upload(VideoFrame) → gl.texImage2D [frame.close() in finally]
     VT-->>GR: texture bound
     GR->>GR: gl.drawArrays → pixels on canvas
 ```
 
-### 6.4 Outstanding decode coalescing
+### 6.4 Cache-full backpressure
 
-`DecoderBackedVideoFrameProvider` enforces three coalescing rules in `requestFrame()`:
+`StreamingFrameProducer` avoids redundant work via a feed-watermark:
 
 | Rule | Condition | Action |
 |---|---|---|
-| Cache hit | `cache.has(n)` | No-op |
-| In-flight | `_pending.has(n)` | No-op — existing promise will resolve |
-| Cap exceeded | `_pending.size >= maxOutstanding` | No-op — back-pressure |
+| Cache hit | `cache.has(n)` | `getCurrent` returns frame; no feed needed |
+| Watermark covered | `windowEnd <= _feedWatermark` | No-op — packets already sent to decoder |
+| Contiguous advance | `\|Δ\| ≤ 1` | Feed only the new tail: `[watermark+1, N+lookahead]` |
+| Discontinuity | `\|Δ\| > 1` or first call | `reset(keyframeUs)` → clear watermark → feed full window |
+| Disposed | `state === 'disposed'` | All operations no-op immediately |
 
-`maxOutstanding` defaults to 4, configurable via `RendererOptions.maxOutstandingDecodes`.
+The decoder stays warm across contiguous `feed()` calls — no per-frame `flush()`.
+`flush()` is called only in `drain()` during dispose.
 
 ---
 
@@ -515,9 +527,10 @@ flowchart TB
 
 ## 8. `VideoDecoderManager` state machine
 
-Not yet wired into the live render path, but fully implemented and tested.
-One instance per unique source URL. Holds **no** GL objects, so it is immune
-to context loss.
+Fully implemented and tested. Owned by `StreamingFrameProducer` (one instance
+per provider). Holds **no** GL objects, so it is immune to context loss.
+
+API: `feed(timeRangeUs)`, `reset(toKeyframeUs)`, `drain()`, `onFrame` callback.
 
 ```mermaid
 stateDiagram-v2
@@ -526,12 +539,13 @@ stateDiagram-v2
     Opening --> Ready: configure OK
     Opening --> Errored: open/configure fail
 
-    Ready --> Decoding: requestFrame(N)
-    Decoding --> Ready: queue drained
-    Decoding --> Seeking: seek(N)
-    Ready --> Seeking: seek(N)
-    Seeking --> Ready: keyframe found
-    Seeking --> Errored: demux fail
+    Ready --> Decoding: feed(rangeUs)
+    Decoding --> Decoding: onFrame fires → SFP.cache.put
+    Decoding --> Ready: feed window exhausted
+    Decoding --> Resetting: reset(keyframeUs)
+    Ready --> Resetting: reset(keyframeUs)
+    Resetting --> Ready: seekToKeyframe + configure done
+    Resetting --> Errored: demux fail
 
     Ready --> Draining: drain()
     Decoding --> Draining: drain()
@@ -543,16 +557,20 @@ stateDiagram-v2
     Idle --> [*]: dispose()
     Ready --> [*]: dispose()
     Decoding --> [*]: dispose()
-    Seeking --> [*]: dispose()
+    Resetting --> [*]: dispose()
     Draining --> [*]: dispose()
 ```
 
-Behavioural guarantees enforced by `_assertTransition`:
+Behavioural guarantees (PR-02):
 
-- Duplicate `requestFrame(N)` calls coalesce into one decode (the second
-  awaits the first's promise).
-- `seek()` rejects every pending decode with a `seek cancelled` error.
-- `drain()` rejects every pending decode with a `drain cancelled` error.
+- `feed()` never calls `decoder.flush()` mid-stream; the decoder stays warm
+  across contiguous frame ranges.
+- `reset()` bumps `_feedGeneration` so any in-progress `feed()` loop
+  abandons its remaining packets without calling `decode()`.
+- `onFrame` is called from `VideoDecoder.output`; `StreamingFrameProducer`
+  checks generation before calling `cache.put` and closes stale frames.
+- `drain()` calls `decoder.flush()` exactly once, then waits for the flush
+  to propagate through `output` before resolving.
 
 ---
 
@@ -672,12 +690,12 @@ graph LR
         D5[RenderGraph diff/acquire/release/zSort]
         D6[VideoLayer Scene→draw with transform/opacity]
         D7[VideoTexture frame-ownership invariant]
-        D8[FrameCache LRU + onPut/onEvict hooks]
-        D9[VideoFrameProvider Mock + Synthetic]
-        D10[VideoDecoderManager state machine + tests]
+        D8[FrameCache forward-oriented pivot cache]
+        D9[VideoFrameProvider push interface - Mock + Synthetic]
+        D10[VideoDecoderManager feed/reset/drain API + tests]
         D11[MediabunnyDemuxer adapter shape]
         D12[Debug overlay + scenarios A..E]
-        D13[18 vitest suites green]
+        D13[20+ vitest suites green]
     end
 
     subgraph next[Next]
@@ -699,11 +717,21 @@ graph LR
         P6[RecordingGl golden-frame test harness]
     end
 
+    subgraph pr02[PR-02 — push-based pipeline 2026-05-25]
+        R1[StreamingFrameProducer - push-based VideoFrameProvider]
+        R2[VideoDecoderManager simplified to feed/reset/onFrame/drain]
+        R3[VideoFrameProvider interface - setPlayhead/getCurrent only]
+        R4[VideoLayer.draw uses setPlayhead + getCurrent]
+        R5[No per-frame flush on contiguous decode paths]
+    end
+
     classDef done fill:#1f6f1f,stroke:#0a0,color:#fff
     classDef phase1 fill:#1a4a6f,stroke:#07f,color:#fff
+    classDef pr02 fill:#4a1a6f,stroke:#a07f,color:#fff
     classDef next fill:#444,stroke:#888,color:#ccc,stroke-dasharray:4 3
     class D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13 done
     class P1,P2,P3,P4,P5,P6 phase1
+    class R1,R2,R3,R4,R5 pr02
     class N3,N4,N5,N6,N7 next
 ```
 
@@ -726,7 +754,7 @@ graph LR
 | Decoder + state machine   | [`../media/video/VideoDecoderManager.ts`](../media/video/VideoDecoderManager.ts) |
 | Demuxer adapter           | [`../media/video/demuxer/MediabunnyDemuxer.ts`](../media/video/demuxer/MediabunnyDemuxer.ts) |
 | mediabunny backend adapter | [`../media/video/demuxer/createMediabunnyBackend.ts`](../media/video/demuxer/createMediabunnyBackend.ts) |
-| Real decode provider      | [`../media/video/DecoderBackedVideoFrameProvider.ts`](../media/video/DecoderBackedVideoFrameProvider.ts) |
+| Push-based frame producer | [`../media/video/StreamingFrameProducer.ts`](../media/video/StreamingFrameProducer.ts) |
 | Media layer overview      | [`../media/README.md`](../media/README.md)                           |
 | Debug renderer & overlay  | [`gpu/debug/`](./gpu/debug)                                          |
 | Recording GL (test only)  | [`gpu/debug/RecordingGl.ts`](./gpu/debug/RecordingGl.ts)            |

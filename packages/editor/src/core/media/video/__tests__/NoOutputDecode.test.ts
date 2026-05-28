@@ -1,36 +1,26 @@
 /**
- * NoOutputDecode.test.ts — locks the texImage2D-overload-error fix.
+ * NoOutputDecode.test.ts — tests for the no-output / empty-packets decode paths.
  *
- * Repro condition:
- *   A "contiguous" decode (frame N → N+1, no seek) that ends up feeding zero
- *   packets to the WebCodecs decoder. Before the fix, VideoDecoderManager
- *   fabricated a fake `VideoFrame`-shaped object via _createFallbackFrame()
- *   which propagated through provider.getCurrent() → frame.clone() →
- *   gl.texImage2D(...) and crashed the render tick with
- *     "TypeError: Failed to execute 'texImage2D' on 'WebGL2RenderingContext':
- *      Overload resolution failed."
+ * Section 1: createMediabunnyBackend forward-progress invariant.
+ *   A "contiguous" decode that feeds zero packets would previously fabricate a fake
+ *   VideoFrame causing a GL texImage2D crash. The fix ensures packets() always yields
+ *   ≥1 packet when a buffered packet exists past the range end.
  *
- * After the fix:
- *  1. createMediabunnyBackend.packets() guarantees forward progress in the
- *     contiguous-continuation branch — at least one packet is yielded for
- *     any non-EOF call when a buffered packet exists.
- *  2. VideoDecoderManager (with strictNoOutput: true) rejects the requestFrame
- *     promise with a tagged "no output produced" error rather than producing
- *     a fake VideoFrame, and the rejection is treated as a dropped frame
- *     without transitioning the manager to Errored.
+ * Section 2: VideoDecoderManager feed error handling.
+ *   When feed() encounters a demuxer error, the manager transitions to Errored and
+ *   invokes onError. The manager stays in Errored (does not stay Ready).
  *
- * @see VideoDecoderManager.ts strictNoOutput
  * @see createMediabunnyBackend.ts packets() forward-progress invariant
- * @see DecoderBackedVideoFrameProvider.ts strictNoOutput pass-through
+ * @see VideoDecoderManager.ts feed() error path
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { VideoDecoderManager, NO_OUTPUT_PRODUCED_TAG } from '../VideoDecoderManager'
+import { VideoDecoderManager } from '../VideoDecoderManager'
 import {
   createMediabunnyBackend,
   type MediabunnyModule,
 } from '../demuxer/createMediabunnyBackend'
-import { createMockChunk, createMockDecoder } from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 // ---------------------------------------------------------------------------
 // Demuxer continuity test — forward-progress invariant for packets()
@@ -134,10 +124,10 @@ describe('createMediabunnyBackend — contiguous packets() forward progress', ()
 })
 
 // ---------------------------------------------------------------------------
-// VideoDecoderManager strictNoOutput test
+// VideoDecoderManager feed error handling
 // ---------------------------------------------------------------------------
 
-describe('VideoDecoderManager strictNoOutput', () => {
+describe('VideoDecoderManager feed error handling', () => {
   beforeEach(() => {
     vi.useFakeTimers()
   })
@@ -145,9 +135,30 @@ describe('VideoDecoderManager strictNoOutput', () => {
     vi.useRealTimers()
   })
 
-  it('rejects requestFrame with a "no output produced" error when no packets feed the decoder', async () => {
-    // Demuxer that yields zero packets — simulates the contiguous decode
-    // race that previously produced a fallback fake VideoFrame.
+  it('feed() with demuxer packetsError transitions manager to Errored', async () => {
+    const demuxerBackend = createMockDemuxerBackend({
+      chunks: [createMockChunk(0)],
+      packetsError: new Error('stream broken'),
+    })
+    const onError = vi.fn()
+    const manager = new VideoDecoderManager({
+      demuxerFactory: () => demuxerBackend,
+      decoderFactory: createMockDecoder().factory,
+      onError,
+    })
+
+    await manager.open('video://test')
+    expect(manager.state).toBe('Ready')
+
+    manager.feed([0, 33333])
+    await Promise.resolve()
+
+    // After the async feed loop surfaces the error:
+    expect(manager.state).toBe('Errored')
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'stream broken' }))
+  })
+
+  it('empty demuxer (zero packets) completes feed without error', async () => {
     const demuxerBackend = {
       open: vi.fn(async () => {}),
       getConfig: vi.fn(() => ({ codec: 'vp8', codedWidth: 640, codedHeight: 360 })),
@@ -157,84 +168,42 @@ describe('VideoDecoderManager strictNoOutput', () => {
       seekToKeyframe: vi.fn(async () => {}),
       dispose: vi.fn(),
     }
-    const decoder = createMockDecoder()
-
-    const dropped: number[] = []
+    const onError = vi.fn()
     const manager = new VideoDecoderManager({
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
-      strictNoOutput: true,
-      onDroppedFrame: (f) => dropped.push(f),
+      decoderFactory: createMockDecoder({ emitFrames: false }).factory,
+      onError,
     })
 
     await manager.open('video://test')
-    await expect(manager.requestFrame(0)).rejects.toThrow(
-      new RegExp(NO_OUTPUT_PRODUCED_TAG),
-    )
+    manager.feed([0, 33333])
+    await Promise.resolve()
 
-    expect(dropped).toContain(0)
-    // Manager must remain usable — a no-output drop must NOT transition to Errored.
+    // Manager stays Ready — zero packets is not an error in the new API
     expect(manager.state).toBe('Ready')
+    expect(onError).not.toHaveBeenCalled()
   })
 
-  it('preserves the legacy fallback path when strictNoOutput is false', async () => {
-    // This is the historical contract relied upon by 30+ existing tests.
-    const demuxerBackend = {
-      open: vi.fn(async () => {}),
-      getConfig: vi.fn(() => ({ codec: 'vp8', codedWidth: 640, codedHeight: 360 })),
-      packets: vi.fn(async function* (_r: [number, number]) {
-        yield createMockChunk()
-      }),
-      seekToKeyframe: vi.fn(async () => {}),
-      dispose: vi.fn(),
-    }
-    const decoder = createMockDecoder()
-
+  it('feed() delivers decoded frames via onFrame callback', async () => {
+    const demuxerBackend = createMockDemuxerBackend({
+      chunks: [createMockChunk(0), createMockChunk(33333)],
+    })
+    const receivedFrames: number[] = []
     const manager = new VideoDecoderManager({
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
-      // strictNoOutput omitted → defaults to false
+      decoderFactory: createMockDecoder().factory,
     })
-
-    await manager.open('video://test')
-    const frame = await manager.requestFrame(0)
-    expect(frame).toBeTruthy()
-    expect(manager.state).toBe('Ready')
-  })
-
-  it('does not poison the queue after a no-output drop (state stays Ready, follow-up request is accepted)', async () => {
-    // Both decodes yield zero packets — the second must reject the same
-    // way (with the no-output tag), proving the manager did not transition
-    // to Errored after the first drop.
-    const demuxerBackend = {
-      open: vi.fn(async () => {}),
-      getConfig: vi.fn(() => ({ codec: 'vp8', codedWidth: 640, codedHeight: 360 })),
-      packets: vi.fn(async function* (_r: [number, number]) {
-        // empty for every call
-      }),
-      seekToKeyframe: vi.fn(async () => {}),
-      dispose: vi.fn(),
+    manager.onFrame = (_frame, sourceFrameIdx) => {
+      receivedFrames.push(sourceFrameIdx)
+      _frame.close()
     }
-    const decoder = createMockDecoder()
-
-    const manager = new VideoDecoderManager({
-      demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
-      strictNoOutput: true,
-    })
 
     await manager.open('video://test')
+    manager.feed([0, 66666])
+    await Promise.resolve()
+    await Promise.resolve()
 
-    await expect(manager.requestFrame(0)).rejects.toThrow(
-      new RegExp(NO_OUTPUT_PRODUCED_TAG),
-    )
-    expect(manager.state).toBe('Ready')
-
-    // Follow-up request is accepted (would throw "invalid state" if the
-    // first drop had transitioned to Errored).
-    await expect(manager.requestFrame(1)).rejects.toThrow(
-      new RegExp(NO_OUTPUT_PRODUCED_TAG),
-    )
+    expect(receivedFrames.length).toBeGreaterThan(0)
     expect(manager.state).toBe('Ready')
   })
 })

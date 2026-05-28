@@ -8,14 +8,14 @@ import {
 
 describe('VideoDecoderManager lifecycle', () => {
   let demuxerBackend: ReturnType<typeof createMockDemuxerBackend>
-  let decoder: ReturnType<typeof createMockDecoder>
+  let decoderMock: ReturnType<typeof createMockDecoder>
 
   beforeEach(() => {
     vi.useFakeTimers()
     demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk()],
     })
-    decoder = createMockDecoder()
+    decoderMock = createMockDecoder()
   })
 
   afterEach(() => {
@@ -25,7 +25,7 @@ describe('VideoDecoderManager lifecycle', () => {
   function createManager(overrides: Partial<ConstructorParameters<typeof VideoDecoderManager>[0]> = {}) {
     return new VideoDecoderManager({
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
+      decoderFactory: decoderMock.factory,
       idleTimeoutMs: 1000,
       ...overrides,
     })
@@ -47,32 +47,22 @@ describe('VideoDecoderManager lifecycle', () => {
     expect(states).toEqual(['Opening', 'Ready'])
     expect(manager.src).toBe('video://test')
     expect(demuxerBackend.open).toHaveBeenCalledWith('video://test')
-    expect(decoder.configure).toHaveBeenCalled()
+    expect(decoderMock.lastDecoder.configure).toHaveBeenCalled()
   })
 
-  it('transitions Ready → Decoding → Ready during requestFrame()', async () => {
+  it('transitions Ready → Resetting → Ready on reset()', async () => {
     const states: string[] = []
     const manager = createManager({
       onStateChange: (state) => states.push(state),
     })
 
     await manager.open('video://test')
+    states.length = 0
 
-    const framePromise = manager.requestFrame(10)
-    expect(manager.state).toBe('Decoding')
-
-    await framePromise
-    expect(manager.state).toBe('Ready')
-    expect(states).toContain('Decoding')
-  })
-
-  it('transitions Ready → Seeking → Ready on seek()', async () => {
-    const manager = createManager()
-    await manager.open('video://test')
-
-    await manager.seek(100)
+    await manager.reset(0)
 
     expect(manager.state).toBe('Ready')
+    expect(states).toEqual(['Resetting', 'Ready'])
     expect(demuxerBackend.seekToKeyframe).toHaveBeenCalled()
   })
 
@@ -83,19 +73,9 @@ describe('VideoDecoderManager lifecycle', () => {
     await manager.drain()
 
     expect(manager.state).toBe('Idle')
-    expect(decoder.flush).toHaveBeenCalled()
-    expect(decoder.close).toHaveBeenCalled()
+    expect(decoderMock.lastDecoder.flush).toHaveBeenCalled()
+    expect(decoderMock.lastDecoder.close).toHaveBeenCalled()
     expect(demuxerBackend.dispose).toHaveBeenCalled()
-  })
-
-  it('rejects invalid transitions from Disposed', async () => {
-    const manager = createManager()
-    await manager.open('video://test')
-    manager.dispose()
-
-    expect(manager.state).toBe('Disposed')
-    await expect(manager.requestFrame(0)).rejects.toThrow(/disposed/)
-    await expect(manager.seek(0)).rejects.toThrow(/invalid transition/)
   })
 
   it('dispose() fully cleans resources', async () => {
@@ -104,7 +84,7 @@ describe('VideoDecoderManager lifecycle', () => {
     manager.dispose()
 
     expect(manager.state).toBe('Disposed')
-    expect(decoder.close).toHaveBeenCalled()
+    expect(decoderMock.lastDecoder.close).toHaveBeenCalled()
     expect(demuxerBackend.dispose).toHaveBeenCalled()
     expect(manager.src).toBeNull()
   })
@@ -117,7 +97,7 @@ describe('VideoDecoderManager lifecycle', () => {
     manager.dispose()
 
     expect(manager.state).toBe('Disposed')
-    expect(decoder.close).toHaveBeenCalledTimes(1)
+    expect(decoderMock.lastDecoder.close).toHaveBeenCalledTimes(1)
   })
 
   it('idle timer cleanup works via markIdle/markActive', async () => {
@@ -164,11 +144,15 @@ describe('VideoDecoderManager lifecycle', () => {
   })
 
   it('transitions to Errored on decoder configure failure', async () => {
-    decoder = createMockDecoder({
+    const errorDecoder = createMockDecoder({
       configureError: new Error('invalid codec'),
     })
     const onError = vi.fn()
-    const manager = createManager({ onError })
+    const manager = new VideoDecoderManager({
+      demuxerFactory: () => demuxerBackend,
+      decoderFactory: errorDecoder.factory,
+      onError,
+    })
 
     await expect(manager.open('video://bad-codec')).rejects.toThrow('invalid codec')
 
@@ -176,46 +160,35 @@ describe('VideoDecoderManager lifecycle', () => {
     expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'invalid codec' }))
   })
 
-  it('transitions to Errored on packet stream failure', async () => {
+  it('transitions to Errored on packet stream failure during feed()', async () => {
     demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk()],
       packetsError: new Error('packet stream failed'),
     })
-    const manager = createManager()
+    const onError = vi.fn()
+    const manager = createManager({ onError })
     await manager.open('video://test')
 
-    await expect(manager.requestFrame(5)).rejects.toThrow('packet stream failed')
+    manager.feed([0, 33333])
+    // Flush microtask queue so the async feed loop surfaces the error
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
     expect(manager.state).toBe('Errored')
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'packet stream failed' }))
   })
 
   it('dispose() from Errored state cleans up safely', async () => {
-    decoder = createMockDecoder({ configureError: new Error('fail') })
-    const manager = createManager()
+    const errorDecoder = createMockDecoder({ configureError: new Error('fail') })
+    const manager = new VideoDecoderManager({
+      demuxerFactory: () => createMockDemuxerBackend(),
+      decoderFactory: errorDecoder.factory,
+    })
 
     await expect(manager.open('video://fail')).rejects.toThrow()
     manager.dispose()
-
     expect(manager.state).toBe('Disposed')
-  })
-
-  it('fps parameter controls timeUs calculation for seek', async () => {
-    const manager = createManager({ fps: 60 })
-    await manager.open('video://test')
-
-    await manager.seek(60)
-
-    // At 60fps, frame 60 = 1_000_000 µs
-    expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledWith(1_000_000)
-  })
-
-  it('fps defaults to 30 when not specified', async () => {
-    const manager = createManager()
-    await manager.open('video://test')
-
-    await manager.seek(30)
-
-    // At 30fps, frame 30 = 1_000_000 µs
-    expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledWith(1_000_000)
   })
 
   it('fps getter reflects configured fps', () => {
@@ -228,27 +201,13 @@ describe('VideoDecoderManager lifecycle', () => {
     const manager = createManager({ onStateChange: (s) => transitions.push(s) })
 
     await manager.open('video://test')
-    await manager.seek(0)
+    await manager.reset(0)
     await manager.drain()
 
-    expect(transitions).toEqual(['Opening', 'Ready', 'Seeking', 'Ready', 'Draining', 'Idle'])
+    expect(transitions).toEqual(['Opening', 'Ready', 'Resetting', 'Ready', 'Draining', 'Idle'])
   })
 
-  it('onDecodeLatency is invoked after successful decode', async () => {
-    const latencies: Array<{ frame: number; ms: number }> = []
-    const manager = createManager({
-      onDecodeLatency: (f, ms) => latencies.push({ frame: f, ms }),
-    })
-    await manager.open('video://test')
-
-    await manager.requestFrame(5)
-
-    expect(latencies).toHaveLength(1)
-    expect(latencies[0].frame).toBe(5)
-    expect(latencies[0].ms).toBeGreaterThanOrEqual(0)
-  })
-
-  it('onDroppedFrame is invoked on decode failure', async () => {
+  it('onDroppedFrame is invoked on feed() packet stream failure', async () => {
     demuxerBackend = createMockDemuxerBackend({
       packetsError: new Error('corrupted packet'),
     })
@@ -256,37 +215,32 @@ describe('VideoDecoderManager lifecycle', () => {
     const manager = createManager({ onDroppedFrame: (f) => dropped.push(f) })
     await manager.open('video://test')
 
-    await expect(manager.requestFrame(3)).rejects.toThrow('corrupted packet')
+    manager.feed([0, 33333])
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
 
-    expect(dropped).toContain(3)
+    expect(dropped.length).toBeGreaterThan(0)
   })
 
-  it('drain cancellation rejects pending decodes exactly once per frame', async () => {
-    const slowChunks = [createMockChunk(0), createMockChunk(33333)]
-    demuxerBackend = createMockDemuxerBackend({ chunks: slowChunks })
+  it('drain() awaits flush and transitions to Idle', async () => {
     const manager = createManager()
     await manager.open('video://test')
 
-    const p1 = manager.requestFrame(0)
-    const p2 = manager.requestFrame(1)
-    const drainPromise = manager.drain()
+    await manager.drain()
 
-    const results = await Promise.allSettled([p1, p2, drainPromise])
-    const rejected = results.filter((r) => r.status === 'rejected')
-    // At least the pending frame rejections from drain
-    expect(rejected.length).toBeGreaterThan(0)
+    expect(decoderMock.lastDecoder.flush).toHaveBeenCalledTimes(1)
     expect(manager.state).toBe('Idle')
   })
 })
 
-describe('VideoDecoderManager — multi-frame decode lifecycle', () => {
+describe('VideoDecoderManager — feed/reset API', () => {
   let demuxerBackend: ReturnType<typeof createMockDemuxerBackend>
-  let decoder: ReturnType<typeof createMockDecoder>
+  let decoderMock: ReturnType<typeof createMockDecoder>
 
   beforeEach(() => {
-    vi.useFakeTimers()
     demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-    decoder = createMockDecoder()
+    decoderMock = createMockDecoder()
   })
 
   afterEach(() => {
@@ -298,90 +252,162 @@ describe('VideoDecoderManager — multi-frame decode lifecycle', () => {
   ) {
     return new VideoDecoderManager({
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
+      decoderFactory: decoderMock.factory,
       fps: 30,
       ...overrides,
     })
   }
 
-  it('calls seekToKeyframe + reset + configure before the first decode', async () => {
+  it('reset() calls seekToKeyframe, decoder.reset, and decoder.configure', async () => {
     const manager = createManager()
     await manager.open('video://test')
 
-    await manager.requestFrame(0)
+    vi.mocked(demuxerBackend.seekToKeyframe).mockClear()
+    vi.mocked(decoderMock.lastDecoder.reset).mockClear()
+    vi.mocked(decoderMock.lastDecoder.configure).mockClear()
+
+    await manager.reset(0)
 
     expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledTimes(1)
-    expect(decoder.reset).toHaveBeenCalledTimes(1)
-    expect(decoder.configure).toHaveBeenCalledTimes(2) // once on open, once after reset
+    expect(decoderMock.lastDecoder.reset).toHaveBeenCalledTimes(1)
+    expect(decoderMock.lastDecoder.configure).toHaveBeenCalledTimes(1)
   })
 
-  it('calls seekToKeyframe + reset + configure when jumping to a non-contiguous frame', async () => {
+  it('reset() calls seekToKeyframe with the provided microsecond timestamp', async () => {
     const manager = createManager()
     await manager.open('video://test')
 
-    await manager.requestFrame(0)
-    // Reset call counts after first decode
-    vi.mocked(demuxerBackend.seekToKeyframe).mockClear()
-    vi.mocked(decoder.reset).mockClear()
-    vi.mocked(decoder.configure).mockClear()
+    await manager.reset(500_000)
 
-    // Jump to frame 15 — non-contiguous, must trigger seek+reset
-    await manager.requestFrame(15)
-
-    expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledTimes(1)
-    expect(decoder.reset).toHaveBeenCalledTimes(1)
-    expect(decoder.configure).toHaveBeenCalledTimes(1)
+    expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledWith(500_000)
   })
 
-  it('does NOT call reset/seek for a contiguous sequential frame', async () => {
+  it('feed() calls demuxer.packets with the provided time range', async () => {
     const manager = createManager()
     await manager.open('video://test')
+    await manager.reset(0)
 
-    await manager.requestFrame(0)
-    vi.mocked(demuxerBackend.seekToKeyframe).mockClear()
-    vi.mocked(decoder.reset).mockClear()
-    vi.mocked(decoder.configure).mockClear()
+    vi.mocked(demuxerBackend.packets).mockClear()
 
-    // Frame 1 is contiguous with frame 0 — no extra seek or reset
-    await manager.requestFrame(1)
+    manager.feed([0, 33333])
+    await Promise.resolve()
+    await Promise.resolve()
 
-    expect(demuxerBackend.seekToKeyframe).not.toHaveBeenCalled()
-    expect(decoder.reset).not.toHaveBeenCalled()
-    expect(decoder.configure).not.toHaveBeenCalled()
+    expect(demuxerBackend.packets).toHaveBeenCalledWith([0, 33333])
   })
 
-  it('resets _lastDecodedSourceFrame on seek(), forcing seek+reset for next decode', async () => {
+  it('feed() calls decoder.decode for each packet', async () => {
+    const chunk0 = createMockChunk(0)
+    const chunk1 = createMockChunk(33333)
+    demuxerBackend = createMockDemuxerBackend({ chunks: [chunk0, chunk1] })
     const manager = createManager()
     await manager.open('video://test')
+    await manager.reset(0)
 
-    await manager.requestFrame(0)
-    await manager.seek(100)
-    vi.mocked(demuxerBackend.seekToKeyframe).mockClear()
-    vi.mocked(decoder.reset).mockClear()
-    vi.mocked(decoder.configure).mockClear()
+    vi.mocked(decoderMock.lastDecoder.decode).mockClear()
 
-    // After a seek(), even frame 1 is non-contiguous (last decoded frame was cleared)
-    await manager.requestFrame(1)
+    manager.feed([0, 66666])
+    // Each async generator yield consumes ~2 microtask cycles; flush enough for both chunks
+    for (let i = 0; i < 10; i++) await Promise.resolve()
 
-    expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledTimes(1)
-    expect(decoder.reset).toHaveBeenCalledTimes(1)
+    expect(decoderMock.lastDecoder.decode).toHaveBeenCalledWith(chunk0)
+    expect(decoderMock.lastDecoder.decode).toHaveBeenCalledWith(chunk1)
   })
 
-  it('resets _lastDecodedSourceFrame on drain(), forcing seek+reset after reopen', async () => {
+  it('feed() does NOT call decoder.flush on the contiguous path', async () => {
     const manager = createManager()
     await manager.open('video://test')
+    await manager.reset(0)
 
-    await manager.requestFrame(0)
+    vi.mocked(decoderMock.lastDecoder.flush).mockClear()
+
+    manager.feed([0, 33333])
+    manager.feed([33333, 66666])
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(decoderMock.lastDecoder.flush).not.toHaveBeenCalled()
+  })
+
+  it('onFrame receives frame with correct sourceFrameIdx (fps=30, usPerFrame=33333)', async () => {
+    const receivedFrames: Array<{ idx: number }> = []
+    const chunk = createMockChunk(33333)  // frame 1 at 30fps
+    demuxerBackend = createMockDemuxerBackend({ chunks: [chunk] })
+
+    const manager = createManager({ fps: 30 })
+    manager.onFrame = (frame, idx) => {
+      receivedFrames.push({ idx })
+      frame.close()
+    }
+
+    await manager.open('video://test')
+    await manager.reset(0)
+    manager.feed([0, 66666])
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(receivedFrames).toHaveLength(1)
+    expect(receivedFrames[0].idx).toBe(1)  // Math.round(33333 / 33333) = 1
+  })
+
+  it('reset() increments generation, causing in-progress feed to abandon packet delivery', async () => {
+    const pending: { resolve: (() => void) | null } = { resolve: null }
+    const slowDemuxerBackend = {
+      ...demuxerBackend,
+      packets: vi.fn(async function* (_range: [number, number]) {
+        yield createMockChunk(0)
+        await new Promise<void>(r => { pending.resolve = r as () => void })
+        yield createMockChunk(33333)
+      }),
+    }
+
+    const manager = new VideoDecoderManager({
+      demuxerFactory: () => slowDemuxerBackend,
+      decoderFactory: decoderMock.factory,
+      fps: 30,
+    })
+    await manager.open('video://test')
+    await manager.reset(0)
+
+    vi.mocked(decoderMock.lastDecoder.decode).mockClear()
+
+    manager.feed([0, 66666])
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(decoderMock.lastDecoder.decode).toHaveBeenCalledTimes(1)
+
+    await manager.reset(33333)
+
+    vi.mocked(decoderMock.lastDecoder.decode).mockClear()
+    pending.resolve?.()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // Stale feed must NOT deliver the second packet after reset.
+    expect(decoderMock.lastDecoder.decode).not.toHaveBeenCalled()
+  })
+
+  it('feed() is a no-op when state is not Ready', async () => {
+    const manager = createManager()
+    await manager.open('video://test')
+    manager.dispose()
+
+    vi.mocked(demuxerBackend.packets).mockClear()
+    manager.feed([0, 33333])
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(demuxerBackend.packets).not.toHaveBeenCalled()
+  })
+
+  it('drain() after reset leaves manager Idle', async () => {
+    const manager = createManager()
+    await manager.open('video://test')
+    await manager.reset(0)
     await manager.drain()
-    await manager.reopen('video://test')
 
-    vi.mocked(demuxerBackend.seekToKeyframe).mockClear()
-    vi.mocked(decoder.reset).mockClear()
-    vi.mocked(decoder.configure).mockClear()
-
-    await manager.requestFrame(0)
-
-    expect(demuxerBackend.seekToKeyframe).toHaveBeenCalledTimes(1)
-    expect(decoder.reset).toHaveBeenCalledTimes(1)
+    expect(manager.state).toBe('Idle')
+    expect(decoderMock.lastDecoder.flush).toHaveBeenCalled()
   })
 })

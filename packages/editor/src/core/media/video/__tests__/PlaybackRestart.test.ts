@@ -9,7 +9,6 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
 import { TexturePool } from '../../../renderer/gpu/TexturePool'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
@@ -87,25 +86,25 @@ describe('PlaybackRestart', () => {
     expect(pool.getLeasedCount()).toBe(0)
   })
 
-  it('DecoderBackedVideoFrameProvider: 10 requestFrame cycles settle cleanly', async () => {
+  it('StreamingFrameProducer: 10 setPlayhead cycles settle cleanly', async () => {
+    const { StreamingFrameProducer } = await import('../StreamingFrameProducer')
     const demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk(0), createMockChunk(33333)],
     })
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://restart-test.mp4',
       fps: 30,
-      maxOutstanding: 4,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
+      decoderFactory: createMockDecoder().factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
     for (let cycle = 0; cycle < 10; cycle++) {
-      // "Play": request frames 0–59
-      for (let f = 0; f < 60; f += 15) {
-        provider.requestFrame(f)
+      // "Play": advance through 60 frames sequentially (contiguous = no reset)
+      for (let f = 0; f < 60; f++) {
+        producer.setPlayhead(f)
       }
 
       // Let microtasks drain (simulates a tick boundary)
@@ -113,10 +112,9 @@ describe('PlaybackRestart', () => {
       await Promise.resolve()
     }
 
-    provider.dispose()
+    producer.dispose()
 
-    expect(provider.state).toBe('disposed')
-    expect(provider.cacheSize).toBe(0)
-    expect(provider.pendingCount).toBe(0)
+    expect(producer.state).toBe('disposed')
+    expect(producer.cacheSize).toBe(0)
   })
 })

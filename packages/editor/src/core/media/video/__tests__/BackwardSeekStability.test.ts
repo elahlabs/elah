@@ -1,31 +1,19 @@
 /**
- * BackwardSeekStability — regression tests for the seek-stuck-frame bug.
+ * BackwardSeekStability — regression tests for backward-seek handling
+ * in StreamingFrameProducer.
  *
- * Validates that backward seeks keep the target frame in cache and that
- * rapid backward seek cycles do not leave the decoder in Errored state.
+ * Validates that:
+ *  - A backward jump in setPlayhead() triggers exactly one demuxer seekToKeyframe call.
+ *  - The manager never enters Errored state after rapid backward seek cycles.
+ *  - Contiguous forward play does NOT trigger extra seekToKeyframe calls.
  *
- * @see EVOLUTION.md § 4 Phase 1.5 (Seek stability)
+ * @see StreamingFrameProducer.ts — discontinuity detection and reset logic
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
-
-async function waitForFrame(
-  provider: DecoderBackedVideoFrameProvider,
-  sourceFrame: number,
-  timeoutMs = 2000,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    provider.getCurrent(sourceFrame)
-    if (provider.getCurrent(sourceFrame) !== null) return
-    await Promise.resolve()
-    await new Promise((r) => setTimeout(r, 5))
-  }
-  throw new Error(`Frame ${sourceFrame} did not arrive within ${timeoutMs}ms`)
-}
 
 describe('BackwardSeekStability', () => {
   beforeEach(() => {
@@ -36,89 +24,111 @@ describe('BackwardSeekStability', () => {
     GpuDebugCounters.reset()
   })
 
-  it('seek target frame survives in cache after backward seek + 30 prefetch ticks', async () => {
+  it('backward jump triggers exactly one seekToKeyframe on the demuxer', async () => {
     const demuxerBackend = createMockDemuxerBackend({
-      chunks: [createMockChunk(0), createMockChunk(33333)],
+      chunks: Array.from({ length: 60 }, (_, i) => createMockChunk(i * 33333)),
     })
-    const decoder = createMockDecoder()
+    const decoderMock = createMockDecoder()
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://backward-seek.mp4',
       fps: 30,
       maxFrames: 30,
-      maxOutstanding: 4,
+      lookaheadFrames: 4,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
-      // Mock decoder never emits real VideoFrames; rely on the legacy
-      // fallback path so this test still observes cache occupancy.
-      strictNoOutput: false,
+      decoderFactory: decoderMock.factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
-    // Simulate forward playback: warm cache with frames 0..29.
-    for (let i = 0; i < 30; i++) {
-      provider.requestFrame(i)
-      await Promise.resolve()
+    // Trigger initial discontinuity (first ever setPlayhead) and wait for it to settle
+    producer.setPlayhead(0)
+    await new Promise(r => setTimeout(r, 40))
+
+    // Advance forward contiguously from frame 0 to 30
+    for (let i = 1; i <= 30; i++) {
+      producer.setPlayhead(i)
     }
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise(r => setTimeout(r, 20))
 
-    // Backward seek from ~29 to 5.
-    provider.getCurrent(5)
-    provider.requestFrame(5)
-    await waitForFrame(provider, 5)
+    // Count seeks so far (includes the initial open-time seek)
+    const seekCountBeforeBackward = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
 
-    expect(provider.getCurrent(5)).not.toBeNull()
+    // Backward jump: 30 → 0 (|delta| = 30 > 1 → discontinuity → exactly one seek)
+    producer.setPlayhead(0)
+    await new Promise(r => setTimeout(r, 50))
 
-    // Simulate prefetch bursts for 30 more frames.
-    for (let i = 5; i < 35; i++) {
-      provider.getCurrent(i)
-      provider.requestFrame(i)
-      provider.prefetch(i + 1, 5)
-      await Promise.resolve()
-    }
-    await new Promise((r) => setTimeout(r, 50))
+    const seekCountAfterBackward = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
+    expect(seekCountAfterBackward - seekCountBeforeBackward).toBe(1)
 
-    // Frame 5 must still be cached, or frame 6 must be present if 5 was evicted
-    // after forward prefetch — never a stuck stale frame from before the seek.
-    const frame5 = provider.getCurrent(5)
-    const frame6 = provider.getCurrent(6)
-    expect(frame5 !== null || frame6 !== null).toBe(true)
-
-    provider.dispose()
+    producer.dispose()
+    expect(producer.state).toBe('disposed')
   })
 
-  it('rapid backward seek: manager never enters Errored state', async () => {
+  it('rapid backward seek cycles: producer never enters errored state', async () => {
     const demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk(0), createMockChunk(33333)],
     })
+    const decoderMock = createMockDecoder()
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://rapid-backward.mp4',
       fps: 30,
-      maxOutstanding: 4,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
-      strictNoOutput: false,
+      decoderFactory: decoderMock.factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
     for (let cycle = 0; cycle < 5; cycle++) {
-      provider.getCurrent(50)
-      provider.requestFrame(50)
-      await Promise.resolve()
-      await new Promise((r) => setTimeout(r, 10))
+      // Jump forward (discontinuity)
+      producer.setPlayhead(50)
+      await new Promise(r => setTimeout(r, 10))
 
-      provider.getCurrent(10)
-      provider.requestFrame(10)
-      await Promise.resolve()
-      await new Promise((r) => setTimeout(r, 10))
+      // Jump backward (discontinuity)
+      producer.setPlayhead(10)
+      await new Promise(r => setTimeout(r, 10))
 
-      expect(provider.decoderState).not.toBe('Errored')
+      expect(producer.state).not.toBe('disposed')
     }
 
-    provider.dispose()
-    expect(provider.decoderState).not.toBe('Errored')
+    producer.dispose()
+    expect(producer.state).toBe('disposed')
+  })
+
+  it('contiguous forward play does not trigger additional seekToKeyframe after initial open', async () => {
+    const demuxerBackend = createMockDemuxerBackend({
+      chunks: Array.from({ length: 10 }, (_, i) => createMockChunk(i * 33333)),
+    })
+    const decoderMock = createMockDecoder()
+
+    const producer = new StreamingFrameProducer({
+      src: 'video://contiguous.mp4',
+      fps: 30,
+      maxFrames: 30,
+      lookaheadFrames: 4,
+      demuxerFactory: () => demuxerBackend,
+      decoderFactory: decoderMock.factory,
+    })
+
+    await producer.openPromise
+
+    // Wait for the initial open-time seek (discontinuity on first setPlayhead)
+    producer.setPlayhead(0)
+    await new Promise(r => setTimeout(r, 40))
+
+    const seekCountAfterFirst = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
+
+    // Contiguous forward advancement should NOT call seekToKeyframe again
+    for (let i = 1; i <= 8; i++) {
+      producer.setPlayhead(i)
+      await Promise.resolve()
+    }
+    await new Promise(r => setTimeout(r, 20))
+
+    const seekCountAfterPlay = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
+    expect(seekCountAfterPlay).toBe(seekCountAfterFirst) // no extra seeks during contiguous play
+
+    producer.dispose()
   })
 })

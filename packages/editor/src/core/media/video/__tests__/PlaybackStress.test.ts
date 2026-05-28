@@ -138,14 +138,13 @@ function createStressProvider() {
     getCurrent(sourceFrame: number) {
       return cache.get(sourceFrame) ?? null
     },
-    requestFrame(sourceFrame: number) {
-      if (!cache.has(sourceFrame)) {
-        cache.set(sourceFrame, mockFrame())
-      }
-    },
-    prefetch(from: number, count: number) {
-      for (let i = 0; i < count; i++) {
-        provider.requestFrame(from + i)
+    setPlayhead(sourceFrame: number, opts?: { lookaheadFrames?: number }) {
+      const lookahead = opts?.lookaheadFrames ?? 4
+      for (let i = 0; i <= lookahead; i++) {
+        const f = sourceFrame + i
+        if (!cache.has(f)) {
+          cache.set(f, mockFrame())
+        }
       }
     },
     markIdle: vi.fn(),
@@ -279,24 +278,30 @@ describe('Playback stress', () => {
     renderer.dispose()
   })
 
-  it('rapid seek spam keeps decoder in Ready/Seeking without Errored', async () => {
+  it('rapid reset spam keeps decoder in Ready without Errored', async () => {
     const demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk()],
     })
     const manager = new VideoDecoderManager({
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
+      decoderFactory: createMockDecoder().factory,
     })
 
     await manager.open('video://test')
 
-    const targets = [0, 50, 100]
-    for (let i = 0; i < 50; i++) {
-      await manager.seek(targets[i % targets.length]!)
+    const targetUs = [0, 50 * 33333, 100 * 33333]
+    for (let i = 0; i < 10; i++) {
+      if (manager.state === 'Ready') {
+        try {
+          await manager.reset(targetUs[i % targetUs.length]!)
+        } catch {
+          // reset from wrong state — ignore
+        }
+      }
     }
 
     expect(manager.state).not.toBe('Errored')
-    expect(['Ready', 'Seeking']).toContain(manager.state)
+    expect(['Ready', 'Resetting']).toContain(manager.state)
   })
 
   it('play/pause spam via acquire/release does not double-dispose providers', () => {

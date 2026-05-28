@@ -136,7 +136,7 @@ function mockFrame(sourceFrame = 0): VideoFrame {
 
 function createTrackingProvider() {
   const getCurrentCalls: number[] = []
-  const requestFrameCalls: number[] = []
+  const setPlayheadCalls: number[] = []
   const cache = new Map<number, VideoFrame>()
 
   const provider: VideoFrameProvider = {
@@ -144,15 +144,14 @@ function createTrackingProvider() {
       getCurrentCalls.push(sourceFrame)
       return cache.get(sourceFrame) ?? null
     },
-    requestFrame(sourceFrame: number) {
-      requestFrameCalls.push(sourceFrame)
-      if (!cache.has(sourceFrame)) {
-        cache.set(sourceFrame, mockFrame(sourceFrame))
-      }
-    },
-    prefetch(from: number, count: number) {
-      for (let i = 0; i < count; i++) {
-        provider.requestFrame(from + i)
+    setPlayhead(sourceFrame: number, opts?: { lookaheadFrames?: number }) {
+      setPlayheadCalls.push(sourceFrame)
+      const lookahead = opts?.lookaheadFrames ?? 8
+      for (let i = 0; i <= lookahead; i++) {
+        const f = sourceFrame + i
+        if (!cache.has(f)) {
+          cache.set(f, mockFrame(f))
+        }
       }
     },
     markIdle: vi.fn(),
@@ -160,7 +159,7 @@ function createTrackingProvider() {
     dispose: vi.fn(),
   }
 
-  return { provider, getCurrentCalls, requestFrameCalls, cache }
+  return { provider, getCurrentCalls, setPlayheadCalls, cache }
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +196,7 @@ describe('Render synchronization', () => {
     return renderer
   }
 
-  it('render() at frame 5 requests sourceFrame 5 from provider', () => {
+  it('render() at frame 5 calls setPlayhead(5) on provider', () => {
     const renderer = mountRenderer()
     const clip = makeClip({ sourceFrame: 5 })
     const scene = makeScene(5, [clip])
@@ -205,7 +204,7 @@ describe('Render synchronization', () => {
     renderer.render(scene)
 
     expect(tracking.getCurrentCalls).toContain(5)
-    expect(tracking.requestFrameCalls).toContain(5)
+    expect(tracking.setPlayheadCalls).toContain(5)
 
     renderer.dispose()
   })
@@ -216,7 +215,7 @@ describe('Render synchronization', () => {
 
     for (let frame = 0; frame <= 10; frame++) {
       tracking.getCurrentCalls.length = 0
-      tracking.requestFrameCalls.length = 0
+      tracking.setPlayheadCalls.length = 0
 
       renderer.render(makeScene(frame, [{ ...clip, sourceFrame: frame }]))
       expect(tracking.getCurrentCalls).toEqual([frame])
@@ -246,16 +245,15 @@ describe('Render synchronization', () => {
     renderer.render(makeScene(0, [{ ...clip, sourceFrame: 0 }]))
 
     tracking.getCurrentCalls.length = 0
-    tracking.requestFrameCalls.length = 0
+    tracking.setPlayheadCalls.length = 0
     tracking.cache.clear()
 
     renderer.render(makeScene(60, [{ ...clip, sourceFrame: 60 }]))
 
     expect(tracking.getCurrentCalls).toEqual([60])
-    // Frame 60 must be the first requested frame (cache miss on the current frame).
-    // Subsequent entries are prefetch look-ahead frames — that is expected behaviour.
-    expect(tracking.requestFrameCalls[0]).toBe(60)
-    expect(tracking.requestFrameCalls).not.toContain(0) // no stale frame 0
+    // Frame 60 must be the first setPlayhead call on the jump.
+    expect(tracking.setPlayheadCalls[0]).toBe(60)
+    expect(tracking.setPlayheadCalls).not.toContain(0) // no stale frame 0
     expect(tracking.cache.has(0)).toBe(false)
 
     renderer.dispose()

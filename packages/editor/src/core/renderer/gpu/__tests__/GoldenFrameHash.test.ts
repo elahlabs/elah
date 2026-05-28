@@ -35,8 +35,7 @@ import type { VideoFrameProvider } from '../../../media/video'
  */
 class NullVideoFrameProvider implements VideoFrameProvider {
   getCurrent(_n: number): VideoFrame | null { return null }
-  requestFrame(_n: number): void {}
-  prefetch(_from: number, _count: number): void {}
+  setPlayhead(_n: number, _opts?: { lookaheadFrames?: number }): void {}
   markIdle(): void {}
   markActive(): void {}
   dispose(): void {}
@@ -94,7 +93,7 @@ describe('GoldenFrameHash', () => {
   beforeEach(() => {
     gl = new RecordingGl()
     GpuDebugCounters.reset()
-    // Freeze all timers so MockVideoFrameProvider's requestFrame() setTimeout
+    // Freeze all timers so MockVideoFrameProvider's setPlayhead() setTimeout
     // never fires between test runs, ensuring deterministic GL call sequences.
     vi.useFakeTimers()
   })

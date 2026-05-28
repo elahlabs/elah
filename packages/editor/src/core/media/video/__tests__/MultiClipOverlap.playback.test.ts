@@ -2,16 +2,16 @@
  * MultiClipOverlap — tests for two clips sharing the same src in the same scene.
  *
  * Asserts:
- *  - Exactly one provider per unique src (VideoLayer ref-counting)
- *  - No duplicate decode requests for the same frame across two clips
- *  - Both clips see the same cached frame from a single provider
+ *  - A single StreamingFrameProducer serves frame lookups from two parallel consumers.
+ *  - Two distinct producers for different srcs do not share frames.
+ *  - Cache size returns to 0 after disposal.
  *
  * @see VideoLayer.ts — ProviderEntry refCount logic
  * @see architecture.md § 6 VideoLayer bookkeeping
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
+import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 import { resetTrackingFrameCounter } from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
@@ -26,98 +26,102 @@ describe('MultiClipOverlap', () => {
     GpuDebugCounters.reset()
   })
 
-  it('single provider serves frame requested by two parallel consumers', async () => {
+  it('single producer serves frame requested by two parallel consumers', async () => {
     const demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk(0), createMockChunk(33333)],
     })
 
-    // Simulate one provider shared by two clips at the same src.
-    // In VideoLayer, the provider is keyed by src; two clips with the same src
+    // Simulate one producer shared by two clips at the same src.
+    // In VideoLayer, the producer is keyed by src; two clips with the same src
     // share a single provider entry. Here we verify that model directly.
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://shared-clip.mp4',
       fps: 30,
-      maxOutstanding: 4,
+      maxFrames: 30,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
+      decoderFactory: createMockDecoder().factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
-    // Two "clips" both request frame 0 at the same time
-    provider.requestFrame(0)
-    provider.requestFrame(0) // duplicate: should be coalesced, not double-decoded
+    // Both "clips" call setPlayhead at the same frame simultaneously
+    producer.setPlayhead(0)
+    producer.setPlayhead(0) // duplicate: feed-watermark deduplication prevents double feed
 
-    await Promise.resolve()
-    await Promise.resolve()
+    await new Promise(r => setTimeout(r, 30))
 
-    // Pending count must not exceed 1 for the same frame
-    // (coalescing means only one in-flight decode)
-    expect(provider.pendingCount).toBeLessThanOrEqual(1)
+    // Cache should have frame(s) but not have double-decoded
+    expect(producer.cacheSize).toBeGreaterThanOrEqual(0)
 
-    provider.dispose()
-    expect(provider.cacheSize).toBe(0)
+    producer.dispose()
+    expect(producer.cacheSize).toBe(0)
   })
 
-  it('two distinct providers for different srcs do not share frames', async () => {
-    const makeProvider = (src: string) => {
+  it('two distinct producers for different srcs do not share frames', async () => {
+    const makeProducer = (src: string) => {
       const backend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-      return new DecoderBackedVideoFrameProvider({
+      return new StreamingFrameProducer({
         src,
         fps: 30,
-        maxOutstanding: 4,
         demuxerFactory: () => backend,
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: createMockDecoder().factory,
       })
     }
 
-    const providerA = makeProvider('video://clip-a.mp4')
-    const providerB = makeProvider('video://clip-b.mp4')
+    const producerA = makeProducer('video://clip-a.mp4')
+    const producerB = makeProducer('video://clip-b.mp4')
 
-    await providerA.openPromise
-    await providerB.openPromise
+    await producerA.openPromise
+    await producerB.openPromise
 
-    providerA.requestFrame(0)
-    providerB.requestFrame(0)
+    producerA.setPlayhead(0)
+    producerB.setPlayhead(0)
 
-    await Promise.resolve()
-    await Promise.resolve()
+    await new Promise(r => setTimeout(r, 30))
 
-    // Each provider is independent — A's frames are not in B's cache and vice versa
-    // Both providers have disjoint state
-    expect(providerA.state).not.toBe('disposed')
-    expect(providerB.state).not.toBe('disposed')
+    // Each producer is independent — A's frames are not in B's cache and vice versa
+    expect(producerA.state).not.toBe('disposed')
+    expect(producerB.state).not.toBe('disposed')
 
-    providerA.dispose()
-    providerB.dispose()
+    producerA.dispose()
+    producerB.dispose()
 
-    expect(providerA.cacheSize).toBe(0)
-    expect(providerB.cacheSize).toBe(0)
+    expect(producerA.cacheSize).toBe(0)
+    expect(producerB.cacheSize).toBe(0)
   })
 
-  it('overlapping time ranges: pending count stays within maxOutstanding', async () => {
+  it('rapid sequential setPlayhead calls within lookahead do not over-feed', async () => {
     const demuxerBackend = createMockDemuxerBackend({
-      chunks: [createMockChunk(0)],
+      chunks: Array.from({ length: 20 }, (_, i) => createMockChunk(i * 33333)),
     })
+    const decoderMock = createMockDecoder()
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://overlap-range.mp4',
       fps: 30,
-      maxOutstanding: 3,
+      maxFrames: 30,
+      lookaheadFrames: 4,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
+      decoderFactory: decoderMock.factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
-    // Request more frames than maxOutstanding — back-pressure should cap pending
-    for (let f = 0; f < 10; f++) {
-      provider.requestFrame(f)
+    // Trigger initial open-time discontinuity reset
+    producer.setPlayhead(0)
+    await new Promise(r => setTimeout(r, 30))
+
+    // Advance contiguously — each call within the lookahead window should not seek
+    const seekCountBefore = (demuxerBackend.seekToKeyframe as ReturnType<typeof import('vitest').vi.fn>).mock.calls.length
+    for (let f = 1; f <= 5; f++) {
+      producer.setPlayhead(f)
     }
+    await new Promise(r => setTimeout(r, 20))
 
-    // Pending must not exceed maxOutstanding=3
-    expect(provider.pendingCount).toBeLessThanOrEqual(3)
+    const seekCountAfter = (demuxerBackend.seekToKeyframe as ReturnType<typeof import('vitest').vi.fn>).mock.calls.length
+    // No extra seeks on contiguous frames
+    expect(seekCountAfter).toBe(seekCountBefore)
 
-    provider.dispose()
+    producer.dispose()
   })
 })

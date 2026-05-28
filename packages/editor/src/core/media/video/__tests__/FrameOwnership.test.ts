@@ -3,9 +3,8 @@
  *
  * Validates:
  *  - Frame ownership rule (I10): one open, one close, no double-close
- *  - Multi-clip with same src shares one provider (ref-counted)
- *  - Overlapping clips from the same src each get their own VideoTexture
  *  - FrameCache.size == 0 after disposal
+ *  - Frames emitted after dispose are immediately closed
  *
  * @see architecture.md § 10 (frame ownership)
  * @see EVOLUTION.md I10
@@ -13,7 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FrameCache } from '../FrameCache'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
+import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import {
   createMockChunk,
@@ -94,7 +93,7 @@ describe('FrameOwnership', () => {
     })
 
     it('evictBefore closes frames with key < n', () => {
-      const frames = Array.from({ length: 5 }, (_, i) => createTrackingFrame())
+      const frames = Array.from({ length: 5 }, (_) => createTrackingFrame())
       const cache = new FrameCache({ maxFrames: 10 })
 
       frames.forEach((f, i) => cache.put(i, f))
@@ -118,109 +117,93 @@ describe('FrameOwnership', () => {
     })
   })
 
-  describe('DecoderBackedVideoFrameProvider frame lifecycle', () => {
-    it('frames decoded into cache are not double-closed on dispose', async () => {
-      // Use a tracking frame emitted from the decoder output callback
-      const trackingFrame = createTrackingFrame()
-      let outputCb: ((f: VideoFrame) => void) | null = null
-
+  describe('StreamingFrameProducer frame lifecycle', () => {
+    it('frames cached by producer are not double-closed on dispose', async () => {
       const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
 
-      const decoderFactory = () => {
-        return {
-          state: 'unconfigured',
-          configure: vi.fn(),
-          decode: vi.fn(),
-          flush: vi.fn(async () => {
-            outputCb?.(trackingFrame)
-          }),
-          close: vi.fn(),
-          reset: vi.fn(),
-        }
-      }
-
-      // Capture output callback via VideoDecoderManager's internal decoder
-      // Since we can't intercept _outputFrames directly, we inject a factory
-      // and emit the frame via flush
-      const provider = new DecoderBackedVideoFrameProvider({
+      const producer = new StreamingFrameProducer({
         src: 'video://ownership.mp4',
         fps: 30,
         demuxerFactory: () => demuxerBackend,
-        decoderFactory,
-        cacheHooks: {
-          onPut: () => {},
-          onEvict: () => {},
-        },
+        decoderFactory: createMockDecoder().factory,
       })
 
-      // Wire outputCb after internal decoder is created
-      outputCb = (f) => {
-        // In real VideoDecoderManager this is called from VideoDecoder.output
-        // Our mock decoder calls outputCb from flush
-        void f
-      }
+      await producer.openPromise
+      producer.setPlayhead(0)
+      await new Promise(r => setTimeout(r, 20))
 
-      await provider.openPromise
-      provider.dispose()
-
-      // Frame was never actually put into cache in this test because flush doesn't
-      // go through VideoDecoderManager._outputFrames. That's fine — the test is
-      // verifying dispose is idempotent and doesn't double-close.
-      expect(provider.state).toBe('disposed')
-      expect(provider.cacheSize).toBe(0)
+      // Dispose should not double-close anything
+      expect(() => producer.dispose()).not.toThrow()
+      expect(producer.state).toBe('disposed')
+      expect(producer.cacheSize).toBe(0)
     })
 
-    it('in-flight frames emitted after dispose are immediately closed', async () => {
-      // This tests the guard in requestFrame's .then() callback:
-      // "if (this._state === 'disposed') { frame.close(); return }"
-      const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-      const decoder = createMockDecoder()
+    it('frames emitted after dispose are immediately closed (no leak)', async () => {
+      // Track all frames that pass through onFrame
+      let frameReceivedAfterDispose = false
 
-      const provider = new DecoderBackedVideoFrameProvider({
-        src: 'video://inflight.mp4',
-        fps: 30,
-        maxOutstanding: 4,
-        demuxerFactory: () => demuxerBackend,
-        decoderFactory: () => decoder,
+      const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
+      const baseDecoder = createMockDecoder()
+
+      // Wrap the factory to intercept the output callback
+      const captured: { output: ((f: VideoFrame) => void) | null } = { output: null }
+      const wrappedFactory = vi.fn((output: (f: VideoFrame) => void, error: (e: DOMException) => void) => {
+        captured.output = output
+        return baseDecoder.factory(output, error)
       })
 
-      await provider.openPromise
-      provider.requestFrame(10)
+      const producer = new StreamingFrameProducer({
+        src: 'video://postdispose.mp4',
+        fps: 30,
+        demuxerFactory: () => demuxerBackend,
+        decoderFactory: wrappedFactory,
+      })
 
-      // Dispose before the requestFrame resolves
-      provider.dispose()
-
-      // Let all pending microtasks run
-      await Promise.resolve()
-      await Promise.resolve()
+      await producer.openPromise
+      producer.setPlayhead(0)
       await Promise.resolve()
 
-      expect(provider.state).toBe('disposed')
-      expect(provider.cacheSize).toBe(0)
+      // Dispose while decode may still be in flight
+      producer.dispose()
+
+      // Now simulate a frame arriving after dispose via the captured output callback
+      if (captured.output) {
+        const lateFrame = {
+          timestamp: 0,
+          displayWidth: 640,
+          displayHeight: 360,
+          close: vi.fn(() => { frameReceivedAfterDispose = true }),
+          clone: vi.fn(),
+        } as unknown as VideoFrame
+        captured.output(lateFrame)
+        // Frame should have been closed immediately
+        expect(frameReceivedAfterDispose).toBe(true)
+      }
+
+      expect(producer.cacheSize).toBe(0)
     })
   })
 
-  describe('multi-clip same-src provider sharing', () => {
+  describe('multi-clip same-src producer sharing', () => {
     it('FrameCache size returns to 0 after 50 seek cycles and disposal', async () => {
       const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-      const provider = new DecoderBackedVideoFrameProvider({
+      const producer = new StreamingFrameProducer({
         src: 'video://shared.mp4',
         fps: 30,
         maxFrames: 10,
-        maxOutstanding: 4,
         demuxerFactory: () => demuxerBackend,
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: createMockDecoder().factory,
       })
 
-      await provider.openPromise
+      await producer.openPromise
 
       for (let i = 0; i < 50; i++) {
-        provider.requestFrame(i % 15)
+        producer.setPlayhead((i * 7) % 15)
         await Promise.resolve()
       }
 
-      provider.dispose()
-      expect(provider.cacheSize).toBe(0)
+      producer.dispose()
+      expect(producer.cacheSize).toBe(0)
     })
   })
 })

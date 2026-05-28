@@ -44,10 +44,10 @@ gpu/
 └── __tests__/                   ← compositing-only vitest suites
 
 core/media/video/              ← decode pipeline (moved out of gpu/)
-├── VideoFrameProvider.ts      ← Mock + Synthetic + factory
-├── VideoDecoderManager.ts     ← per-source decoder state machine
-├── FrameCache.ts              ← ring buffer of decoded VideoFrames
-├── DecoderBackedVideoFrameProvider.ts
+├── VideoFrameProvider.ts      ← Mock + Synthetic + factory (push interface)
+├── VideoDecoderManager.ts     ← per-source decoder: feed/reset/onFrame/drain
+├── FrameCache.ts              ← forward-oriented cache of decoded VideoFrames
+├── StreamingFrameProducer.ts  ← push-based VideoFrameProvider implementation
 ├── demuxer/                   ← MediabunnyDemuxer + createMediabunnyBackend
 └── __tests__/                   ← decode + demuxer vitest suites
 ```
@@ -143,7 +143,7 @@ Implements `Layer<ActiveVideoClip>`:
 
 - One `VideoFrameProvider` **per unique `src`** (shared across clips, ref-counted). Providers come from [`core/media/video`](../../media/video/).
 - One `VideoTexture` **per clip id**.
-- `draw()` is synchronous: tries `provider.getCurrent(sourceFrame)`; uploads on hit, schedules `provider.requestFrame(sourceFrame)` on miss. Keeps the previous texture content to prevent flicker.
+- `draw()` is synchronous: calls `provider.setPlayhead(sourceFrame)` (fire-and-forget, drives internal decode), then tries `provider.getCurrent(sourceFrame)`; uploads on hit, keeps the previous texture content to prevent flicker on miss.
 - Issues a quad draw with `uTransform` (built from `transform.x/y/scale/anchor/rotation`) and `uOpacity`.
 - `notifyContextLost()` nulls the shader program / VAO so `_ensurePipeline()` rebuilds on the next acquire.
 
@@ -151,7 +151,7 @@ Implements `Layer<ActiveVideoClip>`:
 
 See [`../../media/video/README.md`](../../media/video/README.md) and [`../../media/README.md`](../../media/README.md).
 
-- **`VideoFrameProvider`** — sync `getCurrent()` + async `requestFrame()` contract; Mock, Synthetic, and DecoderBacked implementations.
+- **`VideoFrameProvider`** — push-based interface: `setPlayhead(N)` (fire-and-forget) + sync `getCurrent(N)`; Mock, Synthetic, and `StreamingFrameProducer` implementations.
 - **`VideoDecoderManager`** — one `VideoDecoder` + demuxer per unique source URL.
 - **`FrameCache`** — bounded map of decoded `VideoFrame`s keyed by source frame number.
 - **`demuxer/`** — Mediabunny adapter + `createMediabunnyBackend`.

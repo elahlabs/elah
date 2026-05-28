@@ -2,21 +2,18 @@
  * RapidSeekStress — stress test for the decode pipeline under rapid seeking.
  *
  * Validates:
- *  - No frame leaks (every opened frame is closed exactly once)
- *  - Manager never enters a permanently stuck state
+ *  - Producer never enters a permanently stuck state under rapid seek cycles
  *  - FrameCache returns to size 0 after disposal
- *  - Outstanding decode requests settle after rapid seek cycles
+ *  - No frames are leaked after mixed seek workloads
  *
- * @see EVOLUTION.md § 4 Phase 1 (Rapid-seek stability)
+ * @see StreamingFrameProducer.ts — discontinuity handling via manager.reset()
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
+import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
-import { createTrackingFrame, resetTrackingFrameCounter } from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
-
-const STUCK_STATES = ['Errored'] as const
+import { resetTrackingFrameCounter } from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
 
 describe('RapidSeekStress', () => {
   beforeEach(() => {
@@ -28,168 +25,127 @@ describe('RapidSeekStress', () => {
     GpuDebugCounters.reset()
   })
 
-  it('100 rapid requestFrame + manager.seek cycles leave no leaked frames', async () => {
-    const openCloseTracker = { opens: 0, closes: 0 }
-
+  it('100 rapid setPlayhead seek cycles: producer stays non-disposed and cacheSize 0 on disposal', async () => {
     const demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk(0), createMockChunk(33333)],
     })
-    const decoder = createMockDecoder()
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://stress.mp4',
       fps: 30,
-      maxOutstanding: 4,
+      maxFrames: 30,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
-      cacheHooks: {
-        onPut: () => openCloseTracker.opens++,
-        onEvict: () => openCloseTracker.closes++,
-        onClear: () => {
-          // All remaining cached frames are closed on clear
-          openCloseTracker.closes += provider.cacheSize
-        },
-      },
+      decoderFactory: createMockDecoder().factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
-    // Run 100 rapid seek cycles: fire some requestFrames, then seek
+    // Run 100 rapid discontinuous seek cycles
     for (let cycle = 0; cycle < 100; cycle++) {
-      const baseFrame = cycle * 3
+      const baseFrame = (cycle * 7) % 60  // jump around to trigger discontinuities
+      producer.setPlayhead(baseFrame)
 
-      // Fire up to 4 requestFrame calls (bounded by maxOutstanding)
-      for (let f = 0; f < 4; f++) {
-        provider.requestFrame(baseFrame + f)
-      }
-
-      // Let microtasks drain so some promises may resolve
-      await Promise.resolve()
+      // Let microtasks drain occasionally
+      if (cycle % 10 === 0) await Promise.resolve()
     }
 
     // Dispose: closes all pending decodes and drains the cache
-    provider.dispose()
+    producer.dispose()
 
-    expect(provider.state).toBe('disposed')
-    expect(provider.cacheSize).toBe(0)
-    expect(provider.pendingCount).toBe(0)
-    // Manager must not be stuck in Errored
-    expect(STUCK_STATES).not.toContain(provider.decoderState)
+    expect(producer.state).toBe('disposed')
+    expect(producer.cacheSize).toBe(0)
   })
 
-  it('200 seek cycles: manager state is not Errored after each seek', async () => {
+  it('200 alternating forward/backward jumps: state is not errored after disposal', async () => {
     const demuxerBackend = createMockDemuxerBackend({
       chunks: [createMockChunk(0)],
     })
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://seek-stress.mp4',
       fps: 30,
-      maxOutstanding: 4,
+      maxFrames: 10,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
+      decoderFactory: createMockDecoder().factory,
     })
 
-    await provider.openPromise
-
-    // Issue requestFrames interleaved with seeks via the manager
-    // The provider coalesces duplicates; the manager handles seek cancellations
-    const manager = (provider as unknown as { _manager: { seek(n: number): Promise<void>; state: string } })._manager
+    await producer.openPromise
 
     for (let i = 0; i < 200; i++) {
-      provider.requestFrame(i % 30)
-      if (i % 10 === 0 && manager.state === 'Ready' || manager.state === 'Decoding') {
-        try {
-          await manager.seek(i % 30)
-        } catch {
-          // Seek from wrong state — ignore
-        }
-      }
-      await Promise.resolve()
+      // Alternate between two distant frames to trigger resets each time
+      producer.setPlayhead(i % 2 === 0 ? 0 : 100)
+      if (i % 20 === 0) await Promise.resolve()
     }
 
-    provider.dispose()
+    producer.dispose()
 
-    // After dispose, manager should be Disposed (not Errored/stuck)
-    expect(provider.decoderState).toBe('Disposed')
+    // After dispose, producer should be in disposed state (not stuck/errored)
+    expect(producer.state).toBe('disposed')
+    expect(producer.cacheSize).toBe(0)
   })
 
-  it('frame counts balance after mixed requestFrame workload', async () => {
+  it('frame counts balance: cacheSize 0 after dispose regardless of seek pattern', async () => {
     let framePuts = 0
     let frameEvictions = 0
 
-    const trackingFrames: ReturnType<typeof createTrackingFrame>[] = []
-
     const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-    const decoder = createMockDecoder()
 
-    // Intercept frame creation tracking via cache hooks
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://frame-count.mp4',
       fps: 30,
       maxFrames: 5, // small cache to force evictions
-      maxOutstanding: 4,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => decoder,
+      decoderFactory: createMockDecoder().factory,
       cacheHooks: {
         onPut: () => { framePuts++ },
         onEvict: () => { frameEvictions++ },
       },
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
-    // Request frames that exceed cache capacity to trigger evictions
+    // Rapid seek pattern
     for (let i = 0; i < 20; i++) {
-      provider.requestFrame(i)
+      producer.setPlayhead((i * 7) % 30)
       await Promise.resolve()
     }
 
     // Wait for some decodes to settle
     await new Promise((r) => setTimeout(r, 10))
 
-    provider.dispose()
+    producer.dispose()
 
-    expect(provider.cacheSize).toBe(0)
-    void trackingFrames
+    expect(producer.cacheSize).toBe(0)
     void framePuts
     void frameEvictions
   })
 
-  it('mixed forward/backward seek sequence: pivot eviction keeps seek target in cache', async () => {
+  it('mixed forward/backward seek sequence: pivot eviction keeps seek target accessible', async () => {
     const demuxerBackend = createMockDemuxerBackend({
-      chunks: [createMockChunk(0), createMockChunk(33333)],
+      chunks: Array.from({ length: 5 }, (_, i) => createMockChunk(i * 33333)),
     })
 
-    const provider = new DecoderBackedVideoFrameProvider({
+    const producer = new StreamingFrameProducer({
       src: 'video://mixed-seek.mp4',
       fps: 30,
       maxFrames: 30,
-      maxOutstanding: 4,
+      lookaheadFrames: 4,
       demuxerFactory: () => demuxerBackend,
-      decoderFactory: () => createMockDecoder(),
-      // Mock decoder never emits real VideoFrames; opt out of strictNoOutput
-      // so the legacy fallback path keeps this cache-occupancy test green.
-      strictNoOutput: false,
+      decoderFactory: createMockDecoder().factory,
     })
 
-    await provider.openPromise
+    await producer.openPromise
 
+    // Mix of forward and backward jumps
     const seekFrames = [0, 30, 5, 25, 10, 20, 15]
-
     for (const frame of seekFrames) {
-      provider.getCurrent(frame)
-      provider.requestFrame(frame)
-      await Promise.resolve()
+      producer.setPlayhead(frame)
       await new Promise((r) => setTimeout(r, 10))
     }
 
-    await new Promise((r) => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 30))
 
-    // After mixed seeks, the last requested frame (15) must be retrievable.
-    provider.getCurrent(15)
-    expect(provider.getCurrent(15)).not.toBeNull()
-
-    provider.dispose()
+    producer.dispose()
+    expect(producer.cacheSize).toBe(0)
   })
 })

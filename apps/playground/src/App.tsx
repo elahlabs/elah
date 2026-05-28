@@ -79,11 +79,7 @@ export default function App() {
   const addVideoClip = () => {
     const e = engine()
     if (!e) return
-    const tracks = e.getProject().tracks.filter((t) => t.kind === 'video')
-    if (tracks.length === 0) {
-      alert('Add a video track first')
-      return
-    }
+
     // Use the most recently imported video asset so the clip has a real src.
     // Without a src, the resolver drops the clip and the canvas stays black.
     const mediaState = useMediaLibraryStore.getState()
@@ -95,7 +91,20 @@ export default function App() {
       alert('Import a video file from the Media panel first')
       return
     }
-    const track = tracks[0]
+
+    let videoTracks = e.getProject().tracks.filter((t) => t.kind === 'video')
+    // Auto-create a video track if none exist — don't make the user click a
+    // separate button just to place a clip.
+    if (videoTracks.length === 0) {
+      e.addTrack('video')
+      videoTracks = e.getProject().tracks.filter((t) => t.kind === 'video')
+    }
+    console.log(
+      '[addVideoClip] videoTracks:', videoTracks.length,
+      '| asset:', videoAsset.name,
+      '| duration:', videoAsset.durationSec.toFixed(2) + 's',
+    )
+    const track = videoTracks[0]
     const existing = e.getClipsOnTrack(track.id)
     const startFrame =
       existing.length > 0

@@ -85,16 +85,14 @@ function createMockGL(): WebGL2RenderingContext {
 
 function makeMockProvider(): VideoFrameProvider & {
   getCurrent: ReturnType<typeof vi.fn>
-  requestFrame: ReturnType<typeof vi.fn>
-  prefetch: ReturnType<typeof vi.fn>
+  setPlayhead: ReturnType<typeof vi.fn>
   markIdle: ReturnType<typeof vi.fn>
   markActive: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
 } {
   return {
     getCurrent: vi.fn(() => null),
-    requestFrame: vi.fn(),
-    prefetch: vi.fn(),
+    setPlayhead: vi.fn(),
     markIdle: vi.fn(),
     markActive: vi.fn(),
     dispose: vi.fn(),
@@ -194,15 +192,15 @@ describe('VideoLayer', () => {
     expect(result).toBeUndefined()
   })
 
-  it('unavailable frame path keeps previous texture and schedules requestFrame()', () => {
+  it('unavailable frame path keeps previous texture and calls setPlayhead()', () => {
     const clip = makeClip({ sourceFrame: 42 })
     layer.acquire(clip, ctx)
 
     provider.getCurrent.mockReturnValue(null)
     layer.draw(clip, ctx)
 
+    expect(provider.setPlayhead).toHaveBeenCalledWith(42)
     expect(provider.getCurrent).toHaveBeenCalledWith(42)
-    expect(provider.requestFrame).toHaveBeenCalledWith(42)
     expect(gl.drawArrays).not.toHaveBeenCalled()
   })
 

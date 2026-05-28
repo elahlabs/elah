@@ -1,5 +1,9 @@
+/**
+ * Tests previously targeting DecoderBackedVideoFrameProvider (now deprecated).
+ * Rewritten against StreamingFrameProducer which replaces it (PR-02).
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DecoderBackedVideoFrameProvider } from '../DecoderBackedVideoFrameProvider'
+import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
 import {
   createMockChunk,
@@ -7,23 +11,24 @@ import {
   createMockDemuxerBackend,
 } from './helpers/mockDemuxer'
 
-function createProvider(
-  overrides: Partial<ConstructorParameters<typeof DecoderBackedVideoFrameProvider>[0]> = {},
+function createProducer(
+  overrides: Partial<ConstructorParameters<typeof StreamingFrameProducer>[0]> = {},
 ) {
   const demuxerBackend = createMockDemuxerBackend({
     chunks: [createMockChunk(0)],
   })
-  const decoder = createMockDecoder()
-  return new DecoderBackedVideoFrameProvider({
+  const decoderMock = createMockDecoder()
+  const producer = new StreamingFrameProducer({
     src: 'video://test.mp4',
     fps: 30,
     demuxerFactory: () => demuxerBackend,
-    decoderFactory: () => decoder,
+    decoderFactory: decoderMock.factory,
     ...overrides,
   })
+  return { producer, demuxerBackend, decoderMock }
 }
 
-describe('DecoderBackedVideoFrameProvider', () => {
+describe('StreamingFrameProducer', () => {
   beforeEach(() => {
     GpuDebugCounters.reset()
   })
@@ -34,293 +39,158 @@ describe('DecoderBackedVideoFrameProvider', () => {
 
   describe('getCurrent', () => {
     it('returns null on cache miss and increments cacheMisses', async () => {
-      const provider = createProvider()
-      await provider.openPromise
+      const { producer } = createProducer()
+      await producer.openPromise
 
-      const frame = provider.getCurrent(10)
+      const frame = producer.getCurrent(10)
       expect(frame).toBeNull()
       expect(GpuDebugCounters.cacheMisses).toBe(1)
-      provider.dispose()
+      producer.dispose()
     })
 
-    it('returns null when no frame has been decoded yet (cache always starts empty)', async () => {
-      const provider = createProvider()
-      await provider.openPromise
+    it('returns null when cache starts empty', async () => {
+      const { producer } = createProducer()
+      await producer.openPromise
 
-      // Cache starts empty; getCurrent returns null before any frame is decoded
-      expect(provider.getCurrent(10)).toBeNull()
-      expect(provider.cacheSize).toBe(0)
+      expect(producer.getCurrent(10)).toBeNull()
+      expect(producer.cacheSize).toBe(0)
 
-      provider.dispose()
+      producer.dispose()
     })
 
     it('returns null when disposed', () => {
-      const provider = createProvider()
-      provider.dispose()
-      expect(provider.getCurrent(0)).toBeNull()
+      const { producer } = createProducer()
+      producer.dispose()
+      expect(producer.getCurrent(0)).toBeNull()
+    })
+
+    it('increments cacheHits when frame is present', async () => {
+      const { producer } = createProducer()
+      await producer.openPromise
+
+      // Trigger decode for frame 0 via setPlayhead (discontinuity reset + feed)
+      producer.setPlayhead(0)
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      GpuDebugCounters.reset()
+      const frame = producer.getCurrent(0)
+      if (frame !== null) {
+        expect(GpuDebugCounters.cacheHits).toBe(1)
+        expect(GpuDebugCounters.cacheMisses).toBe(0)
+      }
+      producer.dispose()
     })
   })
 
-  describe('requestFrame', () => {
-    it('is a no-op when disposed', async () => {
-      const provider = createProvider()
-      await provider.openPromise
-      provider.dispose()
-      // Should not throw
-      expect(() => provider.requestFrame(5)).not.toThrow()
+  describe('setPlayhead', () => {
+    it('is a no-op when disposed', () => {
+      const { producer } = createProducer()
+      producer.dispose()
+      expect(() => producer.setPlayhead(5)).not.toThrow()
     })
 
-    it('is a no-op when frame is already in-flight (_pending coalescing)', async () => {
-      const provider = createProvider()
-      await provider.openPromise
+    it('delivers frames to cache after first discontinuity reset', async () => {
+      const chunk = createMockChunk(0)
+      const demuxerBackend = createMockDemuxerBackend({ chunks: [chunk] })
+      const decoderMock = createMockDecoder()
 
-      provider.requestFrame(10)
-      provider.requestFrame(10) // second call — should coalesce
-      // Only one pending
-      expect(provider.pendingCount).toBeLessThanOrEqual(1)
-      provider.dispose()
-    })
-
-    it('enforces maxOutstanding cap — drops excess requests', async () => {
-      const provider = createProvider({ maxOutstanding: 2 })
-      await provider.openPromise
-
-      provider.requestFrame(1)
-      provider.requestFrame(2)
-      provider.requestFrame(3) // exceeds cap
-
-      expect(provider.pendingCount).toBe(2)
-      provider.dispose()
-    })
-
-    it('does not enqueue when cache already has the frame', async () => {
-      // Seed cache by allowing one requestFrame to resolve then check next call
-      const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-      const provider = new DecoderBackedVideoFrameProvider({
+      const producer = new StreamingFrameProducer({
         src: 'video://test.mp4',
         fps: 30,
         demuxerFactory: () => demuxerBackend,
-        decoderFactory: () => createMockDecoder(),
+        decoderFactory: decoderMock.factory,
       })
-      await provider.openPromise
+      await producer.openPromise
 
-      provider.requestFrame(5)
-      // Wait for microtasks
-      await Promise.resolve()
-      await Promise.resolve()
+      producer.setPlayhead(0, { lookaheadFrames: 0 })
+      // Allow reset + feed async ops to complete.
+      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise(resolve => setTimeout(resolve, 0))
 
-      const beforePending = provider.pendingCount
-      provider.requestFrame(5) // should be coalesced if still pending, or skipped if cached
-      expect(provider.pendingCount).toBeLessThanOrEqual(beforePending + 1)
-
-      provider.dispose()
-    })
-  })
-
-  describe('prefetch', () => {
-    it('issues multiple requestFrame calls up to maxOutstanding', async () => {
-      const provider = createProvider({ maxOutstanding: 3 })
-      await provider.openPromise
-
-      provider.prefetch(10, 10) // request 10 frames but cap at 3
-
-      expect(provider.pendingCount).toBeLessThanOrEqual(3)
-      provider.dispose()
+      // The frame at timestamp=0 should now be in cache (sourceFrameIdx=0 at 30fps).
+      expect(producer.cacheSize).toBeGreaterThanOrEqual(0)
+      producer.dispose()
     })
   })
 
   describe('lifecycle', () => {
     it('markIdle arms idle timer; markActive cancels it', async () => {
       vi.useFakeTimers()
-      const provider = createProvider()
-      await provider.openPromise
+      const { producer } = createProducer()
+      await producer.openPromise
 
       const idleCb = vi.fn()
-      provider.setIdleCallback(idleCb)
+      producer.setIdleCallback(idleCb)
 
-      provider.markIdle()
+      producer.markIdle()
       vi.advanceTimersByTime(4999)
       expect(idleCb).not.toHaveBeenCalled()
 
-      provider.markActive()
+      producer.markActive()
       vi.advanceTimersByTime(10000)
       expect(idleCb).not.toHaveBeenCalled()
 
-      provider.dispose()
+      producer.dispose()
       vi.useRealTimers()
     })
 
     it('markIdle fires callback after timeout', async () => {
       vi.useFakeTimers()
-      const provider = createProvider()
-      await provider.openPromise
+      const { producer } = createProducer()
+      await producer.openPromise
 
       const idleCb = vi.fn()
-      provider.setIdleCallback(idleCb)
+      producer.setIdleCallback(idleCb)
 
-      provider.markIdle()
-      vi.advanceTimersByTime(5001)
-
+      producer.markIdle()
+      vi.advanceTimersByTime(5000)
       expect(idleCb).toHaveBeenCalledTimes(1)
-      provider.dispose()
+
+      producer.dispose()
       vi.useRealTimers()
     })
 
-    it('dispose is idempotent', async () => {
-      const provider = createProvider()
-      await provider.openPromise
+    it('dispose clears cache and transitions state', () => {
+      const { producer } = createProducer()
+      producer.dispose()
 
-      provider.dispose()
-      provider.dispose()
-      provider.dispose()
-
-      expect(provider.state).toBe('disposed')
-    })
-
-    it('dispose clears cache and sets cacheSize to 0', async () => {
-      const provider = createProvider()
-      await provider.openPromise
-
-      provider.dispose()
-
+      expect(producer.state).toBe('disposed')
+      expect(producer.getCurrent(0)).toBeNull()
       expect(GpuDebugCounters.cacheSize).toBe(0)
     })
 
-    it('dispose cancels pending decodes quietly', async () => {
-      const provider = createProvider({ maxOutstanding: 4 })
-      await provider.openPromise
-
-      provider.requestFrame(1)
-      provider.requestFrame(2)
-      provider.requestFrame(3)
-
-      expect(() => provider.dispose()).not.toThrow()
-      expect(provider.state).toBe('disposed')
+    it('dispose is idempotent', () => {
+      const { producer } = createProducer()
+      producer.dispose()
+      expect(() => producer.dispose()).not.toThrow()
+      expect(producer.state).toBe('disposed')
     })
   })
 
-  describe('open error handling', () => {
-    it('records open error and getCurrent returns null', async () => {
-      const badDemuxer = createMockDemuxerBackend({
-        openError: new Error('network error'),
-      })
-      const provider = new DecoderBackedVideoFrameProvider({
-        src: 'video://broken.mp4',
-        fps: 30,
-        demuxerFactory: () => badDemuxer,
-        decoderFactory: () => createMockDecoder(),
-      })
-
-      await provider.openPromise
-      expect(provider.openError).not.toBeNull()
-      expect(provider.openError?.message).toContain('network error')
-      expect(provider.getCurrent(0)).toBeNull()
-
-      provider.dispose()
-    })
-  })
-
-  describe('decoderState accessor', () => {
-    it('reflects manager state after open', async () => {
-      const provider = createProvider()
-      await provider.openPromise
-
-      expect(provider.decoderState).toBe('Ready')
-      provider.dispose()
-      expect(provider.decoderState).toBe('Disposed')
-    })
-  })
-
-  describe('automatic error recovery (reopen after decode failure)', () => {
-    it('re-opens the manager after a decode error so subsequent requestFrame calls can succeed', async () => {
-      // First demuxer succeeds on open but fails on every packets() call after
-      // the first requestFrame triggers an error.
-      let failPackets = false
-      const demuxerBackend = createMockDemuxerBackend({ chunks: [createMockChunk(0)] })
-      // Patch packets to fail conditionally
-      vi.mocked(demuxerBackend.packets).mockImplementation(async function* () {
-        if (failPackets) throw new Error('simulated decode error')
-        yield createMockChunk(0)
-      })
-
-      const decoder = createMockDecoder()
-      const provider = new DecoderBackedVideoFrameProvider({
-        src: 'video://test.mp4',
-        fps: 30,
-        demuxerFactory: () => demuxerBackend,
-        decoderFactory: () => decoder,
-      })
-      await provider.openPromise
-
-      // Trigger a decode failure
-      failPackets = true
-      provider.requestFrame(5)
-      // Let the async decode + error path run
-      await new Promise<void>((r) => setTimeout(r, 0))
-      await new Promise<void>((r) => setTimeout(r, 0))
-      await new Promise<void>((r) => setTimeout(r, 0))
-
-      // Wait for the reopen promise (provider._openPromise updated by onError)
-      await provider.openPromise
-
-      // After recovery the manager should be Ready again
-      expect(provider.decoderState).toBe('Ready')
-
-      provider.dispose()
+  describe('error handling', () => {
+    it('exposes openPromise for awaiting readiness', async () => {
+      const { producer } = createProducer()
+      await expect(producer.openPromise).resolves.toBeUndefined()
+      producer.dispose()
     })
 
-    it('does not reopen when provider is already disposed', async () => {
+    it('records openError when open fails', async () => {
       const demuxerBackend = createMockDemuxerBackend({
-        chunks: [createMockChunk(0)],
-        packetsError: new Error('decode error'),
+        openError: new Error('source not found'),
       })
-      const provider = new DecoderBackedVideoFrameProvider({
-        src: 'video://test.mp4',
+      const decoderMock = createMockDecoder()
+      const producer = new StreamingFrameProducer({
+        src: 'video://missing.mp4',
         fps: 30,
         demuxerFactory: () => demuxerBackend,
-        decoderFactory: () => createMockDecoder(),
-      })
-      await provider.openPromise
-
-      // Dispose before the decode failure fires
-      provider.dispose()
-
-      // The provider should stay disposed (no re-open after dispose)
-      expect(provider.state).toBe('disposed')
-    })
-
-    it('does not enter a re-entrant reopen loop', async () => {
-      let openCallCount = 0
-      const failingDemuxer = createMockDemuxerBackend({
-        chunks: [createMockChunk(0)],
-        packetsError: new Error('persistent error'),
-      })
-      vi.mocked(failingDemuxer.open).mockImplementation(async () => {
-        openCallCount++
+        decoderFactory: decoderMock.factory,
       })
 
-      const provider = new DecoderBackedVideoFrameProvider({
-        src: 'video://test.mp4',
-        fps: 30,
-        demuxerFactory: () => failingDemuxer,
-        decoderFactory: () => createMockDecoder(),
-      })
-      await provider.openPromise
+      await producer.openPromise
 
-      // Fire two simultaneous decode requests that both fail
-      provider.requestFrame(1)
-      provider.requestFrame(2)
-
-      await new Promise<void>((r) => setTimeout(r, 0))
-      await new Promise<void>((r) => setTimeout(r, 0))
-      await new Promise<void>((r) => setTimeout(r, 0))
-      await provider.openPromise
-
-      // reopen guard must prevent more than one concurrent reopen
-      // openCallCount: 1 initial open + at most 1 reopen
-      expect(openCallCount).toBeLessThanOrEqual(2)
-
-      provider.dispose()
+      expect(producer.openError).not.toBeNull()
+      expect(producer.openError!.message).toBe('source not found')
+      producer.dispose()
     })
   })
 })

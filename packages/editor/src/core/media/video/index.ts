@@ -1,5 +1,7 @@
 export type { VideoFrameProvider, VideoFrameProviderDeps } from './VideoFrameProvider'
 export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from './VideoFrameProvider'
+export { StreamingFrameProducer } from './StreamingFrameProducer'
+export type { StreamingFrameProducerOptions } from './StreamingFrameProducer'
 export { DecoderBackedVideoFrameProvider } from './DecoderBackedVideoFrameProvider'
 export { FrameCache } from './FrameCache'
 export type { DemuxerFactory, DemuxerBackend } from './demuxer/MediabunnyDemuxer'

@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockVideoFrameProvider } from '../VideoFrameProvider'
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('MockVideoFrameProvider', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -14,12 +10,13 @@ describe('MockVideoFrameProvider', () => {
     vi.useRealTimers()
   })
 
-  it('getCurrent() remains synchronous', () => {
+  it('getCurrent() remains synchronous and returns null before decode', () => {
     const provider = new MockVideoFrameProvider()
 
     expect(provider.getCurrent(0)).toBeNull()
 
-    provider.requestFrame(0)
+    // setPlayhead schedules frame via setTimeout — not yet resolved
+    provider.setPlayhead(0, { lookaheadFrames: 0 })
     expect(provider.getCurrent(0)).toBeNull()
 
     vi.runAllTimers()
@@ -28,43 +25,39 @@ describe('MockVideoFrameProvider', () => {
     expect(frame!.displayWidth).toBe(320)
   })
 
-  it('requestFrame() schedules async work only', () => {
+  it('setPlayhead() schedules async work only — frame not available synchronously', () => {
     const provider = new MockVideoFrameProvider()
 
-    provider.requestFrame(5)
+    provider.setPlayhead(5, { lookaheadFrames: 0 })
     expect(provider.getCurrent(5)).toBeNull()
-    expect(provider.pendingCount).toBe(1)
 
     vi.runAllTimers()
     expect(provider.getCurrent(5)).not.toBeNull()
-    expect(provider.pendingCount).toBe(0)
   })
 
-  it('prefetch() schedules future requests', () => {
+  it('setPlayhead() schedules the lookahead window [N, N+lookahead]', () => {
     const provider = new MockVideoFrameProvider()
 
-    provider.prefetch(10, 3)
-    expect(provider.pendingCount).toBe(3)
+    provider.setPlayhead(10, { lookaheadFrames: 2 })
 
     vi.runAllTimers()
 
     expect(provider.getCurrent(10)).not.toBeNull()
     expect(provider.getCurrent(11)).not.toBeNull()
     expect(provider.getCurrent(12)).not.toBeNull()
-    expect(provider.pendingCount).toBe(0)
   })
 
-  it('deduplicates duplicate requestFrame() calls', () => {
-    const provider = new MockVideoFrameProvider()
+  it('deduplicates overlapping setPlayhead windows', () => {
+    const provider = new MockVideoFrameProvider({ lookaheadFrames: 0 })
 
-    provider.requestFrame(3)
-    provider.requestFrame(3)
-    provider.requestFrame(3)
-
-    expect(provider.pendingCount).toBe(1)
+    provider.setPlayhead(3)
+    provider.setPlayhead(3)
+    provider.setPlayhead(3)
 
     vi.runAllTimers()
     expect(provider.getCurrent(3)).not.toBeNull()
+    // Only one frame — not multiple duplicates
+    expect(provider.cacheSize).toBe(1)
   })
 
   it('markIdle() starts idle lifecycle', () => {
@@ -93,19 +86,18 @@ describe('MockVideoFrameProvider', () => {
     expect(idleFn).not.toHaveBeenCalled()
   })
 
-  it('dispose() clears cache, pending set, and timers', () => {
+  it('dispose() clears cache and timers', () => {
     const provider = new MockVideoFrameProvider({ idleTimeoutMs: 5000 })
     const idleFn = vi.fn()
     provider.setIdleCallback(idleFn)
 
-    provider.requestFrame(0)
+    provider.setPlayhead(0, { lookaheadFrames: 0 })
     provider.markIdle()
 
     provider.dispose()
 
     expect(provider.state).toBe('disposed')
     expect(provider.getCurrent(0)).toBeNull()
-    expect(provider.pendingCount).toBe(0)
 
     vi.runAllTimers()
     expect(idleFn).not.toHaveBeenCalled()
@@ -117,7 +109,7 @@ describe('MockVideoFrameProvider', () => {
 
     for (let i = 0; i < 100; i++) {
       provider.getCurrent(i)
-      provider.requestFrame(i)
+      provider.setPlayhead(i)
     }
 
     const elapsed = performance.now() - start
@@ -125,15 +117,14 @@ describe('MockVideoFrameProvider', () => {
     expect(provider.getCurrent(0)).toBeNull()
   })
 
-  it('survives missing frame requests safely after dispose', () => {
+  it('survives all calls safely after dispose', () => {
     const provider = new MockVideoFrameProvider()
 
     provider.dispose()
 
     expect(() => {
       provider.getCurrent(99)
-      provider.requestFrame(99)
-      provider.prefetch(0, 5)
+      provider.setPlayhead(0, { lookaheadFrames: 5 })
       provider.markIdle()
       provider.markActive()
     }).not.toThrow()
