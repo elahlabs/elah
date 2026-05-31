@@ -198,7 +198,14 @@ export class VideoDecoderManager {
       this._demuxer = new MediabunnyDemuxer(this._demuxerFactory)
       await this._demuxer.open(src)
 
-      const config = this._demuxer.getConfig()
+      // optimizeForLatency tells the decoder to emit frames ASAP with minimal
+      // output buffering. Without it the decoder holds frames back for B-frame
+      // reordering, and a non-burst feed can leave it sitting on output — a key
+      // contributor to the mid-playback freeze. See frame-lifecycle-and-decode-stall.md.
+      const config: VideoDecoderConfig = {
+        ...this._demuxer.getConfig(),
+        optimizeForLatency: true,
+      }
       const usPerFrame = 1_000_000 / this._fps
       this._decoder = this._decoderFactory(
         (frame: VideoFrame) => {
@@ -322,12 +329,31 @@ export class VideoDecoderManager {
     try {
       await this._demuxer!.seekToKeyframe(toKeyframeUs)
       this._decoder!.reset()
-      this._decoder!.configure(this._demuxer!.getConfig())
+      this._decoder!.configure({
+        ...this._demuxer!.getConfig(),
+        optimizeForLatency: true,
+      })
       this._transition('Ready')
     } catch (error) {
       this._handleError(error)
       throw error
     }
+  }
+
+  /**
+   * DIAGNOSTIC ONLY: force the decoder to flush its reorder buffer (DPB) so any
+   * decoded-but-not-yet-presented frames fire through onFrame immediately.
+   * Does NOT change state or tear down the decoder. After this, the decoder
+   * requires a keyframe for the next decode() — so playback will need a reset()
+   * to continue. Used to confirm whether frames are held in the decoder's DPB.
+   */
+  async debugFlush(): Promise<void> {
+    if (this._state !== 'Ready' || !this._decoder) return
+    _vdmTrace('debugFlush → decoder.flush()', {
+      decoderQueueSize: (this._decoder as { decodeQueueSize?: number }).decodeQueueSize,
+    })
+    await this._decoder.flush()
+    _vdmTrace('debugFlush complete', {})
   }
 
   /**
@@ -426,7 +452,9 @@ export class VideoDecoderManager {
         this._decoder!.decode(chunk)
         packetCount++
       }
-      // No flush here — decoder stays warm across contiguous feed() calls.
+      // NB: no flush() here. WebCodecs requires the next decode() after flush()
+      // to be a key frame, which breaks contiguous (delta-frame) feeding. The
+      // decoder stays warm across contiguous feed() calls instead.
     } catch (error) {
       if (gen === this._feedGeneration && this._state !== 'Disposed') {
         // Error in current generation — clean up and surface.

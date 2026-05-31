@@ -482,6 +482,161 @@ The decoder stays warm across contiguous `feed()` calls — no per-frame `flush(
 
 ---
 
+## 6.5 — Plain-English: the decoder pool, the freeze, and the fix
+
+> Read this if §6 and §10 felt abstract. Same story, no jargon. **This is the
+> exact boundary that caused the "freeze after ~18 frames" bug.**
+
+### A `VideoFrame` is a *borrowed library book*, not a photo
+
+The hardware video decoder is a tiny library with a **fixed shelf of ~16 books**
+(its internal frame pool). Each time it decodes a picture it hands you one
+**book** — a `VideoFrame`. A `VideoFrame` is **not** a copy of the pixels; it is
+a *borrowed handle* to one shelf slot inside the decoder.
+
+The library's rule:
+
+- You may **read** the book (upload it to the GPU).
+- You must **return** it (`frame.close()`) so the slot frees up.
+- If you **keep** books, the shelf empties. With an empty shelf the librarian
+  (decoder) **cannot make new books** — it just stops. No error, no crash. It
+  freezes, and `flush()` waits forever for a slot that never comes back.
+
+```
+Decoder's shelf (≈16 slots):
+[📕][📕][📕][📕][📕][📕][📕][📕][📕][📕][📕][📕][📕][📕][  ][  ]
+ every 📕 = one VideoFrame you are still holding open
+ keep ~16 open  →  shelf full  →  decoder can't decode  →  FREEZE
+```
+
+### What the code does TODAY (the bug) ❌
+
+The `FrameCache` stores the **raw book** and only returns it much later, on
+eviction. But the cache is sized at 30 while only ~14 frames ever decode, so
+**eviction never fires → no book is ever returned → the shelf fills → freeze.**
+
+```mermaid
+flowchart LR
+    DEC["🎞️ decoder<br/>shelf of ~16"] -->|"hands over 📕 VideoFrame<br/>= one shelf slot"| ONF["onFrame()"]
+    ONF -->|"cache.put(📕)"| FC["📚 FrameCache<br/>holds the BOOKS open"]
+    FC -.->|"closes book only on evict —<br/>never happens, cache never fills"| RET["↩️ return slot"]
+    FC -->|"borrow (get)"| VL["VideoLayer.draw"]
+
+    BUG{{"❌ shelf fills at ~16<br/>decoder goes silent<br/>flush() hangs → FREEZE"}}
+    FC -.-> BUG
+
+    classDef bad fill:#5a1a1a,stroke:#e55,color:#fff
+    class BUG bad
+```
+
+👉 **The breaking arrow is `cache.put(📕)`** — the cache holds the *book itself*.
+That is the one line the fix changes.
+
+### The fix: photocopy the book, return the original immediately ✅
+
+`createImageBitmap(frame)` makes a **photocopy** on plain paper. The photocopy
+(`ImageBitmap`) is yours forever and costs the decoder **nothing**. So we copy,
+hand the book straight back (`frame.close()`), then cache the photocopy.
+
+```mermaid
+flowchart LR
+    DEC["🎞️ decoder<br/>shelf of ~16"] -->|"hands over 📕"| ONF["onFrame()"]
+    ONF -->|"📄 createImageBitmap(📕)"| COPY["photocopy"]
+    COPY -->|"📕 frame.close()<br/>slot returned NOW"| DEC
+    COPY -->|"cache.put(📄)"| FC["📚 FrameCache<br/>holds PHOTOCOPIES"]
+    FC -->|"borrow (get)"| VL["VideoLayer.draw → upload"]
+
+    OK{{"✅ shelf almost always empty<br/>decoder never starves<br/>smooth playback"}}
+    DEC -.-> OK
+
+    classDef good fill:#143,stroke:#3a3,color:#fff
+    class OK good
+```
+
+|  | Holds a decoder slot? | How many can exist? | Survives a GPU reset? |
+|---|:--:|:--:|:--:|
+| `VideoFrame` (book) | **Yes** — pins 1 of ~16 | ~16, then freeze | yes (not a GPU object) |
+| `ImageBitmap` (photocopy) | **No** | limited only by RAM | yes |
+
+**One-line summary of the fix:** move `frame.close()` from *"later, on cache
+eviction"* to *"**right now**, the instant we've photocopied it."* That single
+move is what unfreezes playback.
+
+### Knock-on simplification (a decision you'll make during the fix)
+
+Today [`VideoLayer.draw`](./gpu/layers/VideoLayer.ts) calls `frame.clone()`
+before upload, because **two owners** both think they must close the frame: the
+cache **and** `VideoTexture.upload`'s `finally`. Cloning is a smell that says
+*"nobody agreed who owns this."* Once the cache holds a photocopy that only
+**it** owns, we delete the clone and make `upload()` simply **borrow**. The whole
+pipeline collapses to one sentence:
+
+> **The FrameCache owns every cached frame and is the only thing that closes it.
+> Everyone else borrows and never closes.**
+
+---
+
+## 6.6 — Plain-English: why the decode side is "GL-free"
+
+> This is question 7. Short version: the decode side must keep working even when
+> the GPU throws everything away.
+
+### Two zones: the GPU can be wiped, plain memory cannot
+
+A WebGL context can be **lost at any second** — driver reset, laptop sleep, tab
+backgrounded too long. When that happens **every GPU object is instantly dead**:
+textures, shaders, all of it. Plain JavaScript memory is untouched. So we draw a
+hard line through the system:
+
+```
+   ┌────────────────────────────────────────────────┐
+   │  🖥️  GPU ZONE — can be WIPED at any moment        │
+   │  VideoTexture · ShaderProgram · TexturePool      │  ← rebuilt on restore
+   └────────────────────────────────────────────────┘
+   ═══════════════ the GL-free line ═══════════════════
+   ┌────────────────────────────────────────────────┐
+   │  💾  SAFE MEMORY ZONE — survives a GPU reset       │
+   │  StreamingFrameProducer · VideoDecoderManager    │
+   │  Demuxer · FrameCache (VideoFrame / ImageBitmap) │  ← keeps running
+   └────────────────────────────────────────────────┘
+```
+
+When the GPU comes back, the next `render()` re-uploads from the **surviving
+cache** — no re-decode, no stutter (see §9).
+
+### What would break if SFP held GPU textures
+
+```mermaid
+flowchart TB
+    LOST["⚡ GPU context lost"]
+    subgraph bad["❌ if SFP cached GL textures"]
+        B1["every cached texture = dead"]
+        B2["decode state corrupted"]
+        B3["cold-start decoder from a keyframe<br/>on every GPU hiccup → stutter"]
+        B1 --> B2 --> B3
+    end
+    subgraph good["✅ SFP caches VideoFrame / ImageBitmap"]
+        G1["cache untouched"]
+        G2["re-upload to fresh GPU next tick"]
+        G3["seamless"]
+        G1 --> G2 --> G3
+    end
+    LOST --> bad
+    LOST --> good
+
+    classDef bad fill:#5a1a1a,stroke:#e55,color:#fff
+    classDef good fill:#143,stroke:#3a3,color:#fff
+    class B1,B2,B3 bad
+    class G1,G2,G3 good
+```
+
+Both `VideoFrame` and `ImageBitmap` are valid `TexImageSource` — either can be
+uploaded to a **brand-new** GPU context. That's why the §6.5 fix (book →
+photocopy) keeps this property intact: a photocopy is just as re-uploadable as a
+book, and just as safe below the GL-free line.
+
+---
+
 ## 7. `VideoLayer` — provider & texture bookkeeping
 
 `VideoLayer` is the only place that knows clips share decoders. Providers are
@@ -628,6 +783,13 @@ sequenceDiagram
 ---
 
 ## 10. Frame ownership — single rule, end-to-end
+
+> ⚠️ **This section describes the CURRENT (pre-fix) design — and the
+> `VideoTexture.upload … finally close` arrow below is the source of the freeze
+> bug.** The "two owners + clone" model is being replaced by copy-and-close; see
+> **§6.5** for the plain-English why and the target flow. After the fix, the
+> single rule becomes: *the FrameCache is the only owner and the only closer;
+> everyone else borrows.*
 
 This is the one rule that, if violated, leaks GPU memory.
 

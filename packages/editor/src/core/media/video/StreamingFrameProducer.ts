@@ -26,13 +26,25 @@ import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
 import type { VideoDecoderFactory } from './VideoDecoderManager'
 
 const DEFAULT_FPS = 30
-// 16 frames = ~533ms at 30fps. Gives the decoder a larger buffer so cache
-// misses don't stall the render path while packets are in flight.
-const DEFAULT_LOOKAHEAD_FRAMES = 16
-// 60 frames = 2 seconds at 30fps. Keeps a 2s window so seeks and resets
-// have enough room to warm the decoder before hitting the playhead.
-const DEFAULT_MAX_FRAMES = 60
+// CONFIRMATION EXPERIMENT (decoder pool exhaustion): every decoded VideoFrame
+// held open in the cache pins a slot in the decoder's internal output pool
+// (~16 on typical H.264 hardware). Holding 14+ open exhausts it → decode stalls
+// and flush() hangs (see frame-lifecycle-and-decode-stall.md). Keep the count of
+// outstanding live frames well under the pool: lookahead(4) < cache(8) < pool.
+// Evicted frames are close()d promptly, returning their pool slots. If this
+// sustains playback past frame 16, pool exhaustion is confirmed.
+// PRIOR VALUES: lookahead=16, maxFrames=60.
+const DEFAULT_LOOKAHEAD_FRAMES = 4
+const DEFAULT_MAX_FRAMES = 8
 const DEFAULT_IDLE_TIMEOUT_MS = 5_000
+// A genuine decoder stall = no new decoded frame for this many consecutive
+// setPlayhead ticks while the playhead is past the highest decoded frame and we
+// have fed ahead of it. setPlayhead runs per RAF (~60/s), so ~45 ticks ≈ 0.75s
+// of zero decode progress. Catching up from a distant keyframe still emits
+// frames (which resets the counter via onFrame), so this only trips on a true
+// silent stall — not on "decode is merely behind". See
+// frame-lifecycle-and-decode-stall.md.
+const STALL_TICKS_BEFORE_RESET = 45
 
 type ProviderState = 'active' | 'idle' | 'disposed'
 
@@ -97,10 +109,18 @@ export class StreamingFrameProducer implements VideoFrameProvider {
    * Decode normally LEADS the playhead. When the playhead outruns this by more
    * than half the lookahead despite the watermark showing we fed ahead, the
    * decoder has silently stalled (e.g. it reports Ready but stops emitting
-   * frames) — setPlayhead forces a discontinuity to re-seek and restart output.
-   * Cleared to -1 on every reset/reopen.
+   * frames). Cleared to -1 on every reset/reopen. The stall SIGNAL itself is now
+   * progress-based — see _ticksSinceDecodeAdvance and setPlayhead.
    */
   private _highestDecodedFrame = -1
+  /**
+   * Consecutive setPlayhead ticks during which the playhead was beyond the
+   * highest decoded frame and no new frame arrived. Reset to 0 in onFrame when
+   * _highestDecodedFrame advances, and whenever the playhead sits inside the
+   * decoded buffer. A sustained count while fed ahead is the true "decoder went
+   * silent" signal (replaces the old lag-based watchdog).
+   */
+  private _ticksSinceDecodeAdvance = 0
   /** True while an async reset is in progress. Prevents concurrent resets. */
   private _resetInProgress = false
   /** Last sourceFrame that produced a [SFP-TRACE] setPlayhead log. Suppresses identical steady-state spam. */
@@ -151,6 +171,7 @@ export class StreamingFrameProducer implements VideoFrameProvider {
         this._lastPlayhead = null
         this._feedWatermark = -1
         this._highestDecodedFrame = -1
+        this._ticksSinceDecodeAdvance = 0
         this._cache.clear()
         GpuDebugCounters.cacheSize = 0
         _sfpTrace('manager error → reopen + bookkeeping reset', {
@@ -193,6 +214,8 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       this._cache.put(sourceFrameIdx, frame)
       if (sourceFrameIdx > this._highestDecodedFrame) {
         this._highestDecodedFrame = sourceFrameIdx
+        // Real decode progress — the decoder is alive. Reset the stall counter.
+        this._ticksSinceDecodeAdvance = 0
       }
       GpuDebugCounters.cacheSize = this._cache.size
       _sfpTrace('onFrame → cache.put', {
@@ -206,6 +229,19 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     this._openPromise = this._manager.open(this._src).catch((err: Error) => {
       this._openError = err
     })
+
+    // DIAGNOSTIC: expose a console hook to force-drain the decoder's reorder
+    // buffer once. Call `await window.__elahDrain()` to confirm whether frames
+    // are held in the decoder DPB (held frames should pour into the cache).
+    if (typeof globalThis !== 'undefined') {
+      ;(globalThis as { __elahDrain?: () => Promise<void> }).__elahDrain = () => {
+        _sfpTrace('__elahDrain invoked — forcing decoder flush', {
+          highestDecoded: this._highestDecodedFrame,
+          cacheSize: this._cache.size,
+        })
+        return this._manager.debugFlush()
+      }
+    }
 
     _sfpTrace('init', {
       fps: this._fps,
@@ -284,23 +320,43 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       return
     }
 
+    // Track how long the playhead has been waiting on the decoder. The counter
+    // only grows while the playhead is BEYOND the highest decoded frame (we're
+    // missing and waiting); it resets the moment we're inside the decoded buffer
+    // or a new frame lands (onFrame). So a paused or well-buffered playhead, and
+    // legitimate catch-up from a distant keyframe (frames still arriving), never
+    // accrue a stall.
+    if (sourceFrame > this._highestDecodedFrame) {
+      this._ticksSinceDecodeAdvance++
+    } else {
+      this._ticksSinceDecodeAdvance = 0
+    }
+
     const lookahead = opts?.lookaheadFrames ?? this._lookaheadFrames
     // A delta of > lookahead means the cache can't cover the gap — genuine seek.
-    // A delta of 1..lookahead means we can just extend the feed window forward
-    // without resetting the decoder. This prevents spurious reset cascades when
-    // the open/reset takes longer than one video frame (~33ms at 30fps) and
-    // _latestPlayhead has quietly advanced by 2-3 frames before _lastPlayhead is set.
-    // Stall detection: decode normally LEADS the playhead. If the playhead has
-    // moved past the highest decoded frame by more than half the lookahead even
-    // though we already fed up to (or past) this position, the decoder has
-    // silently stopped emitting — feeding more won't help because _feedWindow
-    // is gated by the watermark. Treat it as a discontinuity so we re-seek to
-    // the current keyframe and cold-start the decoder, breaking the freeze.
+    // Otherwise we extend the feed window forward without resetting the decoder.
+    //
+    // Stall detection is PROGRESS-based: the decoder is healthy as long as it
+    // keeps emitting, even when a few frames behind (that's just catch-up). The
+    // real failure is when it goes SILENT — no new frame for a sustained run of
+    // ticks despite us having fed past the playhead. Only that triggers a reset.
+    // The old "behind by > lookahead/2" test reset on mere lag, which on
+    // sparse-keyframe clips re-seeks to frame 0 and thrashes (the play/freeze
+    // sawtooth). See frame-lifecycle-and-decode-stall.md.
+    // DIAGNOSTIC: set `window.__SFP_NO_WATCHDOG__ = true` to disable the stall
+    // reset entirely. Used to separate "watchdog resets a healthy-but-buffering
+    // decoder" (P1) from "decoder genuinely never emits past frame 16" (P2). If
+    // decode climbs past 16 with this on, the watchdog/seek is the killer.
+    const watchdogDisabled =
+      typeof globalThis !== 'undefined' &&
+      (globalThis as { __SFP_NO_WATCHDOG__?: boolean }).__SFP_NO_WATCHDOG__ === true
+
     const stalled =
+      !watchdogDisabled &&
       this._lastPlayhead !== null &&
       this._manager.state === 'Ready' &&
       this._feedWatermark >= sourceFrame &&
-      sourceFrame - this._highestDecodedFrame > Math.floor(lookahead / 2)
+      this._ticksSinceDecodeAdvance > STALL_TICKS_BEFORE_RESET
 
     const isDiscontinuity =
       this._lastPlayhead === null ||
@@ -438,11 +494,14 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       const toKeyframeUs = Math.round(sourceFrame * this._usPerFrame)
       await this._manager.reset(toKeyframeUs)
       this._lastPlayhead = this._latestPlayhead ?? sourceFrame
-      // Baseline the stall detector to the post-reset playhead so it doesn't
-      // immediately re-trip on the stale pre-reset value. Decode will deliver
-      // frames from the seek anchor; if it still doesn't, the watchdog fires
-      // again ~lookahead/2 frames later and retries.
-      this._highestDecodedFrame = this._lastPlayhead
+      // Honest baseline: nothing is decoded yet after a reset. (The old code
+      // faked this to the playhead, which made the lag-based watchdog re-trip a
+      // fixed number of frames later — the reset/seek-to-keyframe sawtooth.) The
+      // progress-based watchdog tolerates catch-up: as decode re-emits frames
+      // from the seek anchor the tick counter resets, so it only fires again on
+      // a true silent stall.
+      this._highestDecodedFrame = -1
+      this._ticksSinceDecodeAdvance = 0
       seekAnchorFrame = sourceFrame
     } catch {
       // manager transitions to Errored; the onError handler will reopen.
@@ -468,37 +527,50 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   }
 
   /**
-   * Feed the manager for the window [N, N+lookahead] if not already covered.
+   * Burst-feed the manager so decode stays a buffer ahead of the playhead.
    *
-   * Uses a feed-watermark to avoid re-feeding the same packet ranges across
-   * consecutive ticks. The manager's fire-and-forget feed() API handles
-   * the async packet iteration; frames arrive via the onFrame callback.
+   * HYSTERESIS: do nothing until the fed buffer drains below a low-water line
+   * (N + lookahead/2); then feed a single BURST all the way up to the high-water
+   * line (N + lookahead). The previous design advanced the watermark by one
+   * frame every tick, so steady state fed ~1 packet per tick — too sparse to
+   * push frames through the WebCodecs decoder's output buffer, so it silently
+   * stopped emitting. Multi-packet bursts keep frames flowing. See
+   * frame-lifecycle-and-decode-stall.md.
+   *
+   * The feed-watermark still prevents re-feeding the same packet ranges, and
+   * because feedStart continues from watermark+1 the demuxer stays on its
+   * contiguous fast path (no spurious keyframe re-seek between bursts).
    */
   private _feedWindow(N: number, lookahead: number): void {
     if (this._state === 'disposed') return
     if (this._manager.state !== 'Ready') return
 
-    const windowEnd = N + lookahead
-    if (windowEnd <= this._feedWatermark) return
+    const highWater = N + lookahead
+    const lowWater = N + Math.floor(lookahead / 2)
+
+    // Buffer still above the low-water line — let it drain before the next burst.
+    if (this._feedWatermark >= lowWater) return
 
     // Pick up from where we left off (or from N on first call / after reset).
     const feedStart = Math.max(this._feedWatermark + 1, N)
-    if (feedStart > windowEnd) return
+    if (feedStart > highWater) return
 
     const startUs = Math.round(feedStart * this._usPerFrame)
-    const endUs = Math.round((windowEnd + 1) * this._usPerFrame)
+    const endUs = Math.round((highWater + 1) * this._usPerFrame)
 
-    _sfpTrace('_feedWindow → manager.feed', {
+    _sfpTrace('_feedWindow → manager.feed (burst)', {
       N,
       feedStart,
-      windowEnd,
+      lowWater,
+      highWater,
+      burstFrames: highWater - feedStart + 1,
       startUs,
       endUs,
       previousWatermark: this._feedWatermark,
     })
 
     this._manager.feed([startUs, endUs])
-    this._feedWatermark = windowEnd
+    this._feedWatermark = highWater
   }
 
   private _clearIdleTimer(): void {

@@ -53,6 +53,13 @@ export interface RendererOptions {
    * Default false.
    */
   preserveDrawingBuffer?: boolean
+  /**
+   * Debug bisection: replace VideoLayer with FrameProbeLayer, which paints a
+   * synthetic colour + "frame N" text per clip instead of decoded media. Used
+   * to isolate the clock/render/draw path from the decode/cache pipeline.
+   * Default false.
+   */
+  probeLayer?: boolean
 }
 
 /**

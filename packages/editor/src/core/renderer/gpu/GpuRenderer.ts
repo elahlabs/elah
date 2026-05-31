@@ -11,7 +11,7 @@
  *   - Imports only from scene.ts, renderer/types, and browser APIs.
  */
 
-import type { Scene } from '../../resolver/scene'
+import type { ActiveVideoClip, Scene } from '../../resolver/scene'
 import type { Renderer } from '../types'
 import {
   GpuRendererDebugPanel,
@@ -19,7 +19,8 @@ import {
 } from './debug/GpuRendererDebugPanel'
 import { GpuDebugCounters } from './debug/GpuDebugCounters'
 import { VideoLayer } from './layers/VideoLayer'
-import type { LayerContext } from './layers/types'
+import { FrameProbeLayer } from './layers/FrameProbeLayer'
+import type { Layer, LayerContext } from './layers/types'
 import { RenderGraph } from './RenderGraph'
 import { TexturePool } from './TexturePool'
 import type { RendererOptions, Viewport } from './types'
@@ -88,11 +89,21 @@ export class GpuRenderer implements Renderer {
           }
         : undefined)
 
-    this._videoLayer = new VideoLayer(this._texturePool, videoLayerArg)
+    // Bisection mode: FrameProbeLayer paints synthetic colour + frame text,
+    // bypassing all decode/cache so the clock→render→draw path can be tested
+    // in isolation. _videoLayer stays null so the debug panel reports no decode
+    // metrics (it has none in this mode).
+    let videoLayer: Layer<ActiveVideoClip>
+    if (this._options.probeLayer) {
+      videoLayer = new FrameProbeLayer()
+    } else {
+      this._videoLayer = new VideoLayer(this._texturePool, videoLayerArg)
+      videoLayer = this._videoLayer
+    }
 
     this._renderGraph = new RenderGraph()
     this._renderGraph.registerLayer(
-      this._videoLayer,
+      videoLayer,
       (scene) => scene.videos,
       (item) => item.id,
       (item) => item.zIndex,
@@ -126,13 +137,6 @@ export class GpuRenderer implements Renderer {
 
     const gl = this._glCtx.gl
     if (!gl) return
-
-    if (scene.frame !== this._lastScene?.frame) {
-      // console.log(
-      //   `[GPU-TRACE] GpuRenderer.render  frame=${scene.frame}  videoClips=${scene.videos.length}`,
-      //   scene.videos.map((v) => ({ id: v.id, sourceFrame: v.sourceFrame, src: v.src.split('/').pop() })),
-      // )
-    }
 
     const now = performance.now()
     if (this._lastRenderTime > 0) {

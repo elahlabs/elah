@@ -45,6 +45,10 @@ export function GpuPreview({ debugMode = false, style }: GpuPreviewProps) {
     if (!container) return
 
     const renderer = new GpuRenderer({
+      // BISECTION PROBE: bypass VideoLayer/decode and paint synthetic
+      // colour + "frame N" per clip, to test the clock→render→draw path
+      // in isolation. Set true to restore the synthetic probe.
+      probeLayer: false,
       demuxerFactory: createPlaygroundDemuxerFactory(),
       maxOutstandingDecodes: 4,
       // Required so window.__GPU__.readCanvas() (Playwright golden-pixel tests

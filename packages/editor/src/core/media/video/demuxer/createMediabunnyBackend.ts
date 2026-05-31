@@ -45,6 +45,25 @@
 
 import type { DemuxerBackend } from './MediabunnyDemuxer'
 
+/**
+ * Toggle in DevTools: `window.__DEMUX_DEBUG__ = true` to trace which branch
+ * packets() takes (seek / contiguous / keyframe) and every packet timestamp it
+ * yields. This is the decisive trace for diagnosing decode-stream gaps between
+ * consecutive feed windows. Off by default.
+ */
+function _demuxTrace(msg: string, data?: Record<string, unknown>): void {
+  if (
+    typeof globalThis !== 'undefined' &&
+    (globalThis as { __DEMUX_DEBUG__?: boolean }).__DEMUX_DEBUG__
+  ) {
+    if (data) {
+      console.log(`[DEMUX-TRACE] ${msg}`, data)
+    } else {
+      console.log(`[DEMUX-TRACE] ${msg}`)
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Structural interface — only the mediabunny subset used here is typed.
 // The editor package never imports the real 'mediabunny' types so that
@@ -218,11 +237,13 @@ export function createMediabunnyBackend(
       // preserve the forward-progress invariant documented above.
       let yieldFirstUnconditionally = false
 
+      let branch: 'seek' | 'contiguous' | 'keyframe'
       if (_seekPacket !== null) {
         // Explicit seek — use the cached keyframe packet.
         pkt = _seekPacket
         _seekPacket = null
         _nextPacket = null
+        branch = 'seek'
       } else if (
         _nextPacket !== null &&
         _lastEndSec !== null &&
@@ -232,18 +253,39 @@ export function createMediabunnyBackend(
         pkt = _nextPacket
         _nextPacket = null
         yieldFirstUnconditionally = true
+        branch = 'contiguous'
       } else {
         // Non-contiguous and no seek packet: seek to nearest keyframe.
         pkt = await _sink!.getKeyPacket(startSec)
         _nextPacket = null
+        branch = 'keyframe'
       }
 
+      _demuxTrace('packets() start', {
+        branch,
+        startSec,
+        endSec,
+        lastEndSec: _lastEndSec,
+        contiguityGap:
+          _lastEndSec !== null ? startSec - _lastEndSec : null,
+        firstPktSec: pkt ? pkt.timestamp : null,
+      })
+
+      const yielded: number[] = []
       while (pkt !== null && (yieldFirstUnconditionally || pkt.timestamp < endSec)) {
         if (_disposed) break
+        yielded.push(pkt.timestamp)
         yield pkt.toEncodedVideoChunk()
         yieldFirstUnconditionally = false
         pkt = await _sink!.getNextPacket(pkt)
       }
+
+      _demuxTrace('packets() done', {
+        branch,
+        yieldedCount: yielded.length,
+        yieldedSec: yielded,
+        nextPktSec: pkt ? pkt.timestamp : null,
+      })
 
       // Store the packet that follows the last yielded one for the next contiguous call.
       _nextPacket = pkt
