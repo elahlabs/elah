@@ -49,10 +49,19 @@ function makeFallbackBitmap(frame: VideoFrame): ImageBitmap {
   } as unknown as ImageBitmap
 }
 
-/** Default frame copier: real `createImageBitmap` in browsers, stub in jsdom. */
+/**
+ * Default frame copier: real `createImageBitmap` in browsers, stub in jsdom.
+ *
+ * `imageOrientation: 'flipY'` is load-bearing. The GL context uploads with
+ * `UNPACK_FLIP_Y_WEBGL = true` to correct a raw `VideoFrame`'s top-left pixel
+ * origin. An `ImageBitmap` created with the default orientation resolves to the
+ * opposite handedness, so the same upload flip would render the frame upside
+ * down. Flipping Y here during the copy cancels that out, matching the original
+ * VideoFrame path exactly. See WebGLContext._initGLState.
+ */
 const defaultFrameConverter: (frame: VideoFrame) => Promise<ImageBitmap> =
   typeof createImageBitmap !== 'undefined'
-    ? (frame) => createImageBitmap(frame)
+    ? (frame) => createImageBitmap(frame, { imageOrientation: 'flipY' })
     : (frame) => Promise.resolve(makeFallbackBitmap(frame))
 const DEFAULT_IDLE_TIMEOUT_MS = 5_000
 // A genuine decoder stall = no new decoded frame for this many consecutive

@@ -134,3 +134,5 @@ export {
 export { useResolvedScene } from './editor/useResolvedScene'
 export { AssetPanel } from './editor/AssetPanel'
 export type { AssetPanelProps } from './editor/AssetPanel'
+export { Preview } from './editor/Preview'
+export type { PreviewProps, PreviewHandle } from './editor/Preview'

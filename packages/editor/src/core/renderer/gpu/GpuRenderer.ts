@@ -24,6 +24,7 @@ import type { Layer, LayerContext } from './layers/types'
 import { RenderGraph } from './RenderGraph'
 import { TexturePool } from './TexturePool'
 import type { RendererOptions, Viewport } from './types'
+import { computeContainViewport } from './viewport'
 import { WebGLContext } from './WebGLContext'
 
 export class GpuRenderer implements Renderer {
@@ -149,7 +150,21 @@ export class GpuRenderer implements Renderer {
 
     const renderStart = now
 
+    // Clear the WHOLE framebuffer first (gl.clear ignores the viewport), so the
+    // letterbox/pillarbox margins are painted with the clear colour.
     this._glCtx.clear()
+
+    // Fit the project-aspect stage into the canvas and restrict drawing to that
+    // inner rect. The unit quad maps clip-space [-1,1] → this viewport, so the
+    // video fills the project aspect and the cleared margins become the bars.
+    const canvas = this._glCtx.canvas
+    const fit = computeContainViewport(
+      canvas.width,
+      canvas.height,
+      scene.stage.width,
+      scene.stage.height,
+    )
+    gl.viewport(fit.x, fit.y, fit.width, fit.height)
 
     const ctx = this._buildLayerContext(scene, gl)
     this._renderGraph.execute(scene, ctx)

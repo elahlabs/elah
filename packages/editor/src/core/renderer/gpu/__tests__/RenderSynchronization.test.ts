@@ -63,6 +63,7 @@ function createMockGL(): WebGL2RenderingContext {
     uniformMatrix3fv: vi.fn(),
     activeTexture: vi.fn(),
     drawArrays: vi.fn(),
+    viewport: vi.fn(),
   }
   return gl as unknown as WebGL2RenderingContext
 }
@@ -220,6 +221,24 @@ describe('Render synchronization', () => {
       renderer.render(makeScene(frame, [{ ...clip, sourceFrame: frame }]))
       expect(tracking.getCurrentCalls).toEqual([frame])
     }
+
+    renderer.dispose()
+  })
+
+  it('letterboxes: gl.viewport is set to the project-aspect inner rect', () => {
+    const renderer = mountRenderer()
+
+    // Canvas is 1280×720 (16:9). Render a portrait 1080×1920 (9:16) stage →
+    // pillarbox: full height, narrower centred width.
+    const portraitScene: Scene = {
+      ...makeScene(0, [makeClip()]),
+      stage: { width: 1080, height: 1920 },
+    }
+    renderer.render(portraitScene)
+
+    const expectedWidth = Math.round(720 * (1080 / 1920)) // 405
+    const expectedX = Math.round((1280 - expectedWidth) / 2)
+    expect(mockGL.viewport).toHaveBeenCalledWith(expectedX, 0, expectedWidth, 720)
 
     renderer.dispose()
   })

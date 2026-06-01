@@ -68,6 +68,7 @@ function createMockGL(): WebGL2RenderingContext {
     uniformMatrix3fv: vi.fn(),
     activeTexture: vi.fn(),
     drawArrays: vi.fn(),
+    viewport: vi.fn(),
   } as unknown as WebGL2RenderingContext
 }
 

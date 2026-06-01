@@ -269,10 +269,10 @@ sequenceDiagram
             VL->>VFP: setPlayhead(sourceFrame) [fire-and-forget]
             VL->>VFP: getCurrent(sourceFrame) [sync]
             alt cache hit
-                VFP-->>VL: VideoFrame (borrowed)
-                VL->>VT: upload(gl, frame)
+                VFP-->>VL: ImageBitmap/VideoFrame (borrowed)
+                VL->>VT: upload(gl, frame) [borrow]
                 VT->>GL: texImage2D
-                VT->>VT: frame.close() (always)
+                Note over VT: never closes — cache owns the frame
             else cache miss
                 VFP-->>VL: null
                 Note over VL: keeps last texture content → no flicker
@@ -288,7 +288,7 @@ Key invariants this enforces:
 
 - `render()` never awaits.
 - `render()` never throws on a missed frame — it draws the last upload.
-- Frame ownership: every frame passed to `upload()` is closed exactly once.
+- Frame ownership: `upload()` borrows; the `FrameCache` is the sole closer (§10).
 
 ---
 
@@ -335,8 +335,10 @@ Cache rules (see [`FrameCache.ts`](../media/video/FrameCache.ts)):
 - `put` transfers ownership to the cache.
 - `get` returns a **borrowed** reference — callers must not close it.
 - When full, the entry furthest from the current pivot is evicted and closed.
-- `VideoTexture.upload` is the only consumer that closes a borrowed frame —
-  and only in a `finally` block, so the rule still holds end-to-end.
+- The cache is the **only** thing that closes a cached frame (on evict / clear /
+  dispose). `VideoTexture.upload` borrows and never closes (§10). On the real
+  decode path cached frames are `ImageBitmap` copies; the decoded `VideoFrame` is
+  closed earlier, in `onFrame`, before it is ever cached (§6.5).
 
 ### 6.1 Decode pipeline (PR-02 — push-based)
 
@@ -370,16 +372,17 @@ sequenceDiagram
     DMX-->>VDM: EncodedVideoChunk stream
     VDM->>VDM: decoder.decode(chunk) [no per-frame flush]
     VDM->>VDM: VideoDecoder.output fires → onFrame callback
-    VDM-->>SFP: onFrame(VideoFrame, sourceFrameIdx) [ownership transferred]
-    SFP->>FC: cache.put(sourceFrameIdx, frame) [I10: FC owns now]
+    VDM-->>SFP: onFrame(VideoFrame, sourceFrameIdx)
+    SFP->>SFP: createImageBitmap(frame) then frame.close() [§6.5 copy-and-close]
+    SFP->>FC: cache.put(sourceFrameIdx, bitmap) [FC owns the ImageBitmap]
 
     Note over VL,DMX: Next render tick (~1-3 ticks after setPlayhead)
     VL->>SFP: setPlayhead(sourceFrame+1) [contiguous → no reset]
     VL->>SFP: getCurrent(sourceFrame)
     SFP->>FC: cache.get(sourceFrame)
-    FC-->>SFP: VideoFrame (borrowed)
-    SFP-->>VL: VideoFrame
-    VL->>VL: VideoTexture.upload → frame.close() in finally [I10]
+    FC-->>SFP: ImageBitmap (borrowed)
+    SFP-->>VL: ImageBitmap
+    VL->>VL: VideoTexture.upload [borrow; never closes — §10]
 ```
 
 ### 6.2 Blob-resolve step (Phase 1 Real Playback)
@@ -454,13 +457,13 @@ sequenceDiagram
     SFP->>CMB: feed([startµs, endµs])
     CMB->>MB: sink.getNextPacket → EncodedVideoChunk
     SFP->>SFP: VideoDecoder.decode [no per-frame flush]
-    SFP->>SFP: onFrame(VideoFrame) → cache.put(frame, VideoFrame)
+    SFP->>SFP: onFrame → createImageBitmap + frame.close() → cache.put(idx, bitmap)
 
     Note over GR,VT: next RAF tick (~1-3 ticks later)
     GR->>VL: draw(scene)
     VL->>SFP: setPlayhead(frame) [contiguous → no reset]
-    VL->>SFP: getCurrent(frame) → VideoFrame (cache hit)
-    VL->>VT: upload(VideoFrame) → gl.texImage2D [frame.close() in finally]
+    VL->>SFP: getCurrent(frame) → ImageBitmap (cache hit)
+    VL->>VT: upload(ImageBitmap) → gl.texImage2D [borrow; never closes]
     VT-->>GR: texture bound
     GR->>GR: gl.drawArrays → pixels on canvas
 ```
@@ -509,11 +512,11 @@ Decoder's shelf (≈16 slots):
  keep ~16 open  →  shelf full  →  decoder can't decode  →  FREEZE
 ```
 
-### What the code does TODAY (the bug) ❌
+### What the code USED to do (the bug that was fixed) ❌
 
-The `FrameCache` stores the **raw book** and only returns it much later, on
-eviction. But the cache is sized at 30 while only ~14 frames ever decode, so
-**eviction never fires → no book is ever returned → the shelf fills → freeze.**
+The `FrameCache` stored the **raw book** and only returned it much later, on
+eviction. But the cache was sized at 30 while only ~14 frames ever decode, so
+**eviction never fired → no book was ever returned → the shelf filled → freeze.**
 
 ```mermaid
 flowchart LR
@@ -529,10 +532,10 @@ flowchart LR
     class BUG bad
 ```
 
-👉 **The breaking arrow is `cache.put(📕)`** — the cache holds the *book itself*.
-That is the one line the fix changes.
+👉 **The breaking arrow was `cache.put(📕)`** — the cache held the *book itself*.
+That was the one line the fix changed.
 
-### The fix: photocopy the book, return the original immediately ✅
+### The fix (shipped): photocopy the book, return the original immediately ✅
 
 `createImageBitmap(frame)` makes a **photocopy** on plain paper. The photocopy
 (`ImageBitmap`) is yours forever and costs the decoder **nothing**. So we copy,
@@ -562,17 +565,23 @@ flowchart LR
 eviction"* to *"**right now**, the instant we've photocopied it."* That single
 move is what unfreezes playback.
 
-### Knock-on simplification (a decision you'll make during the fix)
+### Knock-on simplification (also shipped)
 
-Today [`VideoLayer.draw`](./gpu/layers/VideoLayer.ts) calls `frame.clone()`
-before upload, because **two owners** both think they must close the frame: the
-cache **and** `VideoTexture.upload`'s `finally`. Cloning is a smell that says
-*"nobody agreed who owns this."* Once the cache holds a photocopy that only
-**it** owns, we delete the clone and make `upload()` simply **borrow**. The whole
-pipeline collapses to one sentence:
+[`VideoLayer.draw`](./gpu/layers/VideoLayer.ts) used to call `frame.clone()`
+before upload, because **two owners** both thought they must close the frame: the
+cache **and** `VideoTexture.upload`'s `finally`. Cloning was a smell that said
+*"nobody agreed who owns this."* Now the cache holds a photocopy that only **it**
+owns, the clone is gone, and `upload()` simply **borrows**. The whole pipeline
+collapses to one sentence:
 
 > **The FrameCache owns every cached frame and is the only thing that closes it.
 > Everyone else borrows and never closes.**
+
+Implementation: the copy-and-close happens in
+[`StreamingFrameProducer`](../media/video/StreamingFrameProducer.ts)
+`onFrame → _copyAndCache`; the cache is `FrameCache<ImageBitmap>`;
+[`VideoTexture.upload`](./gpu/VideoTexture.ts) accepts `VideoFrame | ImageBitmap`
+and never closes its argument.
 
 ---
 
@@ -784,32 +793,38 @@ sequenceDiagram
 
 ## 10. Frame ownership — single rule, end-to-end
 
-> ⚠️ **This section describes the CURRENT (pre-fix) design — and the
-> `VideoTexture.upload … finally close` arrow below is the source of the freeze
-> bug.** The "two owners + clone" model is being replaced by copy-and-close; see
-> **§6.5** for the plain-English why and the target flow. After the fix, the
-> single rule becomes: *the FrameCache is the only owner and the only closer;
-> everyone else borrows.*
+> ✅ **Copy-and-close shipped.** The old "two owners + clone" model is gone. The
+> `FrameCache` is now the **single owner** and the **only closer** of every cached
+> frame; everyone else borrows and never closes. See **§6.5** for the why.
 
-This is the one rule that, if violated, leaks GPU memory.
+This is the one rule that, if violated, leaks GPU memory or freezes playback.
+
+On the real decode path the cache holds **`ImageBitmap`** copies — the decoded
+`VideoFrame` is closed inside `onFrame` the instant the copy exists, so it never
+reaches the cache or the renderer. On the synthetic dev path the cache holds
+`VideoFrame`s directly (no pool pressure there). Either way the rule is the same:
 
 ```mermaid
 flowchart LR
-    A[Source: Synthetic paint<br/>or VideoDecoder.output] -->|new VideoFrame| FC
-    FC[FrameCache<br/>OWNS frames] -->|borrow via get| VL[VideoLayer.draw]
-    VL -->|hand off to| VT[VideoTexture.upload]
-    VT -->|finally close| X((frame.close))
+    A[VideoDecoder.output] -->|VideoFrame| ONF[onFrame]
+    ONF -->|createImageBitmap| COPY[ImageBitmap copy]
+    ONF -->|frame.close → return pool slot| Xd((VideoFrame closed<br/>in onFrame))
+    COPY -->|cache.put| FC[FrameCache<br/>SOLE OWNER]
+    FC -->|borrow via get| VL[VideoLayer.draw]
+    VL -->|borrow, never close| VT[VideoTexture.upload]
 
-    FC -.LRU evict.-> X
+    FC -.LRU evict.-> X((bitmap.close))
     FC -.dispose / clear.-> X
 
     classDef owner fill:#143,stroke:#3a3
     class FC owner
 ```
 
-Every arrow into `X` happens **exactly once per frame**, and they are mutually
-exclusive: the cache stops owning a frame the moment it is given to
-`VideoTexture.upload`, and the upload always closes it in `finally`.
+The only thing that closes a **cached** frame is the `FrameCache` itself, on
+eviction / clear / dispose — exactly once. `VideoTexture.upload` and
+`VideoLayer.draw` only read the borrowed frame; neither closes it. The decoded
+`VideoFrame` is a separate lifetime, closed in `onFrame` before it is ever cached
+(this is what keeps the decoder's output pool from filling — see §6.5).
 
 ---
 
