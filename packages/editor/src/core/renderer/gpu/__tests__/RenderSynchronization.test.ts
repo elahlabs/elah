@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveVideoClip, Scene } from '../../../resolver/scene'
-import type { VideoFrameProvider } from '../VideoFrameProvider'
+import type { VideoFrameProvider } from '../../../media/video'
 
 // ---------------------------------------------------------------------------
 // WebGL + DOM stubs
@@ -63,6 +63,7 @@ function createMockGL(): WebGL2RenderingContext {
     uniformMatrix3fv: vi.fn(),
     activeTexture: vi.fn(),
     drawArrays: vi.fn(),
+    viewport: vi.fn(),
   }
   return gl as unknown as WebGL2RenderingContext
 }
@@ -123,17 +124,20 @@ function makeClip(overrides: Partial<ActiveVideoClip> = {}): ActiveVideoClip {
 }
 
 function mockFrame(sourceFrame = 0): VideoFrame {
-  return {
+  const frame = {
     displayWidth: 640,
     displayHeight: 360,
     timestamp: sourceFrame * (1_000_000 / 30),
     close: vi.fn(),
-  } as unknown as VideoFrame
+    // VideoLayer.draw() clones cached frames before upload — mirror that.
+    clone: vi.fn(() => mockFrame(sourceFrame)),
+  }
+  return frame as unknown as VideoFrame
 }
 
 function createTrackingProvider() {
   const getCurrentCalls: number[] = []
-  const requestFrameCalls: number[] = []
+  const setPlayheadCalls: number[] = []
   const cache = new Map<number, VideoFrame>()
 
   const provider: VideoFrameProvider = {
@@ -141,15 +145,14 @@ function createTrackingProvider() {
       getCurrentCalls.push(sourceFrame)
       return cache.get(sourceFrame) ?? null
     },
-    requestFrame(sourceFrame: number) {
-      requestFrameCalls.push(sourceFrame)
-      if (!cache.has(sourceFrame)) {
-        cache.set(sourceFrame, mockFrame(sourceFrame))
-      }
-    },
-    prefetch(from: number, count: number) {
-      for (let i = 0; i < count; i++) {
-        provider.requestFrame(from + i)
+    setPlayhead(sourceFrame: number, opts?: { lookaheadFrames?: number }) {
+      setPlayheadCalls.push(sourceFrame)
+      const lookahead = opts?.lookaheadFrames ?? 8
+      for (let i = 0; i <= lookahead; i++) {
+        const f = sourceFrame + i
+        if (!cache.has(f)) {
+          cache.set(f, mockFrame(f))
+        }
       }
     },
     markIdle: vi.fn(),
@@ -157,7 +160,7 @@ function createTrackingProvider() {
     dispose: vi.fn(),
   }
 
-  return { provider, getCurrentCalls, requestFrameCalls, cache }
+  return { provider, getCurrentCalls, setPlayheadCalls, cache }
 }
 
 // ---------------------------------------------------------------------------
@@ -194,7 +197,7 @@ describe('Render synchronization', () => {
     return renderer
   }
 
-  it('render() at frame 5 requests sourceFrame 5 from provider', () => {
+  it('render() at frame 5 calls setPlayhead(5) on provider', () => {
     const renderer = mountRenderer()
     const clip = makeClip({ sourceFrame: 5 })
     const scene = makeScene(5, [clip])
@@ -202,7 +205,7 @@ describe('Render synchronization', () => {
     renderer.render(scene)
 
     expect(tracking.getCurrentCalls).toContain(5)
-    expect(tracking.requestFrameCalls).toContain(5)
+    expect(tracking.setPlayheadCalls).toContain(5)
 
     renderer.dispose()
   })
@@ -213,11 +216,29 @@ describe('Render synchronization', () => {
 
     for (let frame = 0; frame <= 10; frame++) {
       tracking.getCurrentCalls.length = 0
-      tracking.requestFrameCalls.length = 0
+      tracking.setPlayheadCalls.length = 0
 
       renderer.render(makeScene(frame, [{ ...clip, sourceFrame: frame }]))
       expect(tracking.getCurrentCalls).toEqual([frame])
     }
+
+    renderer.dispose()
+  })
+
+  it('letterboxes: gl.viewport is set to the project-aspect inner rect', () => {
+    const renderer = mountRenderer()
+
+    // Canvas is 1280×720 (16:9). Render a portrait 1080×1920 (9:16) stage →
+    // pillarbox: full height, narrower centred width.
+    const portraitScene: Scene = {
+      ...makeScene(0, [makeClip()]),
+      stage: { width: 1080, height: 1920 },
+    }
+    renderer.render(portraitScene)
+
+    const expectedWidth = Math.round(720 * (1080 / 1920)) // 405
+    const expectedX = Math.round((1280 - expectedWidth) / 2)
+    expect(mockGL.viewport).toHaveBeenCalledWith(expectedX, 0, expectedWidth, 720)
 
     renderer.dispose()
   })
@@ -243,13 +264,15 @@ describe('Render synchronization', () => {
     renderer.render(makeScene(0, [{ ...clip, sourceFrame: 0 }]))
 
     tracking.getCurrentCalls.length = 0
-    tracking.requestFrameCalls.length = 0
+    tracking.setPlayheadCalls.length = 0
     tracking.cache.clear()
 
     renderer.render(makeScene(60, [{ ...clip, sourceFrame: 60 }]))
 
     expect(tracking.getCurrentCalls).toEqual([60])
-    expect(tracking.requestFrameCalls).toEqual([60])
+    // Frame 60 must be the first setPlayhead call on the jump.
+    expect(tracking.setPlayheadCalls[0]).toBe(60)
+    expect(tracking.setPlayheadCalls).not.toContain(0) // no stale frame 0
     expect(tracking.cache.has(0)).toBe(false)
 
     renderer.dispose()

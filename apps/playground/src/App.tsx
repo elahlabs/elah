@@ -9,13 +9,14 @@ import {
   usePlaybackStore,
   useSelectionStore,
   useResolvedScene,
+  useMediaLibraryStore,
   splitClipAtPlayhead,
   type TimelineRef,
 } from '@elah/editor'
 
 const FPS = 30
 const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
-const SHOW_SCENE_DEBUG = new URLSearchParams(window.location.search).has('debug')
+const SHOW_SCENE_DEBUG = true
 
 function ResolvedSceneDebug() {
   const scene = useResolvedScene()
@@ -78,24 +79,50 @@ export default function App() {
   const addVideoClip = () => {
     const e = engine()
     if (!e) return
-    const tracks = e.getProject().tracks.filter((t) => t.kind === 'video')
-    if (tracks.length === 0) {
-      alert('Add a video track first')
+
+    // Use the most recently imported video asset so the clip has a real src.
+    // Without a src, the resolver drops the clip and the canvas stays black.
+    const mediaState = useMediaLibraryStore.getState()
+    const videoAsset = mediaState.order
+      .map((id) => mediaState.assets[id])
+      .reverse()
+      .find((a) => a?.kind === 'video')
+    if (!videoAsset) {
+      alert('Import a video file from the Media panel first')
       return
     }
-    const track = tracks[0]
+
+    let videoTracks = e.getProject().tracks.filter((t) => t.kind === 'video')
+    // Auto-create a video track if none exist — don't make the user click a
+    // separate button just to place a clip.
+    if (videoTracks.length === 0) {
+      e.addTrack('video')
+      videoTracks = e.getProject().tracks.filter((t) => t.kind === 'video')
+    }
+    console.log(
+      '[addVideoClip] videoTracks:', videoTracks.length,
+      '| asset:', videoAsset.name,
+      '| duration:', videoAsset.durationSec.toFixed(2) + 's',
+    )
+    const track = videoTracks[0]
     const existing = e.getClipsOnTrack(track.id)
     const startFrame =
       existing.length > 0
         ? existing[existing.length - 1].startFrame +
         existing[existing.length - 1].durationFrames
         : 0
+    const durationFrames =
+      videoAsset.durationSec > 0
+        ? Math.round(videoAsset.durationSec * FPS)
+        : FPS * 3
     e.addClip({
       trackId: track.id,
       type: 'video',
-      name: `Clip ${existing.length + 1}`,
+      name: videoAsset.name,
       startFrame,
-      durationFrames: FPS * 3, // 3 seconds
+      durationFrames,
+      src: videoAsset.src,
+      assetId: videoAsset.id,
     })
   }
 
@@ -260,18 +287,23 @@ export default function App() {
             </div>
           </div>
 
-          {/* Asset panel + timeline */}
+          {/* Main work area: preview on top, asset panel + timeline below */}
           <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
             <AssetPanel style={{ width: 220, flexShrink: 0 }} />
-            <Timeline
-              ref={timelineRef}
-              fps={FPS}
-              style={{ flex: 1, minWidth: 0 }}
-            />
-          </div>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, minHeight: 0 }}>
+              {/* GPU Preview — above the timeline, fills available vertical space */}
+              <GpuPreview debugMode style={{ flex: 1, minHeight: 240 }} />
 
-          {SHOW_SCENE_DEBUG && <ResolvedSceneDebug />}
-          <GpuPreview debugMode />
+              {SHOW_SCENE_DEBUG && <ResolvedSceneDebug />}
+
+              {/* Timeline — fixed height at the bottom */}
+              <Timeline
+                ref={timelineRef}
+                fps={FPS}
+                style={{ height: 300, flexShrink: 0, minWidth: 0 }}
+              />
+            </div>
+          </div>
         </div>
       </EditorProvider>
     </>

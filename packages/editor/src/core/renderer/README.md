@@ -59,6 +59,55 @@ See [`gpu/README.md`](./gpu/README.md) for the full GPU pipeline architecture an
 
 ---
 
+## Wiring a real decoder (Phase 1)
+
+By default `GpuRenderer` uses `SyntheticVideoFrameProvider` (browser) or
+`MockVideoFrameProvider` (jsdom). To enable real `VideoDecoder`-backed decode via
+the mediabunny library:
+
+```ts
+import * as mediabunny from 'mediabunny'
+import { GpuRenderer, resolveTimeline, createMediabunnyBackend } from '@elah/editor'
+
+const renderer = new GpuRenderer({
+  maxTextures: 16,
+  // Factory is called once per unique src; each call returns a fresh backend.
+  demuxerFactory: () => createMediabunnyBackend(mediabunny, {
+    // Optional: provide a Blob/File directly to avoid a fetch round-trip.
+    // Omitting this falls back to fetch(src).blob() which works for object URLs.
+    // blobResolver: (src) => myFileMap.get(src) ?? fetch(src).then(r => r.blob()),
+  }),
+  maxOutstandingDecodes: 4, // cap in-flight decodes per provider (default 4)
+})
+renderer.mount(containerEl)
+renderer.render(resolveTimeline(currentFrame, project))
+```
+
+`mediabunny` is NOT a required dependency of `@elah/editor`. The package stays
+lean; callers opt in. Omitting the `demuxerFactory` falls back to
+`SyntheticVideoFrameProvider` (visual development mode — no media files required).
+
+For the playground, the wiring is in `apps/playground/src/createPlaygroundDemuxerFactory.ts`.
+
+For tests or custom backends, inject any `DemuxerFactory`:
+
+```ts
+import { GpuRenderer } from '@elah/editor'
+import type { DemuxerBackend, DemuxerFactory } from '@elah/editor'
+
+const myBackend: DemuxerBackend = {
+  async open(src) { /* ... */ },
+  getConfig() { return { codec: 'vp8', codedWidth: 640, codedHeight: 360 } },
+  async *packets([startUs, endUs]) { /* yield EncodedVideoChunk objects */ },
+  async seekToKeyframe(timeUs) { /* ... */ },
+  dispose() { /* ... */ },
+}
+
+const renderer = new GpuRenderer({ demuxerFactory: () => myBackend })
+```
+
+---
+
 ## Adding a new renderer
 
 1. Create a sub-folder (e.g. `dom/`).

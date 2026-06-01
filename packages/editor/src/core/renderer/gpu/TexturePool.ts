@@ -103,6 +103,14 @@ export class TexturePool {
     this._allocated = 0
   }
 
+  /**
+   * Test-only accessor: number of textures currently acquired (not in free list).
+   * Useful for asserting that all textures are returned to the pool after playback.
+   */
+  getLeasedCount(): number {
+    return this._allocated - this._lruFree.length
+  }
+
   /** Delete all textures in the free list and reset the pool. */
   dispose(gl: WebGL2RenderingContext): void {
     for (const entry of this._lruFree) {

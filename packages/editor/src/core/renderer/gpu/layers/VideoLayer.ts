@@ -4,7 +4,7 @@
  * Architecture:
  *  - One VideoFrameProvider per unique src (shared across clips)
  *  - One VideoTexture per clip id
- *  - Synchronous draw(); async frame scheduling via provider.requestFrame()
+ *  - Synchronous draw(); async frame scheduling via provider.setPlayhead()
  *
  * VideoLayer talks ONLY to VideoFrameProvider, TexturePool/VideoTexture,
  * and ShaderProgram. No decoder, PlaybackEngine, TimelineEngine, or React.
@@ -20,7 +20,8 @@ import { VideoTexture } from '../VideoTexture'
 import {
   createVideoFrameProvider,
   type VideoFrameProvider,
-} from '../VideoFrameProvider'
+  type VideoFrameProviderDeps,
+} from '../../../media/video'
 import type { Layer, LayerContext } from './types'
 
 /** Per-src provider entry with reference counting. */
@@ -150,6 +151,8 @@ export type VideoFrameProviderFactory = (src: string) => VideoFrameProvider
 export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _pool: TexturePool
   private readonly _providerFactory: VideoFrameProviderFactory
+  /** Decode deps forwarded to createVideoFrameProvider when no providerFactory override. */
+  private readonly _deps: VideoFrameProviderDeps | undefined
 
   private _program: ShaderProgram | null = null
   private _vao: WebGLVertexArrayObject | null = null
@@ -159,13 +162,21 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _textures = new Map<string, VideoTexture>()
   private readonly _srcByItemId = new Map<string, string>()
   private readonly _contentSizeByItemId = new Map<string, { width: number; height: number }>()
+  /** Last sourceFrame logged per clip — prevents flooding at 60 fps on a frozen playhead. */
+  private readonly _lastLoggedSourceFrameByItemId = new Map<string, number>()
 
   constructor(
     pool: TexturePool,
-    providerFactory: VideoFrameProviderFactory = createVideoFrameProvider,
+    providerFactoryOrDeps?: VideoFrameProviderFactory | VideoFrameProviderDeps,
   ) {
     this._pool = pool
-    this._providerFactory = providerFactory
+    if (typeof providerFactoryOrDeps === 'function') {
+      this._providerFactory = providerFactoryOrDeps
+      this._deps = undefined
+    } else {
+      this._deps = providerFactoryOrDeps
+      this._providerFactory = (src: string) => createVideoFrameProvider(src, this._deps)
+    }
   }
 
   acquire(item: ActiveVideoClip, ctx: LayerContext): void {
@@ -178,10 +189,13 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
 
     let entry = this._providers.get(item.src)
     if (!entry) {
-      entry = {
-        provider: this._providerFactory(item.src),
-        refCount: 0,
-      }
+      // When real decode deps are available, merge the scene fps so the
+      // decoder computes frame timestamps correctly for any project frame rate.
+      // Custom providerFactory overrides (tests) are used as-is.
+      const provider = this._deps
+        ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
+        : this._providerFactory(item.src)
+      entry = { provider, refCount: 0 }
       this._providers.set(item.src, entry)
     }
 
@@ -198,6 +212,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._textures.delete(itemId)
     this._srcByItemId.delete(itemId)
     this._contentSizeByItemId.delete(itemId)
+    this._lastLoggedSourceFrameByItemId.delete(itemId)
 
     const entry = this._providers.get(src)
     if (!entry) return
@@ -217,19 +232,26 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     if (!texture || !entry) return
 
     const { provider } = entry
+
+    // Push the playhead before reading the cache so the producer can fill
+    // the lookahead window for this tick and upcoming ticks.
+    provider.setPlayhead(item.sourceFrame)
     const frame = provider.getCurrent(item.sourceFrame)
 
     if (frame !== null) {
+      // Single-owner rule: the FrameCache owns this frame and closes it on
+      // eviction. We only BORROW it here — VideoTexture.upload() never closes it,
+      // so there is no clone and no double-owner. (The cache holds an ImageBitmap
+      // copy on the real decode path; a VideoFrame on the synthetic dev path.)
       const uploaded = texture.upload(ctx.gl, frame)
       if (uploaded) {
-        this._contentSizeByItemId.set(item.id, {
-          width: frame.displayWidth,
-          height: frame.displayHeight,
-        })
+        const width = 'displayWidth' in frame ? frame.displayWidth : frame.width
+        const height = 'displayHeight' in frame ? frame.displayHeight : frame.height
+        this._contentSizeByItemId.set(item.id, { width, height })
       }
-    } else {
-      provider.requestFrame(item.sourceFrame)
     }
+    // On cache miss: setPlayhead() already triggered decode for this frame.
+    // The provider keeps the last uploaded texture content — no flicker.
 
     if (!texture.hasContent || !this._program || !this._vao) {
       return
@@ -323,6 +345,26 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     return this._textures.size
   }
 
+  /** Number of unique src providers currently alive (including idle). */
+  getProviderCount(): number {
+    return this._providers.size
+  }
+
+  /**
+   * Snapshot of `src → decoderState` for all live providers.
+   * Used by the debug panel. Returns `{}` when no providers are alive.
+   */
+  getDecoderStates(): Record<string, string> {
+    const out: Record<string, string> = {}
+    for (const [src, entry] of this._providers) {
+      const provider = entry.provider as VideoFrameProvider & { decoderState?: string }
+      if (typeof provider.decoderState === 'string') {
+        out[src] = provider.decoderState
+      }
+    }
+    return out
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -338,4 +380,5 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     }
     this._vao = vao
   }
+
 }

@@ -11,7 +11,7 @@
  *   - Imports only from scene.ts, renderer/types, and browser APIs.
  */
 
-import type { Scene } from '../../resolver/scene'
+import type { ActiveVideoClip, Scene } from '../../resolver/scene'
 import type { Renderer } from '../types'
 import {
   GpuRendererDebugPanel,
@@ -19,10 +19,12 @@ import {
 } from './debug/GpuRendererDebugPanel'
 import { GpuDebugCounters } from './debug/GpuDebugCounters'
 import { VideoLayer } from './layers/VideoLayer'
-import type { LayerContext } from './layers/types'
+import { FrameProbeLayer } from './layers/FrameProbeLayer'
+import type { Layer, LayerContext } from './layers/types'
 import { RenderGraph } from './RenderGraph'
 import { TexturePool } from './TexturePool'
 import type { RendererOptions, Viewport } from './types'
+import { computeContainViewport } from './viewport'
 import { WebGLContext } from './WebGLContext'
 
 export class GpuRenderer implements Renderer {
@@ -43,6 +45,7 @@ export class GpuRenderer implements Renderer {
   private _lastRenderTime = 0
   private _fps = 0
   private _lastRenderDurationMs = 0
+  private _noOpTicks = 0
 
   constructor(options: RendererOptions = {}) {
     this._options = options
@@ -58,6 +61,7 @@ export class GpuRenderer implements Renderer {
     this._glCtx = new WebGLContext({
       onLost: () => this._handleContextLost(),
       onRestore: () => this._handleContextRestored(),
+      preserveDrawingBuffer: this._options.preserveDrawingBuffer,
     })
 
     this._glCtx.setClearColor(...clearColor)
@@ -73,14 +77,34 @@ export class GpuRenderer implements Renderer {
     this._texturePool = new TexturePool({
       maxTextures: this._options.maxTextures,
     })
-    this._videoLayer = new VideoLayer(
-      this._texturePool,
-      this._options.providerFactory,
-    )
+
+    // If a providerFactory override is set, use it directly (tests / headless).
+    // Otherwise build deps from demuxerFactory/decoderFactory/maxOutstandingDecodes
+    // so that VideoLayer creates DecoderBackedVideoFrameProvider for real decode.
+    const videoLayerArg = this._options.providerFactory
+      ?? (this._options.demuxerFactory
+        ? {
+            demuxerFactory: this._options.demuxerFactory,
+            decoderFactory: this._options.decoderFactory,
+            maxOutstanding: this._options.maxOutstandingDecodes,
+          }
+        : undefined)
+
+    // Bisection mode: FrameProbeLayer paints synthetic colour + frame text,
+    // bypassing all decode/cache so the clock→render→draw path can be tested
+    // in isolation. _videoLayer stays null so the debug panel reports no decode
+    // metrics (it has none in this mode).
+    let videoLayer: Layer<ActiveVideoClip>
+    if (this._options.probeLayer) {
+      videoLayer = new FrameProbeLayer()
+    } else {
+      this._videoLayer = new VideoLayer(this._texturePool, videoLayerArg)
+      videoLayer = this._videoLayer
+    }
 
     this._renderGraph = new RenderGraph()
     this._renderGraph.registerLayer(
-      this._videoLayer,
+      videoLayer,
       (scene) => scene.videos,
       (item) => item.id,
       (item) => item.zIndex,
@@ -106,7 +130,11 @@ export class GpuRenderer implements Renderer {
   render(scene: Scene): void {
     if (!this._mounted || !this._glCtx || !this._renderGraph) return
     if (this._glCtx.isLost) return
-    if (scene === this._lastScene) return
+    if (scene === this._lastScene) {
+      this._lastRenderDurationMs = 0
+      this._noOpTicks++
+      return
+    }
 
     const gl = this._glCtx.gl
     if (!gl) return
@@ -122,13 +150,35 @@ export class GpuRenderer implements Renderer {
 
     const renderStart = now
 
+    // Clear the WHOLE framebuffer first (gl.clear ignores the viewport), so the
+    // letterbox/pillarbox margins are painted with the clear colour.
     this._glCtx.clear()
+
+    // Fit the project-aspect stage into the canvas and restrict drawing to that
+    // inner rect. The unit quad maps clip-space [-1,1] → this viewport, so the
+    // video fills the project aspect and the cleared margins become the bars.
+    const canvas = this._glCtx.canvas
+    const fit = computeContainViewport(
+      canvas.width,
+      canvas.height,
+      scene.stage.width,
+      scene.stage.height,
+    )
+    gl.viewport(fit.x, fit.y, fit.width, fit.height)
 
     const ctx = this._buildLayerContext(scene, gl)
     this._renderGraph.execute(scene, ctx)
 
     this._lastRenderDurationMs = performance.now() - renderStart
     this._lastScene = scene
+  }
+
+  /**
+   * Returns the canvas element used for rendering, or null if not mounted.
+   * Intended for dev tools and Playwright tests (window.__GPU__.readCanvas).
+   */
+  getCanvas(): HTMLCanvasElement | null {
+    return this._glCtx?.canvas ?? null
   }
 
   /** Enable or disable the development-only DOM debug overlay. */
@@ -171,6 +221,7 @@ export class GpuRenderer implements Renderer {
     this._lastRenderTime = 0
     this._fps = 0
     this._lastRenderDurationMs = 0
+    this._noOpTicks = 0
   }
 
   /** Exposed for tests: underlying video layer instance. */
@@ -223,7 +274,11 @@ export class GpuRenderer implements Renderer {
       textureCount: this._videoLayer?.getTextureCount() ?? 0,
       cacheHitRatio: counters.cacheHitRatio,
       renderDurationMs: this._lastRenderDurationMs,
-      decoderStates: {},
+      decoderStates: this._videoLayer?.getDecoderStates() ?? {},
+      droppedFrames: counters.droppedFrames,
+      outstandingDecodes: counters.outstandingDecodes,
+      activeProviders: this._videoLayer?.getProviderCount() ?? 0,
+      noOpTicks: this._noOpTicks,
     }
   }
 

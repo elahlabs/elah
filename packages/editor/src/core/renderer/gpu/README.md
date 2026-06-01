@@ -5,9 +5,11 @@ WebGL2 GPU renderer — the concrete implementation of the `Renderer` interface 
 End-to-end pipeline:
 
 ```
-Scene → RenderGraph → VideoLayer → VideoFrameProvider → VideoTexture
+Scene → RenderGraph → VideoLayer → core/media/video (VideoFrameProvider) → VideoTexture
      → TexturePool → ShaderProgram → WebGL draw → canvas output
 ```
+
+Decode lives in [`../../media/video/`](../../media/video/) — this folder is compositing only.
 
 ---
 
@@ -22,9 +24,6 @@ gpu/
 ├── ShaderProgram.ts         ← compile/link/uniform helper
 ├── TexturePool.ts           ← LRU texture allocator
 ├── VideoTexture.ts          ← per-clip texture handle
-├── VideoFrameProvider.ts    ← Mock + Synthetic providers; default factory
-├── VideoDecoderManager.ts   ← per-source decoder state machine
-├── FrameCache.ts            ← ring buffer of decoded VideoFrames
 ├── types.ts                 ← Viewport, RendererOptions, SceneDiff
 ├── shaders/
 │   ├── quad.vert.ts         ← textured quad vertex shader
@@ -33,9 +32,6 @@ gpu/
 │   ├── types.ts             ← Layer<TItem> + LayerContext interfaces
 │   ├── VideoLayer.ts        ← ActiveVideoClip → texture → draw
 │   └── TestLayer.ts         ← solid-colour quads (debug renderer only)
-├── demuxer/
-│   ├── MediabunnyDemuxer.ts ← lazy mediabunny adapter (real backend stub)
-│   └── mediabunny.d.ts
 ├── debug/
 │   ├── GpuRendererDebugPanel.ts ← production renderer DOM overlay
 │   ├── DebugGpuRenderer.ts      ← isolated debug pipeline using TestLayer
@@ -45,20 +41,31 @@ gpu/
 │   ├── playground.ts            ← `loadDebugScenario()` manual harness
 │   ├── scenarios.ts             ← validation scenarios A–E
 │   └── types.ts
-└── __tests__/                   ← 18 vitest suites (162 tests)
+└── __tests__/                   ← compositing-only vitest suites
+
+core/media/video/              ← decode pipeline (moved out of gpu/)
+├── VideoFrameProvider.ts      ← Mock + Synthetic + factory (push interface)
+├── VideoDecoderManager.ts     ← per-source decoder: feed/reset/onFrame/drain
+├── FrameCache.ts              ← forward-oriented cache of decoded VideoFrames
+├── StreamingFrameProducer.ts  ← push-based VideoFrameProvider implementation
+├── demuxer/                   ← MediabunnyDemuxer + createMediabunnyBackend
+└── __tests__/                   ← decode + demuxer vitest suites
 ```
 
 ---
 
 ## Architectural boundaries
 
-This entire folder may only import from:
+This folder may only import from:
 
 - `core/resolver/scene.ts` (the `Scene` shape and clip types)
 - `core/types` (shared value types: `Transform`, etc.)
+- `core/media/video` (public barrel or `VideoFrameProvider` type module only)
 - Standard browser APIs (`WebGL2RenderingContext`, `VideoDecoder`, `OffscreenCanvas`, …)
 
-**Forbidden imports:** `Project`, `Track`, `Clip`, `TimelineEngine`, `PlaybackEngine`, any Zustand store, any React package. Violations break the architecture's isolation guarantee and will cause circular dependency errors.
+**Forbidden imports:** `Project`, `Track`, `Clip`, `TimelineEngine`, `PlaybackEngine`, any Zustand store, any React package, deep imports into `core/media/video/**` beyond the barrel/`VideoFrameProvider` module. Violations break the architecture's isolation guarantee.
+
+Import rules are enforced by [`core/media/__tests__/ImportBoundary.test.ts`](../../media/__tests__/ImportBoundary.test.ts).
 
 ---
 
@@ -134,32 +141,20 @@ Per-clip handle backed by `TexturePool`. `upload(gl, frame)` is the single `texI
 
 Implements `Layer<ActiveVideoClip>`:
 
-- One `VideoFrameProvider` **per unique `src`** (shared across clips, ref-counted).
+- One `VideoFrameProvider` **per unique `src`** (shared across clips, ref-counted). Providers come from [`core/media/video`](../../media/video/).
 - One `VideoTexture` **per clip id**.
-- `draw()` is synchronous: tries `provider.getCurrent(sourceFrame)`; uploads on hit, schedules `provider.requestFrame(sourceFrame)` on miss. Keeps the previous texture content to prevent flicker.
+- `draw()` is synchronous: calls `provider.setPlayhead(sourceFrame)` (fire-and-forget, drives internal decode), then tries `provider.getCurrent(sourceFrame)`; uploads on hit, keeps the previous texture content to prevent flicker on miss.
 - Issues a quad draw with `uTransform` (built from `transform.x/y/scale/anchor/rotation`) and `uOpacity`.
 - `notifyContextLost()` nulls the shader program / VAO so `_ensurePipeline()` rebuilds on the next acquire.
 
-## `VideoFrameProvider.ts`
+## Decode pipeline (`core/media/video/`)
 
-Sync `getCurrent()` + async `requestFrame()` contract. Two concrete providers:
+See [`../../media/video/README.md`](../../media/video/README.md) and [`../../media/README.md`](../../media/README.md).
 
-- **`MockVideoFrameProvider`** — `setTimeout(0)` based, returns non-drawable frame stubs. Used in jsdom/vitest where `OffscreenCanvas`/`VideoFrame` are unavailable.
-- **`SyntheticVideoFrameProvider`** — paints a unique colour + frame number on an `OffscreenCanvas` and wraps it in a real `VideoFrame`. Drawable in the browser without mediabunny — the basis for visual validation.
-
-`createVideoFrameProvider(src)` is the default factory; it feature-detects `OffscreenCanvas` + `VideoFrame` and picks the synthetic provider when available.
-
-## `VideoDecoderManager.ts`
-
-One `VideoDecoder` + one `MediabunnyDemuxer` per unique source URL. State machine: `Idle → Opening → Ready → Decoding → Seeking → Draining → Idle` (`Errored` on failure, `Disposed` terminal). Frames emitted by `VideoDecoder.output` are buffered and matched by timestamp inside `_decodeFrame`. Survives context loss unchanged (no GL objects).
-
-## `FrameCache.ts`
-
-Bounded map of decoded `VideoFrame`s keyed by source frame number. Evicts lowest source frame when over capacity; closes evicted frames. Owns every frame until a consumer (e.g. `VideoTexture.upload`) closes it.
-
-## `demuxer/MediabunnyDemuxer.ts`
-
-Thin adapter that lazy-imports `mediabunny`. Exposes `open(src)` → `{ config, packets(timeRange), seekToKeyframe(timeUs), dispose() }`. Tests inject `DemuxerFactory`; the real backend is currently a stub (`createDefaultBackend` throws).
+- **`VideoFrameProvider`** — push-based interface: `setPlayhead(N)` (fire-and-forget) + sync `getCurrent(N)`; Mock, Synthetic, and `StreamingFrameProducer` implementations.
+- **`VideoDecoderManager`** — one `VideoDecoder` + demuxer per unique source URL.
+- **`FrameCache`** — bounded map of decoded `VideoFrame`s keyed by source frame number.
+- **`demuxer/`** — Mediabunny adapter + `createMediabunnyBackend`.
 
 ---
 
@@ -183,28 +178,23 @@ All optional, importable without affecting the production pipeline.
 
 ## Tests
 
-Suites under `__tests__/` (all mock GL + DOM):
+**Compositing suites** under `gpu/__tests__/` (mock GL + DOM):
 
 | File | Focus |
 |---|---|
-| `GpuRenderer` is exercised indirectly via | `RenderSynchronization`, `PlaybackStress`, `DebugGpuRenderer` |
+| `GpuRenderer` is exercised indirectly via | `RenderSynchronization`, `ErrorHandling`, `DebugGpuRenderer` |
 | `RenderSynchronization.test.ts` | sourceFrame correctness, seek recovery, idempotent render, context-loss re-acquire |
-| `PlaybackStress.test.ts` | 200-render spam, clip enter/leave balance, pool exhaustion, seek spam |
 | `RenderGraph.test.ts` | zIndex order, diff/acquire/release |
 | `VideoLayer.test.ts` | provider sharing, transform/opacity uniforms, draw synchrony |
-| `VideoFrameProvider.test.ts` | sync getCurrent / async requestFrame / lifecycle |
-| `VideoDecoderManager.test.ts` | state machine + coalescing + seek-cancel |
-| `DecodeScheduling.test.ts` | provider/manager interaction under scrubbing |
-| `MediabunnyDemuxer.test.ts` | adapter contract |
-| `FrameCache.test.ts` | LRU eviction + borrow semantics |
-| `VideoFrameOwnership.test.ts` | frame.close() called exactly once per upload/evict |
 | `ErrorHandling.test.ts` | errored decoder, pool exhaustion, isolation |
-| `PerformanceMetrics.test.ts` | counters + `__GPU_DEBUG__` |
+| `GoldenFrameHash.test.ts` | draw call sequence stability |
 | `CanvasValidation.test.ts` | helpers (`captureFrame`, `hashFrame`, `samplePixel`, `expectPixelApprox`) |
 | `TestLayer.test.ts` | debug quad lifecycle |
 | `DebugGpuRenderer.test.ts` | debug renderer lifecycle |
 
-Helpers in `__tests__/helpers/`: `mockDemuxer.ts`, `trackingFrame.ts`, `canvasValidation.ts`.
+**Decode suites** under [`core/media/video/__tests__/`](../../media/video/__tests__/) include `VideoFrameProvider`, `VideoDecoderManager`, `FrameCache`, demuxer, and stress tests (`PlaybackStress`, `RapidSeekStress`, …).
+
+Helpers: `gpu/__tests__/helpers/` (`trackingFrame.ts`, `canvasValidation.ts`); `media/video/__tests__/helpers/mockDemuxer.ts`.
 
 ---
 

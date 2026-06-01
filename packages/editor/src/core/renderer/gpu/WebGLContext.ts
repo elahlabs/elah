@@ -36,6 +36,12 @@ export interface WebGLContextOptions {
   alpha?: boolean
   /** Power preference hint passed to getContext; default 'default'. */
   powerPreference?: WebGLPowerPreference
+  /**
+   * Retain the WebGL drawing buffer across compositing operations.
+   * Required for host code that calls `gl.readPixels()` outside the RAF tick
+   * (dev tools, golden-pixel tests, frame recording). Default false.
+   */
+  preserveDrawingBuffer?: boolean
 }
 
 export class WebGLContext {
@@ -70,7 +76,7 @@ export class WebGLContext {
       antialias: false,
       depth: false,
       stencil: false,
-      preserveDrawingBuffer: false,
+      preserveDrawingBuffer: options.preserveDrawingBuffer ?? false,
       powerPreference: options.powerPreference ?? 'default',
     }
 
@@ -205,6 +211,10 @@ export class WebGLContext {
     // Premultiplied-alpha blending: standard for video/image compositing.
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+
+    // Flip texture rows so VideoFrame pixel origin (top-left) matches WebGL
+    // convention (bottom-left). Applied once; covers all texImage2D calls.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
     // Clear to opaque black.
     gl.clearColor(0, 0, 0, 1)

@@ -4,7 +4,7 @@
  * Guarded for non-browser environments. No React or store coupling.
  */
 
-import type { DecoderState } from '../VideoDecoderManager'
+import type { DecoderState } from '../../../media/video/VideoDecoderManager'
 import type { CounterSnapshot } from './GpuDebugCounters'
 
 export interface GpuDebugState {

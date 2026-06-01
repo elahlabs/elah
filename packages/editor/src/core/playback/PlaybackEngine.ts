@@ -11,6 +11,8 @@
  *  - destroy() must be called when the engine is no longer needed (stops RAF)
  */
 
+import { trace } from '../debug/trace'
+
 export interface PlaybackSnapshot {
   currentFrame: number
   isPlaying: boolean
@@ -133,6 +135,7 @@ export class PlaybackEngine {
 
   seek(frame: number): void {
     const next = Math.max(0, Math.floor(frame))
+    trace('SET_PLAYHEAD', { target: next, fromAnchor: this.anchorFrame, playing: this._playing })
     // Note: NO same-frame early return. Always bump the epoch so loop-to-start
     // and re-seek-to-same-frame retrigger one-shot effects.
     this.anchorFrame = next
@@ -232,6 +235,7 @@ export class PlaybackEngine {
   }
 
   private notify(): void {
+    trace('PLAYHEAD', { frame: this.currentFrame, epoch: this._epoch, playing: this._playing })
     const snapshot: PlaybackSnapshot = {
       currentFrame: this.currentFrame,
       isPlaying: this._playing,

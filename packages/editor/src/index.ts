@@ -74,9 +74,23 @@ export type { Renderer } from './core/renderer/types'
 export { GpuRenderer } from './core/renderer/gpu/GpuRenderer'
 export type { RendererOptions } from './core/renderer/gpu/types'
 
-// --- Core: media ---
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/media'
-export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/media'
+// --- Core: renderer / debug counters (read-only metrics for tests + diagnostics) ---
+export { GpuDebugCounters } from './core/renderer/gpu/debug/GpuDebugCounters'
+export type { CounterSnapshot } from './core/renderer/gpu/debug/GpuDebugCounters'
+
+// --- Core: renderer / demuxer (optional integration surface) ---
+// Import mediabunny separately in your app; this file never depends on it.
+export { createMediabunnyBackend, isMediabunnyCompatible } from './core/media/video/demuxer/createMediabunnyBackend'
+export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './core/media/video/demuxer/createMediabunnyBackend'
+export type { DemuxerBackend, DemuxerFactory } from './core/media/video/demuxer/MediabunnyDemuxer'
+
+// --- Core: media (frame producers) ---
+export type { VideoFrameProvider, VideoFrameProviderDeps } from './core/media/video'
+export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from './core/media/video'
+
+// --- Core: assets ---
+export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/assets'
+export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/assets'
 
 // --- Core: stores (low-level; prefer the hooks below) ---
 export { useTracksStore } from './core/stores/tracks.store'
@@ -120,3 +134,5 @@ export {
 export { useResolvedScene } from './editor/useResolvedScene'
 export { AssetPanel } from './editor/AssetPanel'
 export type { AssetPanelProps } from './editor/AssetPanel'
+export { Preview } from './editor/Preview'
+export type { PreviewProps, PreviewHandle } from './editor/Preview'

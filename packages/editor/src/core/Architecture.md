@@ -39,7 +39,7 @@ core  ←  timeline  ←  editor
 | `core/resolver/` | Pure, deterministic frame resolver. `resolveTimeline(frame, project) → Scene`. No DOM, no React. | `resolveTimeline`, `Scene` (and sub-types) |
 | `core/renderer/` | `Renderer` interface contract — added PR-06. No implementation yet. Implementations arrive in PR-10 (`DomRenderer`). | `Renderer` |
 | `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore` |
-| `core/media/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
+| `core/assets/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
 | `core/elements/` | Clip factory functions. Pure constructors, no side-effects. | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip` |
 | `core/track/` | Track factory. | `createTrack` |
 | `core/actions/` | Compound operations (multi-step mutations + engine calls). Currently: `splitClipAtPlayhead`. | `splitClipAtPlayhead` |
@@ -202,7 +202,7 @@ The engine is a typed event emitter. Listeners registered with `.on(event, handl
 
 ---
 
-## 8. `MediaLibrary` (`core/media/`)
+## 8. `MediaLibrary` (`core/assets/`)
 
 In-memory registry of source assets. Not yet persisted (IndexedDB/OPFS arrives in Phase 3).
 

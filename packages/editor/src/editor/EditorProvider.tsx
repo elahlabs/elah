@@ -4,6 +4,7 @@ import { PlaybackEngine } from '../core/playback/PlaybackEngine'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { usePlaybackStore } from '../core/stores/playback.store'
 import { EditorContext } from '../core/editor-context'
+import { installTraceGlobal, trace } from '../core/debug/trace'
 
 export interface EditorProviderProps {
   fps: number
@@ -79,6 +80,7 @@ export function EditorProvider({
   // before subscribing. Without this, a persisted loop=true or playbackRate=2
   // would be invisible to the engine until the user changed them again.
   useEffect(() => {
+    installTraceGlobal()
     const s0 = usePlaybackStore.getState()
     playback.setPlaybackRate(s0.playbackRate)
     playback.setLoop(s0.loop)
@@ -89,11 +91,14 @@ export function EditorProvider({
         if (state.isPlaying) playback.play()
         else playback.pause()
       }
-      if (
-        state.currentFrameEpoch !== prev.currentFrameEpoch &&
-        state.currentFrame !== playback.currentFrame
-      ) {
-        playback.seek(state.currentFrame)
+      if (state.currentFrameEpoch !== prev.currentFrameEpoch) {
+        const willSeek = state.currentFrame !== playback.currentFrame
+        trace('SEEK_GATE', {
+          storeFrame: state.currentFrame,
+          engineFrame: playback.currentFrame,
+          willSeek,
+        })
+        if (willSeek) playback.seek(state.currentFrame)
       }
       if (state.playbackRate !== prev.playbackRate) {
         playback.setPlaybackRate(state.playbackRate)

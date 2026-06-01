@@ -128,6 +128,18 @@ export const Timeline = memo(
             console.warn('[timeline] split-at-playhead failed:', result.reason)
           }
         }
+
+        if (e.code === 'ArrowRight' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault()
+          const { currentFrame, setCurrentFrame } = usePlaybackStore.getState()
+          setCurrentFrame(currentFrame + 1)
+        }
+
+        if (e.code === 'ArrowLeft' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault()
+          const { currentFrame, setCurrentFrame } = usePlaybackStore.getState()
+          setCurrentFrame(Math.max(0, currentFrame - 1))
+        }
       }
 
       window.addEventListener('keydown', handleKey)
