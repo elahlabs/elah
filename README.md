@@ -27,20 +27,29 @@ Three goals shape every decision:
 | `PlaybackEngine` (RAF clock + subscribe) | ✅ Stable |
 | `resolveTimeline(frame, project) → Scene` (pure resolver) | ✅ Stable, solo/mute/zIndex correct |
 | Timeline UI (`Timeline`, `Ruler`, `TrackRow`, `ClipBlock`, `Playhead`) | ✅ Working |
-| Media import + library store | ✅ Working (PR-07) |
-| Media gallery UI + drag-drop | ✅ Working (PR-09) |
-| Preview renderer (DOM) | 🟡 Designed, not built |
-| Text overlays + transforms | 🟡 Schema ready, no UI |
-| Export pipeline | ⚪ Not started |
+| Media import + library store | ✅ Working |
+| Media gallery UI + drag-drop | ✅ Working |
+| **WebGL2 GPU renderer** (`GpuRenderer`, `RenderGraph`, `VideoLayer`) | ✅ Working — textured-quad compositing, context-loss recovery |
+| **Real video playback** (WebCodecs decode + mediabunny demux) | ✅ Working — push-based `StreamingFrameProducer`, copy-and-close frame cache |
+| **`<Preview>` component** (mounts renderer + drives RAF) | ✅ Working — library component in `@elah/editor` |
+| **Project aspect ratio / letterbox** | ✅ Working — `gl.viewport` contain-fit, pillar/letterbox bars |
+| Text overlays + transforms | 🟡 Schema ready, renderer layer next |
+| Audio playback | ⚪ Next |
+| Export pipeline | ⚪ Next (same renderer → `OffscreenCanvas` + `VideoEncoder`) |
 | Effects / transitions / animations | ⚪ Not started |
 
-See [`ROADMAP.md`](./ROADMAP.md) for the sequenced PR plan.
+See [`ROADMAP.md`](./ROADMAP.md) for the sequenced PR plan and
+[`packages/editor/src/core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md)
+for the GPU render + decode pipeline in depth.
+
+> **Single-video-track + single-audio-track is the current v1 constraint** — the
+> renderer and decode pipeline are not yet designed for multi-track compositing.
 
 ---
 
 ## Architecture (one paragraph)
 
-A single immutable `Project` tree owns all timeline data. The framework-agnostic `TimelineEngine` is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events. Time is **integer frames**; never floating-point seconds. A standalone `PlaybackEngine` owns the RAF loop and emits `(frame, isPlaying)` snapshots; React is a downstream consumer via Zustand mirrors. A pure function `resolveTimeline(frame, project) → Scene` determines what is visible and audible at any given frame — this is the only thing renderers consume. Any renderer (DOM, Canvas, WebGL, WebGPU, or a WASM exporter) implements the same `Renderer` interface and reads only the `Scene`.
+A single immutable `Project` tree owns all timeline data. The framework-agnostic `TimelineEngine` is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events. Time is **integer frames**; never floating-point seconds. A standalone `PlaybackEngine` owns the RAF loop and emits `(frame, isPlaying)` snapshots; React is a downstream consumer via Zustand mirrors. A pure function `resolveTimeline(frame, project) → Scene` determines what is visible and audible at any given frame — this is the only thing renderers consume. The shipped renderer is a **WebGL2 `GpuRenderer`** that turns each `Scene` into a sorted list of textured-quad draws; video frames come from a push-based WebCodecs decode pipeline (`StreamingFrameProducer`) that decodes ahead of the playhead and **copies each frame to an `ImageBitmap`** before caching it, so the decoder's hardware output pool never starves. Any renderer (the live GPU one, a future DOM/Canvas one, or a WASM exporter) implements the same `Renderer` interface and reads only the `Scene`.
 
 For the full architecture document, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -59,9 +68,11 @@ video-editor/
 └── packages/
     └── editor/                   # @elah/editor SDK
         └── src/
-            ├── core/             # types, engine, playback, resolver, stores, media
+            ├── core/             # types, engine, playback, resolver, stores
+            │   ├── media/        # WebCodecs decode, FrameCache, mediabunny demux
+            │   └── renderer/     # Renderer interface + WebGL2 GpuRenderer, layers
             ├── timeline/         # Timeline, Ruler, TrackRow, ClipBlock, hooks
-            └── editor/           # EditorProvider, AssetPanel, useResolvedScene
+            └── editor/           # EditorProvider, AssetPanel, Preview, useResolvedScene
 docs/
 ├── glossary.md                   # terminology
 ├── references.md                 # study guide for related repos
@@ -134,7 +145,33 @@ function App() {
 }
 ```
 
-To consume the resolver directly (for a preview component or export pipeline):
+### Rendering pixels with `<Preview>`
+
+`<Preview>` mounts the WebGL2 renderer and drives the RAF loop for you. It reads
+the engines from `EditorProvider` context and renders the resolved `Scene` to a
+canvas (letterboxed to the project aspect). You inject a **demuxer factory** so the
+SDK never hard-depends on a specific decode backend:
+
+```tsx
+import { EditorProvider, Preview, createMediabunnyBackend } from '@elah/editor'
+import * as mediabunny from 'mediabunny'
+
+const demuxerFactory = () =>
+  createMediabunnyBackend(mediabunny, {
+    blobResolver: (src) => fetch(src).then((r) => r.blob()),
+  })
+
+function App() {
+  return (
+    <EditorProvider fps={30}>
+      <Preview demuxerFactory={demuxerFactory} style={{ height: 480 }} />
+      {/* timeline, asset panel, transport controls of your choosing */}
+    </EditorProvider>
+  )
+}
+```
+
+To consume the resolver directly (for a custom renderer or export pipeline):
 
 ```ts
 import { resolveTimeline } from '@elah/editor'
