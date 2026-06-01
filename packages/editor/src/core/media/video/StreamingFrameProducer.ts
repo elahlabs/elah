@@ -18,7 +18,7 @@
  * @see architecture.md §6 for the pipeline contract.
  */
 
-import type { VideoFrameProvider } from './VideoFrameProvider'
+import type { ProvidedFrame, VideoFrameProvider } from './VideoFrameProvider'
 import { FrameCache, type FrameCacheHooks } from './FrameCache'
 import { GpuDebugCounters } from '../../renderer/gpu/debug/GpuDebugCounters'
 import { VideoDecoderManager } from './VideoDecoderManager'
@@ -26,16 +26,34 @@ import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
 import type { VideoDecoderFactory } from './VideoDecoderManager'
 
 const DEFAULT_FPS = 30
-// CONFIRMATION EXPERIMENT (decoder pool exhaustion): every decoded VideoFrame
-// held open in the cache pins a slot in the decoder's internal output pool
-// (~16 on typical H.264 hardware). Holding 14+ open exhausts it → decode stalls
-// and flush() hangs (see frame-lifecycle-and-decode-stall.md). Keep the count of
-// outstanding live frames well under the pool: lookahead(4) < cache(8) < pool.
-// Evicted frames are close()d promptly, returning their pool slots. If this
-// sustains playback past frame 16, pool exhaustion is confirmed.
-// PRIOR VALUES: lookahead=16, maxFrames=60.
-const DEFAULT_LOOKAHEAD_FRAMES = 4
-const DEFAULT_MAX_FRAMES = 8
+// Copy-and-close fix: onFrame copies each decoded VideoFrame into an ImageBitmap
+// and closes the VideoFrame immediately, so a cached frame no longer pins a slot
+// in the decoder's internal output pool (~16 on typical H.264 hardware). The
+// cache therefore holds plain memory, not pool slots, and these can be sized for
+// a smooth buffer instead of being bounded by the pool. See
+// frame-lifecycle-and-decode-stall.md and renderer/architecture.md §6.5.
+const DEFAULT_LOOKAHEAD_FRAMES = 16
+const DEFAULT_MAX_FRAMES = 30
+
+/**
+ * Fallback used only when `createImageBitmap` is unavailable (jsdom/vitest).
+ * Returns an ImageBitmap-shaped stub so the decode pipeline and its tests run
+ * without a browser. In a real browser the default converter is the genuine
+ * `createImageBitmap`, which actually copies pixels out of the decoder pool.
+ */
+function makeFallbackBitmap(frame: VideoFrame): ImageBitmap {
+  return {
+    width: frame.displayWidth,
+    height: frame.displayHeight,
+    close() {},
+  } as unknown as ImageBitmap
+}
+
+/** Default frame copier: real `createImageBitmap` in browsers, stub in jsdom. */
+const defaultFrameConverter: (frame: VideoFrame) => Promise<ImageBitmap> =
+  typeof createImageBitmap !== 'undefined'
+    ? (frame) => createImageBitmap(frame)
+    : (frame) => Promise.resolve(makeFallbackBitmap(frame))
 const DEFAULT_IDLE_TIMEOUT_MS = 5_000
 // A genuine decoder stall = no new decoded frame for this many consecutive
 // setPlayhead ticks while the playhead is past the highest decoded frame and we
@@ -77,6 +95,12 @@ export interface StreamingFrameProducerOptions {
   decoderFactory?: VideoDecoderFactory
   /** Optional FrameCache instrumentation hooks. */
   cacheHooks?: FrameCacheHooks
+  /**
+   * Copies a decoded `VideoFrame` into a context-independent `ImageBitmap`.
+   * Defaults to `createImageBitmap` (with a jsdom stub fallback). Injectable so
+   * tests can supply a deterministic copier.
+   */
+  frameConverter?: (frame: VideoFrame) => Promise<ImageBitmap>
 }
 
 export class StreamingFrameProducer implements VideoFrameProvider {
@@ -84,7 +108,8 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   private readonly _fps: number
   private readonly _lookaheadFrames: number
   private readonly _usPerFrame: number
-  private readonly _cache: FrameCache
+  private readonly _cache: FrameCache<ImageBitmap>
+  private readonly _convert: (frame: VideoFrame) => Promise<ImageBitmap>
   private readonly _manager: VideoDecoderManager
 
   private _state: ProviderState = 'active'
@@ -138,8 +163,9 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     this._fps = opts.fps ?? DEFAULT_FPS
     this._lookaheadFrames = opts.lookaheadFrames ?? DEFAULT_LOOKAHEAD_FRAMES
     this._usPerFrame = 1_000_000 / this._fps
+    this._convert = opts.frameConverter ?? defaultFrameConverter
 
-    this._cache = new FrameCache({
+    this._cache = new FrameCache<ImageBitmap>({
       maxFrames: opts.maxFrames ?? DEFAULT_MAX_FRAMES,
       hooks: opts.cacheHooks,
     })
@@ -188,15 +214,25 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       },
     })
 
-    // Route each decoded VideoFrame into the cache (I10: ownership transferred to cache).
-    // Frames that arrive after dispose are closed immediately to prevent leaks.
+    // Copy-and-close (renderer/architecture.md §6.5): the decoder hands us a
+    // VideoFrame that pins one slot in its ~16-slot output pool. We copy the
+    // pixels into an ImageBitmap, close the VideoFrame IMMEDIATELY (returning the
+    // pool slot), and cache the bitmap (plain memory). The cache then owns the
+    // bitmap and closes it on eviction. This is what stops the pool from
+    // exhausting and freezing playback after ~16 frames.
+    //
+    // onFrame is async (createImageBitmap is async) but fire-and-forget — the
+    // VideoDecoder.output callback does not await it.
     this._manager.onFrame = (frame: VideoFrame, sourceFrameIdx: number) => {
+      // Synchronous dispose guard: a frame that arrives after dispose must be
+      // closed right away (never converted/cached).
       if (this._state === 'disposed') {
         frame.close()
         return
       }
 
-      // Gap detector: fires once per missing index, not per RAF.
+      // Gap detector + timestamp read happen BEFORE conversion (they read the
+      // VideoFrame, which we are about to close).
       // rawIndex is the unrounded value — e.g. 3.75 rounds to 4, skipping 3.
       // A pattern of rawIndex = N + 0.75 every 5 frames means fps mismatch
       // (video encoded at fps_v but decoder indexing at fps_p ≠ fps_v).
@@ -210,20 +246,9 @@ export class StreamingFrameProducer implements VideoFrameProvider {
           rawIndex: frame.timestamp / this._usPerFrame,
         })
       }
+      const timestampUs = frame.timestamp
 
-      this._cache.put(sourceFrameIdx, frame)
-      if (sourceFrameIdx > this._highestDecodedFrame) {
-        this._highestDecodedFrame = sourceFrameIdx
-        // Real decode progress — the decoder is alive. Reset the stall counter.
-        this._ticksSinceDecodeAdvance = 0
-      }
-      GpuDebugCounters.cacheSize = this._cache.size
-      _sfpTrace('onFrame → cache.put', {
-        sourceFrameIdx,
-        timestampUs: frame.timestamp,
-        cacheSize: this._cache.size,
-        lastPlayhead: this._lastPlayhead,
-      })
+      void this._copyAndCache(frame, sourceFrameIdx, timestampUs)
     }
 
     this._openPromise = this._manager.open(this._src).catch((err: Error) => {
@@ -258,7 +283,7 @@ export class StreamingFrameProducer implements VideoFrameProvider {
    * Synchronous cache lookup. Returns a borrowed reference or null.
    * Never awaits. Invariant I1.
    */
-  getCurrent(sourceFrame: number): VideoFrame | null {
+  getCurrent(sourceFrame: number): ProvidedFrame | null {
     if (this._state === 'disposed') return null
 
     this._cache.setPivot(sourceFrame)
@@ -571,6 +596,54 @@ export class StreamingFrameProducer implements VideoFrameProvider {
 
     this._manager.feed([startUs, endUs])
     this._feedWatermark = highWater
+  }
+
+  /**
+   * Copy a decoded VideoFrame into an ImageBitmap, close the original to return
+   * its decoder-pool slot, then cache the bitmap. Async and never awaited by the
+   * caller (onFrame). The `finally` closes the frame exactly once whether the
+   * copy succeeds, fails, or we were disposed mid-await.
+   */
+  private async _copyAndCache(
+    frame: VideoFrame,
+    sourceFrameIdx: number,
+    timestampUs: number,
+  ): Promise<void> {
+    let bitmap: ImageBitmap | null = null
+    try {
+      bitmap = await this._convert(frame)
+    } catch (err) {
+      _sfpTrace('onFrame convert FAILED', {
+        sourceFrameIdx,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    } finally {
+      // Return the pool slot the instant the copy exists (or failed). This is
+      // the line that prevents pool exhaustion.
+      frame.close()
+    }
+
+    if (bitmap === null) return // conversion failed — frame already closed
+
+    // Disposed during the await: don't cache; close the orphan bitmap.
+    if (this._state === 'disposed') {
+      bitmap.close()
+      return
+    }
+
+    this._cache.put(sourceFrameIdx, bitmap)
+    if (sourceFrameIdx > this._highestDecodedFrame) {
+      this._highestDecodedFrame = sourceFrameIdx
+      // Real decode progress — the decoder is alive. Reset the stall counter.
+      this._ticksSinceDecodeAdvance = 0
+    }
+    GpuDebugCounters.cacheSize = this._cache.size
+    _sfpTrace('onFrame → cache.put', {
+      sourceFrameIdx,
+      timestampUs,
+      cacheSize: this._cache.size,
+      lastPlayhead: this._lastPlayhead,
+    })
   }
 
   private _clearIdleTimer(): void {

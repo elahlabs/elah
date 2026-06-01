@@ -24,10 +24,18 @@ import { StreamingFrameProducer } from './StreamingFrameProducer'
 import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
 import type { VideoDecoderFactory } from './VideoDecoderManager'
 
+/**
+ * A frame handed to the renderer for upload. Either a raw decoded `VideoFrame`
+ * (Synthetic/Mock dev providers) or an `ImageBitmap` copy (real decode path —
+ * see StreamingFrameProducer). Both are valid `TexImageSource` and both survive
+ * a GL context loss, so the renderer can upload either to a fresh context.
+ */
+export type ProvidedFrame = VideoFrame | ImageBitmap
+
 /** Frame access contract for VideoLayer. */
 export interface VideoFrameProvider {
   /** Synchronous lookup of a cached frame. Returns borrowed reference or null. */
-  getCurrent(sourceFrame: number): VideoFrame | null
+  getCurrent(sourceFrame: number): ProvidedFrame | null
 
   /** Tell the producer where the playhead is. Drives forward decode. */
   setPlayhead(sourceFrame: number, opts?: { lookaheadFrames?: number }): void
@@ -387,6 +395,13 @@ export interface VideoFrameProviderDeps {
   fps?: number
   /** Lookahead window for StreamingFrameProducer. Default 8. */
   lookaheadFrames?: number
+  /**
+   * Copies a decoded `VideoFrame` into a context-independent `ImageBitmap` so the
+   * original frame can be closed immediately, freeing its decoder-pool slot.
+   * Defaults to `createImageBitmap`. Injectable for tests (jsdom has no real
+   * `createImageBitmap`). See StreamingFrameProducer.
+   */
+  frameConverter?: (frame: VideoFrame) => Promise<ImageBitmap>
 }
 
 /**
@@ -408,6 +423,7 @@ export function createVideoFrameProvider(
       lookaheadFrames: deps.lookaheadFrames,
       demuxerFactory: deps.demuxerFactory,
       decoderFactory: deps.decoderFactory,
+      frameConverter: deps.frameConverter,
     })
   }
   if (canUseSyntheticFrames()) {

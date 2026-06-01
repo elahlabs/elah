@@ -4,11 +4,13 @@
  * Owns one `PoolTexture` entry from a shared `TexturePool`. The upload path is
  * the single abstraction over `gl.texImage2D` for video pixels:
  *
- *   upload(gl, frame) → texImage2D → frame.close()
+ *   upload(gl, frame) → texImage2D
  *
- * **Frame ownership:** the caller transfers the `VideoFrame` to this class.
- * `upload()` closes it immediately after the GL upload, regardless of success.
- * Do not close the frame before or after calling `upload()`.
+ * **Frame ownership:** the caller (and ultimately the `FrameCache`) RETAINS
+ * ownership of the frame. `upload()` only reads it for the GL upload and never
+ * closes it — the cache is the single owner and the only thing that closes a
+ * cached frame on eviction. Accepts a `VideoFrame` or an `ImageBitmap`; both are
+ * valid `TexImageSource`.
  *
  * On context loss, call `handleContextLost()` (does not touch the pool — the
  * pool's own handler already cleared all handles). The next `upload()` will
@@ -33,49 +35,46 @@ export class VideoTexture {
   }
 
   /**
-   * Upload pixel data from a decoded `VideoFrame` into the pooled texture.
+   * Upload pixel data from a decoded frame into the pooled texture.
    *
    * Re-acquires from the pool when dimensions change or no texture is held.
-   * Returns `false` if the pool is exhausted; the frame is still closed.
+   * Returns `false` if the pool is exhausted. Borrows the frame — never closes
+   * it (the FrameCache owns and closes cached frames).
    */
-  upload(gl: WebGL2RenderingContext, frame: VideoFrame): boolean {
-    const width = frame.displayWidth
-    const height = frame.displayHeight
+  upload(gl: WebGL2RenderingContext, frame: VideoFrame | ImageBitmap): boolean {
+    const width = 'displayWidth' in frame ? frame.displayWidth : frame.width
+    const height = 'displayHeight' in frame ? frame.displayHeight : frame.height
 
-    try {
-      if (
-        !this._entry
-        || this._entry.width !== width
-        || this._entry.height !== height
-      ) {
-        if (this._entry) {
-          this._pool.release(this._entry)
-          this._entry = null
-        }
-
-        const acquired = this._pool.acquire(gl, width, height, gl.RGBA)
-        if (!acquired) {
-          return false
-        }
-        this._entry = acquired
+    if (
+      !this._entry
+      || this._entry.width !== width
+      || this._entry.height !== height
+    ) {
+      if (this._entry) {
+        this._pool.release(this._entry)
+        this._entry = null
       }
 
-      gl.bindTexture(gl.TEXTURE_2D, this._entry.glTexture)
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        frame as TexImageSource,
-      )
-      gl.bindTexture(gl.TEXTURE_2D, null)
-
-      this._hasContent = true
-      return true
-    } finally {
-      frame.close()
+      const acquired = this._pool.acquire(gl, width, height, gl.RGBA)
+      if (!acquired) {
+        return false
+      }
+      this._entry = acquired
     }
+
+    gl.bindTexture(gl.TEXTURE_2D, this._entry.glTexture)
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      frame as TexImageSource,
+    )
+    gl.bindTexture(gl.TEXTURE_2D, null)
+
+    this._hasContent = true
+    return true
   }
 
   /**

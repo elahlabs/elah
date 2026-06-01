@@ -162,16 +162,17 @@ describe('Error handling', () => {
   })
 
   describe('VideoTexture upload failure', () => {
-    it('returns false and still closes frame when pool exhausted', () => {
+    it('returns false and does NOT close the borrowed frame when pool exhausted', () => {
       const pool = new TexturePool({ maxTextures: 0 })
       const gl = createMockGL()
       const texture = new VideoTexture(pool)
       const frame = createTrackingFrame()
 
-      const result = texture.upload(gl, frame)
+      const result = texture.upload(gl, frame as VideoFrame)
 
       expect(result).toBe(false)
-      expect(frame.closeCount()).toBe(1)
+      // upload() borrows only; the FrameCache owns and closes the frame.
+      expect(frame.closeCount()).toBe(0)
     })
   })
 })

@@ -99,26 +99,27 @@ describe('VideoFrame ownership', () => {
     expect(f10.closeCount()).toBe(0)
   })
 
-  it('VideoTexture.upload() closes frame in finally even on GL error', () => {
+  it('VideoTexture.upload() borrows — does not close the frame on GL error', () => {
     const pool = new TexturePool({ maxTextures: 4 })
     const gl = createMockGL({ texImage2DThrowsOnUpload: true })
     const texture = new VideoTexture(pool)
     const frame = createTrackingFrame()
 
-    expect(() => texture.upload(gl, frame)).toThrow('GL upload failed')
-    expect(frame.closeCount()).toBe(1)
+    expect(() => texture.upload(gl, frame as VideoFrame)).toThrow('GL upload failed')
+    // The FrameCache is the sole owner/closer; upload must NOT close the borrowed frame.
+    expect(frame.closeCount()).toBe(0)
   })
 
-  it('VideoTexture.upload() closes frame after successful upload', () => {
+  it('VideoTexture.upload() borrows — does not close the frame after success', () => {
     const pool = new TexturePool({ maxTextures: 4 })
     const gl = createMockGL()
     const texture = new VideoTexture(pool)
     const frame = createTrackingFrame()
 
-    const result = texture.upload(gl, frame)
+    const result = texture.upload(gl, frame as VideoFrame)
 
     expect(result).toBe(true)
-    expect(frame.closeCount()).toBe(1)
+    expect(frame.closeCount()).toBe(0)
     expect(texture.hasContent).toBe(true)
   })
 

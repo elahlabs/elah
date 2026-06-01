@@ -239,23 +239,15 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     const frame = provider.getCurrent(item.sourceFrame)
 
     if (frame !== null) {
-      // provider.getCurrent() returns a borrowed reference — the FrameCache
-      // retains ownership and is responsible for closing it on eviction.
-      // VideoTexture.upload() consumes (closes) its argument, so we hand it
-      // a cheap reference-clone. Both the cache's original and our clone must
-      // be closed independently; the cache will close on evict/dispose, the
-      // clone is closed in VideoTexture.upload()'s finally block.
-      // Without this clone the cached frame is closed after the first upload
-      // and every subsequent texImage2D fails with
-      //   INVALID_OPERATION: can't texture a closed VideoFrame
-      // leaving the canvas black.
-      const uploadFrame = frame.clone()
-      const uploaded = texture.upload(ctx.gl, uploadFrame)
+      // Single-owner rule: the FrameCache owns this frame and closes it on
+      // eviction. We only BORROW it here — VideoTexture.upload() never closes it,
+      // so there is no clone and no double-owner. (The cache holds an ImageBitmap
+      // copy on the real decode path; a VideoFrame on the synthetic dev path.)
+      const uploaded = texture.upload(ctx.gl, frame)
       if (uploaded) {
-        this._contentSizeByItemId.set(item.id, {
-          width: frame.displayWidth,
-          height: frame.displayHeight,
-        })
+        const width = 'displayWidth' in frame ? frame.displayWidth : frame.width
+        const height = 'displayHeight' in frame ? frame.displayHeight : frame.height
+        this._contentSizeByItemId.set(item.id, { width, height })
       }
     }
     // On cache miss: setPlayhead() already triggered decode for this frame.

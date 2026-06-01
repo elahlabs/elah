@@ -1,8 +1,16 @@
 /**
- * FrameCache — bounded, forward-oriented cache for decoded VideoFrames.
+ * FrameCache — bounded, forward-oriented cache for decoded frames.
  *
- * **Ownership:** FrameCache owns every VideoFrame stored inside it.
- * Evicted and cleared frames always call `frame.close()`.
+ * Generic over the stored frame type `T` (anything with a `close()` method):
+ *  - `FrameCache<ImageBitmap>` — the real decode path (StreamingFrameProducer),
+ *    where decoded `VideoFrame`s are copied to `ImageBitmap`s so they no longer
+ *    pin a slot in the decoder's hardware output pool.
+ *  - `FrameCache<VideoFrame>` (the default) — the Synthetic/Mock dev providers
+ *    and the existing cache tests, unchanged.
+ *
+ * **Ownership:** FrameCache owns every frame stored inside it. Evicted and
+ * cleared frames always call `frame.close()`. It is the *only* thing that closes
+ * a cached frame.
  *
  * **Borrowing:** `get()` returns a borrowed reference only. Callers must NOT
  * close or retain frames across render ticks.
@@ -11,6 +19,11 @@
  * the current pivot is evicted first; pivot defaults to 0 and must be updated
  * via setPivot() before each put during real playback.
  */
+
+/** Minimal contract a cached frame must satisfy: it can be closed. */
+export interface Closeable {
+  close(): void
+}
 
 const DEFAULT_MAX_FRAMES = 30
 
@@ -25,10 +38,10 @@ export interface FrameCacheOptions {
   hooks?: FrameCacheHooks
 }
 
-export class FrameCache {
+export class FrameCache<T extends Closeable = VideoFrame> {
   private readonly _maxFrames: number
   private readonly _hooks: FrameCacheHooks
-  private readonly _frames = new Map<number, VideoFrame>()
+  private readonly _frames = new Map<number, T>()
   private _pivot = 0
 
   constructor(maxFramesOrOptions?: number | FrameCacheOptions) {
@@ -60,13 +73,13 @@ export class FrameCache {
    * without returning content from an unrelated part of the timeline.
    * Do not close the returned frame.
    */
-  get(sourceFrame: number, maxLookback = 0): VideoFrame | null {
+  get(sourceFrame: number, maxLookback = 0): T | null {
     const exact = this._frames.get(sourceFrame)
     if (exact !== undefined) return exact
     if (maxLookback <= 0) return null
 
     let bestKey = sourceFrame - maxLookback - 1
-    let best: VideoFrame | null = null
+    let best: T | null = null
     for (const [key, frame] of this._frames) {
       if (key <= sourceFrame && key > bestKey) {
         bestKey = key
@@ -77,7 +90,7 @@ export class FrameCache {
   }
 
   /** Store a frame. Transfers ownership to the cache. */
-  put(sourceFrame: number, frame: VideoFrame): void {
+  put(sourceFrame: number, frame: T): void {
     const existing = this._frames.get(sourceFrame)
     if (existing) {
       existing.close()

@@ -145,7 +145,12 @@ describe('MediabunnyDemuxer adapter', () => {
     await manager.open('video://webm')
 
     expect(backend.getConfig).toHaveBeenCalled()
-    expect(decoder.lastDecoder.configure).toHaveBeenCalledWith(config)
+    // open() adds optimizeForLatency so the decoder emits frames ASAP (it does
+    // not hold output back for B-frame reordering). See VideoDecoderManager.open.
+    expect(decoder.lastDecoder.configure).toHaveBeenCalledWith({
+      ...config,
+      optimizeForLatency: true,
+    })
     expect(manager.state).toBe('Ready')
   })
 })

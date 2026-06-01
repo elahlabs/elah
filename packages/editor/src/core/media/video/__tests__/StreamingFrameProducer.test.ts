@@ -58,6 +58,53 @@ async function waitForFrames(
 // AC7(a) — 30 contiguous setPlayhead calls → 30 frames in cache, avg <10 ms
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Regression: decode must advance PAST frame 16 with a large cache.
+//
+// The original "freeze after ~18 frames" bug was decoder-pool exhaustion: the
+// cache held raw VideoFrames open, pinning the decoder's ~16-slot output pool,
+// so decode wedged at frame 16. The copy-and-close fix means cached frames are
+// ImageBitmaps (no pool slot), so a 30-frame cache can no longer starve the
+// pool. This test drives well past 16 with maxFrames=30 and asserts frames
+// beyond 16 are actually delivered. See renderer/architecture.md §6.5.
+// ---------------------------------------------------------------------------
+
+describe('Regression: copy-and-close lets decode advance past frame 16', () => {
+  beforeEach(() => { GpuDebugCounters.reset() })
+  afterEach(() => { GpuDebugCounters.reset() })
+
+  it('delivers frames beyond index 16 with maxFrames=30', async () => {
+    const demuxer = makeDemuxer(60)
+    const decoderMock = createMockDecoder()
+
+    const producer = new StreamingFrameProducer({
+      src: 'video://regression.mp4',
+      fps: 30,
+      maxFrames: 30,
+      lookaheadFrames: 16,
+      demuxerFactory: () => demuxer,
+      decoderFactory: decoderMock.factory,
+    })
+
+    await producer.openPromise
+
+    // Drive the playhead contiguously well past the old freeze point.
+    for (let i = 0; i <= 25; i++) {
+      producer.setPlayhead(i)
+      await new Promise(r => setTimeout(r, 5))
+    }
+    await new Promise(r => setTimeout(r, 50))
+
+    // A frame past index 16 must be present in the cache — proof the decoder
+    // never wedged on an exhausted pool.
+    expect(producer.getCurrent(20)).not.toBeNull()
+    expect(producer.state).not.toBe('disposed')
+
+    producer.dispose()
+    expect(producer.cacheSize).toBe(0)
+  })
+})
+
 describe('AC7(a): 30 contiguous setPlayhead calls → frames in cache', () => {
   beforeEach(() => { GpuDebugCounters.reset() })
   afterEach(() => { GpuDebugCounters.reset() })
