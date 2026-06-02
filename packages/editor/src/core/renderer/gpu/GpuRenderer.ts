@@ -20,6 +20,7 @@ import {
 import { GpuDebugCounters } from './debug/GpuDebugCounters'
 import { VideoLayer } from './layers/VideoLayer'
 import { FrameProbeLayer } from './layers/FrameProbeLayer'
+import { TextLayer } from './layers/TextLayer'
 import type { Layer, LayerContext } from './layers/types'
 import { RenderGraph } from './RenderGraph'
 import { TexturePool } from './TexturePool'
@@ -34,6 +35,7 @@ export class GpuRenderer implements Renderer {
   private _renderGraph: RenderGraph | null = null
   private _texturePool: TexturePool | null = null
   private _videoLayer: VideoLayer | null = null
+  private _textLayer: TextLayer | null = null
   private _debugPanel: GpuRendererDebugPanel | null = null
 
   private _container: HTMLElement | null = null
@@ -106,6 +108,16 @@ export class GpuRenderer implements Renderer {
     this._renderGraph.registerLayer(
       videoLayer,
       (scene) => scene.videos,
+      (item) => item.id,
+      (item) => item.zIndex,
+    )
+
+    // Text overlays composite above/below video purely by zIndex — RenderGraph
+    // sorts the global draw list across all registered layers.
+    this._textLayer = new TextLayer()
+    this._renderGraph.registerLayer(
+      this._textLayer,
+      (scene) => scene.texts,
       (item) => item.id,
       (item) => item.zIndex,
     )
@@ -203,6 +215,7 @@ export class GpuRenderer implements Renderer {
     this._renderGraph?.dispose()
     this._renderGraph = null
     this._videoLayer = null
+    this._textLayer = null
 
     const gl = this._glCtx?.gl ?? null
     if (gl && this._texturePool) {
@@ -286,6 +299,7 @@ export class GpuRenderer implements Renderer {
     this._lastScene = null
     this._texturePool?.handleContextLost()
     this._videoLayer?.notifyContextLost()
+    this._textLayer?.notifyContextLost()
     this._renderGraph?.notifyContextLost()
   }
 

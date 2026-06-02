@@ -88,6 +88,10 @@ export type { DemuxerBackend, DemuxerFactory } from './core/media/video/demuxer/
 export type { VideoFrameProvider, VideoFrameProviderDeps } from './core/media/video'
 export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from './core/media/video'
 
+// --- Core: media (audio playback) ---
+export { AudioPlaybackController } from './core/media/audio/AudioPlaybackController'
+export type { AudioPlaybackControllerOptions } from './core/media/audio/AudioPlaybackController'
+
 // --- Core: assets ---
 export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/assets'
 export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/assets'

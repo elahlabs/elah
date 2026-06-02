@@ -94,9 +94,11 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
           : fps * 5,
       )
 
+      // MediaKind is 'video' | 'audio' | 'image' — never 'text', so `src` is
+      // always the right shape. The assertion below collapses the union for TS.
       engine.addClip({
         trackId,
-        type: mediaKindToClipType(asset.kind),
+        type: mediaKindToClipType(asset.kind) as 'video' | 'audio' | 'image',
         name: asset.name,
         startFrame,
         durationFrames,

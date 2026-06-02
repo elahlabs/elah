@@ -235,6 +235,35 @@ describe('resolveTimeline', () => {
     expect(sceneEmpty.texts[0].content).toBe('')
   })
 
+  it('passes text style fields through to the active text clip', () => {
+    const track = makeTrack({ id: 'tt', kind: 'text' })
+    const styled = makeClip({
+      id: 'c-styled',
+      trackId: 'tt',
+      type: 'text',
+      content: 'styled',
+      fontSize: 96,
+      color: '#ff0000',
+      fontFamily: 'Inter',
+      fontWeight: 'bold',
+      textAlign: 'left',
+    })
+    const scene = resolveTimeline(0, makeProject({ tracks: [track], clips: { tt: [styled] } }))
+    const text = scene.texts[0]
+
+    expect(text.fontSize).toBe(96)
+    expect(text.color).toBe('#ff0000')
+    expect(text.fontFamily).toBe('Inter')
+    expect(text.fontWeight).toBe('bold')
+    expect(text.textAlign).toBe('left')
+
+    // Unstyled clip leaves the fields undefined (TextLayer applies defaults).
+    const plain = makeClip({ id: 'c-plain', trackId: 'tt', type: 'text', content: 'x' })
+    const scenePlain = resolveTimeline(0, makeProject({ tracks: [track], clips: { tt: [plain] } }))
+    expect(scenePlain.texts[0].fontSize).toBeUndefined()
+    expect(scenePlain.texts[0].color).toBeUndefined()
+  })
+
   it('image clips follow video solo rules', () => {
     const trackVid = makeTrack({ id: 'tVid', kind: 'video', order: 0, solo: true })
     const trackImg = makeTrack({ id: 'tImg', kind: 'video', order: 1, solo: false })

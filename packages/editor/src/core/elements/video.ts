@@ -1,8 +1,18 @@
-import type { Clip } from '../types'
-import { createClip, type CreateClipOptions } from './base'
+import type { Clip, Transform } from '../types'
+import { createClip } from './base'
 
-export function createVideoClip(
-  options: Omit<CreateClipOptions, 'type'>,
-): Clip {
+export interface CreateVideoClipOptions {
+  trackId: string
+  name?: string
+  startFrame: number
+  durationFrames: number
+  src: string
+  assetId?: string
+  volume?: number
+  opacity?: number
+  transform?: Transform
+}
+
+export function createVideoClip(options: CreateVideoClipOptions): Clip {
   return createClip({ ...options, type: 'video', name: options.name ?? 'Video' })
 }

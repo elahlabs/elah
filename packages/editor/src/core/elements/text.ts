@@ -1,13 +1,20 @@
 import type { Clip } from '../types'
-import { createClip, type CreateClipOptions } from './base'
+import { createClip, type TextClipMetadata } from './base'
 
-export function createTextClip(
-  options: Omit<CreateClipOptions, 'type' | 'src'>,
-): Clip {
+export interface CreateTextClipOptions {
+  trackId: string
+  name?: string
+  startFrame: number
+  durationFrames: number
+  text: TextClipMetadata
+  volume?: number
+  opacity?: number
+}
+
+export function createTextClip(options: CreateTextClipOptions): Clip {
   return createClip({
     ...options,
     type: 'text',
     name: options.name ?? 'Text',
-    content: options.content ?? '',
   })
 }

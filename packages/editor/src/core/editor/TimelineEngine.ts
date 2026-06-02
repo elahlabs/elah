@@ -80,6 +80,10 @@ export class TimelineEngine {
   private batchPrev: Project | null = null
   private batchDescription: string | null = null
 
+  // Snapshot of the project taken when an interactive gesture (previewClip)
+  // begins, so commitInteraction() can record one undo entry for the whole drag.
+  private interactionPrev: Project | null = null
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private listeners = new Map<EngineEvent, Set<(payload: any) => void>>()
 
@@ -208,6 +212,68 @@ export class TimelineEngine {
 
     const clip = this.findClip(clipId)?.clip
     if (clip) this.emit('clip:updated', clip)
+  }
+
+  /**
+   * Live, non-undoable clip mutation for interactive gestures (drag / resize on
+   * the preview canvas). Applies immediately and emits 'change' so the preview
+   * follows the pointer, but records NO history entry. Call commitInteraction()
+   * when the gesture ends to fold every previewClip() since it began into a
+   * single undo step. Without that final call the moves are still applied — they
+   * just won't be individually undoable, which is the intended behaviour for the
+   * intermediate frames of a drag.
+   */
+  previewClip(clipId: string, trackId: string, updates: Partial<Clip>): void {
+    if (this.interactionPrev === null) this.interactionPrev = this.project
+
+    const next = produce(this.project, (draft) =>
+      updateClip(draft, clipId, trackId, updates),
+    )
+    if (next === this.project) return
+
+    this.project = next
+    this.emit('change', this.project)
+    this.emit('clip:updated', this.findClip(clipId)!.clip)
+  }
+
+  /**
+   * Close an interaction opened by previewClip(), recording ONE history entry
+   * spanning the gesture's start → current state. No-op when no preview ran or
+   * the net change was empty (e.g. a click with no drag).
+   */
+  commitInteraction(description = 'Edit clip'): void {
+    const prev = this.interactionPrev
+    if (prev === null) return
+    this.interactionPrev = null
+
+    const next = this.project
+    if (next === prev) return
+
+    this.undoStack.push({ prev, next, description })
+    if (this.undoStack.length > this.maxHistorySize) {
+      this.undoStack.shift()
+    }
+    this.redoStack = []
+
+    this.emit('history:change', {
+      canUndo: this.canUndo(),
+      canRedo: this.canRedo(),
+    })
+  }
+
+  /**
+   * Abandon an interaction opened by previewClip(), restoring the project to its
+   * pre-gesture snapshot. Emits 'change' so the preview snaps back; records no
+   * history. Used for the Escape-to-cancel path of inline text editing.
+   */
+  cancelInteraction(): void {
+    const prev = this.interactionPrev
+    if (prev === null) return
+    this.interactionPrev = null
+    if (this.project !== prev) {
+      this.project = prev
+      this.emit('change', this.project)
+    }
   }
 
   /**
