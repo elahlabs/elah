@@ -11,7 +11,6 @@
  */
 
 import type { ActiveVideoClip } from '../../../resolver/scene'
-import type { Transform } from '../../../types'
 import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
@@ -22,7 +21,20 @@ import {
   type VideoFrameProvider,
   type VideoFrameProviderDeps,
 } from '../../../media/video'
+import { buildDrawTransformMatrix, type DrawRect } from './drawRect'
 import type { Layer, LayerContext } from './types'
+
+// Placement math now lives in ./drawRect (shared with ImageLayer). Re-exported
+// here for back-compat with existing importers (e.g. FrameProbeLayer, tests).
+export {
+  buildTransformMatrixFromRect,
+  resolveTransformRect,
+  resolveDrawRect,
+  buildDrawTransformMatrix,
+} from './drawRect'
+export type { DrawRect } from './drawRect'
+/** @deprecated use DrawRect from ./drawRect */
+export type VideoDrawRect = DrawRect
 
 /** Per-src provider entry with reference counting. */
 interface ProviderEntry {
@@ -30,104 +42,11 @@ interface ProviderEntry {
   refCount: number
 }
 
-/** Pixel rect used to build the transform matrix. */
-export interface VideoDrawRect {
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation: number
-}
-
-/**
- * Build a column-major 3×3 transform matrix mapping the unit quad (0..1,
- * origin top-left) to clip space for a rect at pixel (x,y,w,h) on a stage
- * of size (sw, sh), with optional rotation about the rect centre.
- */
-export function buildTransformMatrixFromRect(
-  rect: VideoDrawRect,
-  stageWidth: number,
-  stageHeight: number,
-): Float32Array {
-  const xs = rect.x / stageWidth
-  const ys = rect.y / stageHeight
-  const ws = rect.width / stageWidth
-  const hs = rect.height / stageHeight
-  const rotation = rect.rotation
-  const sc = Math.cos(rotation)
-  const ss = Math.sin(rotation)
-
-  const tx = 2 * (xs + ws / 2 - 0.5 * sc * ws + 0.5 * ss * hs) - 1
-  const ty = 2 * (ys + hs / 2 - 0.5 * ss * ws - 0.5 * sc * hs) - 1
-
-  return new Float32Array([
-    2 * sc * ws, 2 * ss * ws, 0,
-    -2 * ss * hs, 2 * sc * hs, 0,
-    tx, ty, 1,
-  ])
-}
-
-/**
- * Resolve the pixel draw rect for a video clip.
- *
- * When transform is undefined the quad fills the entire stage.
- * When transform is defined, normalized x/y/scale/anchor/rotation are applied
- * relative to the video's native dimensions (or stage dimensions as fallback).
- */
-export function resolveVideoDrawRect(
-  item: ActiveVideoClip,
-  stageWidth: number,
-  stageHeight: number,
-  contentWidth?: number,
-  contentHeight?: number,
-): VideoDrawRect {
-  if (!item.transform) {
-    return {
-      x: 0,
-      y: 0,
-      width: stageWidth,
-      height: stageHeight,
-      rotation: 0,
-    }
-  }
-
-  return resolveTransformRect(
-    item.transform,
-    stageWidth,
-    stageHeight,
-    contentWidth ?? stageWidth,
-    contentHeight ?? stageHeight,
-  )
-}
-
-/** Convert a normalized Transform + content size into a pixel draw rect. */
-export function resolveTransformRect(
-  transform: Transform,
-  stageWidth: number,
-  stageHeight: number,
-  contentWidth: number,
-  contentHeight: number,
-): VideoDrawRect {
-  const width = contentWidth * transform.scale
-  const height = contentHeight * transform.scale
-
-  const anchorPxX = transform.anchor.x * width
-  const anchorPxY = transform.anchor.y * height
-
-  const x = transform.x * stageWidth - anchorPxX
-  const y = transform.y * stageHeight - anchorPxY
-
-  return {
-    x,
-    y,
-    width,
-    height,
-    rotation: transform.rotation,
-  }
-}
-
 /**
  * Build the clip-space transform matrix for an ActiveVideoClip.
+ *
+ * Thin adapter over the shared `buildDrawTransformMatrix` — keeps the
+ * `ActiveVideoClip`-typed signature FrameProbeLayer relies on.
  */
 export function buildVideoTransformMatrix(
   item: ActiveVideoClip,
@@ -136,14 +55,13 @@ export function buildVideoTransformMatrix(
   contentWidth?: number,
   contentHeight?: number,
 ): Float32Array {
-  const rect = resolveVideoDrawRect(
-    item,
+  return buildDrawTransformMatrix(
+    item.transform,
     stageWidth,
     stageHeight,
     contentWidth,
     contentHeight,
   )
-  return buildTransformMatrixFromRect(rect, stageWidth, stageHeight)
 }
 
 export type VideoFrameProviderFactory = (src: string) => VideoFrameProvider

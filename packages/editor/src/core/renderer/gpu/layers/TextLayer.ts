@@ -16,6 +16,7 @@
  */
 
 import type { ActiveTextClip } from '../../../resolver/scene'
+import type { Transform } from '../../../types'
 import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
@@ -32,6 +33,44 @@ import type { Layer, LayerContext } from './types'
  *   [2, 0, 0, 0, 2, 0, -1, -1, 1]  (column-major)
  */
 const FULL_STAGE_MAT3 = new Float32Array([2, 0, 0, 0, 2, 0, -1, -1, 1])
+
+/**
+ * Column-major 3×3 mapping the full-stage text canvas to clip space, with an
+ * optional rotation about the text block's centre.
+ *
+ * `transform.scale` is NOT applied here — it is baked into the painted fontSize
+ * (see computeTextLayout). Only rotation needs the shader. The pivot is the
+ * block centre `(transform.x, transform.y)` in normalized stage coords (default
+ * 0.5, 0.5), matching computeTextLayout. The rotation is aspect-corrected (the
+ * W/H, H/W terms) so glyphs rotate without shearing on a non-square stage.
+ *
+ * Reduces exactly to FULL_STAGE_MAT3 when rotation is 0.
+ */
+function buildTextTransformMatrix(
+  transform: Transform | undefined,
+  stage: { width: number; height: number },
+): Float32Array {
+  if (!transform || transform.rotation === 0) {
+    return FULL_STAGE_MAT3
+  }
+
+  const a = Math.cos(transform.rotation)
+  const b = Math.sin(transform.rotation)
+  const px = transform.x
+  const py = transform.y
+  const wOverH = stage.width / stage.height
+  const hOverW = stage.height / stage.width
+
+  const txx = 2 * (px - a * px + b * hOverW * py) - 1
+  const tyy = 2 * (py - b * wOverH * px - a * py) - 1
+
+  // Column-major: column 0 → clip.x/clip.y coeffs for u, column 1 → for v.
+  return new Float32Array([
+    2 * a, 2 * b * wOverH, 0,
+    -2 * b * hOverW, 2 * a, 0,
+    txx, tyy, 1,
+  ])
+}
 
 /** Factory for the offscreen paint canvas; injectable so tests can mock the DOM. */
 export type TextCanvasFactory = () => HTMLCanvasElement
@@ -59,6 +98,9 @@ function paintSignature(item: ActiveTextClip, stage: { width: number; height: nu
     item.textAlign,
     item.transform?.x,
     item.transform?.y,
+    // scale is baked into the painted fontSize, so it changes the pixels.
+    // (rotation is shader-only and intentionally absent — no repaint needed.)
+    item.transform?.scale,
     stage.width,
     stage.height,
   ])
@@ -167,7 +209,12 @@ export class TextLayer implements Layer<ActiveTextClip> {
 
     this._program.setUniform1i(gl, 'uTexture', 0)
     this._program.setUniform1f(gl, 'uOpacity', opacity)
-    this._program.setUniformMatrix3fv(gl, 'uTransform', false, FULL_STAGE_MAT3)
+    this._program.setUniformMatrix3fv(
+      gl,
+      'uTransform',
+      false,
+      buildTextTransformMatrix(item.transform, ctx.stage),
+    )
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 

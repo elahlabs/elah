@@ -23,6 +23,10 @@ export function useResolvedScene(frameOverride?: number): Scene {
   // The tracks reference is replaced on every engine 'change' event, making it
   // the cheapest "project mutated" signal available from React.
   useTracksStore((s) => s.tracks)
+  // Also subscribe to stage: an aspect-ratio change mutates only project.stage,
+  // leaving the tracks array reference untouched (Immer structural sharing), so
+  // the tracks subscription alone would miss it.
+  useTracksStore((s) => s.stage)
 
   const frame = frameOverride ?? storeFrame
   const project = engine.getProject()

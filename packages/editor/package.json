@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build": "tsc --noEmit && tsc -p tsconfig.build.json"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

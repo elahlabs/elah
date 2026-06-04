@@ -50,8 +50,11 @@ export default function App() {
   const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
   const zoom = usePlaybackStore((s) => s.zoom)
   const setZoom = usePlaybackStore((s) => s.setZoom)
+  const stage = useTracksStore((s) => s.stage)
   const selectedClipIds = useSelectionStore((s) => s.selectedClipIds)
   const hasSelection = selectedClipIds.size === 1
+  const aspectActive = (w: number, h: number) =>
+    Math.abs(stage.width / stage.height - w / h) < 0.001
 
   // Write frame counter directly to the DOM — no React render on every tick.
   useEffect(() => {
@@ -226,6 +229,14 @@ export default function App() {
     fontFamily: 'monospace',
   })
 
+  const aspectBtnStyle = (active: boolean): React.CSSProperties => ({
+    ...btnStyle(),
+    minWidth: 48,
+    background: active ? '#1a2a3a' : '#2a2a2a',
+    borderColor: active ? '#3a6a9a' : '#3a3a3a',
+    color: active ? '#7fb3ff' : '#ddd',
+  })
+
   return (
     <>
       {SHOW_LAB && <MediaLimitsLab />}
@@ -259,6 +270,22 @@ export default function App() {
               onClick={splitAtPlayhead}
             >
               ✂ Split
+            </button>
+
+            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+
+            <span style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>Aspect</span>
+            <button
+              style={aspectBtnStyle(aspectActive(1920, 1080))}
+              onClick={() => engine()?.setStage(1920, 1080)}
+            >
+              16:9
+            </button>
+            <button
+              style={aspectBtnStyle(aspectActive(1080, 1920))}
+              onClick={() => engine()?.setStage(1080, 1920)}
+            >
+              9:16
             </button>
 
             <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
