@@ -36,23 +36,27 @@ export const TrackRow = memo(function TrackRow({
 
   const kindAccent =
     track.kind === 'video'
-      ? '#3b6fd4'
+      ? '#2563EB'
       : track.kind === 'audio'
-        ? '#2da34f'
-        : '#9b59b6'
+        ? '#16A34A'
+        : '#9333EA'
 
   return (
     <div style={{ display: 'flex', height: track.height }}>
-      {/* Track label sidebar */}
+      {/* Track label sidebar — sticky so labels stay pinned while clips scroll
+          horizontally underneath. zIndex keeps it above the clip blocks. */}
       <div
         onClick={() => setActiveTrack(track.id)}
         style={{
+          position: 'sticky',
+          left: 0,
+          zIndex: 6,
           width: 160,
           flexShrink: 0,
           borderLeft: `3px solid ${kindAccent}`,
-          borderRight: '1px solid #2a2a2a',
-          borderBottom: '1px solid #2a2a2a',
-          background: isActive ? '#2a2a3a' : '#1c1c1c',
+          borderRight: '1px solid #232938',
+          borderBottom: '1px solid #1A1F2B',
+          background: isActive ? '#171D2B' : '#121722',
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 12,
@@ -62,10 +66,9 @@ export const TrackRow = memo(function TrackRow({
       >
         <span
           style={{
-            fontSize: 12,
-            color: isActive ? '#fff' : '#aaa',
-            fontFamily: 'sans-serif',
-            fontWeight: isActive ? 600 : 400,
+            fontSize: 11,
+            color: isActive ? '#F3F4F6' : '#A7AFBF',
+            fontWeight: isActive ? 600 : 500,
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',
@@ -82,8 +85,8 @@ export const TrackRow = memo(function TrackRow({
           position: 'relative',
           flex: 1,
           minWidth: rowMinWidth,
-          borderBottom: '1px solid #2a2a2a',
-          background: isActive ? '#1e1e28' : '#161616',
+          borderBottom: '1px solid #1A1F2B',
+          background: isActive ? '#0D1017' : '#0A0D14',
           overflow: 'visible',
         }}
       >

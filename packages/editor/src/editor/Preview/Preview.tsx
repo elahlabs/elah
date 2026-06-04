@@ -151,7 +151,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
         position: 'relative',
         width: '100%',
         height: '100%',
-        background: '#000',
+        background: '#06070A',
         ...style,
       }}
     >

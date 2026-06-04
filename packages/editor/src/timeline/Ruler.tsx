@@ -21,9 +21,9 @@ export function Ruler({
   totalFrames,
   zoom,
   height = 24,
-  color = '#1a1a1a',
-  tickColor = '#555',
-  labelColor = '#999',
+  color = '#121722',
+  tickColor = '#232938',
+  labelColor = '#6B7280',
   onSeek,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on
@@ -38,7 +38,7 @@ export function Ruler({
     const rawSeconds = 80 / pixelsPerSecond
     const intervals = [
       1 / fps,  // every frame
-      0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300,
+      0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800,
     ]
     const secondsPerTick =
       intervals.find((i) => i >= rawSeconds) ?? intervals[intervals.length - 1]

@@ -25,7 +25,7 @@ interface PlayheadProps {
 export function Playhead({
   zoom,
   height,
-  color = '#ef4444',
+  color = '#FF2D55',
   scrollContainerRef,
   sidebarWidth = 0,
 }: PlayheadProps) {
@@ -41,7 +41,13 @@ export function Playhead({
   // Pure DOM write — zero React involvement.
   const applyPosition = (frame: number, scrollLeft: number) => {
     if (needleRef.current) {
-      needleRef.current.style.left = `${sidebarWidthRef.current + frame * zoomRef.current - scrollLeft}px`
+      const left = sidebarWidthRef.current + frame * zoomRef.current - scrollLeft
+      needleRef.current.style.left = `${left}px`
+      // Hide the needle once it scrolls under the pinned track-label sidebar so
+      // it doesn't draw over the labels (the sidebar is sticky, the playhead is
+      // not — it lives in the outer container above everything).
+      needleRef.current.style.visibility =
+        left < sidebarWidthRef.current ? 'hidden' : 'visible'
     }
   }
 
@@ -120,23 +126,24 @@ export function Playhead({
         width: 2,
         height,
         background: color,
+        boxShadow: `0 0 8px ${color}`,
         zIndex: 50,
         cursor: 'col-resize',
         willChange: 'left',
         pointerEvents: 'all',
       }}
     >
-      {/* Playhead handle cap */}
       <div
         style={{
           position: 'absolute',
-          top: -4,
-          left: -5,
-          width: 12,
-          height: 12,
+          top: -2,
+          left: -7,
+          width: 16,
+          height: 14,
           background: color,
-          borderRadius: '50% 50% 0 0',
+          borderRadius: '3px 3px 0 0',
           clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
+          boxShadow: `0 0 8px ${color}`,
         }}
       />
     </div>

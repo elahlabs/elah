@@ -1,91 +1,92 @@
 import { useEffect, useRef } from 'react'
+import './editor-ui.css'
 import MediaLimitsLab from './MediaLimitsLab'
 import { GpuPreview } from './GpuPreview'
 import { TextClipProperties } from './TextClipProperties'
+import { btnDisabled, theme } from './theme'
 import {
   AssetPanel,
+  ElementsPanel,
   EditorProvider,
   Timeline,
   useTracksStore,
   usePlaybackStore,
   useSelectionStore,
-  useResolvedScene,
   useMediaLibraryStore,
   splitClipAtPlayhead,
+  framesToTimecode,
+  type InitialTrackConfig,
   type TimelineRef,
 } from '@elah/editor'
 
 const FPS = 30
 const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
-const SHOW_SCENE_DEBUG = true
 
-function ResolvedSceneDebug() {
-  const scene = useResolvedScene()
+const INITIAL_TRACKS: InitialTrackConfig[] = [
+  { kind: 'video', name: 'Video / Image' },
+  { kind: 'audio', name: 'Audio' },
+  { kind: 'text', name: 'Text' },
+]
 
-  return (
-    <pre
-      style={{
-        fontSize: 10,
-        maxHeight: 120,
-        overflow: 'auto',
-        margin: 0,
-        padding: '8px 12px',
-        background: '#0d0d0d',
-        borderTop: '1px solid #2a2a2a',
-        color: '#8f8',
-        fontFamily: 'monospace',
-      }}
-    >
-      {JSON.stringify(scene, null, 2)}
-    </pre>
-  )
+const ZOOM_MIN = 0.02
+const ZOOM_MAX = 50
+const zoomToSlider = (z: number) =>
+  (Math.log(z) - Math.log(ZOOM_MIN)) / (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN))
+const sliderToZoom = (s: number) =>
+  Math.exp(Math.log(ZOOM_MIN) + s * (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN)))
+
+const divider: React.CSSProperties = {
+  width: 1,
+  height: 22,
+  background: theme.borderSubtle,
+  flexShrink: 0,
+}
+
+const toolGroup: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
 }
 
 export default function App() {
   const timelineRef = useRef<TimelineRef>(null)
-  const frameDisplayRef = useRef<HTMLSpanElement>(null)
+  const timecodeRef = useRef<HTMLSpanElement>(null)
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
   const zoom = usePlaybackStore((s) => s.zoom)
   const setZoom = usePlaybackStore((s) => s.setZoom)
+  const totalFrames = useTracksStore((s) => s.totalFrames)
   const stage = useTracksStore((s) => s.stage)
   const selectedClipIds = useSelectionStore((s) => s.selectedClipIds)
   const hasSelection = selectedClipIds.size === 1
   const aspectActive = (w: number, h: number) =>
     Math.abs(stage.width / stage.height - w / h) < 0.001
 
-  // Write frame counter directly to the DOM — no React render on every tick.
   useEffect(() => {
     return usePlaybackStore.subscribe((state) => {
-      if (frameDisplayRef.current) {
-        frameDisplayRef.current.textContent =
-          `Frame ${state.currentFrame} | ${(state.currentFrame / FPS).toFixed(2)}s`
+      if (timecodeRef.current) {
+        const dur = Math.max(totalFrames, 1)
+        timecodeRef.current.textContent = `${framesToTimecode(state.currentFrame, FPS)} / ${framesToTimecode(dur, FPS)}`
       }
     })
-  }, [])
+  }, [totalFrames])
+
+  useEffect(() => {
+    const frame = usePlaybackStore.getState().currentFrame
+    if (timecodeRef.current) {
+      const dur = Math.max(totalFrames, 1)
+      timecodeRef.current.textContent = `${framesToTimecode(frame, FPS)} / ${framesToTimecode(dur, FPS)}`
+    }
+  }, [totalFrames])
 
   const engine = () => timelineRef.current?.engine
-
-  const addVideoTrack = () => {
-    engine()?.addTrack('video')
-  }
-
-  const addAudioTrack = () => {
-    engine()?.addTrack('audio')
-  }
-
-  const addTextTrack = () => {
-    engine()?.addTrack('text')
-  }
 
   const addVideoClip = () => {
     const e = engine()
     if (!e) return
 
-    // Use the most recently imported video asset so the clip has a real src.
-    // Without a src, the resolver drops the clip and the canvas stays black.
     const mediaState = useMediaLibraryStore.getState()
     const videoAsset = mediaState.order
       .map((id) => mediaState.assets[id])
@@ -97,8 +98,6 @@ export default function App() {
     }
 
     let videoTracks = e.getProject().tracks.filter((t) => t.kind === 'video')
-    // Auto-create a video track if none exist — don't make the user click a
-    // separate button just to place a clip.
     if (videoTracks.length === 0) {
       e.addTrack('video')
       videoTracks = e.getProject().tracks.filter((t) => t.kind === 'video')
@@ -134,9 +133,6 @@ export default function App() {
     const e = engine()
     if (!e) return
 
-    // Use the most recently imported audio asset so the clip has a real src —
-    // without one the resolver drops it and AudioPlaybackController has nothing
-    // to play. (Video files carry audio too; fall back to those.)
     const mediaState = useMediaLibraryStore.getState()
     const audioAsset = mediaState.order
       .map((id) => mediaState.assets[id])
@@ -218,147 +214,225 @@ export default function App() {
     }
   }
 
-  const btnStyle = (disabled = false): React.CSSProperties => ({
-    padding: '6px 14px',
-    background: disabled ? '#333' : '#2a2a2a',
-    color: disabled ? '#555' : '#ddd',
-    border: '1px solid #3a3a3a',
-    borderRadius: 6,
-    fontSize: 12,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    fontFamily: 'monospace',
+  const aspectBtn = (active: boolean): React.CSSProperties => ({
+    ...btnDisabled(false),
+    minWidth: 44,
+    padding: '5px 10px',
+    ...(active
+      ? {
+          background: 'rgba(225, 29, 72, 0.12)',
+          borderColor: theme.accent,
+          color: theme.accentHover,
+          boxShadow: `0 0 10px ${theme.accentGlow}`,
+        }
+      : {}),
   })
 
-  const aspectBtnStyle = (active: boolean): React.CSSProperties => ({
-    ...btnStyle(),
-    minWidth: 48,
-    background: active ? '#1a2a3a' : '#2a2a2a',
-    borderColor: active ? '#3a6a9a' : '#3a3a3a',
-    color: active ? '#7fb3ff' : '#ddd',
-  })
+  const playBtn: React.CSSProperties = {
+    ...btnDisabled(false),
+    minWidth: 36,
+    padding: '5px 12px',
+    ...(isPlaying
+      ? {
+          background: 'rgba(34, 197, 94, 0.12)',
+          borderColor: theme.success,
+          color: theme.success,
+        }
+      : {}),
+  }
 
   return (
     <>
       {SHOW_LAB && <MediaLimitsLab />}
-      <EditorProvider fps={FPS}>
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
+        <div className="elah-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
           {/* Toolbar */}
-          <div
+          <header
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              padding: '8px 12px',
-              background: '#151515',
-              borderBottom: '1px solid #2a2a2a',
+              gap: 12,
+              padding: '10px 16px',
+              background: theme.bgSecondary,
+              borderBottom: `1px solid ${theme.border}`,
               flexWrap: 'wrap',
+              flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#888', fontFamily: 'monospace', marginRight: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: theme.textPrimary,
+                letterSpacing: '-0.02em',
+                marginRight: 4,
+              }}
+            >
               @elah/editor
             </span>
 
-            <button style={btnStyle()} onClick={addVideoTrack}>+ Video Track</button>
-            <button style={btnStyle()} onClick={addAudioTrack}>+ Audio Track</button>
-            <button style={btnStyle()} onClick={addTextTrack}>+ Text Track</button>
-            <button style={btnStyle()} onClick={addVideoClip}>+ Video Clip</button>
-            <button style={btnStyle()} onClick={addAudioClip}>+ Audio Clip</button>
-            <button style={btnStyle()} onClick={addTextClip}>+ Text Clip</button>
-            <button
-              style={btnStyle(!hasSelection)}
-              disabled={!hasSelection}
-              onClick={splitAtPlayhead}
-            >
-              ✂ Split
-            </button>
+            <div style={divider} />
 
-            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+            <div style={toolGroup}>
+              <button type="button" className="elah-toolbar-btn" style={btnDisabled(false)} onClick={addVideoClip} title="Add video clip">
+                ▶ Video
+              </button>
+              <button type="button" className="elah-toolbar-btn" style={btnDisabled(false)} onClick={addAudioClip} title="Add audio clip">
+                ♪ Audio
+              </button>
+              <button type="button" className="elah-toolbar-btn" style={btnDisabled(false)} onClick={addTextClip} title="Add text clip">
+                T Text
+              </button>
+              <button
+                type="button"
+                className="elah-toolbar-btn"
+                style={btnDisabled(!hasSelection)}
+                disabled={!hasSelection}
+                onClick={splitAtPlayhead}
+                title="Split at playhead"
+              >
+                ✂ Split
+              </button>
+            </div>
 
-            <span style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>Aspect</span>
-            <button
-              style={aspectBtnStyle(aspectActive(1920, 1080))}
-              onClick={() => engine()?.setStage(1920, 1080)}
-            >
-              16:9
-            </button>
-            <button
-              style={aspectBtnStyle(aspectActive(1080, 1920))}
-              onClick={() => engine()?.setStage(1080, 1920)}
-            >
-              9:16
-            </button>
+            <div style={divider} />
 
-            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+            <div style={toolGroup}>
+              <button
+                type="button"
+                className={aspectActive(1920, 1080) ? 'elah-toolbar-btn elah-toolbar-btn--active' : 'elah-toolbar-btn'}
+                style={aspectBtn(aspectActive(1920, 1080))}
+                onClick={() => engine()?.setStage(1920, 1080)}
+              >
+                16:9
+              </button>
+              <button
+                type="button"
+                className={aspectActive(1080, 1920) ? 'elah-toolbar-btn elah-toolbar-btn--active' : 'elah-toolbar-btn'}
+                style={aspectBtn(aspectActive(1080, 1920))}
+                onClick={() => engine()?.setStage(1080, 1920)}
+              >
+                9:16
+              </button>
+              <button
+                type="button"
+                className={aspectActive(1080, 1080) ? 'elah-toolbar-btn elah-toolbar-btn--active' : 'elah-toolbar-btn'}
+                style={aspectBtn(aspectActive(1080, 1080))}
+                onClick={() => engine()?.setStage(1080, 1080)}
+              >
+                1:1
+              </button>
+            </div>
 
-            <button
-              style={{
-                ...btnStyle(),
-                minWidth: 68,
-                background: isPlaying ? '#1a3a1a' : '#2a2a2a',
-                borderColor: isPlaying ? '#2d6a2d' : '#3a3a3a',
-                color: isPlaying ? '#6fcf6f' : '#ddd',
-              }}
-              onClick={togglePlayPause}
-            >
-              {isPlaying ? '⏸ Pause' : '▶ Play'}
-            </button>
+            <div style={divider} />
 
-            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
+            <div style={toolGroup}>
+              <button type="button" className="elah-toolbar-btn" style={playBtn} onClick={togglePlayPause}>
+                {isPlaying ? '⏸' : '▶'}
+              </button>
+              <span
+                ref={timecodeRef}
+                style={{
+                  fontSize: 11,
+                  color: theme.textSecondary,
+                  fontFamily: theme.fontMono,
+                  minWidth: 180,
+                }}
+              >
+                00:00:00:00 / 00:00:00:00
+              </span>
+            </div>
 
-            <button
-              style={btnStyle(!canUndo)}
-              disabled={!canUndo}
-              onClick={() => engine()?.undo()}
-            >
-              Undo
-            </button>
-            <button
-              style={btnStyle(!canRedo)}
-              disabled={!canRedo}
-              onClick={() => engine()?.redo()}
-            >
-              Redo
-            </button>
+            <div style={divider} />
 
-            <div style={{ width: 1, height: 20, background: '#333', margin: '0 4px' }} />
-
-            <label style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>
-              Zoom
+            <div style={{ ...toolGroup, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: theme.textMuted }}>Zoom</span>
               <input
                 type="range"
-                min={1}
-                max={20}
-                step={0.5}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                style={{ marginLeft: 8, width: 80 }}
+                className="elah-range"
+                min={0}
+                max={1}
+                step={0.001}
+                value={zoomToSlider(zoom)}
+                onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
+                style={{ width: 88, margin: '0 6px' }}
               />
-              {zoom.toFixed(1)}px/f
-            </label>
-
-            <div style={{ marginLeft: 'auto', fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
-              <span ref={frameDisplayRef}>Frame 0 | 0.00s</span>
-              &nbsp;|&nbsp; Ctrl+scroll to zoom · Ctrl+Z/Y to undo/redo
+              <span style={{ fontSize: 11, color: theme.textMuted, fontFamily: theme.fontMono, minWidth: 52 }}>
+                {zoom < 1 ? zoom.toFixed(2) : zoom.toFixed(1)} px/f
+              </span>
+              <button
+                type="button"
+                className="elah-toolbar-btn"
+                style={btnDisabled(false)}
+                onClick={() => timelineRef.current?.fitToWindow()}
+                title="Zoom to fit the whole timeline"
+              >
+                Fit
+              </button>
             </div>
-          </div>
 
-          {/* Main work area: preview on top, asset panel + timeline below */}
+            <div style={divider} />
+
+            <div style={toolGroup}>
+              <button
+                type="button"
+                className="elah-toolbar-btn"
+                style={btnDisabled(!canUndo)}
+                disabled={!canUndo}
+                onClick={() => engine()?.undo()}
+                title="Undo (Ctrl+Z)"
+              >
+                ↶
+              </button>
+              <button
+                type="button"
+                className="elah-toolbar-btn"
+                style={btnDisabled(!canRedo)}
+                disabled={!canRedo}
+                onClick={() => engine()?.redo()}
+                title="Redo (Ctrl+Y)"
+              >
+                ↷
+              </button>
+            </div>
+
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 10, color: theme.textMuted }}>
+                Ctrl+scroll zoom · Ctrl+Z/Y undo
+              </span>
+              <button type="button" className="elah-export-btn" style={btnDisabled(false)}>
+                Export
+              </button>
+            </div>
+          </header>
+
+          {/* Main work area */}
           <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-            <AssetPanel style={{ width: 220, flexShrink: 0 }} />
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                width: 240,
+                flexShrink: 0,
+                minHeight: 0,
+                background: theme.bgPanel,
+                borderRight: `1px solid ${theme.border}`,
+              }}
+            >
+              <ElementsPanel />
+              <AssetPanel style={{ flex: 1, minHeight: 0 }} />
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, minHeight: 0 }}>
-              {/* GPU Preview — above the timeline, fills available vertical space */}
-              <GpuPreview debugMode style={{ flex: 1, minHeight: 240 }} />
+              <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+                <GpuPreview debugMode showSceneResolver style={{ flex: 1, minHeight: 200 }} />
+                <TextClipProperties />
+              </div>
 
-              {SHOW_SCENE_DEBUG && <ResolvedSceneDebug />}
-
-              {/* Text clip properties — appears when a text clip is selected */}
-              <TextClipProperties />
-
-              {/* Timeline — fixed height at the bottom */}
               <Timeline
                 ref={timelineRef}
                 fps={FPS}
-                style={{ height: 300, flexShrink: 0, minWidth: 0 }}
+                style={{ height: 280, flexShrink: 0, minWidth: 0, borderTop: `1px solid ${theme.border}` }}
               />
             </div>
           </div>

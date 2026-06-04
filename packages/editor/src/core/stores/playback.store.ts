@@ -69,7 +69,9 @@ export const usePlaybackStore = create<PlaybackState & PlaybackActions>()(
       toggleLoop: () => set((s) => ({ loop: !s.loop })),
       setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
       toggleMute: () => set((s) => ({ muted: !s.muted })),
-      setZoom: (zoom) => set({ zoom: Math.max(0.5, Math.min(50, zoom)) }),
+      // Lower bound is deliberately tiny so long timelines (10+ min) can be
+      // zoomed out far enough to fit on screen (e.g. 30min@30fps ≈ 54k frames).
+      setZoom: (zoom) => set({ zoom: Math.max(0.02, Math.min(50, zoom)) }),
       toggleSnap: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
     }),
     {

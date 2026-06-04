@@ -47,6 +47,7 @@ export type {
   TrackKind,
   FrameCount,
   TimelineConfig,
+  InitialTrackConfig,
   EngineEvent,
 } from './core/types'
 
@@ -126,6 +127,8 @@ export { useTracks } from './timeline/hooks/useTracks'
 export { usePlayback } from './timeline/hooks/usePlayback'
 export { useSelection } from './timeline/hooks/useSelection'
 export { useTimelineDrop } from './timeline/useTimelineDrop'
+export { ELEMENT_DRAG_MIME } from './timeline/elementDrag'
+export type { DragElementPayload, ElementKind } from './timeline/elementDrag'
 
 // --- Editor: composition ---
 export { EditorProvider } from './editor/EditorProvider'
@@ -138,5 +141,7 @@ export {
 export { useResolvedScene } from './editor/useResolvedScene'
 export { AssetPanel } from './editor/AssetPanel'
 export type { AssetPanelProps } from './editor/AssetPanel'
+export { ElementsPanel } from './editor/ElementsPanel'
+export type { ElementsPanelProps } from './editor/ElementsPanel'
 export { Preview } from './editor/Preview'
 export type { PreviewProps, PreviewHandle } from './editor/Preview'
