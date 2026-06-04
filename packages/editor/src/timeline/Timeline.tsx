@@ -194,8 +194,8 @@ export const Timeline = memo(
         style={{
           display: 'flex',
           flexDirection: 'column',
-          background: '#111',
-          color: '#fff',
+          background: '#0A0D14',
+          color: '#F3F4F6',
           overflow: 'hidden',
           position: 'relative',
           fontFamily: 'sans-serif',
@@ -210,9 +210,9 @@ export const Timeline = memo(
               width: SIDEBAR_WIDTH,
               flexShrink: 0,
               height: rulerHeight,
-              background: '#1a1a1a',
-              borderRight: '1px solid #2a2a2a',
-              borderBottom: '1px solid #2a2a2a',
+              background: '#121722',
+              borderRight: '1px solid #232938',
+              borderBottom: '1px solid #1A1F2B',
             }}
           />
           {/* Ruler — overflow hidden, scrollLeft driven by track area scroll */}

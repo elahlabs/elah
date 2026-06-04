@@ -21,9 +21,9 @@ export function Ruler({
   totalFrames,
   zoom,
   height = 24,
-  color = '#1a1a1a',
-  tickColor = '#555',
-  labelColor = '#999',
+  color = '#121722',
+  tickColor = '#232938',
+  labelColor = '#6B7280',
   onSeek,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on

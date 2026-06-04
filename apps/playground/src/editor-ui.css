@@ -1,0 +1,82 @@
+/* Playground editor chrome — visual polish only */
+
+.elah-root {
+  --elah-bg: #06070A;
+  --elah-border: #232938;
+  --elah-accent: #E11D48;
+  --elah-text: #F3F4F6;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--elah-text);
+  background: var(--elah-bg);
+}
+
+.elah-root *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.elah-root *::-webkit-scrollbar-thumb {
+  background: #2a3142;
+  border-radius: 3px;
+}
+.elah-root *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.elah-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: #1A1F2B;
+  outline: none;
+}
+.elah-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #E11D48;
+  border: 2px solid #171D2B;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.25);
+}
+.elah-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #E11D48;
+  border: 2px solid #171D2B;
+  cursor: pointer;
+}
+
+.elah-toolbar-btn:hover:not(:disabled) {
+  background: #1e2433 !important;
+  border-color: #2f384c !important;
+  color: #F3F4F6 !important;
+}
+.elah-toolbar-btn--active {
+  background: rgba(225, 29, 72, 0.15) !important;
+  border-color: #E11D48 !important;
+  color: #FB7185 !important;
+  box-shadow: 0 0 12px rgba(225, 29, 72, 0.2);
+}
+.elah-export-btn {
+  background: #E11D48 !important;
+  border-color: #E11D48 !important;
+  color: #fff !important;
+  font-weight: 600;
+  padding: 6px 18px !important;
+}
+.elah-export-btn:hover {
+  background: #FB7185 !important;
+  border-color: #FB7185 !important;
+}
+
+.elah-media-card:hover {
+  background: #171D2B !important;
+  border-color: #2f384c !important;
+}
+.elah-element-card:hover {
+  background: #171D2B !important;
+  border-color: #2f384c !important;
+}

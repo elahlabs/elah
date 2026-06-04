@@ -26,6 +26,12 @@ const KIND_ICONS: Record<MediaKind, string> = {
   image: '◻',
 }
 
+const KIND_TAG: Record<MediaKind, { label: string; color: string; bg: string }> = {
+  video: { label: 'VIDEO', color: '#93C5FD', bg: 'rgba(37, 99, 235, 0.2)' },
+  audio: { label: 'AUDIO', color: '#86EFAC', bg: 'rgba(22, 163, 74, 0.2)' },
+  image: { label: 'IMAGE', color: '#FCD34D', bg: 'rgba(245, 158, 11, 0.2)' },
+}
+
 function formatDuration(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return '—'
   const m = Math.floor(sec / 60)
@@ -83,21 +89,25 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
     [asset.id],
   )
 
+  const tag = KIND_TAG[asset.kind]
+
   return (
     <div
       draggable
+      className="elah-media-card"
       onDragStart={onDragStart}
       title={asset.name}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        padding: '5px 8px',
-        borderRadius: 5,
+        gap: 10,
+        padding: '8px 10px',
+        borderRadius: 8,
         cursor: 'grab',
         userSelect: 'none',
-        background: '#1a1a1a',
-        border: '1px solid #2a2a2a',
+        background: '#171D2B',
+        border: '1px solid #232938',
+        transition: 'background 0.15s, border-color 0.15s',
       }}
     >
       <div
@@ -106,9 +116,9 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
           width: THUMB_SIZE,
           height: THUMB_SIZE,
           flexShrink: 0,
-          background: '#111',
-          borderRadius: 4,
-          border: '1px solid #333',
+          background: '#06070A',
+          borderRadius: 6,
+          border: '1px solid #1A1F2B',
           overflow: 'hidden',
         }}
       >
@@ -151,9 +161,8 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
       >
         <span
           style={{
-            fontSize: 10,
-            color: '#ccc',
-            fontFamily: 'monospace',
+            fontSize: 11,
+            color: '#F3F4F6',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -161,15 +170,24 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
         >
           {asset.name}
         </span>
-        <span
-          style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: '#666',
-          }}
-        >
-          {formatDuration(asset.durationSec)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              fontSize: 8,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              padding: '2px 5px',
+              borderRadius: 3,
+              color: tag.color,
+              background: tag.bg,
+            }}
+          >
+            {tag.label}
+          </span>
+          <span style={{ fontSize: 10, color: '#6B7280', fontFamily: 'ui-monospace, monospace' }}>
+            {formatDuration(asset.durationSec)}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -257,8 +275,8 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: '#121212',
-        borderRight: '1px solid #2a2a2a',
+        background: 'transparent',
+        borderRight: 'none',
         ...style,
       }}
     >
@@ -277,26 +295,26 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 10px',
-          borderBottom: '1px solid #2a2a2a',
+          padding: '10px 12px',
+          borderBottom: '1px solid #232938',
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#888', fontFamily: 'monospace' }}>
-          Media
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', letterSpacing: '0.08em' }}>
+          MEDIA
         </span>
         <button
           type="button"
           onClick={onBrowseClick}
           disabled={importing}
           style={{
-            padding: '4px 10px',
+            padding: '4px 12px',
             fontSize: 11,
-            fontFamily: 'monospace',
-            background: importing ? '#333' : '#2a2a2a',
-            color: importing ? '#666' : '#ddd',
-            border: '1px solid #3a3a3a',
-            borderRadius: 4,
+            fontWeight: 600,
+            background: importing ? '#121722' : '#171D2B',
+            color: importing ? '#6B7280' : '#E11D48',
+            border: '1px solid #232938',
+            borderRadius: 6,
             cursor: importing ? 'wait' : 'pointer',
           }}
         >
@@ -309,7 +327,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
           flex: 1,
           overflow: 'auto',
           padding: 8,
-          outline: isDragOver ? '2px dashed #4a7fd4' : 'none',
+          outline: isDragOver ? '2px dashed #E11D48' : 'none',
           outlineOffset: -4,
           borderRadius: 4,
           position: 'relative',
@@ -349,10 +367,9 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               minHeight: 120,
               padding: 16,
               textAlign: 'center',
-              color: '#666',
+              color: '#6B7280',
               fontSize: 11,
-              fontFamily: 'monospace',
-              border: '1px dashed #333',
+              border: '1px dashed #232938',
               borderRadius: 8,
             }}
           >
@@ -366,7 +383,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 4,
+              gap: 6,
             }}
           >
             {assets.map((asset) => (

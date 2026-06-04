@@ -48,7 +48,8 @@ export function StageBorder() {
             top: fit.y,
             width: fit.width,
             height: fit.height,
-            border: '1px solid rgba(255, 255, 255, 0.55)',
+            border: '1px solid rgba(225, 29, 72, 0.45)',
+            boxShadow: '0 0 20px rgba(225, 29, 72, 0.08)',
             boxSizing: 'border-box',
           }}
         />

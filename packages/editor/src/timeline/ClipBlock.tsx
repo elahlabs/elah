@@ -11,12 +11,41 @@ import {
 } from '../core/utils/snap'
 import { useTracksStore } from '../core/stores/tracks.store'
 
-const CLIP_COLORS: Record<string, string> = {
-  video: '#3b6fd4',
-  audio: '#2da34f',
-  text: '#9b59b6',
-  image: '#e67e22',
+const CLIP_STYLES: Record<
+  string,
+  { top: string; mid: string; bottom: string; accent: string }
+> = {
+  video: {
+    top: '#3B82F6',
+    mid: '#2563EB',
+    bottom: '#1D4ED8',
+    accent: '#60A5FA',
+  },
+  audio: {
+    top: '#22C55E',
+    mid: '#16A34A',
+    bottom: '#15803D',
+    accent: '#4ADE80',
+  },
+  text: {
+    top: '#A855F7',
+    mid: '#9333EA',
+    bottom: '#7E22CE',
+    accent: '#C084FC',
+  },
+  image: {
+    top: '#FBBF24',
+    mid: '#D97706',
+    bottom: '#B45309',
+    accent: '#FCD34D',
+  },
 }
+
+/** Static bar heights for decorative audio waveform (visual only). */
+const WAVE_BARS = [
+  0.35, 0.55, 0.75, 0.45, 0.9, 0.6, 0.8, 0.5, 0.7, 0.4, 0.85, 0.55, 0.65, 0.45, 0.75,
+  0.5, 0.95, 0.6, 0.8, 0.45, 0.7, 0.55, 0.85, 0.4, 0.65, 0.75, 0.5, 0.9, 0.6, 0.45,
+]
 
 const TRIM_HANDLE_WIDTH = 8
 
@@ -26,17 +55,6 @@ interface ClipBlockProps {
   trackHeight: number
 }
 
-/**
- * A single clip block on the timeline.
- *
- * Supports:
- * - Click to select
- * - Drag body to move (horizontal only)
- * - Drag left/right edge to trim
- *
- * High-frequency drag position updates write directly to DOM (RAF style)
- * and only commit to the engine on mouseup — zero React re-renders during drag.
- */
 export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
   const engine = useTimeline()
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
@@ -49,8 +67,9 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
 
   const left = clip.startFrame * zoom
   const width = Math.max(clip.durationFrames * zoom, 4)
+  const blockHeight = trackHeight - 10
+  const palette = CLIP_STYLES[clip.type] ?? CLIP_STYLES.video
 
-  // --- Body drag (move) ---
   const handleBodyMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return
@@ -80,7 +99,6 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
 
         currentStart = nextStart
 
-        // Direct DOM write — no React setState during drag
         if (blockRef.current) {
           blockRef.current.style.transform = `translateX(${nextStart * zoom - left}px)`
         }
@@ -115,7 +133,6 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
     [clip, zoom, engine, selectClip, left, snapEnabled],
   )
 
-  // --- Left trim handle ---
   const handleLeftTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -124,20 +141,15 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
       const startX = e.clientX
       const originalStart = clip.startFrame
       const originalDuration = clip.durationFrames
-      // The right edge is fixed during a left-trim; the left edge moves toward it.
       const anchorEnd = originalStart + originalDuration
-      // Text clips have no source asset, so they may grow freely.
       const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
-      // Minimum frames to keep both handles grabbable at the current zoom level.
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcLeftTrim = (clientX: number) => {
         const deltaFrames = Math.round((clientX - startX) / zoom)
-        // Left edge moves, but can't cross the right edge minus minDuration.
         let newStart = Math.max(0, originalStart + deltaFrames)
         newStart = Math.min(newStart, anchorEnd - minDuration)
         let newDuration = anchorEnd - newStart
-        // Cap against source length (left-extend limit).
         if (newDuration > maxDuration) {
           newDuration = maxDuration
           newStart = anchorEnd - maxDuration
@@ -159,15 +171,10 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
 
         const { newStart, newDuration } = calcLeftTrim(upEvent.clientX)
 
-        // Skip the commit when nothing changed to avoid a no-op history entry.
         if (newStart !== originalStart || newDuration !== originalDuration) {
           engine.trimClip(clip.id, clip.trackId, newStart, newDuration)
         }
 
-        // Restore inline styles to the authoritative post-commit clip values.
-        // Clearing to '' is unsafe: if no React re-render fires (e.g. the trim
-        // was rejected or clamped to the same value), the DOM keeps the
-        // imperatively-written drag values and the clip collapses visually.
         if (blockRef.current) {
           const live = engine.findClip(clip.id)?.clip
           const liveStart = live?.startFrame ?? originalStart
@@ -183,7 +190,6 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
     [clip, zoom, engine, selectClip],
   )
 
-  // --- Right trim handle ---
   const handleRightTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -191,9 +197,7 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
 
       const startX = e.clientX
       const originalDuration = clip.durationFrames
-      // Text clips have no source asset, so they may grow freely.
       const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
-      // Minimum frames to keep both handles grabbable at the current zoom level.
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcRightTrim = (clientX: number) => {
@@ -214,15 +218,10 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
 
         const newDuration = calcRightTrim(upEvent.clientX)
 
-        // Skip the commit when nothing changed to avoid a no-op history entry.
         if (newDuration !== originalDuration) {
           engine.trimClip(clip.id, clip.trackId, clip.startFrame, newDuration)
         }
 
-        // Restore inline style to the authoritative post-commit clip value.
-        // Clearing to '' is unsafe: if no React re-render fires (e.g. the trim
-        // was rejected or clamped to the same value), the DOM keeps the
-        // imperatively-written drag width and the clip collapses visually.
         if (blockRef.current) {
           const live = engine.findClip(clip.id)?.clip
           const liveDuration = live?.durationFrames ?? originalDuration
@@ -236,8 +235,6 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
     [clip, zoom, engine, selectClip],
   )
 
-  // Delete this clip. Stop the mousedown from starting a body-drag, then remove
-  // on click. Mirrors the Delete/Backspace keyboard path in Timeline.
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -247,31 +244,105 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
     [clip.id, clip.trackId, engine, clearSelection],
   )
 
-  const baseColor = CLIP_COLORS[clip.type] ?? '#555'
-
   return (
     <div
       ref={blockRef}
       onMouseDown={handleBodyMouseDown}
       style={{
         position: 'absolute',
-        top: 4,
+        top: 5,
         left,
         width,
-        height: trackHeight - 8,
-        background: baseColor,
-        borderRadius: 4,
+        height: blockHeight,
+        borderRadius: 7,
         boxSizing: 'border-box',
-        border: isSelected ? '2px solid #fff' : '2px solid transparent',
+        background: `linear-gradient(180deg, ${palette.top} 0%, ${palette.mid} 42%, ${palette.bottom} 100%)`,
+        border: isSelected
+          ? '2px solid #FF2D55'
+          : `1px solid ${palette.accent}55`,
+        boxShadow: isSelected
+          ? '0 0 14px rgba(255, 45, 85, 0.4), inset 0 1px 0 rgba(255,255,255,0.15)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.35)',
         cursor: 'grab',
         overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
         userSelect: 'none',
         willChange: 'transform',
         zIndex: isSelected ? 5 : 1,
       }}
     >
+      {/* Left accent stripe */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: palette.accent,
+          opacity: 0.85,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Top gloss */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: '0 0 55%',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Audio waveform decoration */}
+      {clip.type === 'audio' && (
+        <div
+          style={{
+            position: 'absolute',
+            left: TRIM_HANDLE_WIDTH,
+            right: TRIM_HANDLE_WIDTH,
+            bottom: 4,
+            height: '46%',
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 1,
+            opacity: 0.55,
+            pointerEvents: 'none',
+          }}
+        >
+          {WAVE_BARS.map((h, i) => (
+            <div
+              key={i}
+              style={{
+                flex: '1 1 2px',
+                minWidth: 1,
+                maxWidth: 3,
+                height: `${h * 100}%`,
+                background: 'rgba(255,255,255,0.85)',
+                borderRadius: 1,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Video/image film perforation hint */}
+      {(clip.type === 'video' || clip.type === 'image') && width > 28 && (
+        <div
+          style={{
+            position: 'absolute',
+            left: TRIM_HANDLE_WIDTH + 4,
+            top: 4,
+            bottom: 4,
+            width: 14,
+            borderRadius: 3,
+            background: 'rgba(0,0,0,0.22)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       {/* Left trim handle */}
       <div
         onMouseDown={handleLeftTrimMouseDown}
@@ -282,7 +353,7 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
           cursor: 'ew-resize',
-          background: 'rgba(0,0,0,0.3)',
+          background: 'linear-gradient(90deg, rgba(0,0,0,0.35) 0%, transparent 100%)',
           zIndex: 2,
         }}
       />
@@ -290,15 +361,20 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
       {/* Clip label */}
       <span
         style={{
-          paddingLeft: TRIM_HANDLE_WIDTH + 4,
-          paddingRight: TRIM_HANDLE_WIDTH + 4,
-          fontSize: 11,
-          color: '#fff',
+          position: 'relative',
+          zIndex: 1,
+          display: 'block',
+          paddingLeft: clip.type === 'video' || clip.type === 'image' ? TRIM_HANDLE_WIDTH + 22 : TRIM_HANDLE_WIDTH + 6,
+          paddingRight: TRIM_HANDLE_WIDTH + 6,
+          paddingTop: 5,
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.95)',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          fontFamily: 'sans-serif',
           fontWeight: 600,
+          letterSpacing: '0.01em',
+          textShadow: '0 1px 2px rgba(0,0,0,0.45)',
           pointerEvents: 'none',
         }}
       >
@@ -315,12 +391,11 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
           cursor: 'ew-resize',
-          background: 'rgba(0,0,0,0.3)',
+          background: 'linear-gradient(270deg, rgba(0,0,0,0.35) 0%, transparent 100%)',
           zIndex: 2,
         }}
       />
 
-      {/* Delete button — only on the selected clip */}
       {isSelected && (
         <button
           type="button"
@@ -330,17 +405,17 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
           aria-label="Delete clip"
           style={{
             position: 'absolute',
-            top: 2,
-            right: TRIM_HANDLE_WIDTH + 2,
+            top: 3,
+            right: TRIM_HANDLE_WIDTH + 3,
             width: 16,
             height: 16,
             padding: 0,
             lineHeight: '14px',
-            fontSize: 12,
+            fontSize: 11,
             color: '#fff',
-            background: 'rgba(0,0,0,0.55)',
-            border: '1px solid rgba(255,255,255,0.4)',
-            borderRadius: 3,
+            background: 'rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            borderRadius: 4,
             cursor: 'pointer',
             zIndex: 4,
             display: 'flex',

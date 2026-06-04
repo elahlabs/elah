@@ -9,14 +9,6 @@ export interface ElementsPanelProps {
   className?: string
 }
 
-/**
- * Palette of synthetic timeline elements that aren't backed by imported media.
- * Today that's just a Text block: drag the tile onto the Text track and the
- * drop handler (`useTimelineDrop`) creates a text clip at the drop position.
- *
- * Must be rendered inside `<EditorProvider>`. Kept deliberately minimal so the
- * upcoming visual design can restyle it without touching drag wiring.
- */
 export function ElementsPanel({ style, className }: ElementsPanelProps) {
   const onTextDragStart = useCallback((e: DragEvent<HTMLDivElement>) => {
     const payload: DragElementPayload = { kind: 'element', element: 'text' }
@@ -30,73 +22,71 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        background: '#121212',
-        borderRight: '1px solid #2a2a2a',
-        borderBottom: '1px solid #2a2a2a',
+        background: 'transparent',
+        borderBottom: '1px solid #232938',
         ...style,
       }}
     >
       <div
         style={{
-          padding: '8px 10px',
-          borderBottom: '1px solid #2a2a2a',
+          padding: '10px 12px',
+          borderBottom: '1px solid #232938',
           flexShrink: 0,
         }}
       >
         <span
           style={{
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 700,
-            color: '#888',
-            fontFamily: 'monospace',
+            color: '#6B7280',
+            letterSpacing: '0.08em',
           }}
         >
-          Elements
+          ELEMENTS
         </span>
       </div>
 
-      <div style={{ padding: 8 }}>
+      <div style={{ padding: 10 }}>
         <div
           draggable
+          className="elah-element-card"
           onDragStart={onTextDragStart}
           title="Drag onto the Text track"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '8px 10px',
-            borderRadius: 5,
+            gap: 10,
+            padding: '10px 12px',
+            borderRadius: 8,
             cursor: 'grab',
             userSelect: 'none',
-            background: '#1a1a1a',
-            border: '1px solid #2a2a2a',
+            background: '#171D2B',
+            border: '1px solid #232938',
+            transition: 'background 0.15s, border-color 0.15s',
           }}
         >
           <span
             style={{
-              width: 28,
-              height: 28,
+              width: 32,
+              height: 32,
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 4,
-              background: '#9b59b6',
-              color: '#fff',
+              borderRadius: 6,
+              background: 'rgba(147, 51, 234, 0.25)',
+              border: '1px solid rgba(147, 51, 234, 0.4)',
+              color: '#C4B5FD',
               fontWeight: 700,
-              fontFamily: 'serif',
-              fontSize: 16,
+              fontFamily: 'Georgia, serif',
+              fontSize: 17,
             }}
           >
             T
           </span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-            <span style={{ fontSize: 11, color: '#ccc', fontFamily: 'monospace' }}>
-              Text
-            </span>
-            <span style={{ fontSize: 9, color: '#666', fontFamily: 'monospace' }}>
-              Drag to timeline
-            </span>
+            <span style={{ fontSize: 12, color: '#F3F4F6', fontWeight: 500 }}>Text</span>
+            <span style={{ fontSize: 10, color: '#6B7280' }}>+ Drag onto timeline</span>
           </div>
         </div>
       </div>
