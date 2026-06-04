@@ -41,6 +41,7 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
   const engine = useTimeline()
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
   const selectClip = useSelectionStore((s) => s.selectClip)
+  const clearSelection = useSelectionStore((s) => s.clearSelection)
   const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
 
   const blockRef = useRef<HTMLDivElement>(null)
@@ -235,6 +236,17 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
     [clip, zoom, engine, selectClip],
   )
 
+  // Delete this clip. Stop the mousedown from starting a body-drag, then remove
+  // on click. Mirrors the Delete/Backspace keyboard path in Timeline.
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      engine.removeClip(clip.id, clip.trackId)
+      clearSelection()
+    },
+    [clip.id, clip.trackId, engine, clearSelection],
+  )
+
   const baseColor = CLIP_COLORS[clip.type] ?? '#555'
 
   return (
@@ -307,6 +319,38 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
           zIndex: 2,
         }}
       />
+
+      {/* Delete button — only on the selected clip */}
+      {isSelected && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={handleDelete}
+          title="Delete clip (Del)"
+          aria-label="Delete clip"
+          style={{
+            position: 'absolute',
+            top: 2,
+            right: TRIM_HANDLE_WIDTH + 2,
+            width: 16,
+            height: 16,
+            padding: 0,
+            lineHeight: '14px',
+            fontSize: 12,
+            color: '#fff',
+            background: 'rgba(0,0,0,0.55)',
+            border: '1px solid rgba(255,255,255,0.4)',
+            borderRadius: 3,
+            cursor: 'pointer',
+            zIndex: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ×
+        </button>
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
+import type { InitialTrackConfig } from '../core/types'
 import { TimelineEngine } from '../core/editor/TimelineEngine'
 import { PlaybackEngine } from '../core/playback/PlaybackEngine'
 import { useTracksStore } from '../core/stores/tracks.store'
@@ -11,6 +12,12 @@ export interface EditorProviderProps {
   stage?: { width: number; height: number }
   defaultTrackHeight?: number
   maxHistorySize?: number
+  /**
+   * Tracks created in the empty project before any user edits. Omit for the
+   * default single video track; pass a fixed list (e.g. video / audio / text)
+   * for a fixed-lane editor.
+   */
+  initialTracks?: InitialTrackConfig[]
   children: ReactNode
 }
 
@@ -19,10 +26,18 @@ export function EditorProvider({
   stage,
   defaultTrackHeight,
   maxHistorySize,
+  initialTracks,
   children,
 }: EditorProviderProps) {
   const engine = useMemo(
-    () => new TimelineEngine({ fps, stage, defaultTrackHeight, maxHistorySize }),
+    () =>
+      new TimelineEngine({
+        fps,
+        stage,
+        defaultTrackHeight,
+        maxHistorySize,
+        initialTracks,
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )

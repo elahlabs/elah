@@ -111,6 +111,13 @@ export interface Project {
   version: number
 }
 
+/** A track to create up-front when the engine is constructed. */
+export interface InitialTrackConfig {
+  kind: TrackKind
+  /** Display name; falls back to a kind-based default when omitted. */
+  name?: string
+}
+
 /** Config passed when creating a TimelineEngine instance */
 export interface TimelineConfig {
   fps: number
@@ -120,6 +127,12 @@ export interface TimelineConfig {
   defaultTrackHeight?: number
   /** Max undo steps kept in history */
   maxHistorySize?: number
+  /**
+   * Tracks created in the empty project before any user edits. When omitted,
+   * a single "Track 1" video track is created (backwards-compatible default).
+   * Pass an explicit list for a fixed-lane editor (e.g. video / audio / text).
+   */
+  initialTracks?: InitialTrackConfig[]
 }
 
 /** Events emitted by TimelineEngine */

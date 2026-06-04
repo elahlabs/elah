@@ -10,6 +10,7 @@ import type { TimelineEngine } from '../core/editor/TimelineEngine'
 import type { PlaybackEngine } from '../core/playback/PlaybackEngine'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { usePlaybackStore } from '../core/stores/playback.store'
+import { useSelectionStore } from '../core/stores/selection.store'
 import { splitClipAtPlayhead } from '../core/actions/splitClipAtPlayhead'
 import { useEditor } from '../core/editor-context'
 import { Ruler } from './Ruler'
@@ -19,7 +20,15 @@ import { TrackRow } from './TrackRow'
 export interface TimelineRef {
   engine: TimelineEngine
   playback: PlaybackEngine
+  /**
+   * Set the zoom so the whole timeline fits the visible track area. Useful for
+   * long clips that overflow far past the viewport. No-op until mounted.
+   */
+  fitToWindow: () => void
 }
+
+/** Width of the track-label sidebar; the clip lanes begin after it. */
+const SIDEBAR_WIDTH = 160
 
 export interface TimelineProps {
   fps?: number
@@ -51,16 +60,32 @@ export const Timeline = memo(
   ) {
     const { engine, playback } = useEditor()
 
-    useImperativeHandle(ref, () => ({ engine, playback }), [engine, playback])
+    const scrollRef = useRef<HTMLDivElement>(null)
+    const rulerWrapRef = useRef<HTMLDivElement>(null)
+
+    // Fit the entire timeline into the visible lane width. Falls back to a
+    // 10-second baseline (matching the ruler) when the timeline is empty.
+    const fitToWindow = useCallback(() => {
+      const el = scrollRef.current
+      if (!el) return
+      const available = el.clientWidth - SIDEBAR_WIDTH
+      if (available <= 0) return
+      const totalFrames = useTracksStore.getState().totalFrames
+      const frames = Math.max(totalFrames, fps * 10)
+      usePlaybackStore.getState().setZoom(available / frames)
+    }, [fps])
+
+    useImperativeHandle(
+      ref,
+      () => ({ engine, playback, fitToWindow }),
+      [engine, playback, fitToWindow],
+    )
 
     const tracks = useTracksStore((s) => s.tracks)
     const totalFrames = useTracksStore((s) => s.totalFrames)
     const zoom = usePlaybackStore((s) => s.zoom)
     const setZoom = usePlaybackStore((s) => s.setZoom)
     const setCurrentFrame = usePlaybackStore((s) => s.setCurrentFrame)
-
-    const scrollRef = useRef<HTMLDivElement>(null)
-    const rulerWrapRef = useRef<HTMLDivElement>(null)
 
     // Mirror horizontal scroll of the track area into the ruler wrapper so they
     // always stay in sync. The ruler wrapper is overflow:hidden (no visible bar).
@@ -129,6 +154,20 @@ export const Timeline = memo(
           }
         }
 
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          const selected = useSelectionStore.getState().selectedClipIds
+          if (selected.size === 0) return
+          e.preventDefault()
+          // One undo entry for the whole deletion, even across tracks.
+          engine.batch(() => {
+            for (const clipId of selected) {
+              const found = engine.findClip(clipId)
+              if (found) engine.removeClip(clipId, found.trackId)
+            }
+          }, 'Delete clip')
+          useSelectionStore.getState().clearSelection()
+        }
+
         if (e.code === 'ArrowRight' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault()
           const { currentFrame, setCurrentFrame } = usePlaybackStore.getState()
@@ -168,7 +207,7 @@ export const Timeline = memo(
           {/* Sidebar spacer */}
           <div
             style={{
-              width: 160,
+              width: SIDEBAR_WIDTH,
               flexShrink: 0,
               height: rulerHeight,
               background: '#1a1a1a',
@@ -227,7 +266,7 @@ export const Timeline = memo(
           zoom={zoom}
           height="100%"
           scrollContainerRef={scrollRef}
-          sidebarWidth={160}
+          sidebarWidth={SIDEBAR_WIDTH}
         />
       </div>
     )

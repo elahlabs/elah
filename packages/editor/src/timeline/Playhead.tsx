@@ -41,7 +41,13 @@ export function Playhead({
   // Pure DOM write — zero React involvement.
   const applyPosition = (frame: number, scrollLeft: number) => {
     if (needleRef.current) {
-      needleRef.current.style.left = `${sidebarWidthRef.current + frame * zoomRef.current - scrollLeft}px`
+      const left = sidebarWidthRef.current + frame * zoomRef.current - scrollLeft
+      needleRef.current.style.left = `${left}px`
+      // Hide the needle once it scrolls under the pinned track-label sidebar so
+      // it doesn't draw over the labels (the sidebar is sticky, the playhead is
+      // not — it lives in the outer container above everything).
+      needleRef.current.style.visibility =
+        left < sidebarWidthRef.current ? 'hidden' : 'visible'
     }
   }
 

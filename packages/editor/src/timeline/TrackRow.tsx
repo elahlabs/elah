@@ -43,10 +43,14 @@ export const TrackRow = memo(function TrackRow({
 
   return (
     <div style={{ display: 'flex', height: track.height }}>
-      {/* Track label sidebar */}
+      {/* Track label sidebar — sticky so labels stay pinned while clips scroll
+          horizontally underneath. zIndex keeps it above the clip blocks. */}
       <div
         onClick={() => setActiveTrack(track.id)}
         style={{
+          position: 'sticky',
+          left: 0,
+          zIndex: 6,
           width: 160,
           flexShrink: 0,
           borderLeft: `3px solid ${kindAccent}`,

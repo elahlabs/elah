@@ -38,7 +38,7 @@ export function Ruler({
     const rawSeconds = 80 / pixelsPerSecond
     const intervals = [
       1 / fps,  // every frame
-      0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300,
+      0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800,
     ]
     const secondsPerTick =
       intervals.find((i) => i >= rawSeconds) ?? intervals[intervals.length - 1]

@@ -4,6 +4,7 @@ import { GpuPreview } from './GpuPreview'
 import { TextClipProperties } from './TextClipProperties'
 import {
   AssetPanel,
+  ElementsPanel,
   EditorProvider,
   Timeline,
   useTracksStore,
@@ -12,12 +13,29 @@ import {
   useResolvedScene,
   useMediaLibraryStore,
   splitClipAtPlayhead,
+  type InitialTrackConfig,
   type TimelineRef,
 } from '@elah/editor'
 
 const FPS = 30
 const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
 const SHOW_SCENE_DEBUG = true
+
+// Fixed-lane editor: exactly three tracks, no add/remove.
+const INITIAL_TRACKS: InitialTrackConfig[] = [
+  { kind: 'video', name: 'Video / Image' },
+  { kind: 'audio', name: 'Audio' },
+  { kind: 'text', name: 'Text' },
+]
+
+// Zoom slider runs on a log scale so the full range (fit a 30-min clip ↔
+// frame-level detail) is reachable with a short travel.
+const ZOOM_MIN = 0.02
+const ZOOM_MAX = 50
+const zoomToSlider = (z: number) =>
+  (Math.log(z) - Math.log(ZOOM_MIN)) / (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN))
+const sliderToZoom = (s: number) =>
+  Math.exp(Math.log(ZOOM_MIN) + s * (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN)))
 
 function ResolvedSceneDebug() {
   const scene = useResolvedScene()
@@ -67,18 +85,6 @@ export default function App() {
   }, [])
 
   const engine = () => timelineRef.current?.engine
-
-  const addVideoTrack = () => {
-    engine()?.addTrack('video')
-  }
-
-  const addAudioTrack = () => {
-    engine()?.addTrack('audio')
-  }
-
-  const addTextTrack = () => {
-    engine()?.addTrack('text')
-  }
 
   const addVideoClip = () => {
     const e = engine()
@@ -240,7 +246,7 @@ export default function App() {
   return (
     <>
       {SHOW_LAB && <MediaLimitsLab />}
-      <EditorProvider fps={FPS}>
+      <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
           {/* Toolbar */}
           <div
@@ -258,9 +264,6 @@ export default function App() {
               @elah/editor
             </span>
 
-            <button style={btnStyle()} onClick={addVideoTrack}>+ Video Track</button>
-            <button style={btnStyle()} onClick={addAudioTrack}>+ Audio Track</button>
-            <button style={btnStyle()} onClick={addTextTrack}>+ Text Track</button>
             <button style={btnStyle()} onClick={addVideoClip}>+ Video Clip</button>
             <button style={btnStyle()} onClick={addAudioClip}>+ Audio Clip</button>
             <button style={btnStyle()} onClick={addTextClip}>+ Text Clip</button>
@@ -326,15 +329,22 @@ export default function App() {
               Zoom
               <input
                 type="range"
-                min={1}
-                max={20}
-                step={0.5}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
+                min={0}
+                max={1}
+                step={0.001}
+                value={zoomToSlider(zoom)}
+                onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
                 style={{ marginLeft: 8, width: 80 }}
               />
-              {zoom.toFixed(1)}px/f
+              {zoom < 1 ? zoom.toFixed(2) : zoom.toFixed(1)}px/f
             </label>
+            <button
+              style={btnStyle()}
+              onClick={() => timelineRef.current?.fitToWindow()}
+              title="Zoom to fit the whole timeline"
+            >
+              Fit
+            </button>
 
             <div style={{ marginLeft: 'auto', fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
               <span ref={frameDisplayRef}>Frame 0 | 0.00s</span>
@@ -344,7 +354,19 @@ export default function App() {
 
           {/* Main work area: preview on top, asset panel + timeline below */}
           <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-            <AssetPanel style={{ width: 220, flexShrink: 0 }} />
+            {/* Left column: draggable elements palette + media library */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                width: 220,
+                flexShrink: 0,
+                minHeight: 0,
+              }}
+            >
+              <ElementsPanel />
+              <AssetPanel style={{ flex: 1, minHeight: 0 }} />
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, minHeight: 0 }}>
               {/* GPU Preview — above the timeline, fills available vertical space */}
               <GpuPreview debugMode style={{ flex: 1, minHeight: 240 }} />

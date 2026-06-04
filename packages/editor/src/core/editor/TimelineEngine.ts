@@ -3,6 +3,7 @@ import type {
   Clip,
   EngineEvent,
   EngineEventPayload,
+  InitialTrackConfig,
   Project,
   TimelineConfig,
   Track,
@@ -35,14 +36,34 @@ type Listener<E extends EngineEvent> = (payload: EngineEventPayload[E]) => void
 function buildEmptyProject(
   fps: number,
   stage: { width: number; height: number },
+  initialTracks: InitialTrackConfig[] | undefined,
+  defaultTrackHeight: number,
 ): Project {
-  const firstTrack = createTrack({ kind: 'video', name: 'Track 1', order: 0 })
+  const specs: InitialTrackConfig[] =
+    initialTracks && initialTracks.length > 0
+      ? initialTracks
+      : [{ kind: 'video', name: 'Track 1' }]
+
+  const tracks = specs.map((spec, order) =>
+    createTrack({
+      kind: spec.kind,
+      name: spec.name,
+      order,
+      height: defaultTrackHeight,
+    }),
+  )
+
+  // Initialize an empty clip array per track so consumers can index `clips[id]`
+  // without an undefined check on a brand-new project.
+  const clips: Project['clips'] = {}
+  for (const track of tracks) clips[track.id] = []
+
   return {
     id: generateId(),
     fps,
     stage,
-    tracks: [firstTrack],
-    clips: {},
+    tracks,
+    clips,
     version: 1,
   }
 }
@@ -89,9 +110,14 @@ export class TimelineEngine {
 
   constructor(config: TimelineConfig) {
     const stage = config.stage ?? { width: 1080, height: 1920 }
-    this.project = buildEmptyProject(config.fps, stage)
     this.maxHistorySize = config.maxHistorySize ?? 100
     this.defaultTrackHeight = config.defaultTrackHeight ?? 64
+    this.project = buildEmptyProject(
+      config.fps,
+      stage,
+      config.initialTracks,
+      this.defaultTrackHeight,
+    )
   }
 
   // ---------------------------------------------------------------------------
