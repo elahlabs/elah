@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ActiveTextClip } from '../../../resolver/scene'
+import type { ActiveImageClip } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
-import { TextLayer, type TextCanvasFactory } from '../layers/TextLayer'
+import { ImageLayer, type ImageLoader, type LoadedImage } from '../layers/ImageLayer'
 
 // ---------------------------------------------------------------------------
-// Minimal WebGL2 mock (mirrors VideoLayer.test.ts, plus pixelStorei for the
-// premultiply toggle TextLayer uses on upload).
+// Minimal WebGL2 mock (mirrors TextLayer.test.ts — same quad + premultiply path).
 // ---------------------------------------------------------------------------
 
 function createMockGL(): WebGL2RenderingContext {
@@ -84,37 +83,26 @@ function createMockGL(): WebGL2RenderingContext {
   return gl as unknown as WebGL2RenderingContext
 }
 
-// ---------------------------------------------------------------------------
-// Mock 2D canvas (vitest runs in the `node` environment — no real DOM).
-// ---------------------------------------------------------------------------
-
-function makeMockCanvasFactory(): TextCanvasFactory {
-  return () => {
-    const ctx2d = {
-      font: '',
-      fillStyle: '',
-      textAlign: 'left',
-      textBaseline: 'alphabetic',
-      clearRect: vi.fn(),
-      fillText: vi.fn(),
-      measureText: vi.fn(() => ({ width: 10 })),
-    }
-    const canvas = {
-      width: 0,
-      height: 0,
-      getContext: vi.fn(() => ctx2d),
-    }
-    return canvas as unknown as HTMLCanvasElement
-  }
+// A loader that resolves immediately with a fake uploadable source + size.
+function makeLoader(width = 1920, height = 1080): ImageLoader {
+  return () =>
+    Promise.resolve<LoadedImage>({
+      source: {} as TexImageSource,
+      width,
+      height,
+    })
 }
 
-function makeClip(overrides: Partial<ActiveTextClip> = {}): ActiveTextClip {
+// Flush the microtask queue so the acquire() load promise's .then runs.
+const flush = () => new Promise<void>((r) => setTimeout(r, 0))
+
+function makeClip(overrides: Partial<ActiveImageClip> = {}): ActiveImageClip {
   return {
-    id: 'text-a',
+    id: 'image-a',
     trackId: 'track-1',
-    name: 'Text A',
-    type: 'text',
-    content: 'Hello',
+    name: 'Image A',
+    type: 'image',
+    src: 'blob://image-1',
     sourceFrame: 0,
     opacity: 1,
     zIndex: 0,
@@ -125,8 +113,8 @@ function makeClip(overrides: Partial<ActiveTextClip> = {}): ActiveTextClip {
 function makeCtx(gl: WebGL2RenderingContext): LayerContext {
   return {
     gl,
-    stage: { width: 1280, height: 720 },
-    viewport: { width: 1280, height: 720 },
+    stage: { width: 1080, height: 1920 },
+    viewport: { width: 1080, height: 1920 },
     fps: 30,
   }
 }
@@ -135,15 +123,15 @@ function makeCtx(gl: WebGL2RenderingContext): LayerContext {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('TextLayer', () => {
+describe('ImageLayer', () => {
   let gl: WebGL2RenderingContext
   let ctx: LayerContext
-  let layer: TextLayer
+  let layer: ImageLayer
 
   beforeEach(() => {
     gl = createMockGL()
     ctx = makeCtx(gl)
-    layer = new TextLayer(makeMockCanvasFactory())
+    layer = new ImageLayer(makeLoader())
   })
 
   it('acquire() allocates a texture per clip', () => {
@@ -152,47 +140,51 @@ describe('TextLayer', () => {
     expect(layer.getTextureCount()).toBe(1)
   })
 
-  it('draw() paints, uploads the canvas, and issues a quad draw', () => {
-    const clip = makeClip({ opacity: 0.8 })
+  it('draw() before the image loads is a no-op (keeps the canvas as-is)', () => {
+    const clip = makeClip()
     layer.acquire(clip, ctx)
+    layer.draw(clip, ctx) // image not yet resolved
+    expect(gl.texImage2D).not.toHaveBeenCalled()
+    expect(gl.drawArrays).not.toHaveBeenCalled()
+  })
+
+  it('draw() after load uploads the image once and draws a quad with opacity', async () => {
+    const clip = makeClip({ opacity: 0.7 })
+    layer.acquire(clip, ctx)
+    await flush()
+
     layer.draw(clip, ctx)
 
     expect(gl.texImage2D).toHaveBeenCalledTimes(1)
     expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4)
-    expect(gl.uniform1f).toHaveBeenCalledWith(expect.anything(), 0.8)
+    expect(gl.uniform1f).toHaveBeenCalledWith(expect.anything(), 0.7)
+    expect(gl.uniformMatrix3fv).toHaveBeenCalledWith(
+      expect.anything(),
+      false,
+      expect.any(Float32Array),
+    )
   })
 
-  it('toggles premultiply-alpha around the upload', () => {
+  it('does not re-upload the static image on subsequent draws', async () => {
     const clip = makeClip()
     layer.acquire(clip, ctx)
+    await flush()
+
+    layer.draw(clip, ctx)
+    layer.draw(clip, ctx)
+
+    expect(gl.texImage2D).toHaveBeenCalledTimes(1)
+    expect(gl.drawArrays).toHaveBeenCalledTimes(2)
+  })
+
+  it('toggles premultiply-alpha around the upload', async () => {
+    const clip = makeClip()
+    layer.acquire(clip, ctx)
+    await flush()
     layer.draw(clip, ctx)
 
     expect(gl.pixelStorei).toHaveBeenCalledWith(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
     expect(gl.pixelStorei).toHaveBeenCalledWith(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
-  })
-
-  it('skips re-upload when content + style are unchanged', () => {
-    const clip = makeClip()
-    layer.acquire(clip, ctx)
-
-    layer.draw(clip, ctx)
-    layer.draw(clip, ctx)
-
-    // Painted/uploaded once; second draw reuses the texture.
-    expect(gl.texImage2D).toHaveBeenCalledTimes(1)
-    // But still draws the quad each tick.
-    expect(gl.drawArrays).toHaveBeenCalledTimes(2)
-  })
-
-  it('re-uploads when the content changes', () => {
-    const a = makeClip({ content: 'Hello' })
-    layer.acquire(a, ctx)
-    layer.draw(a, ctx)
-
-    const b = makeClip({ content: 'World' })
-    layer.draw(b, ctx)
-
-    expect(gl.texImage2D).toHaveBeenCalledTimes(2)
   })
 
   it('release() deletes the clip texture', () => {
@@ -202,6 +194,17 @@ describe('TextLayer', () => {
 
     expect(gl.deleteTexture).toHaveBeenCalledTimes(1)
     expect(layer.getTextureCount()).toBe(0)
+  })
+
+  it('does not upload to a texture released before the load resolved', async () => {
+    const clip = makeClip()
+    layer.acquire(clip, ctx)
+    layer.release(clip.id) // released before the async load resolves
+    await flush()
+
+    layer.draw(clip, ctx)
+    expect(gl.texImage2D).not.toHaveBeenCalled()
+    expect(gl.drawArrays).not.toHaveBeenCalled()
   })
 
   it('dispose() deletes textures and GL pipeline objects', () => {
@@ -217,39 +220,5 @@ describe('TextLayer', () => {
   it('draw() before acquire() is a no-op', () => {
     layer.draw(makeClip(), ctx)
     expect(gl.drawArrays).not.toHaveBeenCalled()
-  })
-
-  it('re-rasterizes (re-uploads) when transform.scale changes', () => {
-    const base = makeClip()
-    layer.acquire(base, ctx)
-    layer.draw(base, ctx)
-
-    const scaled = makeClip({
-      transform: { x: 0.5, y: 0.5, scale: 2, rotation: 0, anchor: { x: 0.5, y: 0.5 } },
-    })
-    layer.draw(scaled, ctx)
-
-    // scale is baked into fontSize, so it changes the painted pixels.
-    expect(gl.texImage2D).toHaveBeenCalledTimes(2)
-  })
-
-  it('uses the full-stage matrix when rotation is 0, a different one when rotated', () => {
-    const FULL_STAGE = [2, 0, 0, 0, 2, 0, -1, -1, 1]
-
-    const flat = makeClip({
-      transform: { x: 0.5, y: 0.5, scale: 1, rotation: 0, anchor: { x: 0.5, y: 0.5 } },
-    })
-    layer.acquire(flat, ctx)
-    layer.draw(flat, ctx)
-    const calls = (gl.uniformMatrix3fv as unknown as { mock: { calls: unknown[][] } }).mock.calls
-    const flatMat = Array.from(calls[calls.length - 1][2] as Float32Array)
-    expect(flatMat).toEqual(FULL_STAGE)
-
-    const rotated = makeClip({
-      transform: { x: 0.5, y: 0.5, scale: 1, rotation: 1, anchor: { x: 0.5, y: 0.5 } },
-    })
-    layer.draw(rotated, ctx)
-    const rotMat = Array.from(calls[calls.length - 1][2] as Float32Array)
-    expect(rotMat).not.toEqual(FULL_STAGE)
   })
 })

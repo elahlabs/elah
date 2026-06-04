@@ -131,6 +131,21 @@ export class TimelineEngine {
   }
 
   // ---------------------------------------------------------------------------
+  // Project operations
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Set the output canvas (stage) dimensions, e.g. switching aspect ratio.
+   * Recorded as one undo entry. Clips re-fit to the new stage on the next
+   * resolve (no per-clip migration needed — placement is normalized).
+   */
+  setStage(width: number, height: number): void {
+    this.commit((draft) => {
+      draft.stage = { width, height }
+    }, 'Change aspect ratio')
+  }
+
+  // ---------------------------------------------------------------------------
   // Track operations
   // ---------------------------------------------------------------------------
 

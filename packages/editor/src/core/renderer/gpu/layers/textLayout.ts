@@ -119,6 +119,12 @@ export function computeTextLayout(
   stage: { width: number; height: number },
 ): TextLayout {
   const style = resolveTextStyle(item)
+  // transform.scale multiplies the glyph size, re-rasterizing at the larger size
+  // so text stays crisp (rather than bitmap-scaling the quad). This keeps the
+  // GPU layer and the editor overlay — both of which read style.fontSize —
+  // agreeing on the painted size. (Rotation is applied separately, in the shader.)
+  const scale = item.transform?.scale ?? 1
+  if (scale !== 1) style.fontSize *= scale
   const font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`
   measure.font = font
 

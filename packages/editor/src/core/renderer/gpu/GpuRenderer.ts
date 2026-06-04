@@ -21,6 +21,7 @@ import { GpuDebugCounters } from './debug/GpuDebugCounters'
 import { VideoLayer } from './layers/VideoLayer'
 import { FrameProbeLayer } from './layers/FrameProbeLayer'
 import { TextLayer } from './layers/TextLayer'
+import { ImageLayer } from './layers/ImageLayer'
 import type { Layer, LayerContext } from './layers/types'
 import { RenderGraph } from './RenderGraph'
 import { TexturePool } from './TexturePool'
@@ -36,6 +37,7 @@ export class GpuRenderer implements Renderer {
   private _texturePool: TexturePool | null = null
   private _videoLayer: VideoLayer | null = null
   private _textLayer: TextLayer | null = null
+  private _imageLayer: ImageLayer | null = null
   private _debugPanel: GpuRendererDebugPanel | null = null
 
   private _container: HTMLElement | null = null
@@ -108,6 +110,16 @@ export class GpuRenderer implements Renderer {
     this._renderGraph.registerLayer(
       videoLayer,
       (scene) => scene.videos,
+      (item) => item.id,
+      (item) => item.zIndex,
+    )
+
+    // Image clips share the video quad pipeline (minus the decoder) and
+    // composite by global zIndex like everything else.
+    this._imageLayer = new ImageLayer()
+    this._renderGraph.registerLayer(
+      this._imageLayer,
+      (scene) => scene.images,
       (item) => item.id,
       (item) => item.zIndex,
     )
@@ -216,6 +228,7 @@ export class GpuRenderer implements Renderer {
     this._renderGraph = null
     this._videoLayer = null
     this._textLayer = null
+    this._imageLayer = null
 
     const gl = this._glCtx?.gl ?? null
     if (gl && this._texturePool) {
@@ -300,6 +313,7 @@ export class GpuRenderer implements Renderer {
     this._texturePool?.handleContextLost()
     this._videoLayer?.notifyContextLost()
     this._textLayer?.notifyContextLost()
+    this._imageLayer?.notifyContextLost()
     this._renderGraph?.notifyContextLost()
   }
 

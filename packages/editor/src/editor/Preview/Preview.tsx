@@ -11,6 +11,7 @@ import { useTimelineEngine, usePlaybackEngine } from '../../core/editor-context'
 import type { DemuxerFactory } from '../../core/media/video/demuxer/MediabunnyDemuxer'
 import { AudioPlaybackController } from '../../core/media/audio/AudioPlaybackController'
 import { TextOverlay } from './TextOverlay'
+import { StageBorder } from './StageBorder'
 
 /**
  * Imperative handle exposed via ref. Lets a host (e.g. a playground or dev
@@ -154,6 +155,10 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
         ...style,
       }}
     >
+      {/* Project-frame outline, drawn at the same letterbox fit the renderer
+          uses so the active aspect ratio is always visible against the bars. */}
+      <StageBorder />
+
       {/* Interactive text editing layer, painted above the WebGL canvas. The
           canvas is appended imperatively by GpuRenderer.mount(); this React
           child coexists with it inside the same positioned container. */}

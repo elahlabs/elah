@@ -4,6 +4,8 @@ import type { Clip, Project, Track } from '../types'
 interface TracksState {
   tracks: Track[]
   clips: Record<string, Clip[]>
+  /** Output canvas dimensions; mirrored so React re-renders on aspect changes. */
+  stage: { width: number; height: number }
   totalFrames: number
   canUndo: boolean
   canRedo: boolean
@@ -29,6 +31,7 @@ interface TracksActions {
 export const useTracksStore = create<TracksState & TracksActions>()((set) => ({
   tracks: [],
   clips: {},
+  stage: { width: 1080, height: 1920 },
   totalFrames: 0,
   canUndo: false,
   canRedo: false,
@@ -45,6 +48,7 @@ export const useTracksStore = create<TracksState & TracksActions>()((set) => ({
     set({
       tracks: project.tracks,
       clips: project.clips,
+      stage: project.stage,
       totalFrames: max,
       canUndo: meta.canUndo,
       canRedo: meta.canRedo,
