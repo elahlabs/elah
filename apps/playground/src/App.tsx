@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import MediaLimitsLab from './MediaLimitsLab'
 import { GpuPreview } from './GpuPreview'
+import { TextClipProperties } from './TextClipProperties'
 import {
   AssetPanel,
   EditorProvider,
@@ -129,10 +130,24 @@ export default function App() {
   const addAudioClip = () => {
     const e = engine()
     if (!e) return
-    const tracks = e.getProject().tracks.filter((t) => t.kind === 'audio')
-    if (tracks.length === 0) {
-      alert('Add an audio track first')
+
+    // Use the most recently imported audio asset so the clip has a real src —
+    // without one the resolver drops it and AudioPlaybackController has nothing
+    // to play. (Video files carry audio too; fall back to those.)
+    const mediaState = useMediaLibraryStore.getState()
+    const audioAsset = mediaState.order
+      .map((id) => mediaState.assets[id])
+      .reverse()
+      .find((a) => a?.kind === 'audio' || a?.kind === 'video')
+    if (!audioAsset) {
+      alert('Import an audio (or video) file from the Media panel first')
       return
+    }
+
+    let tracks = e.getProject().tracks.filter((t) => t.kind === 'audio')
+    if (tracks.length === 0) {
+      e.addTrack('audio')
+      tracks = e.getProject().tracks.filter((t) => t.kind === 'audio')
     }
     const track = tracks[0]
     const existing = e.getClipsOnTrack(track.id)
@@ -141,40 +156,53 @@ export default function App() {
         ? existing[existing.length - 1].startFrame +
         existing[existing.length - 1].durationFrames
         : 0
+    const durationFrames =
+      audioAsset.durationSec > 0
+        ? Math.round(audioAsset.durationSec * FPS)
+        : FPS * 4
     e.addClip({
       trackId: track.id,
       type: 'audio',
-      name: `Audio ${existing.length + 1}`,
+      name: audioAsset.name,
       startFrame,
-      durationFrames: FPS * 4,
+      durationFrames,
+      src: audioAsset.src,
+      assetId: audioAsset.id,
     })
   }
 
   const addTextClip = () => {
     const e = engine()
     if (!e) return
-    const tracks = e.getProject().tracks.filter((t) => t.kind === 'text')
-    console.log("engine", { engine: engine()?.getProject() })
-    if (tracks.length === 0) {
-      alert('Add a text track first')
-      return
+
+    let textTracks = e.getProject().tracks.filter((t) => t.kind === 'text')
+    if (textTracks.length === 0) {
+      e.addTrack('text')
+      textTracks = e.getProject().tracks.filter((t) => t.kind === 'text')
     }
 
-    const track = tracks[0]
+    const track = textTracks[0]
     const existing = e.getClipsOnTrack(track.id)
     const startFrame =
       existing.length > 0
         ? existing[existing.length - 1].startFrame +
-        existing[existing.length - 1].durationFrames
+          existing[existing.length - 1].durationFrames
         : 0
     const n = existing.length + 1
     e.addClip({
       trackId: track.id,
       type: 'text',
       name: `Text ${n}`,
-      content: `Layer ${n}`,
       startFrame,
-      durationFrames: FPS * 2,
+      durationFrames: FPS * 3,
+      text: {
+        content: `Text ${n}`,
+        fontSize: 200,
+        color: '#ffffff',
+        fontFamily: 'sans-serif',
+        fontWeight: 'normal',
+        textAlign: 'center',
+      },
     })
   }
 
@@ -295,6 +323,9 @@ export default function App() {
               <GpuPreview debugMode style={{ flex: 1, minHeight: 240 }} />
 
               {SHOW_SCENE_DEBUG && <ResolvedSceneDebug />}
+
+              {/* Text clip properties — appears when a text clip is selected */}
+              <TextClipProperties />
 
               {/* Timeline — fixed height at the bottom */}
               <Timeline

@@ -83,7 +83,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
     const clips = project.clips[track.id]
     if (!clips || clips.length === 0) continue
 
-    const zIndex = (maxOrder - track.order) * 1000
+    const zIndex = track.kind === 'text' ? 1000000 : (maxOrder - track.order) * 1000
 
     for (const clip of clips) {
       if (clip.disabled) continue
@@ -135,6 +135,11 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           opacity,
           zIndex,
           ...(clip.transform ? { transform: clip.transform } : {}),
+          ...(clip.fontSize !== undefined ? { fontSize: clip.fontSize } : {}),
+          ...(clip.color !== undefined ? { color: clip.color } : {}),
+          ...(clip.fontFamily !== undefined ? { fontFamily: clip.fontFamily } : {}),
+          ...(clip.fontWeight !== undefined ? { fontWeight: clip.fontWeight } : {}),
+          ...(clip.textAlign !== undefined ? { textAlign: clip.textAlign } : {}),
         }
         scene.texts.push(active)
       } else if (clip.type === 'image' && clip.src) {

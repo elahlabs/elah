@@ -61,6 +61,16 @@ export interface Clip {
   /** Text content for text clips */
   content?: string
 
+  // --- Text style (text clips only; all optional, the TextLayer applies defaults) ---
+  /** Glyph size in stage-space pixels */
+  fontSize?: number
+  /** CSS color string for the glyphs */
+  color?: string
+  /** CSS font-family */
+  fontFamily?: string
+  fontWeight?: 'normal' | 'bold'
+  textAlign?: 'left' | 'center' | 'right'
+
   volume?: number   // 0 – 1
   opacity?: number  // 0 – 1
   locked?: boolean

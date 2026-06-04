@@ -9,6 +9,8 @@ import { GpuRenderer } from '../../core/renderer/gpu/GpuRenderer'
 import { resolveTimeline } from '../../core/resolver/resolveTimeline'
 import { useTimelineEngine, usePlaybackEngine } from '../../core/editor-context'
 import type { DemuxerFactory } from '../../core/media/video/demuxer/MediabunnyDemuxer'
+import { AudioPlaybackController } from '../../core/media/audio/AudioPlaybackController'
+import { TextOverlay } from './TextOverlay'
 
 /**
  * Imperative handle exposed via ref. Lets a host (e.g. a playground or dev
@@ -44,6 +46,12 @@ export interface PreviewProps {
    * extra buffer copy per frame. Default false.
    */
   preserveDrawingBuffer?: boolean
+  /**
+   * Play the project's audio track in sync with the playback clock. Default true.
+   * Set false for silent previews / non-audio consumers (and to skip building an
+   * AudioContext at all).
+   */
+  enableAudio?: boolean
   style?: CSSProperties
   className?: string
 }
@@ -66,6 +74,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     probeLayer = false,
     clearColor,
     preserveDrawingBuffer,
+    enableAudio = true,
     style,
     className,
   },
@@ -107,6 +116,13 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     observer.observe(container)
     resize()
 
+    // Audio runs beside the renderer on the same playback clock — it self-drives
+    // off playback.subscribe(), so there is nothing to call per RAF tick.
+    const audio = enableAudio
+      ? new AudioPlaybackController(playback, () => engine.getProject())
+      : null
+    audio?.start()
+
     let rafId = 0
     const tick = () => {
       const frame = Math.floor(playback.getFrameAt())
@@ -119,11 +135,12 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     return () => {
       cancelAnimationFrame(rafId)
       observer.disconnect()
+      audio?.destroy()
       renderer.dispose()
       rendererRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, playback, demuxerFactory, debug, probeLayer, preserveDrawingBuffer])
+  }, [engine, playback, demuxerFactory, debug, probeLayer, preserveDrawingBuffer, enableAudio])
 
   return (
     <div
@@ -136,6 +153,11 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
         background: '#000',
         ...style,
       }}
-    />
+    >
+      {/* Interactive text editing layer, painted above the WebGL canvas. The
+          canvas is appended imperatively by GpuRenderer.mount(); this React
+          child coexists with it inside the same positioned container. */}
+      <TextOverlay />
+    </div>
   )
 })

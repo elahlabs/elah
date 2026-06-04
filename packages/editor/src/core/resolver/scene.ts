@@ -55,6 +55,14 @@ export interface ActiveAudioClip extends ActiveClipBase {
 export interface ActiveTextClip extends ActiveClipBase {
   type: 'text'
   content: string
+  /** Glyph size in stage-space pixels. Undefined → TextLayer default. */
+  fontSize?: number
+  /** CSS color string. Undefined → TextLayer default. */
+  color?: string
+  /** CSS font-family. Undefined → TextLayer default. */
+  fontFamily?: string
+  fontWeight?: 'normal' | 'bold'
+  textAlign?: 'left' | 'center' | 'right'
 }
 
 export interface ActiveImageClip extends ActiveClipBase {
