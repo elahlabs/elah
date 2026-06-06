@@ -27,6 +27,11 @@ export function useResolvedScene(frameOverride?: number): Scene {
   // leaving the tracks array reference untouched (Immer structural sharing), so
   // the tracks subscription alone would miss it.
   useTracksStore((s) => s.stage)
+  // Also subscribe to clips: previewClip({ content }) only mutates the clips
+  // slice (Immer structural sharing leaves the tracks array reference unchanged),
+  // so without this subscription the TextOverlay layout would stay stale while
+  // the user types — caret and resize handles would drift from the GPU glyphs.
+  useTracksStore((s) => s.clips)
 
   const frame = frameOverride ?? storeFrame
   const project = engine.getProject()

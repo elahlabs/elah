@@ -1,4 +1,4 @@
-import type { Project } from '../types'
+import type { Project, Clip, TransitionEasing } from '../types'
 import type {
   Scene,
   ActiveVideoClip,
@@ -6,6 +6,24 @@ import type {
   ActiveTextClip,
   ActiveImageClip,
 } from './scene'
+
+function applyEasing(t: number, easing: TransitionEasing = 'linear'): number {
+  const c = Math.max(0, Math.min(1, t))
+  if (easing === 'ease-in') return c * c
+  if (easing === 'ease-out') return c * (2 - c)
+  return c
+}
+
+function findClipById(
+  clips: Project['clips'],
+  clipId: string,
+): { clip: Clip; trackId: string } | null {
+  for (const [trackId, trackClips] of Object.entries(clips)) {
+    const clip = trackClips.find((c) => c.id === clipId)
+    if (clip) return { clip, trackId }
+  }
+  return null
+}
 
 /**
  * resolveTimeline — pure, deterministic frame resolver.
@@ -125,6 +143,21 @@ export function resolveTimeline(frame: number, project: Project): Scene {
         }
         scene.audios.push(active)
       } else if (clip.type === 'text') {
+        // Resolve entry/exit animation into opacity so both renderers get the
+        // animated value for free — neither renderer needs to know about animations.
+        let resolvedOpacity = opacity
+        const anim = clip.textAnimation
+        if (anim) {
+          const d = Math.max(1, anim.durationFrames)
+          const localFrame = frame - clip.startFrame
+          if (anim.in === 'fade') {
+            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, localFrame / d))
+          }
+          if (anim.out === 'fade') {
+            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, (clip.durationFrames - localFrame) / d))
+          }
+        }
+
         const active: ActiveTextClip = {
           type: 'text',
           id: clip.id,
@@ -132,7 +165,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           name: clip.name,
           content: clip.content ?? '',
           sourceFrame,
-          opacity,
+          opacity: resolvedOpacity,
           zIndex,
           ...(clip.transform ? { transform: clip.transform } : {}),
           ...(clip.fontSize !== undefined ? { fontSize: clip.fontSize } : {}),
@@ -157,6 +190,146 @@ export function resolveTimeline(frame: number, project: Project): Scene {
         scene.images.push(active)
       }
     }
+  }
+
+  // --- Transition pass -------------------------------------------------------
+  // For each transition whose window contains `frame`, synthesize overlap:
+  // both the outgoing (fromClip) and incoming (toClip) are rendered simultaneously
+  // with opposing opacities. The normal clip loop above may have added one of them
+  // already; we modify its opacity in-place and push the other if absent.
+  //
+  // For fade: this is sufficient — both renderers consume opacity automatically.
+  // For slide/wipe (future): scene.transitions carries `kind + t` for TransitionOverlay.
+
+  for (const transition of project.transitions) {
+    if (frame < transition.startFrame) continue
+    if (frame >= transition.startFrame + transition.durationFrames) continue
+
+    const rawT = (frame - transition.startFrame) / Math.max(1, transition.durationFrames)
+    const t = applyEasing(rawT, transition.easing)
+
+    const fromResult = findClipById(project.clips, transition.fromClipId)
+    const toResult = findClipById(project.clips, transition.toClipId)
+    if (!fromResult || !toResult) continue
+
+    const { clip: fromClip } = fromResult
+    const { clip: toClip } = toResult
+
+    // zIndex: outgoing sits below incoming during the transition
+    const fromZIndex = (maxOrder - (project.tracks.find((tr) => tr.id === transition.trackId)?.order ?? 0)) * 1000
+    const toZIndex = fromZIndex + 1
+
+    // Source frames — clamped so we never seek past the clip's source bounds.
+    const fromSourceFrame = Math.min(
+      Math.max(0, frame - fromClip.startFrame + fromClip.sourceStartFrame),
+      fromClip.sourceDurationFrames - 1,
+    )
+    const toSourceFrame = Math.max(
+      0,
+      Math.min(
+        frame - toClip.startFrame + toClip.sourceStartFrame,
+        toClip.sourceDurationFrames - 1,
+      ),
+    )
+
+    // Correct crossfade compositing (source-over):
+    //   result = t * toColor + (1-t) * fromColor
+    // Draw fromClip at full opacity as the base layer, then toClip at opacity=t
+    // on top. source-over in both WebGL and canvas-2D then yields the exact
+    // formula above — no black-bleed or brightness dip at the transition midpoint.
+    // Setting fromOpacity = (1-t) would give t*to + (1-t)²*from (wrong: dark midpoint).
+    const fromOpacity = fromClip.opacity ?? 1   // base layer — always full
+    const toOpacity = (toClip.opacity ?? 1) * t // fades in on top
+
+    const toTrackMuted = project.tracks.find((tr) => tr.id === toClip.trackId)?.muted ?? false
+
+    // Video clips
+    if (fromClip.type === 'video' && fromClip.src) {
+      const existing = scene.videos.find((v) => v.id === fromClip.id)
+      if (existing) {
+        existing.opacity = fromOpacity
+        existing.sourceFrame = fromSourceFrame
+      } else {
+        scene.videos.push({
+          type: 'video',
+          id: fromClip.id,
+          trackId: fromClip.trackId,
+          name: fromClip.name,
+          src: fromClip.src,
+          sourceFrame: fromSourceFrame,
+          opacity: fromOpacity,
+          volume: 0,
+          zIndex: fromZIndex,
+          ...(fromClip.transform ? { transform: fromClip.transform } : {}),
+        })
+      }
+    }
+    if (toClip.type === 'video' && toClip.src) {
+      const existing = scene.videos.find((v) => v.id === toClip.id)
+      if (existing) {
+        existing.opacity = toOpacity
+        existing.sourceFrame = toSourceFrame
+      } else {
+        scene.videos.push({
+          type: 'video',
+          id: toClip.id,
+          trackId: toClip.trackId,
+          name: toClip.name,
+          src: toClip.src,
+          sourceFrame: toSourceFrame,
+          opacity: toOpacity,
+          volume: toTrackMuted ? 0 : (toClip.volume ?? 1),
+          zIndex: toZIndex,
+          ...(toClip.transform ? { transform: toClip.transform } : {}),
+        })
+      }
+    }
+
+    // Image clips
+    if (fromClip.type === 'image' && fromClip.src) {
+      const existing = scene.images.find((v) => v.id === fromClip.id)
+      if (existing) {
+        existing.opacity = fromOpacity
+      } else {
+        scene.images.push({
+          type: 'image',
+          id: fromClip.id,
+          trackId: fromClip.trackId,
+          name: fromClip.name,
+          src: fromClip.src,
+          sourceFrame: fromSourceFrame,
+          opacity: fromOpacity,
+          zIndex: fromZIndex,
+          ...(fromClip.transform ? { transform: fromClip.transform } : {}),
+        })
+      }
+    }
+    if (toClip.type === 'image' && toClip.src) {
+      const existing = scene.images.find((v) => v.id === toClip.id)
+      if (existing) {
+        existing.opacity = toOpacity
+      } else {
+        scene.images.push({
+          type: 'image',
+          id: toClip.id,
+          trackId: toClip.trackId,
+          name: toClip.name,
+          src: toClip.src,
+          sourceFrame: toSourceFrame,
+          opacity: toOpacity,
+          zIndex: toZIndex,
+          ...(toClip.transform ? { transform: toClip.transform } : {}),
+        })
+      }
+    }
+
+    // Emit the active transition descriptor so TransitionOverlay (slide/wipe) can read it.
+    scene.transitions.push({
+      id: transition.id,
+      kind: transition.kind,
+      t,
+      direction: transition.direction,
+    })
   }
 
   // Sort ascending by zIndex: lower values = further back = earlier in array.

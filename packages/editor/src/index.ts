@@ -43,12 +43,18 @@ export type {
   Track,
   Project,
   Transform,
+  TextAnimation,
+  TextAnimationKind,
   ClipType,
   TrackKind,
   FrameCount,
   TimelineConfig,
   InitialTrackConfig,
   EngineEvent,
+  Transition,
+  TransitionKind,
+  TransitionEasing,
+  TransitionDirection,
 } from './core/types'
 
 // --- Core: engine ---
@@ -62,7 +68,7 @@ export type { PlaybackSnapshot, PlaybackEngineConfig } from './core/playback/Pla
 export { resolveTimeline } from './core/resolver/resolveTimeline'
 export type {
   Scene,
-  SceneTransition,
+  ActiveTransition,
   ActiveVideoClip,
   ActiveAudioClip,
   ActiveTextClip,

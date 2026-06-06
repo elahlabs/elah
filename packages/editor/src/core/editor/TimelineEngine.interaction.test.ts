@@ -73,6 +73,23 @@ describe('TimelineEngine — interactive gestures', () => {
     expect(engine.findClip(clipId)?.clip.content).toBe('Hello')
   })
 
+  it('content edit streamed via previewClip folds into exactly one undo entry', () => {
+    const undoDepthBefore = countUndo(engine)
+
+    // Simulate keystroke-by-keystroke live typing
+    engine.previewClip(clipId, trackId, { content: 'H' })
+    engine.previewClip(clipId, trackId, { content: 'He' })
+    engine.previewClip(clipId, trackId, { content: 'Hey' })
+    engine.commitInteraction('Edit text')
+
+    expect(engine.findClip(clipId)?.clip.content).toBe('Hey')
+    expect(countUndo(engine)).toBe(undoDepthBefore + 1)
+
+    engine.undo()
+    expect(engine.findClip(clipId)?.clip.content).toBe('Hello')
+    expect(countUndo(engine)).toBe(undoDepthBefore)
+  })
+
   it('redo re-applies a committed gesture', () => {
     engine.previewClip(clipId, trackId, { fontSize: 120 })
     engine.commitInteraction('Resize text')

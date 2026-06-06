@@ -1,4 +1,4 @@
-import type { Transform } from '../types'
+import type { Transform, TransitionKind, TransitionDirection } from '../types'
 
 /**
  * Scene — the output type of resolveTimeline().
@@ -71,13 +71,21 @@ export interface ActiveImageClip extends ActiveClipBase {
 }
 
 /**
- * Reserved for future transition descriptors (crossfade, cut, wipe).
- * Shape will be defined when transitions are implemented; for now this
- * is an empty marker interface so the array is typed for growth.
+ * A transition that is active at the current frame, ready for renderers.
+ *
+ * `t` is the eased progress through the transition window (0 = start, 1 = end).
+ * For fade: the resolver already adjusts clip opacities — renderers need no extra
+ * work. For slide/wipe: TransitionOverlay reads `kind + t + direction` to apply CSS.
+ *
+ * Adding a new kind = handle it in resolveTimeline (opacity math) and
+ * TransitionOverlay (CSS). Everything else is plug-and-play.
  */
-export interface SceneTransition {
+export interface ActiveTransition {
   id: string
-  // future fields: kind, fromClipId, toClipId, startFrame, durationFrames, ...
+  kind: TransitionKind
+  /** Eased progress 0→1 through the transition window. */
+  t: number
+  direction?: TransitionDirection
 }
 
 /**
@@ -104,6 +112,6 @@ export interface Scene {
   audios: ActiveAudioClip[]
   texts: ActiveTextClip[]
   images: ActiveImageClip[]
-  /** Transition descriptors active at this frame. Empty until transitions are implemented. */
-  transitions: SceneTransition[]
+  /** Transitions active at this frame. For fade, clip opacities are already adjusted. */
+  transitions: ActiveTransition[]
 }

@@ -6,6 +6,8 @@
  *  - A backward jump in setPlayhead() triggers exactly one demuxer seekToKeyframe call.
  *  - The manager never enters Errored state after rapid backward seek cycles.
  *  - Contiguous forward play does NOT trigger extra seekToKeyframe calls.
+ *  - A backward step to an evicted frame (|delta| ≤ lookahead, so normally "contiguous")
+ *    still triggers a re-seek so getCurrent() returns non-null.
  *
  * @see StreamingFrameProducer.ts — discontinuity detection and reset logic
  */
@@ -94,6 +96,53 @@ describe('BackwardSeekStability', () => {
 
     producer.dispose()
     expect(producer.state).toBe('disposed')
+  })
+
+  it('backward step within lookahead to an evicted frame re-decodes and returns non-null', async () => {
+    // Small cache (5) + small lookahead (2) so forward play quickly evicts early frames.
+    // After playing 0→8 the cache holds ~frames 6-10; frames 0-5 are evicted.
+    // A step backward from 6 → 5 has |delta|=1 ≤ lookahead(2) — "contiguous" by the
+    // old threshold — but frame 5 is no longer in cache.
+    // Without the backwardMiss fix, getCurrent(5) returns null (evicted, not re-decoded).
+    // With the fix, the miss forces a re-seek so the frame is decoded before getCurrent.
+    const demuxerBackend = createMockDemuxerBackend({
+      chunks: Array.from({ length: 30 }, (_, i) => createMockChunk(i * 33333)),
+    })
+    const { factory } = createMockDecoder()
+
+    const producer = new StreamingFrameProducer({
+      src: 'video://backward-evict.mp4',
+      fps: 30,
+      maxFrames: 5,
+      lookaheadFrames: 2,
+      demuxerFactory: () => demuxerBackend,
+      decoderFactory: factory,
+    })
+
+    await producer.openPromise
+
+    // Play forward 0 → 8 so the cache fills and evicts early frames.
+    producer.setPlayhead(0)
+    await new Promise(r => setTimeout(r, 40))
+
+    for (let i = 1; i <= 8; i++) {
+      producer.setPlayhead(i)
+      await new Promise(r => setTimeout(r, 15))
+    }
+
+    // Frame 5 must be evicted for the test to be meaningful.
+    expect(producer.getCurrent(5)).toBeNull()
+
+    // Step backward from 8 → 5 one frame at a time.
+    // Steps 8→7 and 7→6 are cache hits (frames 7, 6 still present).
+    // Step 6→5 is a cache miss with |delta|=1 — the regression case.
+    for (let i = 7; i >= 5; i--) {
+      producer.setPlayhead(i)
+      await new Promise(r => setTimeout(r, 40))
+      expect(producer.getCurrent(i)).not.toBeNull()
+    }
+
+    producer.dispose()
   })
 
   it('contiguous forward play does not trigger additional seekToKeyframe after initial open', async () => {

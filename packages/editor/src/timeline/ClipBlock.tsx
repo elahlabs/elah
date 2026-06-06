@@ -378,7 +378,7 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
           pointerEvents: 'none',
         }}
       >
-        {clip.name}
+        {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
       </span>
 
       {/* Right trim handle */}

@@ -345,7 +345,12 @@ async function renderFrame(
     if (entry.kind === 'video') {
       const sink = videoSinks.get(entry.item.src)
       if (sink) {
-        const sourceTimeSec = entry.item.sourceFrame / fps
+        // Seek at the frame midpoint (+0.5) so mediabunny's floor-semantics
+        // getCanvas() lands on the correct source frame even when PTS has
+        // encoder-rounding jitter or the source runs at a slightly different
+        // frame rate (e.g. 29.97 NTSC in a 30fps project). Matches preview's
+        // Math.round(PTS / usPerFrame) convention in VideoDecoderManager.
+        const sourceTimeSec = (entry.item.sourceFrame + 0.5) / fps
         if (isDebugFrame) {
           xlog('render:frame0', `video layer — seeking CanvasSink`, {
             src: entry.item.src.slice(-40),

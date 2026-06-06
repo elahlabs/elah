@@ -7,6 +7,20 @@
 /** An exact frame position. Always a non-negative integer. */
 export type FrameCount = number
 
+export type TextAnimationKind = 'fade'
+
+/**
+ * Entry/exit animation descriptor for text clips.
+ * Resolved into opacity inside resolveTimeline — both renderers consume it
+ * via the existing opacity field, so parity is automatic.
+ */
+export interface TextAnimation {
+  in?: TextAnimationKind
+  out?: TextAnimationKind
+  /** Duration of the in/out ramp in frames (shared by both directions) */
+  durationFrames: number
+}
+
 /**
  * Spatial transform applied to a clip at render time.
  * All values are normalized so they remain resolution-independent.
@@ -77,6 +91,8 @@ export interface Clip {
   disabled?: boolean
   /** Optional spatial transform; undefined means the renderer applies its own default */
   transform?: Transform
+  /** Entry/exit animation for text clips */
+  textAnimation?: TextAnimation
 }
 
 /** A track lane that holds clips */
@@ -108,6 +124,7 @@ export interface Project {
   tracks: Track[]
   /** clips indexed by trackId, sorted by startFrame */
   clips: Record<string, Clip[]>
+  transitions: Transition[]
   version: number
 }
 
@@ -135,6 +152,36 @@ export interface TimelineConfig {
   initialTracks?: InitialTrackConfig[]
 }
 
+// ---------------------------------------------------------------------------
+// Transitions
+// ---------------------------------------------------------------------------
+
+export type TransitionKind = 'fade' | 'slide' | 'wipe'
+export type TransitionEasing = 'linear' | 'ease-in' | 'ease-out'
+export type TransitionDirection = 'left' | 'right' | 'up' | 'down'
+
+/**
+ * A transition between two adjacent clips on the same track.
+ * startFrame marks where the transition begins (before the cut point).
+ * The cut is at startFrame + durationFrames / 2 (centered).
+ * Both clips are rendered simultaneously during [startFrame, startFrame + durationFrames).
+ *
+ * Adding a new transition kind = handle it in resolveTimeline (opacity/scene) and
+ * TransitionOverlay (CSS). Everything else is plug-and-play.
+ */
+export interface Transition {
+  id: string
+  kind: TransitionKind
+  fromClipId: string
+  toClipId: string
+  trackId: string
+  /** Frame where the transition begins. = toClip.startFrame - durationFrames / 2 */
+  startFrame: FrameCount
+  durationFrames: FrameCount
+  direction?: TransitionDirection
+  easing?: TransitionEasing
+}
+
 /** Events emitted by TimelineEngine */
 export type EngineEvent =
   | 'change'
@@ -144,6 +191,8 @@ export type EngineEvent =
   | 'clip:removed'
   | 'clip:updated'
   | 'clip:split'
+  | 'transition:added'
+  | 'transition:removed'
   | 'history:change'
 
 export type EngineEventPayload = {
@@ -154,5 +203,7 @@ export type EngineEventPayload = {
   'clip:removed': { clipId: string; trackId: string }
   'clip:updated': Clip
   'clip:split': { leftId: string; rightId: string; trackId: string }
+  'transition:added': Transition
+  'transition:removed': string
   'history:change': { canUndo: boolean; canRedo: boolean }
 }
