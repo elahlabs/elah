@@ -246,7 +246,7 @@ While playing, the RAF loop samples `getFrameAt()` — it does not integrate fra
 
 ### Why not anchor to `AudioContext.currentTime`?
 
-Eventually we should. `AudioContext.currentTime` is the hardware audio clock; anchoring playback to it eliminates audio-video drift by definition. Today we use `performance.now()` because we don't yet have audio in the playback path. This is a deliberate deferral. See [`ROADMAP.md`](./ROADMAP.md).
+Eventually we should. `AudioContext.currentTime` is the hardware audio clock; anchoring playback to it eliminates audio-video drift by definition. Audio *does* play today — `AudioPlaybackController` follows the clock as a downstream consumer — but the clock itself is still driven by `performance.now()`. Anchoring the clock to `AudioContext.currentTime` is a deliberate, deferred upgrade: `PlaybackEngine` reads time through a private `now()` seam expressly so that swap is a one-line change with no caller impact.
 
 ---
 
@@ -386,7 +386,7 @@ The `* 1000` multiplier reserves room for sub-layer offsets (e.g. text "above it
 
 ### What renderers see
 
-A `DomRenderer` consumes `Scene.videos`, looks up `<video>` elements by clip id (managing its own pool), and seeks each one to `sourceFrame / fps`. A `CanvasRenderer` draws `<video>` frames onto a canvas. A `GpuRenderer` uploads the same data to GPU textures. **None of them imports `Project` or `Clip` directly.**
+The shipped `GpuRenderer` consumes `Scene.videos` / `.images` / `.texts`, uploads each to a GPU texture (video frames come from the decode pipeline; text is rasterized to a canvas first), and composites them by `zIndex`. The export worker consumes the *same* `Scene` and draws to a 2D `OffscreenCanvas` using the same placement helpers. `AudioPlaybackController` consumes `Scene.audios`. **None of them imports `Project` or `Clip` directly** — the `Scene` is the entire contract.
 
 ---
 
@@ -397,41 +397,59 @@ The `Renderer` interface lives in `packages/editor/src/core/renderer/types.ts`:
 ```ts
 interface Renderer {
   mount(container: HTMLElement): void
+  resize(cssWidth: number, cssHeight: number, dpr?: number): void
   render(scene: Scene): void
   dispose(): void
 }
 ```
 
-That's it. Three methods. Renderers are interchangeable — at any time, swap a `DomRenderer` for a `GpuRenderer` and nothing else changes.
+Four methods. `render(scene)` is **synchronous** and **idempotent on equal scene
+references** — `scene === lastScene` is a no-op. The renderer reads only the
+`Scene`; it never imports `Project`, `Clip`, the engines, the stores, or React.
 
 ### Current status
 
 | Piece | Status |
 |---|---|
-| `Renderer` interface | ✅ shipped |
+| `Renderer` interface | ✅ shipped (`core/renderer/types.ts`) |
 | `useResolvedScene()` hook | ✅ shipped — memoized `resolveTimeline(frame, project)` |
-| `DomRenderer` implementation | ⚪ PR-10 — not yet built |
-| `<Preview>` component | ⚪ PR-10 — not yet built |
+| `GpuRenderer` (WebGL2) | ✅ shipped — `core/renderer/gpu/`; video / image / text layers, context-loss recovery |
+| `<Preview>` component | ✅ shipped — `editor/Preview/`; mounts the renderer, drives RAF, paints the text overlay |
+| Export path | ✅ shipped — `core/export/`; worker + `OffscreenCanvas`, not a `Renderer` instance (see below) |
 
-Today the playground renders resolved `Scene` JSON for debugging. Pressing Play moves the playhead and updates the frame counter, but **no pixels are drawn yet**. That is the gap PR-10 closes.
+The playground draws real decoded video to the canvas today. `<Preview>` is the
+production wiring; the playground's `GpuPreview.tsx` is the reference shell.
 
-### MVP renderer: DOM
+### The shipped renderer: GPU
 
-The first implementation will be a `DomRenderer` that:
+`GpuRenderer` turns each `Scene` into a sorted list of textured-quad draws:
 
-- Maintains a pool of `<video>` elements keyed by clip id.
-- Seeks each active video to `sourceFrame / fps` (using `PlaybackEngine.getFrameAt()` for sub-frame accuracy).
-- Manages a single `AudioContext` for `<audio>` mixing.
-- Renders text clips as absolutely-positioned `<div>`s with computed transforms.
-- Subscribes directly to `PlaybackEngine.subscribe` (or receives `Scene` from `<Preview>`) so it never re-renders through React.
+- `RenderGraph` diffs the active clips against the previous `Scene`, acquiring
+  entering clips and releasing leaving ones, then builds one global draw list
+  sorted by `zIndex`.
+- `VideoLayer` pulls frames from the decode pipeline (`StreamingFrameProducer`),
+  `ImageLayer` loads static bitmaps, and `TextLayer` rasterizes glyphs to a
+  canvas → texture. All three share the same quad shader and composite by `zIndex`.
+- Placement math (object-fit contain, transforms, text layout) lives in pure
+  helpers — `gpu/layers/drawRect.ts`, `objectFit.ts`, `textLayout.ts`.
+
+The full GPU + decode pipeline is documented in
+[`core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md).
+
+### Export is a parallel path, not a `Renderer`
+
+Export does **not** instantiate a `Renderer`. The export worker draws to a 2D
+`OffscreenCanvas` and reuses the renderer's *placement* helpers (`resolveDrawRect`,
+`computeTextLayout`) so preview and export produce identical geometry without a
+GPU context in the worker. Both paths consume the same `resolveTimeline` output —
+that shared resolution, not a shared draw call, is what keeps them in sync. See
+[`core/export/Architecture.md`](./packages/editor/src/core/export/Architecture.md).
 
 ### Future renderers
 
-- `CanvasRenderer` — `drawImage(video, ...)` to a 2D canvas for per-frame effects.
-- `GpuRenderer` — WebGL/WebGPU texture pipeline for shader effects and transitions.
-- `ExportRenderer` — runs in a Worker, frame-by-frame, into a `VideoEncoder` (WebCodecs) or `mediabunny` encoder.
-
-All four would implement the same `Renderer` interface and consume the same `Scene`.
+A WebGPU backend (shader effects, transitions) would implement the same
+`Renderer` interface and consume the same `Scene` — no change to the engine,
+resolver, or React layer.
 
 ---
 
@@ -462,7 +480,7 @@ flowchart LR
 
   subgraph rendererLayer ["Renderer (core/renderer/)"]
     RI["Renderer interface"]
-    DR["DomRenderer (PR-10)"]
+    DR["GpuRenderer (gpu/)"]
   end
 
   EP["EditorProvider\neditor/"]
@@ -484,7 +502,7 @@ flowchart LR
   TS --> URS["useResolvedScene"]
   PS --> URS
   RT --> URS
-  URS --> PV["Preview (PR-10)"]
+  URS --> PV["Preview (editor/)"]
   PV --> DR
 ```
 
@@ -546,16 +564,19 @@ RAF tick ──► PlaybackEngine.getFrameAt()
                   │
        ┌──────────┴──────────┐
        ▼                     ▼
- EditorProvider sync    <Preview> subscriber  (planned PR-10)
+ EditorProvider sync    <Preview> RAF shell
        │                     │
- React UI re-paints    useResolvedScene() → Scene
+ React UI re-paints    resolveTimeline(frame, project) → Scene
  (playhead, scrubber)        │
                              ▼
-                       DomRenderer.render(scene)  (planned PR-10)
+                       GpuRenderer.render(scene)   (synchronous)
                              │
-                       <video>.currentTime = sourceFrame / fps
-                       <audio>.gain.value = volume
-                       <text>.style.transform = compose(transform)
+              ┌──────────────┼──────────────────────┐
+              ▼              ▼                        ▼
+      VideoLayer:      TextLayer / ImageLayer    AudioPlaybackController
+      setPlayhead +    rasterize / upload →       reads scene.audios,
+      getCurrent →     quad draw by zIndex        schedules Web Audio
+      texture upload
 ```
 
 ### Seek flow (user clicks the ruler)
@@ -599,15 +620,17 @@ Dependency rule:  core  ←  timeline  ←  editor
 | Playback | `core/playback/` | ✅ |
 | Resolver + tests | `core/resolver/` | ✅ |
 | State mirrors | `core/stores/` | ✅ |
-| Media library | `core/media/` (`importFiles`, `useMediaLibraryStore`) | ✅ |
+| Media library (assets) | `core/assets/` (`importFiles`, `useMediaLibraryStore`) | ✅ |
+| Media decode pipeline | `core/media/video/` (`StreamingFrameProducer`, `FrameCache`, demuxer), `core/media/audio/` | ✅ |
 | Renderer interface | `core/renderer/types.ts` | ✅ |
+| Renderer implementation | `core/renderer/gpu/` (`GpuRenderer`, `RenderGraph`, video/image/text layers) | ✅ |
+| Export | `core/export/` (`exportVideo`, `ExportWorker`) | ✅ |
+| Trace / debug | `core/debug/trace.ts` | ✅ |
 | Engine context hooks | `core/editor-context.ts` | ✅ |
 | Actions | `core/actions/` | ✅ |
 | Utilities | `core/utils/` | ✅ |
 | Timeline UI | `timeline/` (`Timeline`, `TrackRow`, `ClipBlock`, `useTimelineDrop`) | ✅ |
-| Editor composition | `editor/` (`EditorProvider`, `AssetPanel`, `useResolvedScene`) | ✅ |
-| Renderer implementation | `editor/renderer/DomRenderer.ts` (planned) | ⚪ PR-10 |
-| `<Preview>` component | `editor/Preview/` (planned) | ⚪ PR-10 |
+| Editor composition | `editor/` (`EditorProvider`, `AssetPanel`, `Preview`, `useResolvedScene`) | ✅ |
 
 **Rule of thumb:** if a file logically belongs to a layer but doesn't have peers yet, it lives in `packages/editor/src/core/<layer>/`. When a layer accumulates 3+ files and gains its own dependencies, *then* extract it into its own package.
 
@@ -683,7 +706,10 @@ Good: extract before it's painful. The cost of refactoring scales superlinearly 
 
 ## See also
 
-- [`ROADMAP.md`](./ROADMAP.md) — the sequenced PR plan that gets us from here to a working editor.
+- [`ROADMAP.md`](./ROADMAP.md) — current state and the next architectural layer.
+- [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) — known gaps and trade-offs.
 - [`packages/editor/src/core/Architecture.md`](./packages/editor/src/core/Architecture.md) — cold-start reference for `core/` implementation agents.
+- [`packages/editor/src/core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md) — the GPU render + decode pipeline in depth.
+- [`packages/editor/src/core/export/Architecture.md`](./packages/editor/src/core/export/Architecture.md) — the export pipeline.
 - [`docs/glossary.md`](./docs/glossary.md) — terminology in one place.
-- [`docs/backlog/`](./docs/backlog/) — post-foundation PR sketches (PR-07 onwards).
+- [`docs/known-bugs.md`](./docs/known-bugs.md) — deliberate workarounds and their real fixes.

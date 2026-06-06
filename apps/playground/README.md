@@ -9,16 +9,15 @@ visual regression comparisons, and Playwright E2E validation.
 ## Quickstart
 
 ```bash
-# From the workspace root or this directory
-pnpm install   # install all workspace dependencies including mediabunny
-pnpm dev       # starts Vite dev server at http://localhost:5173
+# From the workspace root (npm workspaces)
+npm install    # installs all workspace dependencies, including mediabunny
+npm run dev    # runs the playground via the root script → http://localhost:5173
 ```
 
 Or from this directory specifically:
 
 ```bash
-npm install
-npm run dev
+npm run dev    # vite dev server
 ```
 
 ---
@@ -40,15 +39,17 @@ npm run dev
 2. Dragging the asset onto the timeline calls `addClip({ src: objectUrl })`.
 3. `resolveTimeline` emits an `ActiveVideoClip` with the object URL.
 4. `GpuPreview` passes `demuxerFactory: createPlaygroundDemuxerFactory()` to
-   `GpuRenderer`. The factory creates a `DecoderBackedVideoFrameProvider` backed
-   by mediabunny.
-5. On the first render tick for a new clip, `getCurrent()` returns `null` (cache
-   miss). `requestFrame()` fires the async decode pipeline:
+   `GpuRenderer`. The factory selects a `StreamingFrameProducer` (push-based,
+   mediabunny-backed) for that `src`.
+5. On the first render tick for a new clip, `VideoLayer` calls `setPlayhead(N)`
+   (fire-and-forget) and `getCurrent(N)` returns `null` (cache miss). The push
+   pipeline runs out-of-band:
    - mediabunny opens the object URL → `Input + BlobSource`
-   - seeks to the nearest keyframe
-   - yields `EncodedVideoChunk` objects
-   - `VideoDecoder` decodes → `VideoFrame` lands in `FrameCache`
-6. On the next tick, the frame is uploaded to a WebGL texture and drawn.
+   - seeks to the nearest keyframe, feeds a lookahead window of packets
+   - `VideoDecoder` decodes → each `VideoFrame` is copied to an `ImageBitmap`,
+     the frame is closed, and the bitmap lands in `FrameCache`
+6. On a later tick (~1–3 ticks), `getCurrent(N)` hits, and the frame is uploaded
+   to a WebGL texture and drawn.
 
 ---
 

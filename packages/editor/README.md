@@ -28,7 +28,7 @@ function App() {
 }
 ```
 
-## Import media files (PR-07)
+## Import media files
 
 Register local files into the media library from a file input or drop handler:
 
@@ -54,7 +54,7 @@ async function onFilesSelected(files: FileList | File[]) {
 - Registers assets in `useMediaLibraryStore` synchronously
 - Generates JPEG thumbnails on the main thread and patches `thumbnailUrl` asynchronously
 
-## AssetPanel (PR-08)
+## AssetPanel
 
 Browse, drop, and drag media assets from a sidebar panel. Render as a sibling of `<Timeline>` inside `<EditorProvider>`:
 
@@ -74,10 +74,10 @@ function App() {
 ```
 
 - **Add** opens a file picker; **drop** onto the panel imports via `importFiles`
-- Thumbnails appear asynchronously after import (PR-07)
+- Thumbnails appear asynchronously after import
 - Drag a thumbnail onto a timeline track lane to create a clip (see Timeline drop below)
 
-## Timeline drop (PR-09)
+## Timeline drop
 
 With `<AssetPanel>` and `<Timeline>` as siblings inside `<EditorProvider>`, drag a thumbnail onto any track lane:
 
@@ -88,13 +88,53 @@ With `<AssetPanel>` and `<Timeline>` as siblings inside `<EditorProvider>`, drag
 
 No extra wiring beyond `TrackRow` — `useTimelineDrop` is attached automatically per lane.
 
+## Render pixels with `<Preview>`
+
+`<Preview>` mounts the WebGL2 `GpuRenderer`, drives the RAF loop, and paints the
+interactive text overlay (drag / resize / inline-edit) plus the project's audio.
+Inject a **demuxer factory** so the SDK never hard-depends on a decode backend:
+
+```tsx
+import { EditorProvider, Preview, createMediabunnyBackend } from '@elah/editor'
+import * as mediabunny from 'mediabunny'
+
+const demuxerFactory = () =>
+  createMediabunnyBackend(mediabunny, { blobResolver: (src) => fetch(src).then((r) => r.blob()) })
+
+function App() {
+  return (
+    <EditorProvider fps={30}>
+      <Preview demuxerFactory={demuxerFactory} style={{ height: 480 }} />
+    </EditorProvider>
+  )
+}
+```
+
+Omit `demuxerFactory` for a synthetic dev preview (no media files, no mediabunny).
+For a lower-level renderer handle, `GpuRenderer` is exported directly. See
+[`src/core/renderer/README.md`](src/core/renderer/README.md).
+
+## Export to MP4
+
+```ts
+import { exportVideo } from '@elah/editor'
+
+const blob = await exportVideo(engine.getProject(), {
+  videoBitrate: 8_000_000,
+  onProgress: ({ frame, totalFrames }) => setPct(Math.round((frame / totalFrames) * 100)),
+})
+```
+
+Runs in a worker; reuses `resolveTimeline` + the renderer's placement math. See
+[`src/core/export/README.md`](src/core/export/README.md).
+
 ## Package layout
 
 ```
 src/
-  core/       types, engine, playback, resolver, stores, media, actions
+  core/       types, engine, playback, resolver, stores, assets, media, export, debug, actions
   timeline/   Timeline UI + hooks
-  editor/     EditorProvider, AssetPanel, useResolvedScene (Preview arrives PR-10)
+  editor/     EditorProvider, AssetPanel, Preview, useResolvedScene
 ```
 
 ## Scripts

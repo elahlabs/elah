@@ -1,0 +1,98 @@
+# Bundle Strategy
+
+> How `@elah/editor` stays small and why the dependency graph looks the way it
+> does. The goal: a browser-native editor SDK that a React app can adopt without
+> dragging in a media-processing toolchain it didn't ask for.
+
+---
+
+## Dependency budget
+
+The published package depends on exactly two runtime libraries:
+
+| Dependency | Why it's in |
+|---|---|
+| `immer` | Structural-sharing mutations + undo/redo in `TimelineEngine` |
+| `zustand` | Ring 1 reactive store mirrors for React consumers |
+
+`react` / `react-dom` are **peer** dependencies (`>= 18`) — the host app owns the
+React copy.
+
+Everything else the engine needs is a **browser-native API**, not a bundled
+dependency: WebCodecs (`VideoDecoder`), WebGL2, Web Audio (`OfflineAudioContext`),
+`OffscreenCanvas`, `createImageBitmap`. No WASM runtime ships in the core.
+
+---
+
+## mediabunny is injected, never bundled
+
+Demuxing/muxing is the heaviest piece of a video editor, and `@elah/editor`
+deliberately does **not** depend on it. The core defines a `DemuxerBackend`
+interface and accepts a `demuxerFactory`; the consuming app imports `mediabunny`
+and wires it in:
+
+```ts
+import { GpuRenderer, createMediabunnyBackend } from '@elah/editor'
+import * as mediabunny from 'mediabunny'
+
+const demuxerFactory = () => createMediabunnyBackend(mediabunny, { /* … */ })
+new GpuRenderer({ demuxerFactory })
+```
+
+Consequences:
+
+- Apps that only need the timeline/engine never pull in mediabunny.
+- `@elah/editor`'s `index.ts` never statically imports mediabunny — the
+  `createMediabunnyBackend` adapter takes the module as an argument.
+- Without a `demuxerFactory`, the renderer falls back to a synthetic provider, so
+  the engine is usable (and testable) with zero media dependencies.
+
+The export path *does* use mediabunny directly inside the worker, because muxing
+an MP4 has to happen somewhere; that import lives in `ExportWorker.ts` and is only
+pulled when an app actually bundles and spawns the worker.
+
+---
+
+## One package, folders not packages
+
+The repo is a single package (`@elah/editor`) with three internal layers
+(`core/` → `timeline/` → `editor/`). No micro-packages (`@app/types`,
+`@app/utils`, …) — they add build steps and version-skew without buying
+isolation that folders + a dependency rule don't already provide
+(`ARCHITECTURE.md` § 9, A6). Extraction stays mechanical if real pressure
+(a non-React consumer, independent adoption) ever appears.
+
+---
+
+## Tree-shaking & dead-code boundaries
+
+- **Named exports only** from `index.ts` — no namespace re-exports — so bundlers
+  can drop unused symbols.
+- **Debug tooling is import-only-when-needed.** `GpuRendererDebugPanel`,
+  `DebugGpuRenderer`, `DebugOverlay`, and the scenario harness are not on the
+  production render path; an app that never calls `setDebug(true)` doesn't pay
+  for them.
+- **The export worker is a separate module graph.** It's loaded via
+  `new Worker(new URL('./ExportWorker.ts', import.meta.url), { type: 'module' })`,
+  which Vite (and compatible bundlers) code-split automatically. An app that
+  never exports never loads the worker chunk.
+- **Trace logging is a cheap no-op when off.** `trace()` is a single `Set`
+  lookup; disabled channels cost nothing on hot paths.
+
+---
+
+## Consumer build requirements
+
+- A bundler that understands the `new URL(..., import.meta.url)` worker pattern
+  (Vite, recent webpack). The playground uses Vite.
+- WebCodecs / WebGL2 / Web Audio at runtime — i.e. a modern Chromium or Firefox.
+  There is a WebGL1 fallback in `WebGLContext`, but decode requires WebCodecs.
+
+---
+
+## Future
+
+- Optional sub-path exports (e.g. `@elah/editor/export`) if apps want the timeline
+  without the export worker in their module graph.
+- A formal `@public` API surface marking so internal symbols can change without a
+  major version bump.

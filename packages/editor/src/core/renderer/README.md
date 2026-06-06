@@ -33,16 +33,25 @@ Every concrete renderer implements exactly these four methods. The interface is 
 
 ---
 
-## Current renderer implementations
+## Renderer implementations
 
 | Folder | Status | Description |
 |---|---|---|
-| `gpu/` | Usable | WebGL2 GPU compositor — `Scene → VideoLayer → VideoFrameProvider → VideoTexture → quad draw` |
-| `dom/` | Future | `<video>` stack + DOM text + `<img>` (no canvas) |
-| `canvas2d/` | Future | `drawImage` from `<video>` onto a 2D canvas |
-| `export/` | Future | Off-main-thread Worker + `VideoEncoder` pipeline |
+| `gpu/` | ✅ Shipped | WebGL2 GPU compositor — `Scene → RenderGraph → VideoLayer/ImageLayer/TextLayer → VideoTexture → quad draw` |
+| (WebGPU) | ⚪ Future | A WebGPU backend behind the same interface, for shader effects/transitions |
 
-All implementations share the same `Renderer` interface and consume the same `Scene` shape. Swapping one for another requires no changes to `PlaybackEngine`, `resolveTimeline`, or any React component.
+`gpu/` is the only `Renderer` implementation. There is **no** DOM or Canvas2D
+renderer — the textured-quad path already generalizes to image and text.
+
+**Export is not a `Renderer`.** It lives in [`../export/`](../export/) and
+draws to a 2D `OffscreenCanvas` in a worker, reusing this folder's *placement*
+helpers (`gpu/layers/drawRect.ts`, `gpu/layers/textLayout.ts`) so preview and
+export stay pixel-aligned without a GPU context in the worker. See
+[`../export/Architecture.md`](../export/Architecture.md).
+
+Any future implementation shares the same `Renderer` interface and consumes the
+same `Scene`. Swapping one in requires no changes to `PlaybackEngine`,
+`resolveTimeline`, or any React component.
 
 `GpuRenderer` is exported from the package root as `@elah/editor`:
 

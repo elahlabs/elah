@@ -4,7 +4,8 @@
 > implementation agent working on `@elah/editor`. Load this file and you will
 > not need to re-explore `packages/editor/src/core/` from scratch.
 >
-> **Last updated:** PR-09 (`useTimelineDrop` in `timeline/`; `assetId` on `CreateClipOptions`).
+> **Scope:** the shipped engine — `core/` plus the GPU renderer, decode pipeline,
+> audio, and export that now sit beside it.
 
 ---
 
@@ -37,7 +38,10 @@ core  ←  timeline  ←  editor
 | `core/editor/` | `TimelineEngine` — the authoritative project state machine. Immer mutations, undo/redo history, event emitter. | `TimelineEngine` |
 | `core/playback/` | `PlaybackEngine` — frame ticker, RAF loop, transport controls. Reads `currentFrame` from `PlaybackStore` and advances it. | `PlaybackEngine` |
 | `core/resolver/` | Pure, deterministic frame resolver. `resolveTimeline(frame, project) → Scene`. No DOM, no React. | `resolveTimeline`, `Scene` (and sub-types) |
-| `core/renderer/` | `Renderer` interface contract — added PR-06. No implementation yet. Implementations arrive in PR-10 (`DomRenderer`). | `Renderer` |
+| `core/renderer/` | `Renderer` interface + the shipped WebGL2 `GpuRenderer` (`gpu/`): video/image/text layers, `RenderGraph`, context-loss recovery, shared placement helpers. | `Renderer`, `GpuRenderer` |
+| `core/media/` | Frame/sample producers. `media/video/` = WebCodecs decode (`StreamingFrameProducer`, `FrameCache`, mediabunny demuxer); `media/audio/` = `AudioPlaybackController`. | `createVideoFrameProvider`, `StreamingFrameProducer`, `AudioPlaybackController` |
+| `core/export/` | `exportVideo()` + `ExportWorker` — OffscreenCanvas frame render → mediabunny MP4 mux. | `exportVideo` |
+| `core/debug/` | Channel-based `trace()` frame-lifecycle logging (`window.__trace`). | `trace`, `traceEnabled` |
 | `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore` |
 | `core/assets/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
 | `core/elements/` | Clip factory functions. Pure constructors, no side-effects. | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip` |
@@ -70,10 +74,12 @@ resolveTimeline(frame: number, project: Project) ──► Scene
                                     ActiveVideoClip[]  ActiveAudioClip[]  ActiveTextClip[]
                                     ActiveImageClip[]  SceneTransition[]
 
-Renderer (interface, PR-06)
+Renderer (interface)
     ├── mount(container: HTMLElement)
+    ├── resize(cssW, cssH, dpr?)
     ├── render(scene: Scene)           ◄── consumes only Scene; never Project
     └── dispose()
+    └── implemented by GpuRenderer (core/renderer/gpu/)
 ```
 
 **`Clip` fields** worth knowing:
@@ -109,8 +115,8 @@ flowchart LR
     SC["Scene"]
   end
 
-  subgraph rendererLayer ["Renderer contract (core/renderer/) PR-06"]
-    RI["Renderer interface\n.mount / .render / .dispose"]
+  subgraph rendererLayer ["Renderer (core/renderer/)"]
+    RI["Renderer interface\n.mount / .resize / .render / .dispose\n→ GpuRenderer"]
   end
 
   TE -->|"emits 'change' → sync()"| TS
@@ -128,11 +134,11 @@ flowchart LR
   subgraph editorLayer ["editor/ layer"]
     TE --> EP["EditorProvider"]
     PE --> EP
-    TS --> URS["useResolvedScene PR-06"]
+    TS --> URS["useResolvedScene"]
     PS --> URS
     RT --> URS
-    URS --> PV["Preview PR-10"]
-    EP --> AP["AssetPanel PR-08"]
+    URS --> PV["Preview"]
+    EP --> AP["AssetPanel"]
   end
 ```
 
@@ -235,19 +241,20 @@ Knowing what is absent is as important as knowing what is present:
 |---------|----------|
 | `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `timeline/` |
 | `useTimeline`, `useTracks`, `usePlayback`, `useSelection` hooks (public API) | `timeline/hooks/` |
-| `useTimelineDrop` drop handler | `timeline/` (PR-09 — implemented) |
+| `useTimelineDrop` drop handler | `timeline/` |
 | `<EditorProvider>` | `editor/` |
-| `useResolvedScene` | `editor/` (PR-06) |
-| `<Preview>` component | `editor/` (PR-10) |
-| `<AssetPanel>` component | `editor/` (PR-08) |
-| `DomRenderer` (actual renderer) | `editor/` (PR-10) |
+| `useResolvedScene` | `editor/` |
+| `<Preview>` component (mounts the renderer + RAF) | `editor/` |
+| `<AssetPanel>` component | `editor/` |
 
 ---
 
-## 10. Upcoming PRs that touch `core/`
+## 10. What's next for `core/`
 
-| PR | Change in `core/` |
-|----|-------------------|
-| PR-10 | `DomRenderer` implements `Renderer` interface from `core/renderer/types.ts` |
-
-**Landed (PR-07 → PR-09):** `importFiles` + media store; `AssetPanel` in `editor/`; `useTimelineDrop` accepts `MEDIA_DRAG_MIME` drags and calls `engine.addClip` with `assetId` + `src` (PR-09 also added `assetId?` to `CreateClipOptions` in `core/elements/base.ts`).
+The engine, renderer, decode pipeline, audio, and export have all landed. The
+next architectural layer is a **scheduler / media-coordination** system above the
+frame providers (predictive caching, reverse-scrub strategy, cross-clip decode
+prioritization). See [`ROADMAP.md`](../../../../ROADMAP.md) and
+[`CURRENT_LIMITATIONS.md`](../../../../CURRENT_LIMITATIONS.md). It is expected to
+sit between `core/renderer/` and `core/media/video/` without changing the
+`VideoFrameProvider` interface.

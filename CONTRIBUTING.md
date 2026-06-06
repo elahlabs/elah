@@ -1,95 +1,100 @@
 # Contributing
 
-> This project is in **foundation phase**. Until [`ROADMAP.md`](./ROADMAP.md) PR-06 is merged, the priority is the six sequenced foundation PRs in [`docs/backlog/`](./docs/backlog/) — not new features.
+> The foundation and the first feature wave have shipped. Work now is feature
+> and hardening PRs against a live engine — not a sequenced foundation. Read
+> [`ARCHITECTURE.md`](./ARCHITECTURE.md) before changing anything in `core/`.
 
 ---
 
 ## How to pick up work
 
-1. Open [`ROADMAP.md`](./ROADMAP.md). Find the lowest-numbered PR with status 🔴 Not started or 🟡 In progress.
-2. Open the corresponding ticket in `docs/backlog/PR-NN-*.md`.
-3. The ticket has everything you need: scope, acceptance criteria, out-of-scope, implementation notes, and a copy-paste prompt for an implementation agent.
-4. Create a branch: `git checkout -b pr-NN-<short-slug>` (e.g. `pr-01-engine-invariants`).
-5. Implement, verify, open a PR. Acceptance criteria are the review checklist.
+1. Skim [`ROADMAP.md`](./ROADMAP.md) (current state) and
+   [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) (known gaps).
+2. Pick a slice small enough to land in one reviewable PR.
+3. Branch, implement, verify (`npm run typecheck` + `npm test`), smoke-test in
+   the playground, open a PR.
 
 ---
 
 ## Branch & commit conventions
 
-### Branch names
+**Branches:** `feat/<slug>`, `fix/<slug>`, `chore/<slug>`, `docs/<slug>`.
 
-`pr-<NN>-<short-slug>` for foundation work; `feat/<slug>`, `fix/<slug>`, `chore/<slug>` for everything else.
-
-### Commit messages
-
-Single line, no body unless really needed:
+**Commit messages** — single line, `<area>: <verb> <object>`:
 
 ```
-<area>: <verb> <object>
-
-examples:
-  engine: enforce overlap on moveClip
-  resolver: handle track solo for image clips
-  ui: extract EditorProvider from Timeline
-  docs: add glossary entry for "stage"
+engine: enforce overlap on moveClip
+resolver: handle track solo for image clips
+renderer: rebuild VAO on context restore
+export: encode audio mix in 1s chunks
+docs: sync renderer architecture with shipped layers
 ```
 
-`<area>` values: `engine`, `playback`, `resolver`, `media`, `ui`, `types`, `tests`, `docs`, `build`, `chore`.
+`<area>` values: `engine`, `playback`, `resolver`, `renderer`, `media`,
+`export`, `assets`, `ui`, `types`, `tests`, `docs`, `build`, `chore`.
 
 ---
 
 ## PR rules
 
-### Every PR must:
+### Every PR must
 
 1. Pass `npm run typecheck` at the repo root.
-2. Pass any test suites that exist (once PR-02 lands, the resolver suite is mandatory).
-3. Smoke-test in `apps/playground` — confirm the demo still works as expected after the change.
-4. Touch only files within the documented scope of the ticket. Out-of-scope changes get their own PR.
+2. Pass `npm test` (the editor package's vitest suites).
+3. Smoke-test in `apps/playground` — confirm the demo still works.
+4. Touch only files within the change's scope. Unrelated cleanups get their own PR.
 
-### Every PR should:
+### Every PR should
 
-5. Keep the diff under ~400 lines of net new code unless the ticket explicitly says otherwise. If it's larger, split it.
-6. Add or update docs when public API changes.
-7. Update `ROADMAP.md`'s status table if the PR is a foundation PR.
+5. Keep the diff focused. If it grows past a few hundred lines of net-new code, split it.
+6. Update docs when public API or a documented contract changes.
+7. Update [`docs/known-bugs.md`](./docs/known-bugs.md) when adding a deliberate
+   workaround, and [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) when
+   shipping or closing a known gap.
 
-### PRs that won't be merged:
+### PRs that won't be merged
 
 - "While I was in here, I also …" — open a separate PR.
 - "I refactored the existing code to be cleaner …" — propose first, refactor second.
-- "I added a plugin system because …" — see [`ARCHITECTURE.md` § 9](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns).
-- PRs with new dependencies that aren't justified by a ticket. The dependency surface is intentionally small.
+- "I added a plugin system because …" — see
+  [`ARCHITECTURE.md` § 9](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns).
+- New dependencies without a clear justification. The dependency surface is
+  intentionally small (see [`BUNDLE_STRATEGY.md`](./BUNDLE_STRATEGY.md)).
 
 ---
 
-## Working with implementation agents
+## Architectural invariants
 
-If you're handing a ticket to an AI coding agent (Sonnet, GPT, Cursor agent mode, etc.), use the **copy-paste prompt** at the bottom of each PR ticket as the entire message. It contains:
+Renderer and decode changes must preserve the load-bearing invariants. These are
+enforced by tests and stated in full in
+[`packages/editor/src/core/renderer/EVOLUTION.md` § 3](./packages/editor/src/core/renderer/EVOLUTION.md):
 
-- The hard constraints (don't redesign architecture, don't split packages, etc.).
-- The scope.
-- The acceptance criteria.
-- The verification steps.
-- The non-goals.
+- `render(scene)` is synchronous and never awaits.
+- The renderer reads only `Scene` — never `Project`, the engines, stores, or React.
+- `Scene` is immutable; equal references are a render no-op.
+- Async decode is out-of-band; a cache miss draws the last uploaded frame.
+- `FrameCache` owns every cached frame and is the only thing that closes it.
+- Time is integer frames; seconds appear only at the media boundary.
+- All project mutations funnel through `TimelineEngine.commit()`.
 
-This format prevents scope creep and "agent enthusiasm" from contaminating the foundation work.
-
-After the agent finishes, **you** are responsible for review. Walk through each acceptance criterion. If any criterion is unmet, request a fix; don't merge.
+The renderer subsystem additionally documents agent-facing guardrails in
+[`renderer/AI-Rules.md`](./packages/editor/src/core/renderer/AI-Rules.md).
 
 ---
 
 ## Code style
 
 - TypeScript strict mode is required.
-- Prefer `interface` for object shapes that may be extended; `type` for unions and aliases.
+- `interface` for object shapes that may be extended; `type` for unions and aliases.
 - JSDoc the *why*, never the *what*. `// increments counter` on `counter++` is noise.
-- Don't add comments that explain the change you just made — that's what the commit message is for.
-- 2-space indent. Single quotes. No semicolons (matches existing code).
+- Don't add comments that narrate the change you just made — that's the commit message's job.
+- 2-space indent. Single quotes. No semicolons (match the surrounding code).
 
 ---
 
 ## When in doubt
 
 - Read [`ARCHITECTURE.md`](./ARCHITECTURE.md). The answer is usually there.
-- If the architecture doc doesn't cover it, propose a [Decisions log](./ROADMAP.md#decisions-log) entry in your PR description.
-- If you're changing a design principle (P1–P6 in `ARCHITECTURE.md` § 1), the PR is a discussion, not a code change. Start with an issue.
+- If it isn't, add a [Decisions log](./ROADMAP.md#decisions-log) entry in your PR description.
+- If you're changing a design principle (P1–P6 in `ARCHITECTURE.md` § 1), the PR
+  is a discussion first. Open an issue.

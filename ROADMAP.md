@@ -1,80 +1,74 @@
 # Roadmap
 
-> The sequenced plan that turns the engine foundation into a working browser-native portrait/reels editor.
+> Where the engine is today and what the next architectural layer looks like.
+> Status here is descriptive of the **current codebase** — not a plan to build it.
 
-The path is **six foundation PRs** before any feature work begins. Each PR is self-contained — see [`docs/backlog/`](./docs/backlog/) for a per-PR ticket with scope, acceptance criteria, and an implementation prompt you can hand to a coding agent.
+The foundation (engine, resolver, playback, state model) and the first feature
+wave (GPU renderer, real video decode, text/image layers, audio, MP4 export) are
+**shipped**. The next major layer is a **scheduler / media-coordination** system
+that turns the current best-effort decode pipeline into a predictive one.
 
----
-
-## Why a sequenced foundation
-
-Two prior attempts at a similar editor (`Oxide-Editor`, `render-kit`) collapsed at the same point: when gallery, drag-drop, media, timeline, and preview all started needing each other's state. The fix isn't to write the renderer more carefully — it's to put the boundaries in place **before** anything else gets built on top.
-
-This roadmap front-loads boundary work into six small PRs (PR-01 … PR-06) so that everything after them is fill-in-the-blank.
-
----
-
-## Foundation (PR-01 → PR-06)
-
-Status snapshot — update as PRs land.
-
-| PR | Title | Status | Risk | Estimated effort |
-|---|---|---|---|---|
-| 01 | [Engine invariants: `moveClip` + `trimClip`](./docs/backlog/PR-01-engine-invariants.md) | 🟢 Merged | Low | 1–2 hours |
-| 02 | [`resolveTimeline` tests](./docs/backlog/PR-02-resolver-tests.md) | 🔴 Not started | Low | 1–2 hours |
-| 03 | [Schema: `Project.stage` + `Clip.transform?`](./docs/backlog/PR-03-schema-stage-transform.md) | 🔴 Not started | Medium | 2–3 hours |
-| 04 | [`MediaLibrary` skeleton + asset model](./docs/backlog/PR-04-media-library-skeleton.md) | 🔴 Not started | Medium | 2–3 hours |
-| 05 | [`EditorProvider` and engine lift](./docs/backlog/PR-05-editor-provider.md) | 🔴 Not started | Medium-High | 3–4 hours |
-| 06 | [Render contract + drag plumbing seams](./docs/backlog/PR-06-render-contract.md) | 🔴 Not started | Low | 1–2 hours |
-
-**Total foundation effort:** roughly 10–16 focused hours, spread across 6 separately-reviewable commits.
+For the things that are known-incomplete today, see
+[`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md).
 
 ---
 
-## Sequencing rules
+## Shipped
 
-These rules are how the foundation gets built without re-debt.
-
-1. **One PR at a time, merged before the next starts.** Each PR is a rollback point.
-2. **Each PR ends with `tsc --noEmit` clean and a manual smoke test in the playground.**
-3. **No scope expansion mid-PR.** Spot something else? Open a follow-up ticket. The temptation to "while I'm in here" is what turns a 100-line PR into a 600-line PR.
-4. **Commit message format:** `<area>: <verb> <object>` — e.g. `engine: enforce overlap on moveClip`.
-5. **If a PR's acceptance criteria can't be met, stop and write a new ticket.** Don't ship half a feature.
-
----
-
-## After the foundation (PR-07 → PR-12+)
-
-Once PR-06 is merged, feature work begins. These PRs are **not** specified in detail yet — they should be planned freshly once the foundation is in hand, with concrete user-visible goals.
-
-See [`docs/backlog/PR-07-onwards.md`](./docs/backlog/PR-07-onwards.md) for the working sketch.
-
-| PR | Theme | What it unlocks |
-|---|---|---|
-| 07 | `MediaLibrary.importFiles` | Real assets can enter the editor |
-| 08 | `<MediaGallery />` UI | Visual asset library |
-| 09 | `useTimelineDrop` implementation | Drag-drop creates clips |
-| 10 | `<Preview />` + `DomRenderer` | **Video actually plays.** |
-| 11 | Wire `<Preview />` into playground | First real demo |
-| 12+ | Text overlays, transform gizmos, transitions, effects, export | Feature breadth |
-
-PR-10 is the milestone moment — the first time your timeline plays a real video file.
+| Area | What works |
+|---|---|
+| Data model | `Project` / `Track` / `Clip`, integer-frame time, normalized `transform` |
+| `TimelineEngine` | Immer mutations, undo/redo, batch transactions, typed events |
+| `PlaybackEngine` | Anchor-and-integrate RAF clock, subscribe / timeupdate channels |
+| `resolveTimeline` | Pure `(frame, project) → Scene`; solo / mute / disabled / zIndex |
+| Timeline UI | `Timeline`, `Ruler`, `TrackRow`, `ClipBlock`, `Playhead`, drag/trim/split |
+| Media library | `importFiles`, metadata probe, async thumbnails, drag-to-timeline |
+| GPU renderer | WebGL2 `GpuRenderer` + `RenderGraph`; video / image / text layers; context-loss recovery |
+| Real video decode | Push-based `StreamingFrameProducer` (WebCodecs) + mediabunny demux + copy-and-close `FrameCache` |
+| `<Preview>` | Mounts the renderer, drives RAF, paints the interactive text overlay |
+| Audio playback | `AudioPlaybackController` on the `PlaybackEngine` clock |
+| Aspect ratio | Contain-fit viewport + per-clip object-fit; switchable stage via `setStage` |
+| **Export** | `exportVideo()` → worker → OffscreenCanvas frame render → mediabunny MP4 mux, with main-thread audio mix |
 
 ---
 
-## What is explicitly *not* on this roadmap
+## Next architectural layer — Scheduler / media coordination
 
-These are deliberately out of scope until far later. Pre-emptive flags so they don't accidentally creep in:
+The current decode pipeline is **push-based and best-effort**: `VideoLayer`
+calls `setPlayhead(N)`, and `StreamingFrameProducer` feeds a forward lookahead
+window. It has no global view across clips and no notion of priority. The next
+layer is a coordinator that sits between the render tick and the providers.
 
-- WebGPU / WebGL renderers — wait until DOM is shipped and the bottleneck is measured.
-- AudioContext clock anchoring — wait until audio is in the playback path.
-- Resolver memoization — wait until profiling shows it matters.
-- Worker-based thumbnails — main-thread is fine until it isn't.
-- A second package — keep everything in `@myeditor/timeline` until file count or build time forces a split.
-- A state library beyond Zustand — current setup is correct.
-- Plugin system, event bus, dependency injection — add when needed, not before.
+Planned responsibilities (none implemented yet):
 
-See [`ARCHITECTURE.md` § 9](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns) for the full anti-pattern list.
+- **Predictive frame caching** — warm frames ahead of where the playhead is
+  *going*, not just ahead of where it is.
+- **Reverse-scrub support** — decode/cache strategy for backward playback that
+  doesn't cold-start from a keyframe on every step.
+- **Decode prioritization** — order/cancel work across multiple clips by
+  visibility and proximity to the playhead.
+- **Cache warming** — pre-roll around cut points and pending seeks.
+- **Playback ↔ export coordination** — one scheduling policy shared by the live
+  RAF loop and the deterministic export loop.
+- **Transition synchronization** — keep both sides of an overlap decoded so a
+  crossfade never shows a black frame.
+
+This is the seam that `Scene.transitions` (reserved, empty today) and the
+`StreamingFrameProducer` lookahead/hysteresis logic are shaped to grow into.
+
+---
+
+## Feature backlog (unsequenced)
+
+Planned, not started. Order will be decided when the scheduler lands.
+
+- Transition system (crossfade / cut / wipe) on top of `Scene.transitions`
+- Multi-track video/audio compositing beyond the current single-track v1 path
+- On-canvas resize/rotate gizmos for video & image clips (text already has them)
+- Waveform rendering and timeline clip thumbnails / filmstrips
+- Effects / filters / animation (per-clip shader passes via a new layer)
+- Asset persistence (IndexedDB / OPFS) so the library survives reload
+- WebGPU backend behind the existing `Renderer` interface
 
 ---
 
@@ -82,11 +76,14 @@ See [`ARCHITECTURE.md` § 9](./ARCHITECTURE.md#9-what-this-architecture-rejects-
 
 | Date | Decision | Rationale |
 |---|---|---|
-| 2026-05 | Single package (`@myeditor/timeline`) until proven otherwise | Avoid premature monorepo split |
-| 2026-05 | Frames as the only time unit | Eliminate floating-point drift |
-| 2026-05 | `resolveTimeline` is pure | Renderer-agnostic; worker-safe; testable |
-| 2026-05 | Zustand stores are Ring 1 mirrors only | Engine remains source of truth |
-| 2026-05 | Native HTML5 DnD (no `react-dnd`/`dnd-kit`) | Matches Freecut; one less dependency |
-| 2026-05 | DOM renderer first, GPU later | Ship value before complexity |
+| 2026-05 | Frames as the only internal time unit | Eliminate floating-point drift across splits/trims |
+| 2026-05 | `resolveTimeline` is pure | Renderer-agnostic, worker-safe, testable, export-reusable |
+| 2026-05 | Single package (`@elah/editor`) | Avoid premature monorepo split; folders, not packages |
+| 2026-05 | Zustand stores are Ring 1 mirrors only | Engine stays the single source of truth |
+| 2026-05 | GPU (WebGL2) renderer as the shipped backend | A planned DOM-first renderer was dropped; the textured-quad path generalizes to image/text and reuses the same placement math the export worker uses |
+| 2026-05 | mediabunny injected, never a hard dependency | Keep WebCodecs/demux out of the core bundle (see [`BUNDLE_STRATEGY.md`](./BUNDLE_STRATEGY.md)) |
+| 2026-05 | Copy decoded frames to `ImageBitmap`, close immediately | Stop the decoder output pool from starving and freezing playback |
+| 2026-06 | Export reuses `resolveTimeline` + shared placement math | One rendering truth for preview and export; no export-specific scene system |
 
-Add new decisions here as they're made.
+See [`ARCHITECTURE.md` § anti-patterns](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns)
+for the standing list of things this project deliberately does not build.

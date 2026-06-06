@@ -2,8 +2,6 @@
 
 > **A browser-native, frame-accurate video editor for any aspect ratio (9:16 reels, 16:9 YouTube, 1:1, and beyond) — engine-first, renderer-agnostic, scalable from MVP to production.**
 
-> Working name. See [Repo name candidates](#repo-name-candidates) below — pick one before the first public push.
-
 ---
 
 ## What this is
@@ -36,10 +34,12 @@ Three goals shape every decision:
 | **Text overlays** (GPU `TextLayer` + interactive `TextOverlay`) | ✅ Working — paint via 2D-canvas→texture; drag / resize / inline-edit; `transform.scale` (re-rasterized to stay crisp) + `transform.rotation` applied |
 | **Audio playback** (`AudioPlaybackController` on the `PlaybackEngine` clock) | ✅ Working — single track, whole-file decode, mounted by `<Preview enableAudio>` |
 | **Image clips** (GPU `ImageLayer`) | ✅ Working — static image load → textured quad, same object-fit contain as video |
-| Export pipeline | ⚪ Next (same renderer → `OffscreenCanvas` + `VideoEncoder`) |
-| Effects / transitions / animations | ⚪ Not started |
+| **Export pipeline** (`exportVideo` → MP4) | ✅ Working — module worker renders frames to `OffscreenCanvas` (reusing `resolveTimeline` + shared placement math) and muxes via mediabunny; audio mixed on the main thread |
+| Transitions / effects / animations | ⚪ Not started — `Scene.transitions` reserved |
+| Scheduler / predictive frame caching | ⚪ Not started — next architectural layer |
 
-See [`ROADMAP.md`](./ROADMAP.md) for the sequenced PR plan and
+See [`ROADMAP.md`](./ROADMAP.md) for current state and the next layer,
+[`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) for known gaps, and
 [`packages/editor/src/core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md)
 for the GPU render + decode pipeline in depth.
 
@@ -50,7 +50,7 @@ for the GPU render + decode pipeline in depth.
 
 ## Architecture (one paragraph)
 
-A single immutable `Project` tree owns all timeline data. The framework-agnostic `TimelineEngine` is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events. Time is **integer frames**; never floating-point seconds. A standalone `PlaybackEngine` owns the RAF loop and emits `(frame, isPlaying)` snapshots; React is a downstream consumer via Zustand mirrors. A pure function `resolveTimeline(frame, project) → Scene` determines what is visible and audible at any given frame — this is the only thing renderers consume. The shipped renderer is a **WebGL2 `GpuRenderer`** that turns each `Scene` into a sorted list of textured-quad draws across registered layers (`VideoLayer`, `ImageLayer`, `TextLayer`), composited by global `zIndex`; video frames come from a push-based WebCodecs decode pipeline (`StreamingFrameProducer`) that decodes ahead of the playhead and **copies each frame to an `ImageBitmap`** before caching it, so the decoder's hardware output pool never starves. Audio is **not** rendered through the GPU — an `AudioPlaybackController` reads `scene.audios` and schedules Web Audio beside the renderer on the same `PlaybackEngine` clock. Any renderer (the live GPU one, a future DOM/Canvas one, or a WASM exporter) implements the same `Renderer` interface and reads only the `Scene`.
+A single immutable `Project` tree owns all timeline data. The framework-agnostic `TimelineEngine` is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events. Time is **integer frames**; never floating-point seconds. A standalone `PlaybackEngine` owns the RAF loop and emits `(frame, isPlaying)` snapshots; React is a downstream consumer via Zustand mirrors. A pure function `resolveTimeline(frame, project) → Scene` determines what is visible and audible at any given frame — this is the only thing renderers consume. The shipped renderer is a **WebGL2 `GpuRenderer`** that turns each `Scene` into a sorted list of textured-quad draws across registered layers (`VideoLayer`, `ImageLayer`, `TextLayer`), composited by global `zIndex`; video frames come from a push-based WebCodecs decode pipeline (`StreamingFrameProducer`) that decodes ahead of the playhead and **copies each frame to an `ImageBitmap`** before caching it, so the decoder's hardware output pool never starves. Audio is **not** rendered through the GPU — an `AudioPlaybackController` reads `scene.audios` and schedules Web Audio beside the renderer on the same `PlaybackEngine` clock. Export reuses the exact same resolution: a worker steps `resolveTimeline` frame-by-frame and draws to an `OffscreenCanvas` using the *same* placement math (`resolveDrawRect`, `computeTextLayout`) as the live renderer, then muxes MP4 with mediabunny — so preview and export never drift. Any renderer implements the same `Renderer` interface and reads only the `Scene`.
 
 For the full architecture document, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -62,30 +62,26 @@ For the full architecture document, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 video-editor/
 ├── README.md                     # this file
 ├── ARCHITECTURE.md               # the engine architecture in depth
-├── ROADMAP.md                    # sequenced PR plan
-├── CONTRIBUTING.md               # how to add a PR
+├── ROADMAP.md                    # current state + next architectural layer
+├── CURRENT_LIMITATIONS.md        # known gaps and trade-offs
+├── PERFORMANCE.md                # performance philosophy + techniques
+├── BUNDLE_STRATEGY.md            # dependency budget + tree-shaking
+├── CONTRIBUTING.md               # branch/commit conventions, PR rules
 ├── apps/
-│   └── playground/               # Vite + React demo app
+│   └── playground/               # Vite + React demo app (mediabunny wired here)
 └── packages/
     └── editor/                   # @elah/editor SDK
         └── src/
             ├── core/             # types, engine, playback, resolver, stores
-            │   ├── media/        # WebCodecs decode, FrameCache, mediabunny demux
-            │   └── renderer/     # Renderer interface + WebGL2 GpuRenderer, layers
+            │   ├── media/        # WebCodecs decode, FrameCache, mediabunny demux, audio
+            │   ├── renderer/     # Renderer interface + WebGL2 GpuRenderer, layers
+            │   ├── export/       # exportVideo + ExportWorker (OffscreenCanvas → MP4)
+            │   └── debug/        # channel-based trace logging
             ├── timeline/         # Timeline, Ruler, TrackRow, ClipBlock, hooks
             └── editor/           # EditorProvider, AssetPanel, Preview, useResolvedScene
 docs/
 ├── glossary.md                   # terminology
-├── references.md                 # study guide for related repos
-└── backlog/
-    ├── README.md                 # PR index
-    ├── PR-01-engine-invariants.md
-    ├── PR-02-resolver-tests.md
-    ├── PR-03-schema-stage-transform.md
-    ├── PR-04-media-library-skeleton.md
-    ├── PR-05-editor-provider.md
-    ├── PR-06-render-contract.md
-    └── PR-07-onwards.md
+└── known-bugs.md                 # deliberate workarounds + their real fixes
 ```
 
 ---
@@ -201,15 +197,14 @@ For the longer treatment, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Contributing
 
-The current development model is **sequenced foundation PRs** (1–6 in [`ROADMAP.md`](./ROADMAP.md)) before feature work begins. Each PR in [`docs/backlog/`](./docs/backlog/) is **self-contained** — scope, acceptance criteria, and an implementation-agent prompt — so PRs can be handed off cleanly.
-
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for branch/commit conventions.
-
----
-
-
+The foundation and the first feature wave have shipped; work now is feature and
+hardening PRs against a live engine. Start from [`ROADMAP.md`](./ROADMAP.md) and
+[`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md), then see
+[`CONTRIBUTING.md`](./CONTRIBUTING.md) for branch/commit conventions, PR rules,
+and the architectural invariants every renderer/decode change must preserve.
 
 ---
 
 ## License
-Check Licence.MD
+
+See [`LICENSE`](./LICENSE).
