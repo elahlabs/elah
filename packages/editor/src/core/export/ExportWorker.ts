@@ -18,13 +18,39 @@
 
 import * as mb from 'mediabunny'
 
+// ---------------------------------------------------------------------------
+// Logging helpers
+// ---------------------------------------------------------------------------
+
+const t0 = performance.now()
+
+function xlog(stage: string, msg: string, extra?: Record<string, unknown>) {
+  const elapsed = ((performance.now() - t0) / 1000).toFixed(3)
+  const suffix = extra ? ' — ' + Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(', ') : ''
+  console.log(`[export:${stage}] +${elapsed}s ${msg}${suffix}`)
+}
+
+async function timed<T>(stage: string, label: string, fn: () => Promise<T>): Promise<T> {
+  xlog(stage, `${label} ...`)
+  const start = performance.now()
+  const result = await fn()
+  xlog(stage, `${label} done`, { ms: (performance.now() - start).toFixed(1) })
+  return result
+}
+
+function fmtBytes(n: number): string {
+  if (n > 1_000_000) return (n / 1_000_000).toFixed(2) + ' MB'
+  if (n > 1_000) return (n / 1_000).toFixed(1) + ' KB'
+  return n + ' B'
+}
+
 import { resolveTimeline } from '../resolver/resolveTimeline'
 import { getTotalFrames } from '../utils/frames'
 import type { Project } from '../types'
 import type { ActiveVideoClip, ActiveImageClip, ActiveTextClip } from '../resolver/scene'
 import { resolveDrawRect } from '../renderer/gpu/layers/drawRect'
 import { computeTextLayout } from '../renderer/gpu/layers/textLayout'
-import type { ExportOptions, WorkerOutMessage } from './types'
+import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
 
 // ---------------------------------------------------------------------------
 // Worker message entry point
@@ -33,12 +59,19 @@ import type { ExportOptions, WorkerOutMessage } from './types'
 self.onmessage = async (e: MessageEvent) => {
   if (e.data?.type !== 'start') return
 
-  const { project, options } = e.data as { project: Project; options: ExportOptions }
+  xlog('worker', 'message received — starting export')
+  const { project, options, audio } = e.data as {
+    project: Project
+    options: ExportOptions
+    audio: RenderedAudio | null
+  }
   try {
-    const buffer = await runExport(project, options)
+    const buffer = await runExport(project, options, audio)
+    xlog('worker', 'posting buffer to main thread', { size: fmtBytes(buffer.byteLength) })
     const msg: WorkerOutMessage = { type: 'done', buffer }
     ;(self as unknown as Worker).postMessage(msg, [buffer])
   } catch (err) {
+    xlog('worker', `export failed: ${String(err)}`)
     const msg: WorkerOutMessage = { type: 'error', message: String(err) }
     ;(self as unknown as Worker).postMessage(msg)
   }
@@ -48,109 +81,199 @@ self.onmessage = async (e: MessageEvent) => {
 // Main export logic
 // ---------------------------------------------------------------------------
 
-async function runExport(project: Project, options: ExportOptions): Promise<ArrayBuffer> {
+async function runExport(project: Project, options: ExportOptions, audio: RenderedAudio | null): Promise<ArrayBuffer> {
   const { width, height } = project.stage
   const fps = project.fps
   const totalFrames = getTotalFrames(project.clips)
 
+  xlog('run', 'starting', {
+    stage: `${width}x${height}`,
+    fps,
+    totalFrames,
+    durationSec: (totalFrames / fps).toFixed(2),
+    videoCodec: options.videoCodec ?? 'avc',
+    videoBitrate: options.videoBitrate ?? 8_000_000,
+    audioCodec: options.audioCodec ?? 'aac',
+    audioBitrate: options.audioBitrate ?? 128_000,
+  })
+
   if (totalFrames === 0) throw new Error('ExportWorker: project has no clips')
 
   const allClips = Object.values(project.clips).flat()
+  xlog('run', `clip inventory`, {
+    total: allClips.length,
+    video: allClips.filter(c => c.type === 'video').length,
+    image: allClips.filter(c => c.type === 'image').length,
+    audio: allClips.filter(c => c.type === 'audio').length,
+    text: allClips.filter(c => c.type === 'text').length,
+  })
 
   // --- Open mediabunny CanvasSinks for unique video srcs ---
+  const videoSrcs = [...new Set(allClips.filter(c => c.type === 'video' && c.src).map(c => c.src!))]
+  xlog('assets:video', `opening ${videoSrcs.length} CanvasSink(s)`)
   const videoSinks = new Map<string, mb.CanvasSink>()
-  for (const clip of allClips) {
-    if (clip.type !== 'video' || !clip.src || videoSinks.has(clip.src)) continue
-    const blob = await fetch(clip.src).then(r => r.blob())
+  for (let i = 0; i < videoSrcs.length; i++) {
+    const src = videoSrcs[i]
+    xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetching "${src.slice(-40)}"`)
+    const fetchStart = performance.now()
+    const blob = await fetch(src).then(r => r.blob())
+    xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetched`, { size: fmtBytes(blob.size), ms: (performance.now() - fetchStart).toFixed(1) })
     const input = new mb.Input({ formats: mb.ALL_FORMATS, source: new mb.BlobSource(blob) })
     const track = await input.getPrimaryVideoTrack()
     if (track) {
-      videoSinks.set(clip.src, new mb.CanvasSink(track))
+      videoSinks.set(src, new mb.CanvasSink(track))
+      xlog('assets:video', `[${i + 1}/${videoSrcs.length}] CanvasSink ready`)
+    } else {
+      xlog('assets:video', `[${i + 1}/${videoSrcs.length}] WARNING: no primary video track found`)
     }
   }
 
   // --- Load ImageBitmaps for unique image srcs ---
+  const imageSrcs = [...new Set(allClips.filter(c => c.type === 'image' && c.src).map(c => c.src!))]
+  xlog('assets:image', `loading ${imageSrcs.length} ImageBitmap(s)`)
   const imageBitmaps = new Map<string, ImageBitmap>()
-  for (const clip of allClips) {
-    if (clip.type !== 'image' || !clip.src || imageBitmaps.has(clip.src)) continue
-    const blob = await fetch(clip.src).then(r => r.blob())
-    imageBitmaps.set(clip.src, await createImageBitmap(blob))
+  for (let i = 0; i < imageSrcs.length; i++) {
+    const src = imageSrcs[i]
+    xlog('assets:image', `[${i + 1}/${imageSrcs.length}] fetching "${src.slice(-40)}"`)
+    const fetchStart = performance.now()
+    const blob = await fetch(src).then(r => r.blob())
+    const bitmap = await createImageBitmap(blob)
+    imageBitmaps.set(src, bitmap)
+    xlog('assets:image', `[${i + 1}/${imageSrcs.length}] ready`, {
+      size: fmtBytes(blob.size),
+      bitmapW: bitmap.width,
+      bitmapH: bitmap.height,
+      ms: (performance.now() - fetchStart).toFixed(1),
+    })
   }
 
-  // --- Audio mix via OfflineAudioContext ---
-  const audioClips = allClips.filter(c => {
-    if (c.type !== 'audio' || !c.src || c.disabled) return false
-    const track = project.tracks.find(t => t.id === c.trackId)
-    return track && !track.muted && !track.disabled
-  })
-
-  let mixedBuffer: AudioBuffer | null = null
-  if (audioClips.length > 0) {
-    const sampleRate = 44100
-    const totalSec = totalFrames / fps
-    const ctx = new OfflineAudioContext(2, Math.ceil(sampleRate * totalSec), sampleRate)
-
-    for (const clip of audioClips) {
-      try {
-        const buf = await fetch(clip.src!).then(r => r.arrayBuffer())
-        const decoded = await ctx.decodeAudioData(buf)
-        const node = ctx.createBufferSource()
-        node.buffer = decoded
-        const gain = ctx.createGain()
-        gain.gain.value = clip.volume ?? 1
-        node.connect(gain).connect(ctx.destination)
-        node.start(clip.startFrame / fps, clip.sourceStartFrame / fps, clip.durationFrames / fps)
-      } catch {
-        // Skip un-decodable clips silently
-      }
-    }
-    mixedBuffer = await ctx.startRendering()
+  // --- Audio mix ---
+  // The mix is rendered on the main thread (exportVideo.ts) because the Web
+  // Audio API (OfflineAudioContext / decodeAudioData) is not exposed in Web
+  // Workers. Here we just receive the finished PCM and encode it below.
+  if (audio) {
+    xlog('audio', `received mixed PCM`, {
+      channels: audio.numberOfChannels,
+      frames: audio.length,
+      sampleRate: audio.sampleRate,
+      durationSec: (audio.length / audio.sampleRate).toFixed(3),
+    })
+  } else {
+    xlog('audio', 'no mixed audio received — exporting video-only')
   }
 
   // --- Set up mediabunny Output ---
+  xlog('mediabunny', `creating OffscreenCanvas ${width}x${height}`)
   const outputCanvas = new OffscreenCanvas(width, height)
   const ctx2d = outputCanvas.getContext('2d')!
 
+  const videoCodec = options.videoCodec ?? 'avc'
+  const videoBitrate = options.videoBitrate ?? 8_000_000
+  xlog('mediabunny', `creating CanvasSource`, { codec: videoCodec, bitrate: videoBitrate })
   const canvasSource = new mb.CanvasSource(outputCanvas, {
-    codec: options.videoCodec ?? 'avc',
-    bitrate: options.videoBitrate ?? 8_000_000,
+    codec: videoCodec,
+    bitrate: videoBitrate,
   })
 
+  xlog('mediabunny', 'creating BufferTarget + Mp4Output')
   const bufferTarget = new mb.BufferTarget()
   const output = new mb.Output({ format: new mb.Mp4OutputFormat(), target: bufferTarget })
-
   output.addVideoTrack(canvasSource)
+  xlog('mediabunny', 'video track added to output')
 
-  let audioSource: mb.AudioBufferSource | null = null
-  if (mixedBuffer) {
-    audioSource = new mb.AudioBufferSource({
-      codec: options.audioCodec ?? 'aac',
-      bitrate: options.audioBitrate ?? 128_000,
+  let audioSource: mb.AudioSampleSource | null = null
+  if (audio) {
+    const audioCodec = options.audioCodec ?? 'aac'
+    const audioBitrate = options.audioBitrate ?? 128_000
+    xlog('mediabunny', `creating AudioSampleSource`, { codec: audioCodec, bitrate: audioBitrate })
+    audioSource = new mb.AudioSampleSource({
+      codec: audioCodec,
+      bitrate: audioBitrate,
     })
     output.addAudioTrack(audioSource)
+    xlog('mediabunny', 'audio track added to output')
   }
 
-  await output.start()
+  await timed('mediabunny', 'output.start()', () => output.start())
 
-  // Add the full audio mix before the video frame loop
-  if (mixedBuffer && audioSource) {
-    await audioSource.add(mixedBuffer)
+  if (audio && audioSource) {
+    await timed('mediabunny', 'audioSource.add() — encoding mixed PCM', () => addAudioMix(audioSource!, audio))
   }
 
   // --- Sequential frame render loop ---
+  xlog('frames', `starting frame loop`, { totalFrames, fps })
+  const loopStart = performance.now()
+  const logEvery = Math.max(1, Math.floor(totalFrames / 10))
+  let lastFrameTime = loopStart
+
   for (let frame = 0; frame < totalFrames; frame++) {
+    if (frame === 0 || frame % logEvery === 0 || frame === totalFrames - 1) {
+      const now = performance.now()
+      const elapsed = now - loopStart
+      const avgMsPerFrame = frame > 0 ? elapsed / frame : 0
+      const pct = Math.round((frame / totalFrames) * 100)
+      xlog('frames', `frame ${frame}/${totalFrames} (${pct}%)`, {
+        avgMsPerFrame: avgMsPerFrame.toFixed(1),
+        sinceLastLog: (now - lastFrameTime).toFixed(1) + 'ms',
+      })
+      lastFrameTime = now
+    }
+
     const scene = resolveTimeline(frame, project)
-    await renderFrame(ctx2d, scene, videoSinks, imageBitmaps, width, height, fps)
+    await renderFrame(ctx2d, scene, videoSinks, imageBitmaps, width, height, fps, frame)
     await canvasSource.add(frame / fps, 1 / fps)
 
     const msg: WorkerOutMessage = { type: 'progress', frame, totalFrames }
     ;(self as unknown as Worker).postMessage(msg)
   }
 
-  await output.finalize()
+  const loopMs = performance.now() - loopStart
+  xlog('frames', `loop complete`, {
+    totalFrames,
+    totalMs: loopMs.toFixed(0),
+    avgMsPerFrame: (loopMs / totalFrames).toFixed(1),
+  })
+
+  await timed('mediabunny', 'output.finalize()', () => output.finalize())
 
   if (!bufferTarget.buffer) throw new Error('ExportWorker: buffer is null after finalize')
+  xlog('run', `export complete`, { outputSize: fmtBytes(bufferTarget.buffer.byteLength) })
   return bufferTarget.buffer
+}
+
+// ---------------------------------------------------------------------------
+// Audio encoding — build AudioSamples from the mixed PCM (no Web Audio API)
+// ---------------------------------------------------------------------------
+
+/**
+ * Encode the main-thread audio mix into the output via {@link mb.AudioSampleSource}.
+ *
+ * The PCM is fed in ~1-second chunks of `f32-planar` {@link mb.AudioSample}s so
+ * we respect encoder backpressure and avoid allocating one enormous sample for
+ * long projects. `await source.add()` applies the backpressure.
+ */
+async function addAudioMix(source: mb.AudioSampleSource, audio: RenderedAudio): Promise<void> {
+  const { sampleRate, numberOfChannels, length } = audio
+  const channels = audio.channels.map(b => new Float32Array(b))
+  const chunkFrames = sampleRate // 1 second per chunk
+
+  for (let start = 0; start < length; start += chunkFrames) {
+    const frames = Math.min(chunkFrames, length - start)
+    // f32-planar layout: channel 0's frames, then channel 1's frames, ...
+    const data = new Float32Array(frames * numberOfChannels)
+    for (let c = 0; c < numberOfChannels; c++) {
+      data.set(channels[c].subarray(start, start + frames), c * frames)
+    }
+    const sample = new mb.AudioSample({
+      data,
+      format: 'f32-planar',
+      numberOfChannels,
+      sampleRate,
+      timestamp: start / sampleRate,
+    })
+    await source.add(sample)
+    sample.close()
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -165,7 +288,18 @@ async function renderFrame(
   stageW: number,
   stageH: number,
   fps: number,
+  frameIndex: number,
 ): Promise<void> {
+  const isDebugFrame = frameIndex === 0
+
+  if (isDebugFrame) {
+    xlog('render:frame0', `scene layers`, {
+      videos: scene.videos.length,
+      images: scene.images.length,
+      texts: scene.texts.length,
+    })
+  }
+
   ctx.clearRect(0, 0, stageW, stageH)
   ctx.fillStyle = '#000'
   ctx.fillRect(0, 0, stageW, stageH)
@@ -189,21 +323,58 @@ async function renderFrame(
       const sink = videoSinks.get(entry.item.src)
       if (sink) {
         const sourceTimeSec = entry.item.sourceFrame / fps
+        if (isDebugFrame) {
+          xlog('render:frame0', `video layer — seeking CanvasSink`, {
+            src: entry.item.src.slice(-40),
+            sourceTimeSec: sourceTimeSec.toFixed(4),
+            zIndex: entry.item.zIndex,
+            opacity: entry.item.opacity ?? 1,
+          })
+        }
+        const seekStart = isDebugFrame ? performance.now() : 0
         const wrapped = await sink.getCanvas(sourceTimeSec)
+        if (isDebugFrame) {
+          xlog('render:frame0', `video layer — getCanvas()`, {
+            gotFrame: !!wrapped,
+            ms: (performance.now() - seekStart).toFixed(1),
+            ...(wrapped ? { canvasW: wrapped.canvas.width, canvasH: wrapped.canvas.height } : {}),
+          })
+        }
         if (wrapped) {
           drawMedia(ctx, wrapped.canvas, entry.item.transform, stageW, stageH)
         }
+      } else {
+        if (isDebugFrame) xlog('render:frame0', `video layer — WARNING: no CanvasSink for src "${entry.item.src.slice(-40)}"`)
       }
     } else if (entry.kind === 'image') {
       const bitmap = imageBitmaps.get(entry.item.src)
+      if (isDebugFrame) {
+        xlog('render:frame0', `image layer`, {
+          src: entry.item.src.slice(-40),
+          zIndex: entry.item.zIndex,
+          hasBitmap: !!bitmap,
+          ...(bitmap ? { bitmapW: bitmap.width, bitmapH: bitmap.height } : {}),
+        })
+      }
       if (bitmap) {
         drawMedia(ctx, bitmap, entry.item.transform, stageW, stageH)
       }
     } else {
+      if (isDebugFrame) {
+        xlog('render:frame0', `text layer`, {
+          content: entry.item.content?.slice(0, 30),
+          zIndex: entry.item.zIndex,
+          fontSize: entry.item.fontSize,
+        })
+      }
       drawText(ctx, entry.item, stageW, stageH)
     }
 
     ctx.restore()
+  }
+
+  if (isDebugFrame) {
+    xlog('render:frame0', `frame 0 draw complete — ${items.length} layer(s) composited onto ${stageW}x${stageH}`)
   }
 }
 
