@@ -130,6 +130,10 @@ export { useTimelineDrop } from './timeline/useTimelineDrop'
 export { ELEMENT_DRAG_MIME } from './timeline/elementDrag'
 export type { DragElementPayload, ElementKind } from './timeline/elementDrag'
 
+// --- Core: export ---
+export { exportVideo } from './core/export'
+export type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from './core/export'
+
 // --- Editor: composition ---
 export { EditorProvider } from './editor/EditorProvider'
 export type { EditorProviderProps } from './editor/EditorProvider'

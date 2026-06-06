@@ -139,6 +139,8 @@ flowchart TB
 
     subgraph layers[Layers]
         VL[VideoLayer]
+        IL[ImageLayer]
+        TXL[TextLayer]
         TL[TestLayer]
     end
 
@@ -169,6 +171,8 @@ flowchart TB
     GR --> Panel
 
     RG --> VL
+    RG --> IL
+    RG --> TXL
     RG --> TL
 
     VL --> VFP
@@ -875,12 +879,18 @@ graph LR
         D13[20+ vitest suites green]
     end
 
+    subgraph shipped2[Also shipped since]
+        S1[ImageLayer + TextLayer + shared placement helpers]
+        S2[AudioPlaybackController - single track]
+        S3[Export: worker + OffscreenCanvas + mediabunny mux]
+        S4[setDebug overlay wired into playground]
+    end
+
     subgraph next[Next]
-        N3[DomRenderer for cheap MVP]
-        N4[ExportRenderer Worker + VideoEncoder]
-        N5[Wire setDebug into apps/playground/GpuPreview]
-        N6[AudioScheduler Phase 2]
-        N7[TextLayer Phase 3]
+        N1[Scheduler / predictive frame caching]
+        N2[Transitions on Scene.transitions]
+        N3[WebGPU backend behind Renderer]
+        N4[Multi-track compositing hardening]
     end
 
     done --> next
@@ -909,7 +919,8 @@ graph LR
     class D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13 done
     class P1,P2,P3,P4,P5,P6 phase1
     class R1,R2,R3,R4,R5 pr02
-    class N3,N4,N5,N6,N7 next
+    class S1,S2,S3,S4 done
+    class N1,N2,N3,N4 next
 ```
 
 ---

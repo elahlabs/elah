@@ -161,7 +161,7 @@ This produces the same user-visible behavior as the old "clamp elapsed to 0.25s"
 - **Sync / drift correction.** A renderer that drives `<video>.currentTime` will own its own sync thresholds.
 - **Reverse playback, variable per-clip fps, buffering.** Not modeled.
 
-See [`docs/backlog/update-clock-fucntion.md`](../../../../../docs/backlog/update-clock-fucntion.md) and [`01-playback-clock-architecture.md`](../../../../../01-playback-clock-architecture.md) for the long-form design rationale.
+See [`ARCHITECTURE.md` § 3](../../../../../ARCHITECTURE.md#3-time-frames-and-the-playback-clock) for the long-form design rationale (anchor-and-integrate, the echo guard, the `AudioContext` clock-anchoring deferral).
 
 ---
 

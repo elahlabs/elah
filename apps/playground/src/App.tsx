@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './editor-ui.css'
 import MediaLimitsLab from './MediaLimitsLab'
 import { GpuPreview } from './GpuPreview'
@@ -15,6 +15,7 @@ import {
   useMediaLibraryStore,
   splitClipAtPlayhead,
   framesToTimecode,
+  exportVideo,
   type InitialTrackConfig,
   type TimelineRef,
 } from '@elah/editor'
@@ -82,6 +83,50 @@ export default function App() {
   }, [totalFrames])
 
   const engine = () => timelineRef.current?.engine
+
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportProgress, setExportProgress] = useState(0) // 0–100
+
+  const handleExport = async () => {
+    const e = engine()
+    if (!e || isExporting) return
+
+    const project = e.getProject()
+    const t0 = performance.now()
+    console.log('[export:ui] Export button clicked')
+    console.log('[export:ui] project snapshot', {
+      stage: `${project.stage.width}x${project.stage.height}`,
+      fps: project.fps,
+      tracks: project.tracks.length,
+      clips: Object.values(project.clips).flat().length,
+    })
+
+    setIsExporting(true)
+    setExportProgress(0)
+    try {
+      const blob = await exportVideo(project, {
+        videoBitrate: 8_000_000,
+        onProgress: ({ frame, totalFrames }) => {
+          setExportProgress(Math.round((frame / totalFrames) * 100))
+        },
+      })
+      const elapsed = ((performance.now() - t0) / 1000).toFixed(2)
+      console.log(`[export:ui] blob received — ${(blob.size / 1_000_000).toFixed(2)} MB in ${elapsed}s — triggering download`)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'export.mp4'
+      a.click()
+      console.log('[export:ui] download triggered — revoking object URL in 60s')
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (err) {
+      console.error('[export:ui] export failed:', err)
+      alert(`Export failed: ${String(err)}`)
+    } finally {
+      setIsExporting(false)
+      setExportProgress(0)
+    }
+  }
 
   const addVideoClip = () => {
     const e = engine()
@@ -400,8 +445,15 @@ export default function App() {
               <span style={{ fontSize: 10, color: theme.textMuted }}>
                 Ctrl+scroll zoom · Ctrl+Z/Y undo
               </span>
-              <button type="button" className="elah-export-btn" style={btnDisabled(false)}>
-                Export
+              <button
+                type="button"
+                className="elah-export-btn"
+                style={btnDisabled(isExporting)}
+                disabled={isExporting}
+                onClick={handleExport}
+                title="Export to MP4"
+              >
+                {isExporting ? `Exporting ${exportProgress}%` : '⬇ Export'}
               </button>
             </div>
           </header>

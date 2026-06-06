@@ -27,10 +27,10 @@ UI integration lives in [`editor/AssetPanel/AssetPanel.tsx`](../../editor/AssetP
 A `MediaAsset` is a registered source file with stable metadata:
 
 > **Decode pipeline link**: `MediaAsset.src` (an object URL) is the value passed
-> as `ActiveVideoClip.src` by `resolveTimeline`, and ultimately as `src` to
-> `DecoderBackedVideoFrameProvider.open(src)`. The decode pipeline begins here.
-> See [`core/renderer/gpu/DecoderBackedVideoFrameProvider.ts`](../renderer/gpu/DecoderBackedVideoFrameProvider.ts)
-> and [`core/renderer/gpu/IMPLEMENTATION_NOTES.md`](../renderer/gpu/IMPLEMENTATION_NOTES.md)
+> as `ActiveVideoClip.src` by `resolveTimeline`, and ultimately as `src` to the
+> video provider's `open(src)`. The decode pipeline begins here.
+> See [`core/media/video/README.md`](../media/video/README.md) and
+> [`core/renderer/architecture.md` § 6](../renderer/architecture.md)
 > for the full chain and known limitations (no persistence, blob-fetch round-trip, etc.).
 
 ```

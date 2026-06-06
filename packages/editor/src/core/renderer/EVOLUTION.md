@@ -1,17 +1,24 @@
 # GPU Media Runtime — Architecture Evolution
 
+> **Status (2026-06):** Phases 1–4 in §4 have **shipped** — real video decode,
+> image + text layers, single-track audio, and MP4 export all exist now. Read §4
+> Phases 2–4 as the *design record* of what was built, not a future plan. The
+> still-load-bearing parts of this document are **§3 (invariants I1–I12)**,
+> **§6 (ownership)**, and **§7 (extension seams)** — those are the contract every
+> renderer/decode change must preserve. The next genuinely-future layer is the
+> scheduler / media coordinator (see [`ROADMAP.md`](../../../../../ROADMAP.md)).
+
 > **Scope**: runtime-wide. This document covers the full chain from `Project`
 > through `PlaybackEngine`, `resolveTimeline`, `Renderer`, and outward into the
-> audio, text, export, and threading layers that do not yet exist.
+> audio, text, export, and threading layers.
 >
 > **Relation to other documents**:
-> - _Renderer internals (implemented)_: [`architecture.md`](./architecture.md) — do not duplicate, cross-reference.
-> - _Engine design principles and data model_: [`video-editor/ARCHITECTURE.md`](../../../../ARCHITECTURE.md).
-> - _PR sequencing_: [`video-editor/ROADMAP.md`](../../../../ROADMAP.md).
-> - _Clock, sync, pooling, browser constraints_: study docs `01–10` at the workspace root.
+> - _Renderer internals_: [`architecture.md`](./architecture.md) — diagrams + pipeline; do not duplicate, cross-reference.
+> - _Engine design principles and data model_: [`ARCHITECTURE.md`](../../../../../ARCHITECTURE.md).
+> - _Current state + next layer_: [`ROADMAP.md`](../../../../../ROADMAP.md); known gaps: [`CURRENT_LIMITATIONS.md`](../../../../../CURRENT_LIMITATIONS.md).
 >
-> **Reading order**: §1 (ground truth) → §3 (invariants, load-bearing) → §4
-> (phases) → §5–§6 (threading + ownership) → §7 (seams) in any order.
+> **Reading order**: §3 (invariants, load-bearing) → §6 (ownership) → §7 (seams).
+> §1–§2 are current-state context; §4 is the shipped-phase design record.
 
 ---
 
@@ -60,10 +67,13 @@ Vitest suite covering the critical invariants. See [`architecture.md`](./archite
 
 The engine layer (`TimelineEngine`, `PlaybackEngine`) is also fully operational:
 anchor-and-integrate clock, integer-frame time model, pure resolver, three-ring
-state model. See [`video-editor/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) §§ 1–6.
+state model. See [`video-editor/ARCHITECTURE.md`](../../../../../ARCHITECTURE.md) §§ 1–6.
 
-What is absent: the wire between the two layers (provider → real decoder), an
-audio subsystem, a text layer, and an export path.
+Since this was first written, every layer it called absent has shipped: real
+`VideoDecoder`-backed decode (`StreamingFrameProducer`), the audio subsystem
+(`AudioPlaybackController`), text and image layers, and export (`core/export/`).
+What remains absent is the **scheduler / media coordinator** that would make
+decode predictive rather than reactive to the current playhead.
 
 ### 1.2 Stable primitives
 
@@ -112,14 +122,18 @@ The short form:
 
 ### 1.5 Current risks
 
+The risks this section originally listed — synthetic-only decode, no audio, no
+export, main-thread blocking — have been retired by Phases 1–4. The standing
+risks today:
+
 | Risk | Consequence if unmitigated |
 |---|---|
-| No playback clock authority codified at the renderer level | Clock source (`performance.now` vs `AudioContext`) is `PlaybackEngine`-internal; audio drift would be invisible until audio ships |
-| `VideoFrameProvider` → `VideoDecoderManager` wire is synthetic | `SyntheticVideoFrameProvider` runs in browsers; real decode never happens until Phase 1 |
-| No audio subsystem | Multi-clip audio will be built ad-hoc without architecture if not pre-planned |
-| Export path is hypothetical | OffscreenCanvas worker execution of `GpuRenderer` is untested |
-| Main-thread-only | Long exports or high clip counts will block the UI without a worker plan |
-| `HTMLVideoElement` backend not modelled | DomRenderer (PR-10) uses `<video>` elements directly; no abstraction exists yet |
+| No predictive scheduler | Backward scrubbing cold-starts from a keyframe; large seeks show a held/black frame until decode catches up |
+| Decode runs on the main thread (off-tick) | Long GOPs / high resolutions compete with the UI for main-thread time |
+| Audio export not yet hardened | Long or many-clip audio timelines (whole-file main-thread mix) are untested at scale |
+| Single video/audio track tuning | Heavy multi-track compositing is not a validated path yet |
+
+See [`CURRENT_LIMITATIONS.md`](../../../../../CURRENT_LIMITATIONS.md) for the full list.
 
 ---
 
@@ -154,8 +168,8 @@ sequenceDiagram
 ```
 
 > Clock detail: `PlaybackEngine` is an anchor-and-integrate clock. See
-> [`01-playback-clock-architecture.md`](../../../../../01-playback-clock-architecture.md)
-> and [`ARCHITECTURE.md`](../../../../ARCHITECTURE.md) § 3.
+> [`ARCHITECTURE.md` § 3](../../../../../ARCHITECTURE.md#3-time-frames-and-the-playback-clock)
+> and [`playback/README.md`](../playback/README.md).
 
 ### 2.2 Render tick (synchronous path)
 
@@ -262,9 +276,9 @@ flowchart TB
     PE -->|"AudioScheduler Phase 2"| AE
 ```
 
-> Soft-sync vs hard-sync thresholds: see
-> [`06-playback-synchronization.md`](../../../../../06-playback-synchronization.md).
-> Media elements are always followers; the clock is always the authority.
+> Soft-sync vs hard-sync thresholds are not implemented today (the clock has no
+> media-follower sync layer yet). When added, media elements are always
+> followers; the clock is always the authority.
 
 ### 2.7 Export flow (Phase 4 — future)
 
@@ -512,7 +526,10 @@ I1, I3, I4 (drop behaviour), I5, I9, I10 (extend to real `VideoDecoder.output` f
 
 ---
 
-### Phase 2 — Audio Subsystem
+### Phase 2 — Audio Subsystem  ✓ Shipped
+
+> Shipped as `core/media/audio/AudioPlaybackController` (single track). The
+> design below records the intended shape; the live implementation follows it.
 
 **Goal**: Add deterministic, clock-following audio playback without coupling it to the GPU render pipeline.
 
@@ -567,7 +584,7 @@ Mirrors the `VideoSourcePool` / `TexturePool` pattern. One pooled `HTMLMediaElem
 
 **Drift correction**
 
-`AudioScheduler` reads `PlaybackEngine.getFrameAt()` (float-frame) for sub-frame accuracy. Applies hysteresis: soft-sync via `element.playbackRate` slew (±5–10%); hard-sync via `element.currentTime = sourceFrame / fps` when drift exceeds threshold. See [`06-playback-synchronization.md`](../../../../../06-playback-synchronization.md).
+`AudioScheduler` reads `PlaybackEngine.getFrameAt()` (float-frame) for sub-frame accuracy. Applies hysteresis: soft-sync via `element.playbackRate` slew (±5–10%); hard-sync via `element.currentTime = sourceFrame / fps` when drift exceeds threshold. (Concrete drift thresholds are still TBD.)
 
 **Clock upgrade**
 
@@ -593,7 +610,11 @@ I1 (audio never inside `render()`), I2, I3, I6 (defined here), I11.
 
 ---
 
-### Phase 3 — Text Layer
+### Phase 3 — Text Layer  ✓ Shipped (Text + Image)
+
+> Shipped as `gpu/layers/TextLayer` and `gpu/layers/ImageLayer`, sharing the quad
+> pipeline. Placement math lives in `gpu/layers/textLayout.ts` (reused by the
+> editor overlay and the export worker).
 
 **Goal**: Demonstrate that the `Layer` abstraction generalizes. Text clips render with correct zIndex, transform, and opacity between video clips.
 
@@ -668,7 +689,13 @@ I1, I3, I5 (RenderGraph owns TextLayer lifecycle), I9, I10 (extended: rasterized
 
 ---
 
-### Phase 4 — Export Renderer
+### Phase 4 — Export Renderer  ✓ Shipped (different shape)
+
+> Shipped as `core/export/` — but as a **2D `OffscreenCanvas`** worker reusing the
+> renderer's placement helpers + mediabunny mux, not a `GpuRenderer` on an
+> OffscreenCanvas with a raw `VideoEncoder` as sketched below. The deterministic
+> frame-stepping model held; the draw surface differs. See
+> [`core/export/Architecture.md`](../export/Architecture.md).
 
 **Goal**: Deterministic, worker-safe, frame-accurate export. Identical `(Project, frame)` tuples produce identical output.
 
@@ -1162,7 +1189,7 @@ They require that §3 never be violated.
 
 ---
 
-_Last updated: 2026-05-23. Cross-references validated against [`architecture.md`](./architecture.md) (renderer internals), [`video-editor/ARCHITECTURE.md`](../../../../ARCHITECTURE.md) (engine), [`video-editor/ROADMAP.md`](../../../../ROADMAP.md) (PR sequencing), and study docs `01–09` at the workspace root._
+_Last updated: 2026-05-23. Cross-references validated against [`architecture.md`](./architecture.md) (renderer internals), [`video-editor/ARCHITECTURE.md`](../../../../../ARCHITECTURE.md) (engine), [`video-editor/ROADMAP.md`](../../../../../ROADMAP.md) (PR sequencing), and study docs `01–09` at the workspace root._
 
 ---
 
