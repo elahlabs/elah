@@ -4,6 +4,8 @@ import {
   useTracksStore,
   useTimelineEngine,
   type Clip,
+  type TextAnimationKind,
+  type TextAnimation,
 } from '@elah/editor'
 import { sectionLabel, theme } from './theme'
 
@@ -97,6 +99,14 @@ function AlignBtn({
       {labels[value]}
     </button>
   )
+}
+
+function mergeTransform(c: Partial<Clip>) {
+  return { x: 0.5, y: 0.5, scale: 1, rotation: 0, anchor: { x: 0.5, y: 0.5 }, ...c.transform }
+}
+
+function mergeAnim(c: Partial<Clip>): TextAnimation {
+  return { durationFrames: 15, ...c.textAnimation }
 }
 
 function useSelectedTextClip(): Clip | null {
@@ -337,15 +347,134 @@ export function TextClipProperties() {
       </CollapsibleSection>
 
       <CollapsibleSection title="TRANSFORM" defaultOpen={false}>
-        <p style={{ fontSize: 11, color: theme.textMuted, margin: 0 }}>
-          Position and scale controls coming soon.
-        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <FieldRow label="X (%)">
+            <input
+              type="number"
+              step={1}
+              value={Math.round((effective.transform?.x ?? 0.5) * 100)}
+              onChange={(e) =>
+                setLocal((p) => ({
+                  ...p,
+                  transform: { ...mergeTransform(effective), x: Number(e.target.value) / 100 },
+                }))
+              }
+              onBlur={() => commit({ transform: mergeTransform(effective) })}
+              style={inputStyle}
+            />
+          </FieldRow>
+          <FieldRow label="Y (%)">
+            <input
+              type="number"
+              step={1}
+              value={Math.round((effective.transform?.y ?? 0.5) * 100)}
+              onChange={(e) =>
+                setLocal((p) => ({
+                  ...p,
+                  transform: { ...mergeTransform(effective), y: Number(e.target.value) / 100 },
+                }))
+              }
+              onBlur={() => commit({ transform: mergeTransform(effective) })}
+              style={inputStyle}
+            />
+          </FieldRow>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <FieldRow label="Scale">
+            <input
+              type="number"
+              step={0.05}
+              min={0.05}
+              max={10}
+              value={(effective.transform?.scale ?? 1).toFixed(2)}
+              onChange={(e) =>
+                setLocal((p) => ({
+                  ...p,
+                  transform: { ...mergeTransform(effective), scale: Number(e.target.value) },
+                }))
+              }
+              onBlur={() => commit({ transform: mergeTransform(effective) })}
+              style={inputStyle}
+            />
+          </FieldRow>
+          <FieldRow label="Rotation (°)">
+            <input
+              type="number"
+              step={1}
+              value={Math.round(((effective.transform?.rotation ?? 0) * 180) / Math.PI)}
+              onChange={(e) =>
+                setLocal((p) => ({
+                  ...p,
+                  transform: {
+                    ...mergeTransform(effective),
+                    rotation: (Number(e.target.value) * Math.PI) / 180,
+                  },
+                }))
+              }
+              onBlur={() => commit({ transform: mergeTransform(effective) })}
+              style={inputStyle}
+            />
+          </FieldRow>
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="ANIMATION" defaultOpen={false}>
-        <p style={{ fontSize: 11, color: theme.textMuted, margin: 0 }}>
-          Keyframe animation coming soon.
-        </p>
+        <FieldRow label="Fade In">
+          <select
+            value={effective.textAnimation?.in ?? 'none'}
+            onChange={(e) => {
+              const val = e.target.value
+              commit({
+                textAnimation: {
+                  durationFrames: effective.textAnimation?.durationFrames ?? 15,
+                  ...effective.textAnimation,
+                  in: val === 'none' ? undefined : (val as TextAnimationKind),
+                },
+              })
+            }}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+          >
+            <option value="none">None</option>
+            <option value="fade">Fade</option>
+          </select>
+        </FieldRow>
+        <FieldRow label="Fade Out">
+          <select
+            value={effective.textAnimation?.out ?? 'none'}
+            onChange={(e) => {
+              const val = e.target.value
+              commit({
+                textAnimation: {
+                  durationFrames: effective.textAnimation?.durationFrames ?? 15,
+                  ...effective.textAnimation,
+                  out: val === 'none' ? undefined : (val as TextAnimationKind),
+                },
+              })
+            }}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+          >
+            <option value="none">None</option>
+            <option value="fade">Fade</option>
+          </select>
+        </FieldRow>
+        {(effective.textAnimation?.in || effective.textAnimation?.out) && (
+          <FieldRow label="Duration (frames)">
+            <input
+              type="number"
+              min={1}
+              max={clip.durationFrames}
+              value={effective.textAnimation?.durationFrames ?? 15}
+              onChange={(e) =>
+                setLocal((p) => ({
+                  ...p,
+                  textAnimation: { ...mergeAnim(effective), durationFrames: Number(e.target.value) },
+                }))
+              }
+              onBlur={() => commit({ textAnimation: mergeAnim(effective) })}
+              style={inputStyle}
+            />
+          </FieldRow>
+        )}
       </CollapsibleSection>
     </div>
   )

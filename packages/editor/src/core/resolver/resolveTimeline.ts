@@ -125,6 +125,21 @@ export function resolveTimeline(frame: number, project: Project): Scene {
         }
         scene.audios.push(active)
       } else if (clip.type === 'text') {
+        // Resolve entry/exit animation into opacity so both renderers get the
+        // animated value for free — neither renderer needs to know about animations.
+        let resolvedOpacity = opacity
+        const anim = clip.textAnimation
+        if (anim) {
+          const d = Math.max(1, anim.durationFrames)
+          const localFrame = frame - clip.startFrame
+          if (anim.in === 'fade') {
+            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, localFrame / d))
+          }
+          if (anim.out === 'fade') {
+            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, (clip.durationFrames - localFrame) / d))
+          }
+        }
+
         const active: ActiveTextClip = {
           type: 'text',
           id: clip.id,
@@ -132,7 +147,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           name: clip.name,
           content: clip.content ?? '',
           sourceFrame,
-          opacity,
+          opacity: resolvedOpacity,
           zIndex,
           ...(clip.transform ? { transform: clip.transform } : {}),
           ...(clip.fontSize !== undefined ? { fontSize: clip.fontSize } : {}),

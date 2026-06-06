@@ -7,6 +7,20 @@
 /** An exact frame position. Always a non-negative integer. */
 export type FrameCount = number
 
+export type TextAnimationKind = 'fade'
+
+/**
+ * Entry/exit animation descriptor for text clips.
+ * Resolved into opacity inside resolveTimeline — both renderers consume it
+ * via the existing opacity field, so parity is automatic.
+ */
+export interface TextAnimation {
+  in?: TextAnimationKind
+  out?: TextAnimationKind
+  /** Duration of the in/out ramp in frames (shared by both directions) */
+  durationFrames: number
+}
+
 /**
  * Spatial transform applied to a clip at render time.
  * All values are normalized so they remain resolution-independent.
@@ -77,6 +91,8 @@ export interface Clip {
   disabled?: boolean
   /** Optional spatial transform; undefined means the renderer applies its own default */
   transform?: Transform
+  /** Entry/exit animation for text clips */
+  textAnimation?: TextAnimation
 }
 
 /** A track lane that holds clips */

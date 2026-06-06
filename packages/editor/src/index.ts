@@ -43,6 +43,8 @@ export type {
   Track,
   Project,
   Transform,
+  TextAnimation,
+  TextAnimationKind,
   ClipType,
   TrackKind,
   FrameCount,
