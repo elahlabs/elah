@@ -32,6 +32,12 @@ export type TraceChannel =
   // ── Renderer (wire as you reach each session) ────────────────────────────
   | 'UPLOAD' // VideoTexture.upload()
   | 'DRAW' // WebGL drawArrays()
+  // ── Export pipeline (ExportWorker + exportVideo, runs in a Worker) ────────
+  | 'EXPORT' // high-level lifecycle: start, clip inventory, done
+  | 'EXPORT_ASSETS' // video CanvasSinks + image ImageBitmaps loading
+  | 'EXPORT_AUDIO' // main-thread mix + in-worker PCM encoding
+  | 'EXPORT_MUX' // mediabunny Output setup / start / finalize
+  | 'EXPORT_FRAMES' // frame render loop progress
 
 const ALL_CHANNELS: TraceChannel[] = [
   'SET_PLAYHEAD',
@@ -43,6 +49,11 @@ const ALL_CHANNELS: TraceChannel[] = [
   'CACHE_GET',
   'UPLOAD',
   'DRAW',
+  'EXPORT',
+  'EXPORT_ASSETS',
+  'EXPORT_AUDIO',
+  'EXPORT_MUX',
+  'EXPORT_FRAMES',
 ]
 
 const STORAGE_KEY = 'myeditor-trace-channels'
@@ -80,6 +91,25 @@ export function trace(channel: TraceChannel, ...args: unknown[]): void {
 /** True if a channel is on — guard expensive payload construction with this. */
 export function traceEnabled(channel: TraceChannel): boolean {
   return enabled.has(channel)
+}
+
+/**
+ * Snapshot the currently-enabled channels. Used to forward the main thread's
+ * trace state into a Worker, which has no `window`/`localStorage` of its own.
+ */
+export function getEnabledChannels(): TraceChannel[] {
+  return [...enabled]
+}
+
+/**
+ * Programmatically enable channels without touching `localStorage`. Used inside
+ * a Worker to honour the channels the main thread had on when export started;
+ * `window.__trace` is unavailable there.
+ */
+export function enableChannels(channels: TraceChannel[]): void {
+  for (const ch of channels) {
+    if (ALL_CHANNELS.includes(ch)) enabled.add(ch)
+  }
 }
 
 interface TraceConsoleApi {

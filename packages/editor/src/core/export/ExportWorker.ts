@@ -18,16 +18,37 @@
 
 import * as mb from 'mediabunny'
 
+import { trace, traceEnabled, enableChannels, type TraceChannel } from '../debug/trace'
+
 // ---------------------------------------------------------------------------
-// Logging helpers
+// Logging helpers — routed through the channel-based tracer.
+//
+// The Worker has no `window`/`localStorage`, so it can't read `__trace` state
+// itself. exportVideo.ts snapshots the enabled channels on the main thread and
+// forwards them in the `start` message; we seed them via enableChannels().
+// Enable from the console, e.g. `__trace.on('EXPORT_AUDIO')`, then export.
 // ---------------------------------------------------------------------------
 
 const t0 = performance.now()
 
+/** Sub-stage label → trace channel. */
+const STAGE_CHANNEL: Record<string, TraceChannel> = {
+  worker: 'EXPORT',
+  run: 'EXPORT',
+  'assets:video': 'EXPORT_ASSETS',
+  'assets:image': 'EXPORT_ASSETS',
+  audio: 'EXPORT_AUDIO',
+  mediabunny: 'EXPORT_MUX',
+  frames: 'EXPORT_FRAMES',
+  'render:frame0': 'EXPORT_FRAMES',
+}
+
 function xlog(stage: string, msg: string, extra?: Record<string, unknown>) {
+  const channel = STAGE_CHANNEL[stage] ?? 'EXPORT'
+  if (!traceEnabled(channel)) return
   const elapsed = ((performance.now() - t0) / 1000).toFixed(3)
   const suffix = extra ? ' — ' + Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(', ') : ''
-  console.log(`[export:${stage}] +${elapsed}s ${msg}${suffix}`)
+  trace(channel, `[${stage}] +${elapsed}s ${msg}${suffix}`)
 }
 
 async function timed<T>(stage: string, label: string, fn: () => Promise<T>): Promise<T> {
@@ -59,12 +80,14 @@ import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
 self.onmessage = async (e: MessageEvent) => {
   if (e.data?.type !== 'start') return
 
-  xlog('worker', 'message received — starting export')
-  const { project, options, audio } = e.data as {
+  const { project, options, audio, trace: traceChannels } = e.data as {
     project: Project
     options: ExportOptions
     audio: RenderedAudio | null
+    trace?: TraceChannel[]
   }
+  if (traceChannels) enableChannels(traceChannels)
+  xlog('worker', 'message received — starting export')
   try {
     const buffer = await runExport(project, options, audio)
     xlog('worker', 'posting buffer to main thread', { size: fmtBytes(buffer.byteLength) })

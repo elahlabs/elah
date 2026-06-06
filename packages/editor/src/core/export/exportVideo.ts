@@ -1,6 +1,17 @@
 import type { Project } from '../types'
 import { getTotalFrames } from '../utils/frames'
+import { trace, traceEnabled, getEnabledChannels, type TraceChannel } from '../debug/trace'
 import type { ExportOptions, ExportProgress, RenderedAudio, WorkerOutMessage } from './types'
+
+/**
+ * Main-thread trace helper. Mirrors the Worker's `xlog`, routing through the
+ * same channel-based tracer so `__trace.on('EXPORT')` (etc.) controls both
+ * sides. Enable from the console before triggering an export.
+ */
+function mlog(channel: TraceChannel, msg: string) {
+  if (!traceEnabled(channel)) return
+  trace(channel, `[main] ${msg}`)
+}
 
 /**
  * Render the project's full audio mix on the main thread.
@@ -25,7 +36,7 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
     return track && !track.muted && !track.disabled
   })
   if (audioClips.length === 0) {
-    console.log('[export:main] no active audio clips — exporting video-only')
+    mlog('EXPORT_AUDIO', 'no active audio clips — exporting video-only')
     return null
   }
 
@@ -40,7 +51,7 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
 
   const sampleRate = 44100
   const totalSec = totalFrames / fps
-  console.log(`[export:main] mixing ${audioClips.length} audio clip(s) — ${totalSec.toFixed(2)}s @ ${sampleRate}Hz`)
+  mlog('EXPORT_AUDIO', `mixing ${audioClips.length} audio clip(s) — ${totalSec.toFixed(2)}s @ ${sampleRate}Hz`)
   const ctx = new OAC(2, Math.ceil(sampleRate * totalSec), sampleRate)
 
   for (const clip of audioClips) {
@@ -66,7 +77,7 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
     // Copy into a standalone Float32Array so its buffer can be transferred.
     channels.push(new Float32Array(mixed.getChannelData(c)).buffer)
   }
-  console.log(`[export:main] audio mix ready — channels=${numberOfChannels} frames=${length}`)
+  mlog('EXPORT_AUDIO', `audio mix ready — channels=${numberOfChannels} frames=${length}`)
   return { sampleRate, numberOfChannels, length, channels }
 }
 
@@ -92,12 +103,12 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
 export async function exportVideo(project: Project, options: ExportOptions = {}): Promise<Blob> {
   const t0 = performance.now()
   const totalClips = Object.values(project.clips).flat().length
-  console.log(`[export:main] exportVideo() called — stage=${project.stage.width}x${project.stage.height} fps=${project.fps} clips=${totalClips}`)
+  mlog('EXPORT', `exportVideo() called — stage=${project.stage.width}x${project.stage.height} fps=${project.fps} clips=${totalClips}`)
 
   const audio = await renderAudioMix(project)
 
   return new Promise((resolve, reject) => {
-    console.log('[export:main] spawning ExportWorker (module worker)')
+    mlog('EXPORT', 'spawning ExportWorker (module worker)')
     const worker = new Worker(
       new URL('./ExportWorker.ts', import.meta.url),
       { type: 'module' },
@@ -112,13 +123,13 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
         const pct = Math.round((msg.frame / msg.totalFrames) * 100)
         if (pct !== lastLoggedPct && pct % 10 === 0) {
           lastLoggedPct = pct
-          console.log(`[export:main] progress ${pct}% (frame ${msg.frame}/${msg.totalFrames})`)
+          mlog('EXPORT_FRAMES', `progress ${pct}% (frame ${msg.frame}/${msg.totalFrames})`)
         }
       } else if (msg.type === 'done') {
         worker.terminate()
         const elapsed = ((performance.now() - t0) / 1000).toFixed(2)
         const blob = new Blob([msg.buffer], { type: 'video/mp4' })
-        console.log(`[export:main] done — blob=${(blob.size / 1_000_000).toFixed(2)}MB totalTime=${elapsed}s`)
+        mlog('EXPORT', `done — blob=${(blob.size / 1_000_000).toFixed(2)}MB totalTime=${elapsed}s`)
         resolve(blob)
       } else if (msg.type === 'error') {
         worker.terminate()
@@ -133,9 +144,17 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
       reject(new Error(`ExportWorker crashed: ${e.message}`))
     }
 
-    console.log('[export:main] posting start message to worker')
+    mlog('EXPORT', 'posting start message to worker')
     worker.postMessage(
-      { type: 'start', project, options: { ...options, onProgress: undefined }, audio },
+      {
+        type: 'start',
+        project,
+        options: { ...options, onProgress: undefined },
+        audio,
+        // Forward the main thread's enabled channels so the Worker's tracer
+        // mirrors them — it can't read `__trace`/localStorage on its own.
+        trace: getEnabledChannels(),
+      },
       audio ? audio.channels : [],
     )
   })
