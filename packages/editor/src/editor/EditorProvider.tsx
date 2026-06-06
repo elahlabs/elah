@@ -3,6 +3,7 @@ import type { InitialTrackConfig } from '../core/types'
 import { TimelineEngine } from '../core/editor/TimelineEngine'
 import { PlaybackEngine } from '../core/playback/PlaybackEngine'
 import { useTracksStore } from '../core/stores/tracks.store'
+import { useTransitionsStore } from '../core/stores/transitions.store'
 import { usePlaybackStore } from '../core/stores/playback.store'
 import { EditorContext } from '../core/editor-context'
 import { installTraceGlobal, trace } from '../core/debug/trace'
@@ -54,22 +55,24 @@ export function EditorProvider({
 
   // Wire engine events → Zustand stores
   useEffect(() => {
-    const syncTracks = () => {
-      useTracksStore.getState().sync(engine.getProject(), {
+    const syncAll = () => {
+      const project = engine.getProject()
+      useTracksStore.getState().sync(project, {
         canUndo: engine.canUndo(),
         canRedo: engine.canRedo(),
       })
+      useTransitionsStore.getState().sync(project)
     }
 
-    engine.on('change', syncTracks)
-    engine.on('history:change', syncTracks)
+    engine.on('change', syncAll)
+    engine.on('history:change', syncAll)
 
     // Sync initial state
-    syncTracks()
+    syncAll()
 
     return () => {
-      engine.off('change', syncTracks)
-      engine.off('history:change', syncTracks)
+      engine.off('change', syncAll)
+      engine.off('history:change', syncAll)
     }
   }, [engine])
 

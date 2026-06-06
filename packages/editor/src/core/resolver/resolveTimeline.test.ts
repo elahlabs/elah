@@ -9,6 +9,7 @@ function makeProject(overrides?: Partial<Project>): Project {
     stage: { width: 1080, height: 1920 },
     tracks: [],
     clips: {},
+    transitions: [],
     version: 1,
     ...overrides,
   }

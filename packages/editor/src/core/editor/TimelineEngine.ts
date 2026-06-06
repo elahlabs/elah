@@ -8,6 +8,10 @@ import type {
   TimelineConfig,
   Track,
   TrackKind,
+  Transition,
+  TransitionKind,
+  TransitionEasing,
+  TransitionDirection,
 } from '../types'
 import { generateId } from '../utils/id'
 import { getTotalFrames, toFrame, findOverlaps } from '../utils/frames'
@@ -64,6 +68,7 @@ function buildEmptyProject(
     stage,
     tracks,
     clips,
+    transitions: [],
     version: 1,
   }
 }
@@ -450,6 +455,87 @@ export class TimelineEngine {
     }, 'Clone clip')
 
     return newId
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transition operations
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Add a transition between two adjacent clips on the same track.
+   * `durationFrames` is the total transition length; the cut point sits at the
+   * midpoint, so each clip contributes half the duration.
+   */
+  addTransition(options: {
+    fromClipId: string
+    toClipId: string
+    trackId: string
+    kind: TransitionKind
+    durationFrames: number
+    easing?: TransitionEasing
+    direction?: TransitionDirection
+  }): Transition | null {
+    const fromClip = this.project.clips[options.trackId]?.find(
+      (c) => c.id === options.fromClipId,
+    )
+    const toClip = this.project.clips[options.trackId]?.find(
+      (c) => c.id === options.toClipId,
+    )
+    if (!fromClip || !toClip) return null
+
+    const half = Math.max(1, Math.floor(options.durationFrames / 2))
+    const transition: Transition = {
+      id: generateId(),
+      kind: options.kind,
+      fromClipId: options.fromClipId,
+      toClipId: options.toClipId,
+      trackId: options.trackId,
+      // Transition window starts `half` frames before the cut
+      startFrame: toClip.startFrame - half,
+      durationFrames: half * 2,
+      easing: options.easing,
+      direction: options.direction,
+    }
+
+    this.commit((draft) => {
+      draft.transitions.push(transition as Draft<Transition>)
+    }, 'Add transition')
+
+    this.emit('transition:added', transition)
+    return transition
+  }
+
+  removeTransition(transitionId: string): void {
+    this.commit((draft) => {
+      const idx = draft.transitions.findIndex((t) => t.id === transitionId)
+      if (idx !== -1) draft.transitions.splice(idx, 1)
+    }, 'Remove transition')
+    this.emit('transition:removed', transitionId)
+  }
+
+  updateTransition(
+    transitionId: string,
+    patch: Partial<Pick<Transition, 'kind' | 'durationFrames' | 'easing' | 'direction'>>,
+  ): void {
+    const existing = this.project.transitions.find((t) => t.id === transitionId)
+    if (!existing) return
+
+    this.commit((draft) => {
+      const t = draft.transitions.find((t) => t.id === transitionId)
+      if (!t) return
+      if (patch.kind !== undefined) t.kind = patch.kind
+      if (patch.easing !== undefined) t.easing = patch.easing
+      if (patch.direction !== undefined) t.direction = patch.direction
+      if (patch.durationFrames !== undefined) {
+        const half = Math.max(1, Math.floor(patch.durationFrames / 2))
+        t.durationFrames = half * 2
+        // Re-anchor startFrame to keep the cut midpoint stable
+        const toClipEntry = Object.values(draft.clips)
+          .flat()
+          .find((c) => c.id === t.toClipId)
+        if (toClipEntry) t.startFrame = toClipEntry.startFrame - half
+      }
+    }, 'Update transition')
   }
 
   // ---------------------------------------------------------------------------

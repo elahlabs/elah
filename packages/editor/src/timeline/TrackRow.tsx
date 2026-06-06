@@ -1,8 +1,9 @@
-import { memo, useState } from 'react'
+import { memo, useState, useMemo } from 'react'
 import type { Track } from '../core/types'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { useSelectionStore } from '../core/stores/selection.store'
 import { ClipBlock } from './ClipBlock'
+import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
 
 interface TrackRowProps {
@@ -23,7 +24,30 @@ export const TrackRow = memo(function TrackRow({
   // Selector returns undefined (stable) when no clips exist.
   // ?? [] is intentionally outside the selector — returning a new [] inside
   // would give Zustand a different reference every call and cause an infinite loop.
-  const clips = useTracksStore((s) => s.clips[track.id]) ?? []
+  const rawClips = useTracksStore((s) => s.clips[track.id]) ?? []
+
+  // Clips sorted by startFrame so adjacent-pair detection is reliable.
+  const clips = useMemo(
+    () => [...rawClips].sort((a, b) => a.startFrame - b.startFrame),
+    [rawClips],
+  )
+
+  // Adjacent pairs — clips where B starts at or within 2 frames of where A ends.
+  // The ≤2 tolerance handles 1-frame rounding artefacts from snap/trim operations.
+  // Only video/image tracks carry visual transitions; audio/text tracks skip.
+  const adjacentPairs = useMemo(() => {
+    if (track.kind === 'audio' || track.kind === 'text') return []
+    const pairs: Array<{ from: (typeof clips)[0]; to: (typeof clips)[0] }> = []
+    for (let i = 0; i < clips.length - 1; i++) {
+      const a = clips[i]
+      const b = clips[i + 1]
+      const gap = b.startFrame - (a.startFrame + a.durationFrames)
+      if (gap >= 0 && gap <= 2) {
+        pairs.push({ from: a, to: b })
+      }
+    }
+    return pairs
+  }, [clips, track.kind])
   const isActive = useSelectionStore((s) => s.activeTrackId === track.id)
   const setActiveTrack = useSelectionStore((s) => s.setActiveTrack)
   const [laneEl, setLaneEl] = useState<HTMLDivElement | null>(null)
@@ -94,6 +118,16 @@ export const TrackRow = memo(function TrackRow({
           <ClipBlock
             key={clip.id}
             clip={clip}
+            zoom={zoom}
+            trackHeight={track.height}
+          />
+        ))}
+
+        {adjacentPairs.map(({ from, to }) => (
+          <TransitionChip
+            key={`${from.id}-${to.id}`}
+            fromClip={from}
+            toClip={to}
             zoom={zoom}
             trackHeight={track.height}
           />

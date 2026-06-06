@@ -116,6 +116,7 @@ function makeProject(overrides?: { volume?: number }): Project {
         },
       ],
     },
+    transitions: [],
     version: 1,
   }
 }
