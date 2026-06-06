@@ -392,10 +392,21 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       this._feedWatermark >= sourceFrame &&
       this._ticksSinceDecodeAdvance > STALL_TICKS_BEFORE_RESET
 
+    // When scrubbing backward within the lookahead window (|delta| ≤ lookahead),
+    // the contiguous path skips re-seeking — correct for forward play, wrong for
+    // backward scrub. During forward play, pivot-based eviction discards early
+    // frames to make room for decoded-ahead frames. If the user then scrubs back
+    // to one of those evicted frames, getCurrent() returns null even though the
+    // delta looks "contiguous." Treat this as a discontinuity so the decoder
+    // seeks back and re-produces the missing frame.
+    const goingBackward = this._lastPlayhead !== null && sourceFrame < this._lastPlayhead
+    const backwardMiss = goingBackward && !this._cache.has(sourceFrame)
+
     const isDiscontinuity =
       this._lastPlayhead === null ||
       Math.abs(sourceFrame - this._lastPlayhead) > lookahead ||
-      stalled
+      stalled ||
+      backwardMiss
 
     // Only log when the frame advances, or when something interesting happens
     // (discontinuity, stall). Suppresses the 60fps steady-state spam.
@@ -408,6 +419,7 @@ export class StreamingFrameProducer implements VideoFrameProvider {
         managerState: this._manager.state,
         cacheSize: this._cache.size,
         stalled,
+        backwardMiss,
         isDiscontinuity,
       })
       this._lastLoggedPlayhead = sourceFrame

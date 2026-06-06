@@ -82,6 +82,14 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _contentSizeByItemId = new Map<string, { width: number; height: number }>()
   /** Last sourceFrame logged per clip — prevents flooding at 60 fps on a frozen playhead. */
   private readonly _lastLoggedSourceFrameByItemId = new Map<string, number>()
+  /**
+   * Last clip texture that had real GPU content, kept alive after its clip
+   * exits the scene. Used as a single-frame fallback when the incoming clip's
+   * texture has not received its first decoded frame yet — prevents the 1-2
+   * tick black flash at clip boundaries while async decode catches up.
+   * Disposed as soon as the new clip uploads its first frame.
+   */
+  private _holdoverTexture: VideoTexture | null = null
 
   constructor(
     pool: TexturePool,
@@ -126,7 +134,14 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     if (!src) return
 
     const texture = this._textures.get(itemId)
-    texture?.dispose()
+    if (texture?.hasContent) {
+      // Transfer to holdover so the next clip can borrow this frame for its
+      // first tick while its own decode is in flight.
+      this._holdoverTexture?.dispose()
+      this._holdoverTexture = texture
+    } else {
+      texture?.dispose()
+    }
     this._textures.delete(itemId)
     this._srcByItemId.delete(itemId)
     this._contentSizeByItemId.delete(itemId)
@@ -166,14 +181,15 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
         const width = 'displayWidth' in frame ? frame.displayWidth : frame.width
         const height = 'displayHeight' in frame ? frame.displayHeight : frame.height
         this._contentSizeByItemId.set(item.id, { width, height })
+        // First real frame for this clip — holdover is no longer needed.
+        this._holdoverTexture?.dispose()
+        this._holdoverTexture = null
       }
     }
     // On cache miss: setPlayhead() already triggered decode for this frame.
     // The provider keeps the last uploaded texture content — no flicker.
 
-    if (!texture.hasContent || !this._program || !this._vao) {
-      return
-    }
+    if (!this._program || !this._vao) return
 
     const contentSize = this._contentSizeByItemId.get(item.id)
     const opacity = item.opacity ?? 1
@@ -181,7 +197,13 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._program.use(ctx.gl)
     ctx.gl.bindVertexArray(this._vao)
 
-    const unit = texture.bind(ctx.gl, 0)
+    // Prefer the clip's own texture; fall back to the holdover for the first
+    // tick(s) while async decode delivers the initial frame — avoids the black
+    // flash at clip boundaries.
+    let unit = texture.bind(ctx.gl, 0)
+    if (unit < 0 && this._holdoverTexture !== null) {
+      unit = this._holdoverTexture.bind(ctx.gl, 0)
+    }
     if (unit < 0) return
 
     this._program.setUniform1i(ctx.gl, 'uTexture', unit)
@@ -212,6 +234,8 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._textures.clear()
     this._srcByItemId.clear()
     this._contentSizeByItemId.clear()
+    this._holdoverTexture?.dispose()
+    this._holdoverTexture = null
 
     for (const entry of this._providers.values()) {
       entry.provider.dispose()
@@ -233,6 +257,9 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     for (const texture of this._textures.values()) {
       texture.handleContextLost()
     }
+    // Holdover GL handle is also invalid after context loss.
+    this._holdoverTexture?.handleContextLost()
+    this._holdoverTexture = null
     this._program = null
     this._vao = null
     this._gl = null
