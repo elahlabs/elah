@@ -258,7 +258,7 @@ export function TextOverlay() {
       // something is active) opt back into pointer events.
       // zIndex keeps the overlay above the imperatively-appended WebGL canvas
       // regardless of DOM insertion order.
-      style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', overflow: 'hidden' }}
+      style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', overflow: 'hidden' }}
     >
       {!isPlaying && (selectedClipIds.size > 0 || editingId) && (
         <div

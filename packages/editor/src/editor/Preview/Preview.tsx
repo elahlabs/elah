@@ -11,6 +11,7 @@ import { useTimelineEngine, usePlaybackEngine } from '../../core/editor-context'
 import type { DemuxerFactory } from '../../core/media/video/demuxer/MediabunnyDemuxer'
 import { AudioPlaybackController } from '../../core/media/audio/AudioPlaybackController'
 import { TextOverlay } from './TextOverlay'
+import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
 import { StageBorder } from './StageBorder'
 
 /**
@@ -83,6 +84,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<GpuRenderer | null>(null)
+  const transitionOverlayRef = useRef<TransitionOverlayHandle>(null)
   const engine = useTimelineEngine()
   const playback = usePlaybackEngine()
 
@@ -128,7 +130,11 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     const tick = () => {
       const frame = Math.floor(playback.getFrameAt())
       const scene = resolveTimeline(frame, engine.getProject())
+      // Capture snapshot before render — canvas still holds the previous frame.
+      const canvas = renderer.getCanvas()
+      if (canvas) transitionOverlayRef.current?.captureIfNewTransition(scene, canvas)
       renderer.render(scene)
+      transitionOverlayRef.current?.update(scene)
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
@@ -159,9 +165,11 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
           uses so the active aspect ratio is always visible against the bars. */}
       <StageBorder />
 
-      {/* Interactive text editing layer, painted above the WebGL canvas. The
-          canvas is appended imperatively by GpuRenderer.mount(); this React
-          child coexists with it inside the same positioned container. */}
+      {/* Transition snapshot layer — sits above the WebGL canvas (zIndex 1),
+          below TextOverlay (zIndex 2). Driven imperatively from the RAF loop. */}
+      <TransitionOverlay ref={transitionOverlayRef} />
+
+      {/* Interactive text editing layer, painted above the WebGL canvas. */}
       <TextOverlay />
     </div>
   )

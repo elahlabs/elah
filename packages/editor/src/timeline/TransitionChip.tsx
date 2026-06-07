@@ -9,6 +9,7 @@ interface TransitionChipProps {
   toClip: Clip
   zoom: number
   trackHeight: number
+  fps: number
 }
 
 const HIT_W = 24   // invisible hover zone width
@@ -19,7 +20,7 @@ const DIAMOND = 16 // icon size
  * Always visible as a faint vertical rule — brightens + shows a diamond on hover.
  * When a transition exists the diamond is filled and the line is colored.
  */
-export function TransitionChip({ fromClip, toClip, zoom, trackHeight }: TransitionChipProps) {
+export function TransitionChip({ fromClip, toClip, zoom, trackHeight, fps }: TransitionChipProps) {
   const engine = useTimeline()
   const [pickerPos, setPickerPos] = useState<{ x: number; y: number } | null>(null)
   const pickerOpen = pickerPos !== null
@@ -41,16 +42,24 @@ export function TransitionChip({ fromClip, toClip, zoom, trackHeight }: Transiti
       : 'rgba(255,255,255,0.18)'
 
   const handleAdd = useCallback(
-    (kind: TransitionKind, durationFrames: number) => {
+    (kind: TransitionKind, durationFrames: number, offsetFrames: number) => {
       engine.addTransition({
         fromClipId: fromClip.id,
         toClipId: toClip.id,
         trackId: fromClip.trackId,
         kind,
         durationFrames,
+        offsetFrames,
       })
     },
     [engine, fromClip, toClip],
+  )
+
+  const handleUpdate = useCallback(
+    (patch: { durationFrames?: number; offsetFrames?: number; kind?: TransitionKind }) => {
+      if (transition) engine.updateTransition(transition.id, patch)
+    },
+    [engine, transition],
   )
 
   const handleRemove = useCallback(() => {
@@ -143,8 +152,11 @@ export function TransitionChip({ fromClip, toClip, zoom, trackHeight }: Transiti
         <TransitionPicker
           anchorX={pickerPos.x}
           anchorY={pickerPos.y}
+          cutFrame={toClip.startFrame}
+          fps={fps}
           existing={transition}
           onAdd={handleAdd}
+          onUpdate={handleUpdate}
           onRemove={handleRemove}
           onClose={() => setPickerPos(null)}
         />

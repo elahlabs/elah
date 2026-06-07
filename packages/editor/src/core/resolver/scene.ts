@@ -74,11 +74,14 @@ export interface ActiveImageClip extends ActiveClipBase {
  * A transition that is active at the current frame, ready for renderers.
  *
  * `t` is the eased progress through the transition window (0 = start, 1 = end).
- * For fade: the resolver already adjusts clip opacities — renderers need no extra
- * work. For slide/wipe: TransitionOverlay reads `kind + t + direction` to apply CSS.
  *
- * Adding a new kind = handle it in resolveTimeline (opacity math) and
- * TransitionOverlay (CSS). Everything else is plug-and-play.
+ * The resolver sets fromClip.opacity=0 and toClip.opacity=1 so the GPU renders
+ * only the incoming clip. TransitionOverlay holds a frozen snapshot of fromClip
+ * and fades it away via CSS — giving a correct crossfade with zero decoder
+ * contention. Export mirrors this: snapshot drawn at globalAlpha=1-t on top.
+ *
+ * Adding a new kind = one new CSS mapping in TransitionOverlay.update(). No
+ * resolver change, no shader code.
  */
 export interface ActiveTransition {
   id: string
@@ -86,6 +89,10 @@ export interface ActiveTransition {
   /** Eased progress 0→1 through the transition window. */
   t: number
   direction?: TransitionDirection
+  /** Clip id of the outgoing clip (snapshot overlay shows this, GPU does not). */
+  fromClipId: string
+  /** Clip id of the incoming clip (GPU renders this at full opacity). */
+  toClipId: string
 }
 
 /**
@@ -112,6 +119,6 @@ export interface Scene {
   audios: ActiveAudioClip[]
   texts: ActiveTextClip[]
   images: ActiveImageClip[]
-  /** Transitions active at this frame. For fade, clip opacities are already adjusted. */
+  /** Transitions active at this frame. Consumed by TransitionOverlay (preview) and the export snapshot pass. */
   transitions: ActiveTransition[]
 }

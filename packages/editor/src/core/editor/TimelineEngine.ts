@@ -18,7 +18,7 @@ import { getTotalFrames, toFrame, findOverlaps } from '../utils/frames'
 import { createTrack, type CreateTrackOptions } from '../track/track'
 import { createClip, type CreateClipOptions } from '../elements/base'
 import { addClip } from '../visitor/add'
-import { removeClip, removeTrack } from '../visitor/remove'
+import { removeClip, removeTrack, pruneOrphanedTransitions } from '../visitor/remove'
 import { updateClip, updateTrack } from '../visitor/update'
 import { splitClip } from '../visitor/split'
 import { cloneClip } from '../visitor/clone'
@@ -359,6 +359,8 @@ export class TimelineEngine {
       if (!draft.clips[toTrackId]) draft.clips[toTrackId] = []
       draft.clips[toTrackId].push(movedClip)
       draft.clips[toTrackId].sort((a, b) => a.startFrame - b.startFrame)
+
+      pruneOrphanedTransitions(draft)
     }, 'Move clip')
   }
 
@@ -418,6 +420,7 @@ export class TimelineEngine {
         durationFrames: clampedDuration,
         sourceStartFrame,
       })
+      pruneOrphanedTransitions(draft)
     }, 'Trim clip')
   }
 
@@ -430,6 +433,7 @@ export class TimelineEngine {
 
     this.commit((draft) => {
       result = splitClip(draft, clipId, trackId, atFrame)
+      pruneOrphanedTransitions(draft)
     }, 'Split clip')
 
     if (result) {
@@ -474,6 +478,8 @@ export class TimelineEngine {
     durationFrames: number
     easing?: TransitionEasing
     direction?: TransitionDirection
+    /** Shift the transition center from the cut point. Negative = more frames from fromClip. */
+    offsetFrames?: number
   }): Transition | null {
     const fromClip = this.project.clips[options.trackId]?.find(
       (c) => c.id === options.fromClipId,
@@ -484,14 +490,14 @@ export class TimelineEngine {
     if (!fromClip || !toClip) return null
 
     const half = Math.max(1, Math.floor(options.durationFrames / 2))
+    const offset = options.offsetFrames ?? 0
     const transition: Transition = {
       id: generateId(),
       kind: options.kind,
       fromClipId: options.fromClipId,
       toClipId: options.toClipId,
       trackId: options.trackId,
-      // Transition window starts `half` frames before the cut
-      startFrame: toClip.startFrame - half,
+      startFrame: toClip.startFrame - half + offset,
       durationFrames: half * 2,
       easing: options.easing,
       direction: options.direction,
@@ -515,7 +521,10 @@ export class TimelineEngine {
 
   updateTransition(
     transitionId: string,
-    patch: Partial<Pick<Transition, 'kind' | 'durationFrames' | 'easing' | 'direction'>>,
+    patch: Partial<Pick<Transition, 'kind' | 'durationFrames' | 'easing' | 'direction'>> & {
+      /** Shift the transition center from the cut point. Negative = more frames from fromClip. */
+      offsetFrames?: number
+    },
   ): void {
     const existing = this.project.transitions.find((t) => t.id === transitionId)
     if (!existing) return
@@ -526,14 +535,17 @@ export class TimelineEngine {
       if (patch.kind !== undefined) t.kind = patch.kind
       if (patch.easing !== undefined) t.easing = patch.easing
       if (patch.direction !== undefined) t.direction = patch.direction
-      if (patch.durationFrames !== undefined) {
-        const half = Math.max(1, Math.floor(patch.durationFrames / 2))
+      if (patch.durationFrames !== undefined || patch.offsetFrames !== undefined) {
+        const newDuration = patch.durationFrames ?? t.durationFrames
+        const half = Math.max(1, Math.floor(newDuration / 2))
         t.durationFrames = half * 2
-        // Re-anchor startFrame to keep the cut midpoint stable
         const toClipEntry = Object.values(draft.clips)
           .flat()
           .find((c) => c.id === t.toClipId)
-        if (toClipEntry) t.startFrame = toClipEntry.startFrame - half
+        if (toClipEntry) {
+          const offset = patch.offsetFrames ?? (t.startFrame - (toClipEntry.startFrame - half))
+          t.startFrame = toClipEntry.startFrame - half + offset
+        }
       }
     }, 'Update transition')
   }
