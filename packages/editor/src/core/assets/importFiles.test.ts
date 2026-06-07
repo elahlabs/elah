@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMediaLibraryStore } from './store'
 import {
+  computeWaveform,
   importFiles,
   makeImageThumbnail,
   makeVideoThumbnail,
+  makeVideoThumbnailStrip,
   probeAudio,
   probeImage,
   probeVideo,
@@ -247,23 +249,29 @@ describe('importFiles', () => {
     expect(result.imported[0].thumbnailUrl).toBeUndefined()
   })
 
-  it('updates thumbnailUrl asynchronously for video imports', async () => {
+  it('updates thumbnailStrip + thumbnailUrl asynchronously for video imports', async () => {
     const importPromise = importFiles([makeFile('clip.mp4', 'video/mp4')])
 
     await Promise.resolve()
-    createdMedia[0]._emit('loadedmetadata')
+    createdMedia[0]._emit('loadedmetadata') // resolve the metadata probe
 
     const result = await importPromise
     expect(result.imported[0].thumbnailUrl).toBeUndefined()
-    expect(createdMedia).toHaveLength(2)
 
-    const thumbVideo = createdMedia[1]
-    thumbVideo._emit('loadedmetadata')
-    await Promise.resolve()
-    thumbVideo._emit('seeked')
+    // The strip generator created a second video element; drive its seeks.
+    expect(createdMedia.length).toBeGreaterThanOrEqual(2)
+    const stripVideo = createdMedia[1]
+    stripVideo._emit('loadedmetadata')
+    // THUMBNAIL_STRIP_COUNT (4) sequential seeks.
+    for (let i = 0; i < 4; i++) {
+      await Promise.resolve()
+      await Promise.resolve()
+      stripVideo._emit('seeked')
+    }
 
     await vi.waitFor(() => {
       const updated = useMediaLibraryStore.getState().getAsset(result.imported[0].id)
+      expect(updated?.thumbnailStrip).toHaveLength(4)
       expect(updated?.thumbnailUrl).toBe('data:image/jpeg;base64,thumb')
     })
   })
@@ -358,7 +366,24 @@ describe('media probe helpers', () => {
       durationSec: 12.5,
       width: 1920,
       height: 1080,
+      hasAudio: false,
     })
+  })
+
+  it('probeVideo reports hasAudio when an audio track is present', async () => {
+    const el = createStubMediaElement('video')
+    ;(el as unknown as { audioTracks: { length: number } }).audioTracks = {
+      length: 1,
+    }
+
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => el),
+    })
+
+    const probePromise = probeVideo('blob:test-video')
+    el._emit('loadedmetadata')
+
+    await expect(probePromise).resolves.toMatchObject({ hasAudio: true })
   })
 
   it('probeAudio resolves duration from loadedmetadata', async () => {
@@ -436,5 +461,74 @@ describe('thumbnail helpers', () => {
     img.onload?.()
 
     await expect(thumbPromise).resolves.toBe('data:image/jpeg;base64,thumb')
+  })
+
+  it('makeVideoThumbnailStrip decodes one frame per requested sample', async () => {
+    const el = createStubMediaElement('video')
+
+    vi.stubGlobal('document', {
+      createElement: vi.fn((tag: string) => {
+        if (tag === 'video') return el
+        return createStubCanvas()
+      }),
+    })
+    vi.stubGlobal('HTMLMediaElement', { HAVE_CURRENT_DATA: 2 })
+
+    const stripPromise = makeVideoThumbnailStrip('blob:test-video', 3, 160)
+    el._emit('loadedmetadata')
+    for (let i = 0; i < 3; i++) {
+      await Promise.resolve()
+      await Promise.resolve()
+      el._emit('seeked')
+    }
+
+    await expect(stripPromise).resolves.toEqual([
+      'data:image/jpeg;base64,thumb',
+      'data:image/jpeg;base64,thumb',
+      'data:image/jpeg;base64,thumb',
+    ])
+  })
+})
+
+describe('computeWaveform', () => {
+  const decodeAudioData = vi.fn()
+
+  beforeEach(() => {
+    decodeAudioData.mockReset()
+    vi.stubGlobal('window', { AudioContext: vi.fn(() => ({ decodeAudioData })) })
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      arrayBuffer: async () => new ArrayBuffer(8),
+    })))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('downsamples and normalizes peaks to 0..1', async () => {
+    const channel = new Float32Array(1024).fill(0.1)
+    channel[500] = -2 // loudest sample; abs max = 2
+    decodeAudioData.mockResolvedValue({
+      length: channel.length,
+      getChannelData: () => channel,
+    })
+
+    const peaks = await computeWaveform('blob:audio')
+
+    expect(peaks).not.toBeNull()
+    expect(peaks!.length).toBe(256)
+    // Loudest bucket normalizes to 1; quiet buckets to 0.1/2 = 0.05.
+    expect(Math.max(...peaks!)).toBeCloseTo(1)
+    expect(Math.min(...peaks!)).toBeCloseTo(0.05)
+  })
+
+  it('returns null when the source has no audio samples', async () => {
+    decodeAudioData.mockResolvedValue({
+      length: 0,
+      getChannelData: () => new Float32Array(),
+    })
+
+    await expect(computeWaveform('blob:silent')).resolves.toBeNull()
   })
 })

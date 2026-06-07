@@ -10,6 +10,7 @@ import {
   snapFrame,
 } from '../core/utils/snap'
 import { useTracksStore } from '../core/stores/tracks.store'
+import { useMediaLibraryStore } from '../core/assets/store'
 
 const CLIP_STYLES: Record<
   string,
@@ -61,6 +62,9 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
   const selectClip = useSelectionStore((s) => s.selectClip)
   const clearSelection = useSelectionStore((s) => s.clearSelection)
   const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
+  const asset = useMediaLibraryStore((s) =>
+    clip.assetId ? s.assets[clip.assetId] : undefined,
+  )
 
   const blockRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -69,6 +73,25 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
   const width = Math.max(clip.durationFrames * zoom, 4)
   const blockHeight = trackHeight - 10
   const palette = CLIP_STYLES[clip.type] ?? CLIP_STYLES.video
+
+  // Filmstrip tiles for video/image — decorative; tiles repeat/reduce with zoom.
+  const stripFrames =
+    asset?.thumbnailStrip ?? (asset?.thumbnailUrl ? [asset.thumbnailUrl] : [])
+  const tileAspect = asset?.width && asset?.height ? asset.width / asset.height : 16 / 9
+  const tileWidth = Math.max(12, blockHeight * tileAspect)
+  const tileCount = Math.min(40, Math.max(1, Math.ceil(width / tileWidth)))
+
+  // Real waveform bars for audio — falls back to static bars while decoding.
+  const waveform = asset?.waveform
+  let waveBars: number[] = WAVE_BARS
+  if (waveform && waveform.length > 0) {
+    const count = Math.min(160, Math.max(8, Math.floor(width / 3)))
+    const sampled = new Array<number>(count)
+    for (let i = 0; i < count; i++) {
+      sampled[i] = waveform[Math.floor((i / count) * waveform.length)]
+    }
+    waveBars = sampled
+  }
 
   const handleBodyMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -270,6 +293,42 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
         zIndex: isSelected ? 5 : 1,
       }}
     >
+      {/* Filmstrip — evenly-spaced source frames tiled across the clip. Tiles
+          repeat (or thin out) as the clip widens/narrows with zoom. */}
+      {(clip.type === 'video' || clip.type === 'image') && stripFrames.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            borderRadius: 7,
+          }}
+        >
+          {Array.from({ length: tileCount }).map((_, i) => {
+            const frameIdx = Math.min(
+              stripFrames.length - 1,
+              Math.floor((i / tileCount) * stripFrames.length),
+            )
+            return (
+              <div
+                key={i}
+                style={{
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  height: '100%',
+                  backgroundImage: `url(${stripFrames[frameIdx]})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  boxShadow: 'inset -1px 0 0 rgba(0,0,0,0.28)',
+                }}
+              />
+            )
+          })}
+        </div>
+      )}
+
       {/* Left accent stripe */}
       <div
         style={{
@@ -310,14 +369,15 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
             pointerEvents: 'none',
           }}
         >
-          {WAVE_BARS.map((h, i) => (
+          {waveBars.map((h, i) => (
             <div
               key={i}
               style={{
                 flex: '1 1 2px',
                 minWidth: 1,
                 maxWidth: 3,
-                height: `${h * 100}%`,
+                // Floor keeps quiet passages visible as a thin line.
+                height: `${Math.max(6, h * 100)}%`,
                 background: 'rgba(255,255,255,0.85)',
                 borderRadius: 1,
               }}
@@ -326,22 +386,24 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
         </div>
       )}
 
-      {/* Video/image film perforation hint */}
-      {(clip.type === 'video' || clip.type === 'image') && width > 28 && (
-        <div
-          style={{
-            position: 'absolute',
-            left: TRIM_HANDLE_WIDTH + 4,
-            top: 4,
-            bottom: 4,
-            width: 14,
-            borderRadius: 3,
-            background: 'rgba(0,0,0,0.22)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* Placeholder box for video/image clips whose filmstrip hasn't decoded yet. */}
+      {(clip.type === 'video' || clip.type === 'image') &&
+        stripFrames.length === 0 &&
+        width > 28 && (
+          <div
+            style={{
+              position: 'absolute',
+              left: TRIM_HANDLE_WIDTH + 4,
+              top: 4,
+              bottom: 4,
+              width: 14,
+              borderRadius: 3,
+              background: 'rgba(0,0,0,0.22)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
 
       {/* Left trim handle */}
       <div

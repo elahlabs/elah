@@ -19,9 +19,15 @@ export interface MediaAsset {
   height?: number
   /** Intrinsic frame rate of the source. Undefined for audio / image. */
   sourceFps?: number
-  /** Generated thumbnail. Set asynchronously by PR-07. */
+  /** Whether a video source carries an audio track. Set during import (best-effort
+   * sync probe, refined by async audio decode). Undefined for audio / image. */
+  hasAudio?: boolean
+  /** Single representative thumbnail (mid-frame for video). Used by the AssetPanel. */
   thumbnailUrl?: string
-  /** Pre-decoded waveform peaks for audio. Placeholder until PR-07+. */
+  /** A few evenly-spaced frames decoded once per video asset, tiled across the
+   * timeline clip to fake a filmstrip. Undefined for audio. */
+  thumbnailStrip?: string[]
+  /** Normalized (0..1) waveform peaks for audio/video sources with audio. */
   waveform?: Float32Array
   byteSize: number
   /** File last-modified timestamp from the source `File`. Used for dedupe. */

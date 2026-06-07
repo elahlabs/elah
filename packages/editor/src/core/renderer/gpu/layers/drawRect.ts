@@ -107,6 +107,37 @@ export function resolveDrawRect(
   )
 }
 
+/**
+ * Synthesize the explicit Transform that reproduces the default "contain"
+ * placement of a clip with no transform of its own.
+ *
+ * The renderer draws a transform-less clip *contained* within the stage (see
+ * `resolveDrawRect`). When the user first grabs such a clip in the interactive
+ * overlay, we need a concrete `Transform` to apply the drag/resize delta to —
+ * but writing one must not move the clip. This returns exactly the transform
+ * whose draw rect equals the contain rect, so baking it in is visually a no-op:
+ * feeding the result back through `resolveTransformRect` yields the same rect as
+ * `computeContainRect`.
+ *
+ * Uses `anchor {0.5,0.5}` so `x`/`y` are the clip centre (matching the text
+ * model), and a uniform `scale` of contain-width ÷ content-width.
+ */
+export function transformFromContainRect(
+  contentWidth: number,
+  contentHeight: number,
+  stageWidth: number,
+  stageHeight: number,
+): Transform {
+  const fit = computeContainRect(contentWidth, contentHeight, stageWidth, stageHeight)
+  return {
+    x: stageWidth > 0 ? (fit.x + fit.width / 2) / stageWidth : 0.5,
+    y: stageHeight > 0 ? (fit.y + fit.height / 2) / stageHeight : 0.5,
+    scale: contentWidth > 0 ? fit.width / contentWidth : 1,
+    rotation: 0,
+    anchor: { x: 0.5, y: 0.5 },
+  }
+}
+
 /** Build the clip-space transform matrix for a clip with an optional transform. */
 export function buildDrawTransformMatrix(
   transform: Transform | undefined,

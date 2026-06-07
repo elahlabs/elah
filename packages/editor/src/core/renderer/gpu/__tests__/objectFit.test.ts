@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Transform } from '../../../types'
 import { computeContainRect } from '../layers/objectFit'
-import { resolveDrawRect } from '../layers/drawRect'
+import { resolveDrawRect, resolveTransformRect, transformFromContainRect } from '../layers/drawRect'
 
 describe('computeContainRect', () => {
   it('pillarboxes a portrait clip inside a landscape stage (bars left/right)', () => {
@@ -69,5 +69,46 @@ describe('resolveDrawRect — no-transform default', () => {
     expect(r.height).toBeCloseTo(180)
     expect(r.x).toBeCloseTo(0.5 * 1280 - 0.5 * 320)
     expect(r.y).toBeCloseTo(0.5 * 720 - 0.5 * 180)
+  })
+})
+
+describe('transformFromContainRect', () => {
+  // The whole point of this helper: the synthesized transform must be a visual
+  // no-op — drawing it must land on the exact contain rect. We assert that by
+  // round-tripping through resolveTransformRect and comparing to the no-transform
+  // contain rect (the path the renderer takes today for an untouched clip).
+  const cases: ReadonlyArray<[string, number, number, number, number]> = [
+    ['portrait clip in landscape stage (pillarbox)', 1080, 1920, 1280, 720],
+    ['landscape clip in portrait stage (letterbox)', 1920, 1080, 1080, 1920],
+    ['matching aspect fills the stage', 640, 360, 1280, 720],
+  ]
+
+  it.each(cases)('round-trips to the contain rect: %s', (_label, cw, ch, sw, sh) => {
+    const t = transformFromContainRect(cw, ch, sw, sh)
+    const baked = resolveTransformRect(t, sw, sh, cw, ch)
+    const contained = resolveDrawRect(undefined, sw, sh, cw, ch)
+
+    expect(baked.x).toBeCloseTo(contained.x)
+    expect(baked.y).toBeCloseTo(contained.y)
+    expect(baked.width).toBeCloseTo(contained.width)
+    expect(baked.height).toBeCloseTo(contained.height)
+    expect(baked.rotation).toBe(0)
+  })
+
+  it('uses centre anchor so x/y are the clip centre', () => {
+    const t = transformFromContainRect(640, 360, 1280, 720)
+    expect(t.anchor).toEqual({ x: 0.5, y: 0.5 })
+    expect(t.x).toBeCloseTo(0.5)
+    expect(t.y).toBeCloseTo(0.5)
+    // Aspect matches → contain fills the stage (1280 wide). scale is relative to
+    // native content size, so a 640px-wide source shown at 1280 → scale 2.
+    expect(t.scale).toBeCloseTo(2)
+  })
+
+  it('falls back to a centred unit transform on degenerate content size', () => {
+    const t = transformFromContainRect(0, 0, 1280, 720)
+    expect(t.x).toBeCloseTo(0.5)
+    expect(t.y).toBeCloseTo(0.5)
+    expect(t.scale).toBe(1)
   })
 })
