@@ -34,24 +34,24 @@
 
 ## Editing UI
 
-- **No on-canvas gizmos for video/image.** Text clips have interactive
-  drag / resize / inline-edit in the preview overlay. Video and image clips are
-  positioned through `Clip.transform` but have no resize/rotate handles on the
-  canvas yet.
-- **No timeline thumbnails or waveforms.** The asset panel generates a single
-  thumbnail per asset, but timeline clips render no filmstrip, and audio clips
-  render no waveform (`MediaAsset.waveform` is a reserved placeholder).
+- **No rotation handle for video/image.** `MediaTransformOverlay` supports
+  drag-move and uniform corner-scale for video and image clips. `transform.rotation`
+  already flows through both renderers, but the interactive rotation handle on the
+  overlay is not yet built. Text clips have the same gap (overlay box stays
+  axis-aligned for rotated text).
 - **No media persistence.** The media library is in-memory only; object URLs are
   created at import and are **not** persisted. Reloading the editor clears the
   library.
 
 ## Compositing & effects
 
-- **No transition system.** `Scene.transitions` is a reserved, always-empty array.
-  Crossfade / cut / wipe are not implemented.
+- **Transitions: fade only.** `Scene.transitions` is fully typed and populated by
+  the resolver. Fade is wired end-to-end (preview via CSS snapshot overlay;
+  export via `globalAlpha=1-t`). Slide and wipe are not yet implemented — the
+  architecture is in place (CSS `transform` on the snapshot div + matching export
+  pass), just the per-kind logic is missing.
 - **No effects / filters / animation pipeline.** Layers apply `transform` and
-  `opacity` only. There is no per-clip shader-effect stack and no advanced GPU
-  transition pipeline.
+  `opacity` only. There is no per-clip shader-effect stack.
 
 ## Export
 

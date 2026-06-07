@@ -90,8 +90,10 @@ No extra wiring beyond `TrackRow` — `useTimelineDrop` is attached automaticall
 
 ## Render pixels with `<Preview>`
 
-`<Preview>` mounts the WebGL2 `GpuRenderer`, drives the RAF loop, and paints the
-interactive text overlay (drag / resize / inline-edit) plus the project's audio.
+`<Preview>` mounts the WebGL2 `GpuRenderer`, drives the RAF loop, and paints
+interactive transform overlays — drag / uniform-scale for video & image clips
+(`MediaTransformOverlay`), and drag / resize / inline-edit for text clips
+(`TextOverlay`) — plus the project's audio.
 Inject a **demuxer factory** so the SDK never hard-depends on a decode backend:
 
 ```tsx

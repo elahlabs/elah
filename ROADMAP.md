@@ -29,6 +29,10 @@ For the things that are known-incomplete today, see
 | Audio playback | `AudioPlaybackController` on the `PlaybackEngine` clock |
 | Aspect ratio | Contain-fit viewport + per-clip object-fit; switchable stage via `setStage` |
 | **Export** | `exportVideo()` → worker → OffscreenCanvas frame render → mediabunny MP4 mux, with main-thread audio mix |
+| **Video & image transform overlay** | `MediaTransformOverlay` — click-select, drag-move, corner-drag uniform scale; writes `transform` through `previewClip`/`commitInteraction` (one undo per gesture); export parity automatic (transform already flowed through both renderers) |
+| **Timeline thumbnails + waveforms** | Filmstrip tiles and real waveform peaks per asset; generated once on drop, cached on `MediaAsset`; displayed in `ClipBlock` |
+| **Audio-on-drop dialog** | 3-choice modal on video drop with audio; both clips in one `engine.batch` (one undo entry) |
+| **Fade transition** | Snapshot-overlay architecture: `resolveTimeline` drives opacity; `TransitionOverlay` fades a canvas snapshot via CSS; export mirrors with `globalAlpha=1-t`; `Scene.transitions` fully typed and populated |
 
 ---
 
@@ -58,14 +62,13 @@ This is the seam that `Scene.transitions` (reserved, empty today) and the
 
 ---
 
-## Feature backlog (unsequenced)
+## Feature backlog
 
-Planned, not started. Order will be decided when the scheduler lands.
-
-- Transition system (crossfade / cut / wipe) on top of `Scene.transitions`
+- **Rotation handle for video/image** — `transform.rotation` already flows through both renderers; the interactive handle in `MediaTransformOverlay` is the only missing piece
+- **Slide / wipe transitions** — architecture in place (snapshot overlay + `Scene.transitions`); CSS `transform` on the snapshot div + matching export pass in `ExportWorker`
+- **Playback correctness** — reverse scrub stability, predictive frame caching, black-frame elimination at clip boundaries; requires the scheduler layer (see above)
+- **Export frame-accuracy** — half-frame phase offset between preview (center-of-frame) and export (start-of-frame); golden-frame parity harness
 - Multi-track video/audio compositing beyond the current single-track v1 path
-- On-canvas resize/rotate gizmos for video & image clips (text already has them)
-- Waveform rendering and timeline clip thumbnails / filmstrips
 - Effects / filters / animation (per-clip shader passes via a new layer)
 - Asset persistence (IndexedDB / OPFS) so the library survives reload
 - WebGPU backend behind the existing `Renderer` interface
@@ -84,6 +87,8 @@ Planned, not started. Order will be decided when the scheduler lands.
 | 2026-05 | mediabunny injected, never a hard dependency | Keep WebCodecs/demux out of the core bundle (see [`BUNDLE_STRATEGY.md`](./BUNDLE_STRATEGY.md)) |
 | 2026-05 | Copy decoded frames to `ImageBitmap`, close immediately | Stop the decoder output pool from starving and freezing playback |
 | 2026-06 | Export reuses `resolveTimeline` + shared placement math | One rendering truth for preview and export; no export-specific scene system |
+| 2026-06-07 | Snapshot overlay for transitions (not GPU crossfade) | Avoids decoder contention; preview = CSS opacity on a frozen canvas snapshot; export = `globalAlpha=1-t` pass; adding new transition kinds requires only a CSS mapping, no resolver or shader change |
+| 2026-06-07 | Standalone `MediaTransformOverlay` (not unified with `TextOverlay`) | Kept the proven text path untouched; gesture math is a copy; unification deferred until both overlays are stable and a shared hook is obviously better |
 
 See [`ARCHITECTURE.md` § anti-patterns](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns)
 for the standing list of things this project deliberately does not build.

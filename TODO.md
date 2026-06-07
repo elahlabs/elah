@@ -88,13 +88,14 @@ Concrete, fixable divergences to chase:
 
 **Already exists:** the `Transform` data model (`x, y, scale, rotation, anchor`) and its flow through `Scene` → both renderers. The generic edit API (`previewClip`/`commitInteraction`/`cancelInteraction`/`findClip`) is already proven by `TextOverlay`. **What's missing is the interaction layer for video/image** — there's no overlay for them today.
 
-- [ ] **Generalize the overlay.** Extract the gesture machinery from [`TextOverlay`](packages/editor/src/editor/Preview/TextOverlay.tsx) into a shared `TransformOverlay` that operates on `transform.scale` / `transform.x/y` / `transform.rotation` for any clip type. (Note: today `TextOverlay` resizes via `fontSize`, not `transform.scale` — decide whether text adopts the unified scale path or stays special-cased.)
-- [ ] Render it for `scene.videos` and `scene.images` (mounted in [Preview.tsx](packages/editor/src/editor/Preview/Preview.tsx) next to `TextOverlay`).
-- [ ] **Corner resize handles** → write `transform.scale` (uniform). **Aspect-ratio lock** by default; modifier key for free.
-- [ ] **Rotation handle** → write `transform.rotation` (radians; renderers already consume it).
-- [ ] **Bounding box** mapped through `computeContainViewport` (same letterbox math the text overlay uses) so handles stay glued under letterboxing.
-- [ ] **Snap guides** — reuse [`snap.ts`](packages/editor/src/core/utils/snap.ts) if applicable; snap to stage center / edges.
-- [ ] **Done when:** video & image clips can be moved, uniformly scaled (aspect-locked), and rotated in the preview, results persist through undo and match in export (Phase 3 harness).
+> **2026-06-07 — move + uniform resize DONE.** Built [`MediaTransformOverlay`](packages/editor/src/editor/Preview/MediaTransformOverlay.tsx) as a standalone overlay beside `TextOverlay` (chosen over a unified refactor to keep the proven text path untouched). Covers `scene.videos` + `scene.images`: click-select, drag-move, corner-drag uniform scale. No renderer/export changes needed — `transform` already flowed through `resolveDrawRect` in both paths. Export verified working. Rotation and snap guides deferred below.
+
+- [x] Render it for `scene.videos` and `scene.images` (mounted in [Preview.tsx](packages/editor/src/editor/Preview/Preview.tsx) next to `TextOverlay`).
+- [x] **Corner resize handles** → write `transform.scale` (uniform, aspect-locked always). Clamped so rendered size stays ≥ 16 stage-px and ≤ 8× the larger stage dimension.
+- [x] **Bounding box** mapped through `computeContainViewport` + `resolveDrawRect` so handles stay glued under letterboxing. Clips with no explicit transform get a baked contain-equivalent baseline (`transformFromContainRect` in `drawRect.ts`) so first grab never jumps.
+- [ ] **Rotation handle** → write `transform.rotation` (radians; renderers already consume it). Deferred — same caveat as text (selection box stays axis-aligned for rotated clips).
+- [ ] **Snap guides** — reuse [`snap.ts`](packages/editor/src/core/utils/snap.ts) if applicable; snap to stage center / edges. Deferred.
+- [ ] **Done when:** rotation handle is added. Move + uniform scale already work and persist through undo, matching in export.
 
 ---
 
@@ -102,43 +103,35 @@ Concrete, fixable divergences to chase:
 
 Both are greenfield worker pipelines. Group them — they share a "background extraction worker + cache" shape.
 
-### 5a. "Extract audio?" dialog on video drop (Enhancement #1)
+### 5a. "Extract audio?" dialog on video drop (Enhancement #1) ✓ DONE 2026-06-07
 
-When a video asset that contains an audio track is dropped onto the timeline, show a dialog asking how to place it. Currently `dropMediaAsset` in [`useTimelineDrop.ts:96`](packages/editor/src/timeline/useTimelineDrop.ts#L96) calls `engine.addClip()` immediately with no prompt.
+> `MediaAsset.hasAudio` (best-effort sync probe in `probeVideo`, refined by async audio decode). `dropMediaAsset` is now async: captures `dataTransfer`/`clientX` sync before any await, then for video+hasAudio awaits a three-choice modal (`AudioDropDialog.tsx`, mounted inside `<Timeline>` as a `position:fixed` overlay — playground needs zero wiring). `both` wraps two `addClip`s in `engine.batch` for one undo entry, anchoring audio to the video's resolved start.
 
-**Step 1 — detect audio presence at import time** ([`importFiles.ts`](packages/editor/src/core/assets/importFiles.ts))
-- [ ] In `probeVideo()`, after `loadedmetadata` fires, read `el.audioTracks.length > 0` (`AudioTrackList`, available in Chrome/Safari; Firefox uses `el.mozHasAudio`). Add `hasAudio?: boolean` to [`MediaAsset`](packages/editor/src/core/assets/types.ts).
-- [ ] Update `importSingleFile` to set `hasAudio` from the probe result when `kind === 'video'`.
+- [x] `hasAudio?: boolean` added to `MediaAsset`; set in `probeVideo()` (layered `audioTracks`/`mozHasAudio`/`webkitAudioDecodedByteCount` probes).
+- [x] `dropMediaAsset` async; dialog for video+hasAudio; three choices: Video+Audio / Video only / Audio only.
+- [x] `engine.batch` wraps the two-clip add (one undo); audio anchored to video's start frame.
+- [x] Audio-less video / image / audio assets skip the dialog (no regression).
+- [ ] Linked-clip ripple (move one → move both) — deferred; needs `linkedClipId` on `Clip`.
 
-**Step 2 — intercept the drop and show the dialog** ([`useTimelineDrop.ts`](packages/editor/src/timeline/useTimelineDrop.ts))
-- [ ] Make `dropMediaAsset` async. When `asset.kind === 'video' && asset.hasAudio`, **pause before `addClip()`** and open a dialog.
-- [ ] Dialog — three choices (no Cancel; dropping already implies intent to place):
-  - **Video + Audio** — add a video clip on the current track *and* an audio clip on an audio track at the same `startFrame`.
-  - **Video only** — current behaviour; skip audio.
-  - **Audio only** — add only an audio clip; skip the video track.
-- [ ] For **Video + Audio**: find the first audio track (`useTracksStore.getState().tracks.find(t => t.kind === 'audio')`), or create one if none exists. Add both clips via two `engine.addClip()` calls at the same `startFrame`.
-- [ ] If `asset.hasAudio` is `false`/`undefined`, skip the dialog and proceed as today (no regression for audio-less video or images).
+### 5b. Real timeline thumbnails + waveforms (Enhancement #2) ✓ DONE 2026-06-07
 
-**Step 3 — linked media (deferred, not blocking the dialog)**
-- [ ] Ripple-safe edits (move one → move both) need a `linkedClipId` field on `Clip`. Log as follow-on — the dialog is already useful without it.
+> `makeVideoThumbnailStrip` decodes 4 evenly-spaced frames → `MediaAsset.thumbnailStrip` (mid-frame doubles as `thumbnailUrl`). `computeWaveform` (fetch → `decodeAudioData` → 256 normalized peaks, shared lazy AudioContext) → `MediaAsset.waveform`. `ClipBlock` subscribes to the asset and renders a tiled filmstrip replacing the fake perforation box, and real waveform bars replacing static `WAVE_BARS`.
 
-**Done when:** dropping a video with audio shows the dialog; all three choices produce the correct clips; dropping a video without audio (or an image/audio asset) skips the dialog. Verify with `/verify`.
-
-### 5b. Real timeline thumbnails + waveforms (Enhancement #2)
-- [ ] **Note:** the waveform in [`ClipBlock.tsx:44`](packages/editor/src/timeline/ClipBlock.tsx#L44) is **fake/decorative static bars** — replace with real data.
-- [ ] **Thumbnail worker:** interval-extract frames off the demuxer, lazy-load, cache (mirror the `FrameCache` pattern). Render strips in `ClipBlock`.
-- [ ] **Waveform generation:** decode peaks off the audio buffer in a worker; cache per asset.
-- [ ] **Done when:** clips show real scene thumbnails and audio clips show a real waveform.
+- [x] Real filmstrip tiles in `ClipBlock` (tiled frame count scales with clip width, repeats/thins with zoom).
+- [x] Real waveform peaks from audio decode; falls back to static bars while decoding.
+- [x] Both are main-thread (not workers) — separate from the real-time playback decode stack.
 
 ---
 
 ## Phase 6 — HIGH/MEDIUM: Transitions (Enhancements #3 & #4)
 
-**Already exists:** `Scene.transitions: SceneTransition[]` is a reserved, typed-for-growth array ([scene.ts:78](packages/editor/src/core/resolver/scene.ts#L78)). Define its real shape here.
+> **2026-06-07 — fade transition fully wired end-to-end.** Architecture: snapshot overlay (not GPU crossfade). Resolver sets `fromClip.opacity=0` / `toClip.opacity=1`; `TransitionOverlay` (CSS) holds a frozen canvas snapshot of the outgoing clip and fades it via `opacity`. Export mirrors this with `globalAlpha=1-t` on a snapshot pass. `ActiveTransition { id, kind, t, direction }` in `scene.ts`. Adding a new kind = one new CSS mapping in `TransitionOverlay.update()` — no resolver/shader change.
 
-- [ ] **Clip transitions (#3, HIGH):** fade / slide / blur / zoom / wipe. Roadmap says start with an HTML/CSS overlay layer above the preview for fast iteration — fine for preview, **but export uses the 2D-canvas path**, so the transition timing/blend must also be reproduced in `ExportWorker` (Phase 3 harness guards this). Define `SceneTransition` fields: `kind, fromClipId, toClipId, startFrame, durationFrames`.
-- [ ] **Text entry/exit transitions (#4, MEDIUM):** fade in / typewriter / scale / slide / blur reveal, driven off the same descriptor.
-- [ ] **Done when:** at least fade + one wipe work identically in preview and export.
+- [x] `Scene.transitions` typed and populated by the resolver for any active transition window.
+- [x] **Fade** — fully wired in preview (CSS opacity on snapshot div) and export (`globalAlpha` snapshot pass).
+- [x] **Text entry/exit fade** — resolved into `opacity` inside `resolveTimeline`; both renderers consume it via the existing opacity field (parity automatic).
+- [ ] **Slide / wipe** — deferred. CSS `transform` on the `TransitionOverlay` snapshot div; export needs a matching clip/translate pass in `ExportWorker`.
+- [ ] **Done when:** slide + at least one wipe match preview and export (Phase 3 harness).
 
 ---
 

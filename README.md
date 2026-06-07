@@ -32,10 +32,15 @@ Three goals shape every decision:
 | **`<Preview>` component** (mounts renderer + drives RAF) | ✅ Working — library component in `@elah/editor` |
 | **Project aspect ratio / letterbox** | ✅ Working — canvas `gl.viewport` contain-fit + per-clip object-fit **contain** (off-aspect clips letterboxed *within* the frame, never stretched); switchable stage aspect via `TimelineEngine.setStage` (16:9 ↔ 9:16) with a `<StageBorder>` frame outline |
 | **Text overlays** (GPU `TextLayer` + interactive `TextOverlay`) | ✅ Working — paint via 2D-canvas→texture; drag / resize / inline-edit; `transform.scale` (re-rasterized to stay crisp) + `transform.rotation` applied |
+| **Video & image transform overlay** (`MediaTransformOverlay`) | ✅ Working — click-select, drag-move, corner-drag uniform scale for video and image clips; `transform` flows to both renderers so export matches preview automatically |
 | **Audio playback** (`AudioPlaybackController` on the `PlaybackEngine` clock) | ✅ Working — single track, whole-file decode, mounted by `<Preview enableAudio>` |
 | **Image clips** (GPU `ImageLayer`) | ✅ Working — static image load → textured quad, same object-fit contain as video |
+| **Timeline thumbnails + waveforms** | ✅ Working — filmstrip tiles per clip (4-frame strip, tiled by zoom), real waveform peaks from `decodeAudioData`; both generated once per asset and cached on `MediaAsset` |
+| **Audio-on-drop dialog** | ✅ Working — dropping a video with audio shows a 3-choice modal (Video+Audio / Video only / Audio only); both clips added in one `engine.batch` (one undo) |
 | **Export pipeline** (`exportVideo` → MP4) | ✅ Working — module worker renders frames to `OffscreenCanvas` (reusing `resolveTimeline` + shared placement math) and muxes via mediabunny; audio mixed on the main thread |
-| Transitions / effects / animations | ⚪ Not started — `Scene.transitions` reserved |
+| **Fade transitions** | ✅ Working — snapshot-overlay architecture: resolver sets `fromClip.opacity=0`/`toClip.opacity=1`; `TransitionOverlay` fades a frozen canvas snapshot via CSS; export mirrors with `globalAlpha=1-t` |
+| Slide / wipe transitions | 🟡 Partial — architecture in place; only fade implemented |
+| Rotation handle for video/image | 🟡 Partial — `transform.rotation` already flows through both renderers; interactive overlay handle not yet built |
 | Scheduler / predictive frame caching | ⚪ Not started — next architectural layer |
 
 See [`ROADMAP.md`](./ROADMAP.md) for current state and the next layer,
@@ -147,8 +152,7 @@ function App() {
 `<Preview>` mounts the WebGL2 renderer and drives the RAF loop for you. It reads
 the engines from `EditorProvider` context and renders the resolved `Scene` to a
 canvas (letterboxed to the project aspect) — video **and** text clips, composited by
-`zIndex`. It also paints an interactive text-editing overlay (drag / resize /
-double-click to edit) and plays the project's audio track in sync (toggle with
+`zIndex`. It also paints interactive transform overlays — drag / resize / inline-edit for text clips, and drag / uniform-scale for video & image clips — and plays the project's audio track in sync (toggle with
 `enableAudio`, default on). You inject a **demuxer factory** so the SDK never
 hard-depends on a specific decode backend:
 
