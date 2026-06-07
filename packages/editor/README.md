@@ -139,6 +139,24 @@ src/
   editor/     EditorProvider, AssetPanel, Preview, useResolvedScene
 ```
 
+## Keyboard shortcuts
+
+The `<Timeline>` component registers these global keyboard shortcuts when focused:
+
+| Key | Action |
+|---|---|
+| **Space** | Play / pause |
+| **S** | Split selected clip at playhead |
+| **Delete** / **Backspace** | Delete selected clip(s) |
+| **Ctrl/Cmd + C** | Copy selected clip(s) to clipboard |
+| **Ctrl/Cmd + V** | Paste copied clip(s) — placed at current playhead position, same track |
+| **Ctrl/Cmd + Z** | Undo |
+| **Ctrl/Cmd + Shift + Z** / **Ctrl/Cmd + Y** | Redo |
+| **Ctrl/Cmd + scroll** | Zoom in / out |
+| **← / →** | Step one frame back / forward |
+
+**Right-click** any clip to open a context menu with a **Delete** option.
+
 ## Scripts
 
 ```bash

@@ -107,9 +107,15 @@ Then in the playground, add a video track, add a clip, hit **Space** to play. Ke
 |---|---|
 | **Space** | Play / pause |
 | **S** | Split selected clip at playhead |
+| **Delete** / **Backspace** | Delete selected clip(s) |
+| **Ctrl/Cmd + C** | Copy selected clip(s) |
+| **Ctrl/Cmd + V** | Paste copied clip(s) at playhead |
 | **Ctrl/Cmd + Z** | Undo |
 | **Ctrl/Cmd + Shift + Z** / **Ctrl/Cmd + Y** | Redo |
 | **Ctrl/Cmd + scroll** | Zoom timeline |
+| **← / →** | Step one frame back / forward |
+
+Right-click any clip on the timeline to open the context menu (Delete).
 
 ---
 

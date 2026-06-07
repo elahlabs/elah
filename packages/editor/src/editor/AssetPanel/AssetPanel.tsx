@@ -7,11 +7,13 @@ import {
   type CSSProperties,
   type DragEvent,
 } from 'react'
+import { createPortal } from 'react-dom'
 import {
   importFiles,
   MEDIA_DRAG_MIME,
   useMediaLibrary,
 } from '../../core/assets'
+import { useMediaLibraryStore } from '../../core/assets/store'
 import type { SkippedImport } from '../../core/assets'
 import type { DragMediaPayload, MediaAsset, MediaKind } from '../../core/assets/types'
 
@@ -79,7 +81,9 @@ function buildImportToast(skipped: SkippedImport[]): ImportToast | null {
   }
 }
 
-function AssetThumbnail({ asset }: { asset: MediaAsset }) {
+function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id: string) => void }) {
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
+
   const onDragStart = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
       const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
@@ -89,107 +93,174 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
     [asset.id],
   )
 
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCtxMenu({ x: e.clientX, y: e.clientY })
+  }, [])
+
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+
+  const handleDelete = useCallback(() => {
+    onDelete(asset.id)
+    setCtxMenu(null)
+  }, [asset.id, onDelete])
+
   const tag = KIND_TAG[asset.kind]
 
   return (
-    <div
-      draggable
-      className="elah-media-card"
-      onDragStart={onDragStart}
-      title={asset.name}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '8px 10px',
-        borderRadius: 8,
-        cursor: 'grab',
-        userSelect: 'none',
-        background: '#171D2B',
-        border: '1px solid #232938',
-        transition: 'background 0.15s, border-color 0.15s',
-      }}
-    >
+    <>
       <div
-        style={{
-          position: 'relative',
-          width: THUMB_SIZE,
-          height: THUMB_SIZE,
-          flexShrink: 0,
-          background: '#06070A',
-          borderRadius: 6,
-          border: '1px solid #1A1F2B',
-          overflow: 'hidden',
-        }}
-      >
-        {asset.thumbnailUrl ? (
-          <img
-            src={asset.thumbnailUrl}
-            alt=""
-            draggable={false}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 20,
-              color: '#555',
-            }}
-          >
-            {KIND_ICONS[asset.kind]}
-          </div>
-        )}
-      </div>
-
-      <div
+        draggable
+        className="elah-media-card"
+        onDragStart={onDragStart}
+        onContextMenu={handleContextMenu}
+        title={asset.name}
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          minWidth: 0,
+          alignItems: 'center',
+          gap: 10,
+          padding: '8px 10px',
+          borderRadius: 8,
+          cursor: 'grab',
+          userSelect: 'none',
+          background: '#171D2B',
+          border: '1px solid #232938',
+          transition: 'background 0.15s, border-color 0.15s',
         }}
       >
-        <span
+        <div
           style={{
-            fontSize: 11,
-            color: '#F3F4F6',
+            position: 'relative',
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
+            flexShrink: 0,
+            background: '#06070A',
+            borderRadius: 6,
+            border: '1px solid #1A1F2B',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
-          {asset.name}
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {asset.thumbnailUrl ? (
+            <img
+              src={asset.thumbnailUrl}
+              alt=""
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                color: '#555',
+              }}
+            >
+              {KIND_ICONS[asset.kind]}
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            minWidth: 0,
+          }}
+        >
           <span
             style={{
-              fontSize: 8,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              padding: '2px 5px',
-              borderRadius: 3,
-              color: tag.color,
-              background: tag.bg,
+              fontSize: 11,
+              color: '#F3F4F6',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            {tag.label}
+            {asset.name}
           </span>
-          <span style={{ fontSize: 10, color: '#6B7280', fontFamily: 'ui-monospace, monospace' }}>
-            {formatDuration(asset.durationSec)}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span
+              style={{
+                fontSize: 8,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                padding: '2px 5px',
+                borderRadius: 3,
+                color: tag.color,
+                background: tag.bg,
+              }}
+            >
+              {tag.label}
+            </span>
+            <span style={{ fontSize: 10, color: '#6B7280', fontFamily: 'ui-monospace, monospace' }}>
+              {formatDuration(asset.durationSec)}
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+
+      {ctxMenu && createPortal(
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            onMouseDown={closeCtxMenu}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: ctxMenu.y,
+              left: ctxMenu.x,
+              zIndex: 9999,
+              background: '#1E2433',
+              border: '1px solid #2D3548',
+              borderRadius: 6,
+              padding: '4px 0',
+              minWidth: 140,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              fontFamily: 'sans-serif',
+            }}
+          >
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={handleDelete}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '7px 14px',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                color: '#FF6B6B',
+                fontSize: 13,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,107,107,0.12)'
+              }}
+              onMouseLeave={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </>,
+        document.body,
+      )}
+    </>
   )
 }
 
@@ -201,10 +272,15 @@ function AssetThumbnail({ asset }: { asset: MediaAsset }) {
  */
 export function AssetPanel({ style, className }: AssetPanelProps) {
   const { assets } = useMediaLibrary()
+  const removeAsset = useMediaLibraryStore((s) => s.removeAsset)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
   const [toast, setToast] = useState<ImportToast | null>(null)
+
+  const handleDeleteAsset = useCallback((id: string) => {
+    removeAsset(id)
+  }, [removeAsset])
 
   useEffect(() => {
     if (!toast) return
@@ -387,7 +463,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
             }}
           >
             {assets.map((asset) => (
-              <AssetThumbnail key={asset.id} asset={asset} />
+              <AssetThumbnail key={asset.id} asset={asset} onDelete={handleDeleteAsset} />
             ))}
           </div>
         )}

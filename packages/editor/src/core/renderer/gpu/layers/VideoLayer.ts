@@ -113,16 +113,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._textures.set(item.id, new VideoTexture(this._pool))
     this._srcByItemId.set(item.id, item.src)
 
-    let entry = this._providers.get(item.src)
+    // Keyed by clip ID, not src: each clip owns an independent
+    // StreamingFrameProducer so that copy-pasted clips (same src, different
+    // startFrame) never share a playhead and cause backwards-seek stalls.
+    let entry = this._providers.get(item.id)
     if (!entry) {
-      // When real decode deps are available, merge the scene fps so the
-      // decoder computes frame timestamps correctly for any project frame rate.
-      // Custom providerFactory overrides (tests) are used as-is.
       const provider = this._deps
         ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
         : this._providerFactory(item.src)
       entry = { provider, refCount: 0 }
-      this._providers.set(item.src, entry)
+      this._providers.set(item.id, entry)
     }
 
     entry.refCount++
@@ -147,7 +147,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._contentSizeByItemId.delete(itemId)
     this._lastLoggedSourceFrameByItemId.delete(itemId)
 
-    const entry = this._providers.get(src)
+    const entry = this._providers.get(itemId)
     if (!entry) return
 
     entry.refCount--
@@ -161,7 +161,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._gl = ctx.gl
 
     const texture = this._textures.get(item.id)
-    const entry = this._providers.get(item.src)
+    const entry = this._providers.get(item.id)
     if (!texture || !entry) return
 
     const { provider } = entry
@@ -275,14 +275,22 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this.dispose()
   }
 
-  /** Exposed for testing: provider instance for a src. */
-  getProviderForSrc(src: string): VideoFrameProvider | undefined {
-    return this._providers.get(src)?.provider
+  /** Exposed for testing: provider instance for a clip item ID. */
+  getProviderForItemId(itemId: string): VideoFrameProvider | undefined {
+    return this._providers.get(itemId)?.provider
   }
 
-  /** Exposed for testing: ref count for a src. */
-  getProviderRefCount(src: string): number {
-    return this._providers.get(src)?.refCount ?? 0
+  /** Exposed for testing: first provider whose src matches (for single-clip test scenarios). */
+  getProviderForSrc(src: string): VideoFrameProvider | undefined {
+    for (const [itemId, itemSrc] of this._srcByItemId) {
+      if (itemSrc === src) return this._providers.get(itemId)?.provider
+    }
+    return undefined
+  }
+
+  /** Exposed for testing: ref count for a clip item ID. */
+  getProviderRefCount(itemId: string): number {
+    return this._providers.get(itemId)?.refCount ?? 0
   }
 
   /** Exposed for testing: number of per-clip texture handles. */

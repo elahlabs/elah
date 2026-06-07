@@ -155,16 +155,28 @@ describe('VideoLayer', () => {
     layer = new VideoLayer(pool, () => provider)
   })
 
-  it('shares one provider per src across clips', () => {
+  it('creates independent providers per clip even when src is shared', () => {
+    // Each clip must own a separate StreamingFrameProducer so that copy-pasted
+    // clips (same src, different startFrame) never share a playhead — otherwise
+    // the transition from clip A → clip B triggers a backwards seek on a shared
+    // producer, stalling decode until the async reset completes.
+    const providerA = makeMockProvider()
+    const providerB = makeMockProvider()
+    let callCount = 0
+    const providers = [providerA, providerB]
+    layer = new VideoLayer(pool, () => providers[callCount++])
+
     const clipA = makeClip({ id: 'clip-a', src: 'video://shared' })
     const clipB = makeClip({ id: 'clip-b', src: 'video://shared' })
 
     layer.acquire(clipA, ctx)
     layer.acquire(clipB, ctx)
 
-    expect(layer.getProviderForSrc('video://shared')).toBe(provider)
-    expect(layer.getProviderRefCount('video://shared')).toBe(2)
-    expect(provider.markActive).toHaveBeenCalledTimes(2)
+    expect(layer.getProviderCount()).toBe(2)
+    expect(providerA.markActive).toHaveBeenCalledTimes(1)
+    expect(providerB.markActive).toHaveBeenCalledTimes(1)
+    expect(layer.getProviderForItemId('clip-a')).toBe(providerA)
+    expect(layer.getProviderForItemId('clip-b')).toBe(providerB)
   })
 
   it('allocates one texture handle per clip', () => {
@@ -254,7 +266,7 @@ describe('VideoLayer', () => {
 
     layer.release(clip.id)
 
-    expect(layer.getProviderRefCount('video://asset-1')).toBe(0)
+    expect(layer.getProviderRefCount(clip.id)).toBe(0)
     expect(provider.markIdle).toHaveBeenCalledTimes(1)
 
     layer.draw(clip, ctx)
