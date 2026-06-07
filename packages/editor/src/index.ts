@@ -138,6 +138,7 @@ export type { DragElementPayload, ElementKind } from './timeline/elementDrag'
 
 // --- Core: export ---
 export { exportVideo } from './core/export'
+export { lazyExportVideo } from './core/export/lazyExport'
 export type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from './core/export'
 
 // --- Editor: composition ---

@@ -10,5 +10,8 @@
     "build": "npm run build --workspace=packages/editor",
     "typecheck": "tsc --build",
     "test": "npm run test --workspace=packages/editor"
+  },
+  "devDependencies": {
+    "rollup-plugin-visualizer": "^7.0.1"
   }
 }

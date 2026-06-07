@@ -15,7 +15,6 @@ import {
   useMediaLibraryStore,
   splitClipAtPlayhead,
   framesToTimecode,
-  exportVideo,
   type InitialTrackConfig,
   type TimelineRef,
 } from '@elah/editor'
@@ -104,7 +103,12 @@ export default function App() {
     setIsExporting(true)
     setExportProgress(0)
     try {
-      const blob = await exportVideo(project, {
+      // Dynamically import export to keep it out of main bundle
+      const { lazyExportVideo } = await import(
+        /* webpackChunkName: "editor-export" */
+        '@elah/editor'
+      )
+      const blob = await lazyExportVideo(project, {
         videoBitrate: 8_000_000,
         onProgress: ({ frame, totalFrames }) => {
           setExportProgress(Math.round((frame / totalFrames) * 100))
