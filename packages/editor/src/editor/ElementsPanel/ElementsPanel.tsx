@@ -1,8 +1,5 @@
 import { useCallback, type CSSProperties, type DragEvent } from 'react'
-import {
-  ELEMENT_DRAG_MIME,
-  type DragElementPayload,
-} from '../../timeline/elementDrag'
+import { ELEMENT_DRAG_MIME, type DragElementPayload } from '@elah/timeline'
 
 export interface ElementsPanelProps {
   style?: CSSProperties
@@ -93,3 +90,4 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
     </div>
   )
 }
+

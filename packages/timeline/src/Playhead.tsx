@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { usePlaybackStore } from '../core/stores/playback.store'
+import { usePlaybackStore } from '@elah/core'
 
 interface PlayheadProps {
   zoom: number
@@ -149,3 +149,5 @@ export function Playhead({
     </div>
   )
 }
+
+

@@ -1,17 +1,17 @@
 import { memo, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { Clip } from '../core/types'
+import type { Clip } from '@elah/core'
 import { useTimeline } from './engine-context'
-import { useSelectionStore } from '../core/stores/selection.store'
-import { usePlaybackStore } from '../core/stores/playback.store'
+import { useSelectionStore } from '@elah/core'
+import { usePlaybackStore } from '@elah/core'
 import {
   buildSnapPoints,
   DEFAULT_OVERLAP_TOLERANCE,
   resolveOverlapEdgeSnap,
   snapFrame,
-} from '../core/utils/snap'
-import { useTracksStore } from '../core/stores/tracks.store'
-import { useMediaLibraryStore } from '../core/assets/store'
+} from '@elah/core'
+import { useTracksStore } from '@elah/core'
+import { useMediaLibraryStore } from '@elah/core'
 
 const CLIP_STYLES: Record<
   string,
@@ -563,3 +563,5 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
     </div>
   )
 })
+
+

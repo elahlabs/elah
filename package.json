@@ -13,5 +13,8 @@
   },
   "devDependencies": {
     "rollup-plugin-visualizer": "^7.0.1"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.17.0"
   }
 }

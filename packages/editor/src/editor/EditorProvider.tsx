@@ -1,12 +1,15 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
-import type { InitialTrackConfig } from '../core/types'
-import { TimelineEngine } from '../core/editor/TimelineEngine'
-import { PlaybackEngine } from '../core/playback/PlaybackEngine'
-import { useTracksStore } from '../core/stores/tracks.store'
-import { useTransitionsStore } from '../core/stores/transitions.store'
-import { usePlaybackStore } from '../core/stores/playback.store'
-import { EditorContext } from '../core/editor-context'
-import { installTraceGlobal, trace } from '../core/debug/trace'
+import type { InitialTrackConfig } from '@elah/core'
+import {
+  TimelineEngine,
+  PlaybackEngine,
+  useTracksStore,
+  usePlaybackStore,
+  useTransitionsStore,
+  EditorContext,
+  installTraceGlobal,
+  trace,
+} from '@elah/core'
 
 export interface EditorProviderProps {
   fps: number
@@ -138,3 +141,5 @@ export function EditorProvider({
     </EditorContext.Provider>
   )
 }
+
+

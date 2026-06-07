@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { framesToTimecode } from '../core/utils/frames'
+import { framesToTimecode } from '@elah/core'
 
 interface RulerProps {
   fps: number
@@ -109,3 +109,5 @@ export const Ruler = memo(function Ruler({
     </div>
   )
 })
+
+

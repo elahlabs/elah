@@ -8,18 +8,20 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import type { Transform } from '../../core/types'
-import type { ActiveTextClip } from '../../core/resolver/scene'
-import { computeContainViewport } from '../../core/renderer/gpu/viewport'
+import type {
+  Transform,
+  ActiveTextClip,
+  TextLayout,
+} from '@elah/core'
 import {
   computeTextLayout,
+  computeContainViewport,
+  useTimelineEngine,
+  useSelectionStore,
+  usePlaybackStore,
   SIDE_MARGIN,
-  type TextLayout,
-} from '../../core/renderer/gpu/layers/textLayout'
-import { useTimelineEngine } from '../../core/editor-context'
+} from '@elah/core'
 import { useResolvedScene } from '../useResolvedScene'
-import { useSelectionStore } from '../../core/stores/selection.store'
-import { usePlaybackStore } from '../../core/stores/playback.store'
 
 /**
  * `<TextOverlay>` — the interactive editing surface for text clips.
@@ -393,3 +395,5 @@ const CORNERS = [
   { key: 'sw', pos: { left: -5, bottom: -5 }, cursor: 'nesw-resize' as const },
   { key: 'se', pos: { right: -5, bottom: -5 }, cursor: 'nwse-resize' as const },
 ] satisfies ReadonlyArray<{ key: string; pos: CSSProperties; cursor: CSSProperties['cursor'] }>
+
+

@@ -7,18 +7,17 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import type { Transform } from '../../core/types'
-import type { ActiveImageClip, ActiveVideoClip } from '../../core/resolver/scene'
-import { computeContainViewport } from '../../core/renderer/gpu/viewport'
+import type { Transform, ActiveImageClip, ActiveVideoClip } from '@elah/core'
 import {
+  useTimelineEngine,
+  useSelectionStore,
+  usePlaybackStore,
+  useMediaLibraryStore,
   resolveDrawRect,
   transformFromContainRect,
-} from '../../core/renderer/gpu/layers/drawRect'
-import { useTimelineEngine } from '../../core/editor-context'
+  computeContainViewport,
+} from '@elah/core'
 import { useResolvedScene } from '../useResolvedScene'
-import { useSelectionStore } from '../../core/stores/selection.store'
-import { usePlaybackStore } from '../../core/stores/playback.store'
-import { useMediaLibraryStore } from '../../core/assets/store'
 
 /**
  * `<MediaTransformOverlay>` — the interactive transform surface for video and
@@ -339,3 +338,4 @@ const CORNERS = [
   { key: 'sw', pos: { left: -5, bottom: -5 }, cursor: 'nesw-resize' as const },
   { key: 'se', pos: { right: -5, bottom: -5 }, cursor: 'nwse-resize' as const },
 ] satisfies ReadonlyArray<{ key: string; pos: CSSProperties; cursor: CSSProperties['cursor'] }>
+

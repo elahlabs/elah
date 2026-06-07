@@ -1,7 +1,7 @@
 import { memo, useState, useCallback } from 'react'
-import type { Clip, Transition as TransitionData, TransitionKind } from '../core/types'
+import type { Clip, Transition as TransitionData, TransitionKind } from '@elah/core'
 import { useTimeline } from './engine-context'
-import { useTransitionsStore } from '../core/stores/transitions.store'
+import { useTransitionsStore } from '@elah/core'
 import { TransitionPicker } from './TransitionPicker'
 
 interface TransitionChipProps {
@@ -164,3 +164,5 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
     </>
   )
 })
+
+

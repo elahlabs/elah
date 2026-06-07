@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { TransitionKind, Transition } from '../core/types'
+import type { TransitionKind, Transition } from '@elah/core'
 
 interface TransitionOption {
   kind: TransitionKind
@@ -253,3 +253,5 @@ export function TransitionPicker({
     </div>
   )
 }
+
+
