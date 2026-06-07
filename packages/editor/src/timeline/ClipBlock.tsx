@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { memo, useCallback, useRef } from 'react'
 import type { Clip } from '../core/types'
 import { useTimeline } from './engine-context'
 import { useSelectionStore } from '../core/stores/selection.store'
@@ -56,7 +56,7 @@ interface ClipBlockProps {
   trackHeight: number
 }
 
-export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
+export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
   const engine = useTimeline()
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
   const selectClip = useSelectionStore((s) => s.selectClip)
@@ -490,4 +490,4 @@ export function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
       )}
     </div>
   )
-}
+})

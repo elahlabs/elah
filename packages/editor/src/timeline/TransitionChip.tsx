@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { memo, useState, useCallback } from 'react'
 import type { Clip, Transition as TransitionData, TransitionKind } from '../core/types'
 import { useTimeline } from './engine-context'
 import { useTransitionsStore } from '../core/stores/transitions.store'
@@ -20,7 +20,7 @@ const DIAMOND = 16 // icon size
  * Always visible as a faint vertical rule — brightens + shows a diamond on hover.
  * When a transition exists the diamond is filled and the line is colored.
  */
-export function TransitionChip({ fromClip, toClip, zoom, trackHeight, fps }: TransitionChipProps) {
+export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, zoom, trackHeight, fps }: TransitionChipProps) {
   const engine = useTimeline()
   const [pickerPos, setPickerPos] = useState<{ x: number; y: number } | null>(null)
   const pickerOpen = pickerPos !== null
@@ -163,4 +163,4 @@ export function TransitionChip({ fromClip, toClip, zoom, trackHeight, fps }: Tra
       )}
     </>
   )
-}
+})
