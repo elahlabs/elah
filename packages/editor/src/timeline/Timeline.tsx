@@ -244,6 +244,7 @@ export const Timeline = memo(
               track={track}
               totalFrames={Math.max(totalFrames, fps * 10)}
               zoom={zoom}
+              fps={fps}
             />
           ))}
 

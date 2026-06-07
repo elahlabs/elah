@@ -193,13 +193,15 @@ export function resolveTimeline(frame: number, project: Project): Scene {
   }
 
   // --- Transition pass -------------------------------------------------------
-  // For each transition whose window contains `frame`, synthesize overlap:
-  // both the outgoing (fromClip) and incoming (toClip) are rendered simultaneously
-  // with opposing opacities. The normal clip loop above may have added one of them
-  // already; we modify its opacity in-place and push the other if absent.
+  // For each transition whose window contains `frame`:
+  //   - fromClip.opacity = 0  → GPU skips it; TransitionOverlay shows a frozen
+  //     snapshot fading away via CSS (preview) or globalAlpha=1-t (export).
+  //   - toClip.opacity = 1    → GPU renders it fully; revealed as overlay fades.
   //
-  // For fade: this is sufficient — both renderers consume opacity automatically.
-  // For slide/wipe (future): scene.transitions carries `kind + t` for TransitionOverlay.
+  // This eliminates decoder contention (only one clip decoded per frame) and
+  // makes slide/wipe trivial (CSS transform on the snapshot div).
+  // scene.transitions[] carries {t, kind, direction, fromClipId, toClipId} for
+  // both TransitionOverlay (preview) and the export snapshot pass.
 
   for (const transition of project.transitions) {
     if (frame < transition.startFrame) continue
@@ -232,14 +234,10 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       ),
     )
 
-    // Correct crossfade compositing (source-over):
-    //   result = t * toColor + (1-t) * fromColor
-    // Draw fromClip at full opacity as the base layer, then toClip at opacity=t
-    // on top. source-over in both WebGL and canvas-2D then yields the exact
-    // formula above — no black-bleed or brightness dip at the transition midpoint.
-    // Setting fromOpacity = (1-t) would give t*to + (1-t)²*from (wrong: dark midpoint).
-    const fromOpacity = fromClip.opacity ?? 1   // base layer — always full
-    const toOpacity = (toClip.opacity ?? 1) * t // fades in on top
+    // fromClip: opacity=0 so GPU does not draw it (TransitionOverlay/export snapshot shows it).
+    // toClip: opacity=1 so GPU renders it fully (revealed as the overlay fades away).
+    const fromOpacity = 0
+    const toOpacity = 1
 
     const toTrackMuted = project.tracks.find((tr) => tr.id === toClip.trackId)?.muted ?? false
 
@@ -323,12 +321,13 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       }
     }
 
-    // Emit the active transition descriptor so TransitionOverlay (slide/wipe) can read it.
     scene.transitions.push({
       id: transition.id,
       kind: transition.kind,
       t,
       direction: transition.direction,
+      fromClipId: transition.fromClipId,
+      toClipId: transition.toClipId,
     })
   }
 

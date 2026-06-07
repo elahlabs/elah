@@ -229,6 +229,13 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   const logEvery = Math.max(1, Math.floor(totalFrames / 10))
   let lastFrameTime = loopStart
 
+  // Holds a frozen bitmap of each outgoing clip for the duration of its
+  // transition window. Drawn on top at globalAlpha=1-t to produce a crossfade
+  // while the GPU only decodes the incoming clip (same logic as TransitionOverlay
+  // in preview, mirroring it for export parity).
+  type SnapshotEntry = { source: CanvasImageSource & { width: number; height: number }; owned: boolean }
+  const transitionSnapshots = new Map<string, SnapshotEntry>()
+
   for (let frame = 0; frame < totalFrames; frame++) {
     if (frame === 0 || frame % logEvery === 0 || frame === totalFrames - 1) {
       const now = performance.now()
@@ -243,8 +250,37 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     }
 
     const scene = resolveTimeline(frame, project)
-    await renderFrame(ctx2d, scene, videoSinks, imageBitmaps, width, height, fps, frame)
+
+    // Capture a snapshot of the outgoing clip on the first frame of each transition.
+    for (const tr of scene.transitions) {
+      if (transitionSnapshots.has(tr.id)) continue
+      const fromVideo = scene.videos.find(v => v.id === tr.fromClipId)
+      const fromImage = scene.images.find(i => i.id === tr.fromClipId)
+      if (fromVideo) {
+        const sink = videoSinks.get(fromVideo.src)
+        const sourceTimeSec = (fromVideo.sourceFrame + 0.5) / fps
+        const wrapped = sink ? await sink.getCanvas(sourceTimeSec) : null
+        if (wrapped) {
+          const bmp = await createImageBitmap(wrapped.canvas)
+          transitionSnapshots.set(tr.id, { source: bmp, owned: true })
+        }
+      } else if (fromImage) {
+        const bmp = imageBitmaps.get(fromImage.src)
+        if (bmp) transitionSnapshots.set(tr.id, { source: bmp, owned: false })
+      }
+    }
+
+    await renderFrame(ctx2d, scene, videoSinks, imageBitmaps, transitionSnapshots, width, height, fps, frame)
     await canvasSource.add(frame / fps, 1 / fps)
+
+    // Release snapshots whose transition window has closed.
+    const activeIds = new Set(scene.transitions.map(tr => tr.id))
+    for (const [id, snap] of transitionSnapshots) {
+      if (!activeIds.has(id)) {
+        if (snap.owned) (snap.source as ImageBitmap).close()
+        transitionSnapshots.delete(id)
+      }
+    }
 
     const msg: WorkerOutMessage = { type: 'progress', frame, totalFrames }
     ;(self as unknown as Worker).postMessage(msg)
@@ -308,6 +344,7 @@ async function renderFrame(
   scene: ReturnType<typeof resolveTimeline>,
   videoSinks: Map<string, mb.CanvasSink>,
   imageBitmaps: Map<string, ImageBitmap>,
+  transitionSnapshots: Map<string, { source: CanvasImageSource & { width: number; height: number }; owned: boolean }>,
   stageW: number,
   stageH: number,
   fps: number,
@@ -396,6 +433,31 @@ async function renderFrame(
         })
       }
       drawText(ctx, entry.item, stageW, stageH)
+    }
+
+    ctx.restore()
+  }
+
+  // Transition snapshot pass — mirrors TransitionOverlay CSS logic in the 2D canvas API.
+  for (const tr of scene.transitions) {
+    const snap = transitionSnapshots.get(tr.id)
+    if (!snap) continue
+    ctx.save()
+
+    if (tr.kind === 'slide') {
+      const sign = tr.direction === 'left' ? -1 : 1
+      ctx.translate(sign * tr.t * stageW, 0)
+      drawMedia(ctx, snap.source, undefined, stageW, stageH)
+    } else if (tr.kind === 'wipe') {
+      // Reveal incoming clip from the right by shrinking the snapshot's visible area
+      ctx.beginPath()
+      ctx.rect(0, 0, stageW * (1 - tr.t), stageH)
+      ctx.clip()
+      drawMedia(ctx, snap.source, undefined, stageW, stageH)
+    } else {
+      // fade (default)
+      ctx.globalAlpha = 1 - tr.t
+      drawMedia(ctx, snap.source, undefined, stageW, stageH)
     }
 
     ctx.restore()

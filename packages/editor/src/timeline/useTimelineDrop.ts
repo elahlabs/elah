@@ -10,11 +10,60 @@ import { useMediaLibraryStore } from '../core/assets/store'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { usePlaybackStore } from '../core/stores/playback.store'
 import { buildSnapPoints, snapFrame } from '../core/utils/snap'
-import { secondsToFrames } from '../core/utils/frames'
+import { secondsToFrames, clipsOverlap } from '../core/utils/frames'
 import { useTimeline } from './engine-context'
 
 /** Default on-timeline length for a freshly dropped text block, in seconds. */
 const DEFAULT_TEXT_DURATION_SEC = 3
+
+/**
+ * Resolve a drop position so the new clip never overlaps an existing one.
+ *
+ * - If there's no overlap at desiredStart → returns unchanged.
+ * - If the drop lands in a gap that's too small for the clip → trims to fill
+ *   exactly that gap (bug 4).
+ * - If the drop lands on top of an existing clip → pushes start to just after
+ *   the last overlapping clip, trimming if the next clip immediately follows
+ *   (bugs 2 & 3).
+ */
+function resolveDropPosition(
+  existingClips: { startFrame: number; durationFrames: number }[],
+  desiredStart: number,
+  durationFrames: number,
+): { startFrame: number; durationFrames: number } {
+  const sorted = [...existingClips].sort((a, b) => a.startFrame - b.startFrame)
+
+  const overlapping = sorted.filter((c) =>
+    clipsOverlap(c, { startFrame: desiredStart, durationFrames }),
+  )
+
+  if (overlapping.length === 0) return { startFrame: desiredStart, durationFrames }
+
+  const firstOverlap = overlapping[0]
+
+  // desiredStart is in a gap but the clip extends into the next clip → trim to gap
+  if (desiredStart < firstOverlap.startFrame) {
+    const prevEnd = Math.max(
+      0,
+      ...sorted
+        .filter((c) => c.startFrame + c.durationFrames <= desiredStart)
+        .map((c) => c.startFrame + c.durationFrames),
+    )
+    const gapSize = firstOverlap.startFrame - prevEnd
+    return { startFrame: prevEnd, durationFrames: Math.min(durationFrames, gapSize) }
+  }
+
+  // desiredStart is inside an existing clip → push to after all overlapping clips
+  const lastOverlapEnd = Math.max(
+    ...overlapping.map((c) => c.startFrame + c.durationFrames),
+  )
+  const nextClip = sorted.find((c) => c.startFrame >= lastOverlapEnd)
+  if (nextClip) {
+    const available = nextClip.startFrame - lastOverlapEnd
+    return { startFrame: lastOverlapEnd, durationFrames: Math.min(durationFrames, available) }
+  }
+  return { startFrame: lastOverlapEnd, durationFrames }
+}
 
 /** Map MediaAsset kind to ClipType (identical for video/audio/image). */
 function mediaKindToClipType(kind: MediaKind): ClipType {
@@ -91,14 +140,21 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
           : fps * 5,
       )
 
+      const existingClips = useTracksStore.getState().clips[trackId] ?? []
+      const { startFrame, durationFrames: resolvedDuration } = resolveDropPosition(
+        existingClips,
+        startFrameAt(e.clientX),
+        durationFrames,
+      )
+
       // MediaKind is 'video' | 'audio' | 'image' — never 'text', so `src` is
       // always the right shape. The assertion below collapses the union for TS.
       engine.addClip({
         trackId,
         type: mediaKindToClipType(asset.kind) as 'video' | 'audio' | 'image',
         name: asset.name,
-        startFrame: startFrameAt(e.clientX),
-        durationFrames,
+        startFrame,
+        durationFrames: resolvedDuration,
         src: asset.src,
         assetId: asset.id,
       })
@@ -120,12 +176,15 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
       const fps = engine.getProject().fps
       const existing = useTracksStore.getState().clips[trackId] ?? []
       const n = existing.length + 1
+      const textDuration = Math.max(1, fps * DEFAULT_TEXT_DURATION_SEC)
+      const { startFrame: textStart, durationFrames: textDurationResolved } =
+        resolveDropPosition(existing, startFrameAt(e.clientX), textDuration)
       engine.addClip({
         trackId,
         type: 'text',
         name: `Text ${n}`,
-        startFrame: startFrameAt(e.clientX),
-        durationFrames: Math.max(1, fps * DEFAULT_TEXT_DURATION_SEC),
+        startFrame: textStart,
+        durationFrames: textDurationResolved,
         text: {
           content: `Text ${n}`,
           fontSize: 200,

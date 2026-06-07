@@ -10,6 +10,7 @@ interface TrackRowProps {
   track: Track
   totalFrames: number
   zoom: number
+  fps: number
 }
 
 /**
@@ -20,6 +21,7 @@ export const TrackRow = memo(function TrackRow({
   track,
   totalFrames,
   zoom,
+  fps,
 }: TrackRowProps) {
   // Selector returns undefined (stable) when no clips exist.
   // ?? [] is intentionally outside the selector — returning a new [] inside
@@ -130,6 +132,7 @@ export const TrackRow = memo(function TrackRow({
             toClip={to}
             zoom={zoom}
             trackHeight={track.height}
+            fps={fps}
           />
         ))}
       </div>

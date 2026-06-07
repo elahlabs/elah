@@ -219,11 +219,11 @@ export function TextClipProperties() {
         <FieldRow label="Text">
           <textarea
             value={effective.content ?? ''}
-            onChange={(e) => setLocal((p) => ({ ...p, content: e.target.value }))}
-            onBlur={() =>
-              effective.content !== clip.content &&
-              commit({ content: effective.content })
-            }
+            onChange={(e) => {
+              setLocal((p) => ({ ...p, content: e.target.value }))
+              engine.previewClip(clip.id, clip.trackId, { content: e.target.value })
+            }}
+            onBlur={() => engine.commitInteraction('Edit text content')}
             rows={2}
             style={{
               ...inputStyle,
