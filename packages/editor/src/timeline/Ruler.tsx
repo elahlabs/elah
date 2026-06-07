@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { framesToTimecode } from '../core/utils/frames'
 
 interface RulerProps {
@@ -16,7 +16,7 @@ interface RulerProps {
  * Timeline ruler showing frame/timecode markers.
  * Tick density adapts to zoom level so labels never overlap.
  */
-export function Ruler({
+export const Ruler = memo(function Ruler({
   fps,
   totalFrames,
   zoom,
@@ -108,4 +108,4 @@ export function Ruler({
       ))}
     </div>
   )
-}
+})

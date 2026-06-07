@@ -189,14 +189,79 @@ function useGpuDebugStackTop(
   return top
 }
 
+/** Transport bar — the only part that subscribes to currentFrame.
+ *  Isolated here so the rest of GpuPreview never re-renders during playback. */
+function TransportBar() {
+  const playback = usePlaybackEngine()
+  const isPlaying = usePlaybackStore((s) => s.isPlaying)
+  const currentFrame = usePlaybackStore((s) => s.currentFrame)
+  const totalFrames = useTracksStore((s) => s.totalFrames)
+
+  const togglePlayPause = () => {
+    if (playback.isPlaying) playback.pause()
+    else playback.play()
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '8px 14px',
+        borderBottom: `1px solid ${theme.borderSubtle}`,
+        flexShrink: 0,
+        background: 'rgba(13, 16, 23, 0.6)',
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          color: theme.textMuted,
+          fontFamily: theme.fontSans,
+        }}
+      >
+        GPU PREVIEW
+      </span>
+      <button
+        type="button"
+        onClick={togglePlayPause}
+        style={{
+          padding: '4px 12px',
+          fontSize: 11,
+          fontFamily: theme.fontSans,
+          background: isPlaying ? 'rgba(34, 197, 94, 0.12)' : theme.bgElevated,
+          color: isPlaying ? theme.success : theme.textSecondary,
+          border: `1px solid ${isPlaying ? theme.success : theme.border}`,
+          borderRadius: 6,
+          cursor: 'pointer',
+        }}
+      >
+        {isPlaying ? 'Pause' : 'Play'}
+      </button>
+      <input
+        type="range"
+        className="elah-range"
+        min={0}
+        max={Math.max(totalFrames - 1, 0)}
+        value={currentFrame}
+        onChange={(e) => playback.seek(Number(e.target.value))}
+        style={{ flex: 1, minWidth: 120 }}
+      />
+      <span style={{ fontSize: 10, color: theme.textMuted, fontFamily: theme.fontMono }}>
+        f {currentFrame}
+      </span>
+    </div>
+  )
+}
+
 export function GpuPreview({ debugMode = false, showSceneResolver = false, style }: GpuPreviewProps) {
   const previewInnerRef = useRef<HTMLDivElement>(null)
   const previewRef = useRef<PreviewHandle>(null)
   const demuxerFactoryRef = useRef(createPlaygroundDemuxerFactory())
   const playback = usePlaybackEngine()
-  const isPlaying = usePlaybackStore((s) => s.isPlaying)
-  const currentFrame = usePlaybackStore((s) => s.currentFrame)
-  const totalFrames = useTracksStore((s) => s.totalFrames)
 
   const sceneResolverTop = useGpuDebugStackTop(
     previewInnerRef,
@@ -252,15 +317,6 @@ export function GpuPreview({ debugMode = false, showSceneResolver = false, style
     }
   }, [playback])
 
-  const togglePlayPause = () => {
-    if (playback.isPlaying) playback.pause()
-    else playback.play()
-  }
-
-  const seek = (frame: number) => {
-    playback.seek(frame)
-  }
-
   return (
     <div
       style={{
@@ -273,57 +329,7 @@ export function GpuPreview({ debugMode = false, showSceneResolver = false, style
         ...style,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '8px 14px',
-          borderBottom: `1px solid ${theme.borderSubtle}`,
-          flexShrink: 0,
-          background: 'rgba(13, 16, 23, 0.6)',
-        }}
-      >
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            color: theme.textMuted,
-            fontFamily: theme.fontSans,
-          }}
-        >
-          GPU PREVIEW
-        </span>
-        <button
-          type="button"
-          onClick={togglePlayPause}
-          style={{
-            padding: '4px 12px',
-            fontSize: 11,
-            fontFamily: theme.fontSans,
-            background: isPlaying ? 'rgba(34, 197, 94, 0.12)' : theme.bgElevated,
-            color: isPlaying ? theme.success : theme.textSecondary,
-            border: `1px solid ${isPlaying ? theme.success : theme.border}`,
-            borderRadius: 6,
-            cursor: 'pointer',
-          }}
-        >
-          {isPlaying ? 'Pause' : 'Play'}
-        </button>
-        <input
-          type="range"
-          className="elah-range"
-          min={0}
-          max={Math.max(totalFrames - 1, 0)}
-          value={currentFrame}
-          onChange={(e) => seek(Number(e.target.value))}
-          style={{ flex: 1, minWidth: 120 }}
-        />
-        <span style={{ fontSize: 10, color: theme.textMuted, fontFamily: theme.fontMono }}>
-          f {currentFrame}
-        </span>
-      </div>
+      <TransportBar />
 
       <div
         style={{

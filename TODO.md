@@ -154,3 +154,14 @@ Documentation → public APIs → plugin architecture → SDK. The roadmap is ri
 2. **Phase 2** (text desync) — small, high user-visible payoff.
 3. **Phase 4** (transform UI) — leans on the Phase 3 harness.
 4. **Phase 5** (media pipeline), **Phase 6** (transitions), **Phase 7** (UI) — independent, parallelizable.
+
+Hey, 
+Instead of running around on how to do the release, 
+Here is the plan 
+1. Performance audits and build audits 
+2. Developer APIs internalization and clean up 
+3. Landing page, Docs & playground inside a single next.js app with 
+   / , / docs , .playground 
+4. Update the Github to new account elahlabs 
+5. Publish NPM packages 
+6. Create a seperate app to check if the package is working or not
