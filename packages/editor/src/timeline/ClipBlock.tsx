@@ -1,4 +1,5 @@
-import { memo, useCallback, useRef } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Clip } from '../core/types'
 import { useTimeline } from './engine-context'
 import { useSelectionStore } from '../core/stores/selection.store'
@@ -68,6 +69,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
 
   const blockRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   const left = clip.startFrame * zoom
   const width = Math.max(clip.durationFrames * zoom, 4)
@@ -267,10 +269,29 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
     [clip.id, clip.trackId, engine, clearSelection],
   )
 
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      selectClip(clip.id)
+      setCtxMenu({ x: e.clientX, y: e.clientY })
+    },
+    [clip.id, selectClip],
+  )
+
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+
+  const handleCtxDelete = useCallback(() => {
+    engine.removeClip(clip.id, clip.trackId)
+    clearSelection()
+    setCtxMenu(null)
+  }, [clip.id, clip.trackId, engine, clearSelection])
+
   return (
     <div
       ref={blockRef}
       onMouseDown={handleBodyMouseDown}
+      onContextMenu={handleContextMenu}
       style={{
         position: 'absolute',
         top: 5,
@@ -487,6 +508,57 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
         >
           ×
         </button>
+      )}
+
+      {ctxMenu && createPortal(
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            onMouseDown={closeCtxMenu}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: ctxMenu.y,
+              left: ctxMenu.x,
+              zIndex: 9999,
+              background: '#1E2433',
+              border: '1px solid #2D3548',
+              borderRadius: 6,
+              padding: '4px 0',
+              minWidth: 140,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              fontFamily: 'sans-serif',
+            }}
+          >
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={handleCtxDelete}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '7px 14px',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                color: '#FF6B6B',
+                fontSize: 13,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,107,107,0.12)'
+              }}
+              onMouseLeave={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </>,
+        document.body,
       )}
     </div>
   )

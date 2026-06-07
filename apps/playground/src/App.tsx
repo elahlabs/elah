@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import './editor-ui.css'
-import MediaLimitsLab from './MediaLimitsLab'
 import { TextClipProperties } from './TextClipProperties'
 import { createPlaygroundDemuxerFactory } from './createPlaygroundDemuxerFactory'
 import { btnDisabled, theme } from './theme'
@@ -21,7 +20,6 @@ import {
 } from '@elah/editor'
 
 const FPS = 30
-const SHOW_LAB = new URLSearchParams(window.location.search).has('lab')
 
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
@@ -365,7 +363,6 @@ export default function App() {
 
   return (
     <>
-      {SHOW_LAB && <MediaLimitsLab />}
       <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
         <div
           className="elah-root"

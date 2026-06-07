@@ -8,6 +8,8 @@ import {
 } from 'react'
 import type { TimelineEngine } from '../core/editor/TimelineEngine'
 import type { PlaybackEngine } from '../core/playback/PlaybackEngine'
+import type { Clip } from '../core/types'
+import type { CreateClipOptions } from '../core/elements/base'
 import { useTracksStore } from '../core/stores/tracks.store'
 import { usePlaybackStore } from '../core/stores/playback.store'
 import { useSelectionStore } from '../core/stores/selection.store'
@@ -30,6 +32,38 @@ export interface TimelineRef {
 
 /** Width of the track-label sidebar; the clip lanes begin after it. */
 const SIDEBAR_WIDTH = 160
+
+function buildPasteOptions(clip: Clip, startFrame: number): CreateClipOptions {
+  const base = {
+    trackId: clip.trackId,
+    name: clip.name,
+    startFrame,
+    durationFrames: clip.durationFrames,
+    volume: clip.volume,
+    opacity: clip.opacity,
+    transform: clip.transform,
+  }
+  if (clip.type === 'text') {
+    return {
+      ...base,
+      type: 'text',
+      text: {
+        content: clip.content ?? '',
+        fontSize: clip.fontSize,
+        color: clip.color,
+        fontFamily: clip.fontFamily,
+        fontWeight: clip.fontWeight,
+        textAlign: clip.textAlign,
+      },
+    }
+  }
+  return {
+    ...base,
+    type: clip.type as 'video' | 'audio' | 'image',
+    src: clip.src ?? '',
+    assetId: clip.assetId,
+  } as CreateClipOptions
+}
 
 export interface TimelineProps {
   fps?: number
@@ -63,6 +97,7 @@ export const Timeline = memo(
 
     const scrollRef = useRef<HTMLDivElement>(null)
     const rulerWrapRef = useRef<HTMLDivElement>(null)
+    const clipboardRef = useRef<Clip[]>([])
 
     // Fit the entire timeline into the visible lane width. Falls back to a
     // 10-second baseline (matching the ruler) when the timeline is empty.
@@ -167,6 +202,45 @@ export const Timeline = memo(
             }
           }, 'Delete clip')
           useSelectionStore.getState().clearSelection()
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+          const selected = useSelectionStore.getState().selectedClipIds
+          if (selected.size === 0) return
+          e.preventDefault()
+          const snaps: Clip[] = []
+          for (const clipId of selected) {
+            const found = engine.findClip(clipId)
+            if (found) snaps.push({ ...found.clip })
+          }
+          clipboardRef.current = snaps
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !e.shiftKey) {
+          const clips = clipboardRef.current
+          if (clips.length === 0) return
+          e.preventDefault()
+          // Anchor paste right after the last copied clip ends,
+          // preserving relative offsets for multi-clip selections.
+          const minStart = Math.min(...clips.map((c) => c.startFrame))
+          const pasteFrame = Math.max(...clips.map((c) => c.startFrame + c.durationFrames))
+          const newIds: string[] = []
+          engine.batch(() => {
+            for (const src of clips) {
+              const offset = src.startFrame - minStart
+              const options = buildPasteOptions(src, pasteFrame + offset)
+              const newClip = engine.addClip(options)
+              // Preserve trim info the factory doesn't carry through
+              if (src.sourceStartFrame !== 0 || src.sourceDurationFrames !== src.durationFrames) {
+                engine.updateClip(newClip.id, newClip.trackId, {
+                  sourceStartFrame: src.sourceStartFrame,
+                  sourceDurationFrames: src.sourceDurationFrames,
+                })
+              }
+              newIds.push(newClip.id)
+            }
+          }, 'Paste clip')
+          useSelectionStore.getState().selectClips(newIds)
         }
 
         if (e.code === 'ArrowRight' && !e.ctrlKey && !e.metaKey && !e.altKey) {
