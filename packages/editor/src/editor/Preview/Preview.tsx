@@ -11,6 +11,7 @@ import { useTimelineEngine, usePlaybackEngine } from '../../core/editor-context'
 import type { DemuxerFactory } from '../../core/media/video/demuxer/MediabunnyDemuxer'
 import { AudioPlaybackController } from '../../core/media/audio/AudioPlaybackController'
 import { TextOverlay } from './TextOverlay'
+import { MediaTransformOverlay } from './MediaTransformOverlay'
 import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
 import { StageBorder } from './StageBorder'
 
@@ -166,10 +167,14 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       <StageBorder />
 
       {/* Transition snapshot layer — sits above the WebGL canvas (zIndex 1),
-          below TextOverlay (zIndex 2). Driven imperatively from the RAF loop. */}
+          below the interaction overlays. Driven imperatively from the RAF loop. */}
       <TransitionOverlay ref={transitionOverlayRef} />
 
-      {/* Interactive text editing layer, painted above the WebGL canvas. */}
+      {/* Interactive transform layer for video/image clips (zIndex 2). Below
+          TextOverlay so text editing wins when they overlap. */}
+      <MediaTransformOverlay />
+
+      {/* Interactive text editing layer, painted above the WebGL canvas (zIndex 3). */}
       <TextOverlay />
     </div>
   )

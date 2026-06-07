@@ -137,6 +137,14 @@ export function TextOverlay() {
     })
   }, [scene.texts, stage, fit, scale, getMeasurer])
 
+  // True when a *text* clip is the current selection. The deselect backdrop is
+  // gated on this (not on selectedClipIds.size) so it doesn't stack with the
+  // MediaTransformOverlay's backdrop when a video/image clip is selected.
+  const ownsSelection = useMemo(
+    () => items.some((it) => selectedClipIds.has(it.clip.id)),
+    [items, selectedClipIds],
+  )
+
   const handlePointerMove = useCallback(
     (e: ReactPointerEvent) => {
       const g = gestureRef.current
@@ -258,9 +266,9 @@ export function TextOverlay() {
       // something is active) opt back into pointer events.
       // zIndex keeps the overlay above the imperatively-appended WebGL canvas
       // regardless of DOM insertion order.
-      style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', overflow: 'hidden' }}
+      style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', overflow: 'hidden' }}
     >
-      {!isPlaying && (selectedClipIds.size > 0 || editingId) && (
+      {!isPlaying && (ownsSelection || editingId) && (
         <div
           style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}
           onPointerDown={() => {
