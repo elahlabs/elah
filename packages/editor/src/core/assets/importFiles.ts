@@ -24,9 +24,37 @@ interface ProbedMetadata {
   durationSec: number
   width?: number
   height?: number
+  hasAudio?: boolean
 }
 
 const DEFAULT_THUMBNAIL_MAX_DIM = 240
+
+/** Number of frames sampled across a video to fake a filmstrip in the timeline. */
+const THUMBNAIL_STRIP_COUNT = 4
+/** Max width/height for filmstrip tiles — small; they're decorative. */
+const THUMBNAIL_STRIP_MAX_DIM = 160
+/** Number of normalized peaks stored per audio source. */
+const WAVEFORM_PEAK_COUNT = 256
+
+/**
+ * Best-effort, synchronous-at-metadata check for an audio track on a video
+ * element. No single API is reliable across browsers, so we layer them and
+ * gracefully fall back to `false` (which just means "no audio dialog"). The
+ * async audio decode in `analyzeAudio()` later corrects this when it can.
+ */
+function detectHasAudio(el: HTMLVideoElement): boolean {
+  const probe = el as unknown as {
+    audioTracks?: { length: number }
+    mozHasAudio?: boolean
+    webkitAudioDecodedByteCount?: number
+  }
+  if (probe.audioTracks) return probe.audioTracks.length > 0
+  if (typeof probe.mozHasAudio === 'boolean') return probe.mozHasAudio
+  if (typeof probe.webkitAudioDecodedByteCount === 'number') {
+    return probe.webkitAudioDecodedByteCount > 0
+  }
+  return false
+}
 
 function dedupeKey(file: { name: string; size: number; lastModified: number }): string {
   return `${file.name}|${file.size}|${file.lastModified}`
@@ -77,6 +105,7 @@ export async function probeVideo(src: string): Promise<ProbedMetadata> {
     durationSec: el.duration,
     width: el.videoWidth,
     height: el.videoHeight,
+    hasAudio: detectHasAudio(el),
   }
 }
 
@@ -199,6 +228,53 @@ export async function makeVideoThumbnail(
   })
 }
 
+/**
+ * Decode a small set of evenly-spaced frames from a video into JPEG data URLs.
+ *
+ * Uses a single plain `HTMLVideoElement` + seek (no coupling to the playback
+ * decode stack) — these are decorative timeline tiles, not frame-accurate.
+ * Seeks run sequentially because one element can only resolve one seek at a time.
+ */
+export async function makeVideoThumbnailStrip(
+  src: string,
+  count: number,
+  maxDim: number,
+): Promise<string[]> {
+  const el = await loadMediaElement<HTMLVideoElement>('video', src, () => {})
+  const duration = Number.isFinite(el.duration) ? el.duration : 0
+
+  const seekTo = (time: number): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const cleanup = () => {
+        el.removeEventListener('seeked', onSeeked)
+        el.removeEventListener('error', onError)
+      }
+      const onSeeked = () => {
+        cleanup()
+        try {
+          resolve(drawToThumbnail(el, el.videoWidth, el.videoHeight, maxDim))
+        } catch (err) {
+          reject(err)
+        }
+      }
+      const onError = () => {
+        cleanup()
+        reject(new Error('Failed to seek video for thumbnail strip'))
+      }
+      el.addEventListener('seeked', onSeeked)
+      el.addEventListener('error', onError)
+      el.currentTime = time
+    })
+
+  const frames: string[] = []
+  for (let i = 0; i < count; i++) {
+    // Sample the middle of each segment so the first tile isn't a black frame.
+    const time = duration > 0 ? ((i + 0.5) / count) * duration : 0
+    frames.push(await seekTo(time))
+  }
+  return frames
+}
+
 export async function makeImageThumbnail(src: string, maxDim: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = document.createElement('img')
@@ -226,28 +302,112 @@ export async function makeImageThumbnail(src: string, maxDim: number): Promise<s
   })
 }
 
-async function generateThumbnail(
-  asset: MediaAsset,
-  maxDim: number,
-): Promise<string | undefined> {
-  switch (asset.kind) {
-    case 'video':
-      return makeVideoThumbnail(asset.src, maxDim)
-    case 'image':
-      return makeImageThumbnail(asset.src, maxDim)
-    case 'audio':
-      return undefined
+/** Lazily-created, shared AudioContext for waveform decoding. */
+let sharedAudioContext: AudioContext | null = null
+function getAudioContext(): AudioContext {
+  if (!sharedAudioContext) {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext
+    sharedAudioContext = new Ctor()
+  }
+  return sharedAudioContext
+}
+
+/**
+ * Decode a source's audio into a small array of normalized (0..1) peaks.
+ *
+ * `decodeAudioData` pulls the audio track straight out of mp4/webm/ogg
+ * containers, so this works for both audio files and videos-with-audio. Returns
+ * `null` when the source has no decodable audio (e.g. a silent/muted video).
+ */
+export async function computeWaveform(src: string): Promise<Float32Array | null> {
+  const res = await fetch(src)
+  const buffer = await res.arrayBuffer()
+  const audioBuffer = await getAudioContext().decodeAudioData(buffer)
+  if (audioBuffer.length === 0) return null
+
+  const channel = audioBuffer.getChannelData(0)
+  const peaks = new Float32Array(WAVEFORM_PEAK_COUNT)
+  const bucketSize = Math.max(1, Math.floor(channel.length / WAVEFORM_PEAK_COUNT))
+
+  let globalMax = 0
+  for (let i = 0; i < WAVEFORM_PEAK_COUNT; i++) {
+    const start = i * bucketSize
+    const end = Math.min(start + bucketSize, channel.length)
+    let max = 0
+    for (let j = start; j < end; j++) {
+      const v = Math.abs(channel[j])
+      if (v > max) max = v
+    }
+    peaks[i] = max
+    if (max > globalMax) globalMax = max
+  }
+
+  if (globalMax > 0) {
+    for (let i = 0; i < peaks.length; i++) peaks[i] /= globalMax
+  }
+  return peaks
+}
+
+/**
+ * Generate thumbnails for an asset: a filmstrip for video (mid-frame doubles as
+ * the panel thumbnail), a single thumbnail for image, nothing for audio.
+ * Updates the store as results arrive.
+ */
+function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
+  if (asset.kind === 'video') {
+    void makeVideoThumbnailStrip(asset.src, THUMBNAIL_STRIP_COUNT, THUMBNAIL_STRIP_MAX_DIM)
+      .then((strip) => {
+        if (strip.length === 0) return
+        useMediaLibraryStore.getState().updateAsset(asset.id, {
+          thumbnailStrip: strip,
+          thumbnailUrl: strip[Math.floor(strip.length / 2)],
+        })
+      })
+      .catch((err) => {
+        console.warn(`[importFiles] Thumbnail strip failed for "${asset.name}":`, err)
+      })
+    return
+  }
+
+  if (asset.kind === 'image') {
+    void makeImageThumbnail(asset.src, maxDim)
+      .then((thumbnailUrl) => {
+        useMediaLibraryStore.getState().updateAsset(asset.id, { thumbnailUrl })
+      })
+      .catch((err) => {
+        console.warn(`[importFiles] Thumbnail failed for "${asset.name}":`, err)
+      })
   }
 }
 
-function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
-  void generateThumbnail(asset, maxDim)
-    .then((thumbnailUrl) => {
-      if (!thumbnailUrl) return
-      useMediaLibraryStore.getState().updateAsset(asset.id, { thumbnailUrl })
+/**
+ * Decode audio for video/audio sources. Sets `waveform` for rendering and
+ * refines `hasAudio` (the import-time probe is best-effort; this is authoritative).
+ */
+function scheduleAudioAnalysis(asset: MediaAsset): void {
+  if (asset.kind !== 'audio' && asset.kind !== 'video') return
+
+  void computeWaveform(asset.src)
+    .then((waveform) => {
+      if (!waveform) {
+        if (asset.kind === 'video') {
+          useMediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
+        }
+        return
+      }
+      useMediaLibraryStore.getState().updateAsset(asset.id, {
+        waveform,
+        ...(asset.kind === 'video' ? { hasAudio: true } : {}),
+      })
     })
-    .catch((err) => {
-      console.warn(`[importFiles] Thumbnail generation failed for "${asset.name}":`, err)
+    .catch(() => {
+      // No decodable audio track (silent/muted video, or unsupported codec).
+      if (asset.kind === 'video') {
+        useMediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
+      }
     })
 }
 
@@ -267,6 +427,7 @@ async function importSingleFile(
     durationSec: metadata.durationSec,
     width: metadata.width,
     height: metadata.height,
+    ...(kind === 'video' ? { hasAudio: metadata.hasAudio ?? false } : {}),
     byteSize: file.size,
     lastModified: file.lastModified,
     addedAt: Date.now(),
@@ -274,6 +435,7 @@ async function importSingleFile(
 
   useMediaLibraryStore.getState().addAsset(asset)
   scheduleThumbnail(asset, thumbnailMaxDim)
+  scheduleAudioAnalysis(asset)
 
   return asset
 }

@@ -3,8 +3,10 @@ import type { ClipType, TrackKind } from '../core/types'
 import {
   MEDIA_DRAG_MIME,
   type DragMediaPayload,
+  type MediaAsset,
   type MediaKind,
 } from '../core/assets/types'
+import { useAudioDropDialogStore } from './audioDropDialog.store'
 import { ELEMENT_DRAG_MIME, type DragElementPayload } from './elementDrag'
 import { useMediaLibraryStore } from '../core/assets/store'
 import { useTracksStore } from '../core/stores/tracks.store'
@@ -116,7 +118,38 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
       e.dataTransfer!.dropEffect = 'copy'
     }
 
-    const dropMediaAsset = (e: DragEvent, track: { kind: TrackKind }) => {
+    /** Find the first audio track, creating one if none exists. */
+    const ensureAudioTrack = (): string => {
+      const existing = useTracksStore
+        .getState()
+        .tracks.find((t) => t.kind === 'audio')
+      return existing ? existing.id : engine.addTrack('audio').id
+    }
+
+    /** Resolve a non-overlapping placement for `desired` on a track. */
+    const resolveOn = (tid: string, desired: number, dur: number) =>
+      resolveDropPosition(useTracksStore.getState().clips[tid] ?? [], desired, dur)
+
+    /** Add one media clip. MediaKind is never 'text', so `src` is always valid. */
+    const addMediaClip = (
+      tid: string,
+      type: 'video' | 'audio' | 'image',
+      asset: MediaAsset,
+      startFrame: number,
+      durationFrames: number,
+    ) => {
+      engine.addClip({
+        trackId: tid,
+        type,
+        name: asset.name,
+        startFrame,
+        durationFrames,
+        src: asset.src,
+        assetId: asset.id,
+      })
+    }
+
+    const dropMediaAsset = async (e: DragEvent, track: { kind: TrackKind }) => {
       let payload: DragMediaPayload
       try {
         payload = JSON.parse(
@@ -133,31 +166,55 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
       if (!isCompatibleTrackKind(track.kind, asset.kind)) return
 
       const fps = engine.getProject().fps
-      const durationFrames = Math.max(
+      const fullDuration = Math.max(
         1,
-        asset.durationSec > 0
-          ? secondsToFrames(asset.durationSec, fps)
-          : fps * 5,
+        asset.durationSec > 0 ? secondsToFrames(asset.durationSec, fps) : fps * 5,
       )
+      // clientX must be read before any await — the DragEvent is dead afterwards.
+      const desiredStart = startFrameAt(e.clientX)
 
-      const existingClips = useTracksStore.getState().clips[trackId] ?? []
-      const { startFrame, durationFrames: resolvedDuration } = resolveDropPosition(
-        existingClips,
-        startFrameAt(e.clientX),
-        durationFrames,
-      )
+      // Only a video that actually carries audio prompts; everything else keeps
+      // the original single-clip behaviour (no regression for audio/image/silent video).
+      if (asset.kind !== 'video' || !asset.hasAudio) {
+        const r = resolveOn(trackId, desiredStart, fullDuration)
+        addMediaClip(
+          trackId,
+          mediaKindToClipType(asset.kind) as 'video' | 'audio' | 'image',
+          asset,
+          r.startFrame,
+          r.durationFrames,
+        )
+        return
+      }
 
-      // MediaKind is 'video' | 'audio' | 'image' — never 'text', so `src` is
-      // always the right shape. The assertion below collapses the union for TS.
-      engine.addClip({
-        trackId,
-        type: mediaKindToClipType(asset.kind) as 'video' | 'audio' | 'image',
-        name: asset.name,
-        startFrame,
-        durationFrames: resolvedDuration,
-        src: asset.src,
-        assetId: asset.id,
-      })
+      const choice = await useAudioDropDialogStore.getState().request(asset.name)
+      if (!choice) return // superseded by a newer drop
+
+      engine.batch(() => {
+        if (choice === 'video-only') {
+          const v = resolveOn(trackId, desiredStart, fullDuration)
+          addMediaClip(trackId, 'video', asset, v.startFrame, v.durationFrames)
+        } else if (choice === 'both') {
+          // Resolve against BOTH tracks at once so the pair lands where neither
+          // track is occupied — they stay frame-synced and never overlap.
+          // (Linked-clip ripple edits are a deferred follow-on.)
+          const audioTrackId = ensureAudioTrack()
+          const videoClips = useTracksStore.getState().clips[trackId] ?? []
+          const audioClips = useTracksStore.getState().clips[audioTrackId] ?? []
+          const r = resolveDropPosition(
+            [...videoClips, ...audioClips],
+            desiredStart,
+            fullDuration,
+          )
+          addMediaClip(trackId, 'video', asset, r.startFrame, r.durationFrames)
+          addMediaClip(audioTrackId, 'audio', asset, r.startFrame, r.durationFrames)
+        } else {
+          // audio-only: resolve independently against the audio track.
+          const audioTrackId = ensureAudioTrack()
+          const a = resolveOn(audioTrackId, desiredStart, fullDuration)
+          addMediaClip(audioTrackId, 'audio', asset, a.startFrame, a.durationFrames)
+        }
+      }, 'Add media')
     }
 
     const dropElement = (e: DragEvent, track: { kind: TrackKind }) => {
@@ -208,7 +265,9 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
       if (e.dataTransfer!.types.includes(ELEMENT_DRAG_MIME)) {
         dropElement(e, track)
       } else {
-        dropMediaAsset(e, track)
+        // Fire-and-forget: all DragEvent reads happen synchronously before the
+        // first await inside dropMediaAsset.
+        void dropMediaAsset(e, track)
       }
     }
 

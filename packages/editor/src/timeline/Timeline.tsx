@@ -16,6 +16,7 @@ import { useEditor } from '../core/editor-context'
 import { Ruler } from './Ruler'
 import { Playhead } from './Playhead'
 import { TrackRow } from './TrackRow'
+import { AudioDropDialog } from './AudioDropDialog'
 
 export interface TimelineRef {
   engine: TimelineEngine
@@ -269,6 +270,10 @@ export const Timeline = memo(
           scrollContainerRef={scrollRef}
           sidebarWidth={SIDEBAR_WIDTH}
         />
+
+        {/* Blocking modal for the "video has audio" drop choice (position:fixed,
+            so it overlays the whole app regardless of mount point). */}
+        <AudioDropDialog />
       </div>
     )
   }),
