@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-geist-sans: 'Geist', system-ui, sans-serif;
+    --font-geist-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+    --font-inter: 'Inter', system-ui, sans-serif;
+
+    --color-surface: #fcf9f8;
+    --color-on-surface: #1c1b1b;
+    --color-primary: #b7102a;
+    --color-outline: #8f6f6e;
+    --color-outline-variant: #e4bebc;
+    --color-surface-container: #f0eded;
+    --color-surface-low: #f6f3f2;
+    --color-surface-high: #eae7e7;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-inter);
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background-color: rgba(183, 16, 42, 0.12);
+    color: var(--color-on-surface);
+  }
+}
+
+@layer components {
+  .label-mono {
+    font-family: var(--font-geist-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .prose-doc {
+    font-family: var(--font-inter);
+  }
+
+  .prose-doc h1,
+  .prose-doc h2,
+  .prose-doc h3,
+  .prose-doc h4 {
+    font-family: var(--font-geist-sans);
+  }
+
+  .card-base {
+    background: #ffffff;
+    border: 1px solid #e4bebc;
+    border-radius: 6px;
+  }
+
+  .card-base-muted {
+    background: #f6f3f2;
+    border: 1px solid #e5e2e1;
+    border-radius: 6px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #b7102a;
+    color: #ffffff;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: var(--font-geist-sans);
+    transition: background-color 0.15s ease;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .btn-primary:hover {
+    background-color: #9a0d23;
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: transparent;
+    color: #1c1b1b;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: var(--font-geist-sans);
+    transition: background-color 0.15s ease;
+    border: 1px solid #e4bebc;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .btn-ghost:hover {
+    background-color: #f0eded;
+  }
+}
+
+/* Syntax highlight overrides */
+.shiki {
+  background: #f6f3f2 !important;
+  border: 1px solid #e4bebc;
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  font-family: var(--font-geist-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dcd9d9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8f6f6e;
+}
