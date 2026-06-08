@@ -1,18 +1,18 @@
 import { useEffect } from 'react'
-import type { ClipType, TrackKind } from '../core/types'
+import type { ClipType, TrackKind } from '@elah/core'
 import {
   MEDIA_DRAG_MIME,
   type DragMediaPayload,
   type MediaAsset,
   type MediaKind,
-} from '../core/assets/types'
+} from '@elah/core'
 import { useAudioDropDialogStore } from './audioDropDialog.store'
 import { ELEMENT_DRAG_MIME, type DragElementPayload } from './elementDrag'
-import { useMediaLibraryStore } from '../core/assets/store'
-import { useTracksStore } from '../core/stores/tracks.store'
-import { usePlaybackStore } from '../core/stores/playback.store'
-import { buildSnapPoints, snapFrame } from '../core/utils/snap'
-import { secondsToFrames, clipsOverlap } from '../core/utils/frames'
+import { useMediaLibraryStore } from '@elah/core'
+import { useTracksStore } from '@elah/core'
+import { usePlaybackStore } from '@elah/core'
+import { buildSnapPoints, snapFrame } from '@elah/core'
+import { secondsToFrames, clipsOverlap } from '@elah/core'
 import { useTimeline } from './engine-context'
 
 /** Default on-timeline length for a freshly dropped text block, in seconds. */
@@ -280,3 +280,5 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
     }
   }, [trackId, lane, engine])
 }
+
+

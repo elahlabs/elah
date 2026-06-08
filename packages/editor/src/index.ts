@@ -1,43 +1,11 @@
 /**
  * @elah/editor
  *
- * Engine-first video editor SDK.
- *
- * @example Minimal usage
- * ```tsx
- * import { Timeline } from '@elah/editor'
- *
- * function App() {
- *   return <Timeline fps={30} style={{ height: 300 }} />
- * }
- * ```
- *
- * @example With engine access
- * ```tsx
- * import { Timeline, useTimeline, type TimelineRef } from '@elah/editor'
- *
- * function App() {
- *   const ref = useRef<TimelineRef>(null)
- *
- *   const handleAdd = () => {
- *     const engine = ref.current?.engine
- *     const track = engine?.addTrack('video')
- *     if (track) {
- *       engine?.addClip({ trackId: track.id, type: 'video', startFrame: 0, durationFrames: 90 })
- *     }
- *   }
- *
- *   return (
- *     <>
- *       <button onClick={handleAdd}>Add clip</button>
- *       <Timeline ref={ref} fps={30} style={{ height: 300 }} />
- *     </>
- *   )
- * }
- * ```
+ * Engine-first video editor framework.
+ * Batteries-included composition of @elah/core and @elah/timeline.
  */
 
-// --- Core: types ---
+// --- Re-export core (types + engines) ---
 export type {
   Clip,
   Track,
@@ -55,17 +23,13 @@ export type {
   TransitionKind,
   TransitionEasing,
   TransitionDirection,
-} from './core/types'
+} from '@elah/core'
 
-// --- Core: engine ---
-export { TimelineEngine } from './core/editor/TimelineEngine'
+export { TimelineEngine } from '@elah/core'
+export { PlaybackEngine } from '@elah/core'
+export type { PlaybackSnapshot, PlaybackEngineConfig } from '@elah/core'
 
-// --- Core: playback ---
-export { PlaybackEngine } from './core/playback/PlaybackEngine'
-export type { PlaybackSnapshot, PlaybackEngineConfig } from './core/playback/PlaybackEngine'
-
-// --- Core: resolver ---
-export { resolveTimeline } from './core/resolver/resolveTimeline'
+export { resolveTimeline } from '@elah/core'
 export type {
   Scene,
   ActiveTransition,
@@ -74,85 +38,73 @@ export type {
   ActiveTextClip,
   ActiveImageClip,
   ActiveClipBase,
-} from './core/resolver/scene'
+} from '@elah/core'
 
-// --- Core: renderer ---
-export type { Renderer } from './core/renderer/types'
-export { GpuRenderer } from './core/renderer/gpu/GpuRenderer'
-export type { RendererOptions } from './core/renderer/gpu/types'
+export type { Renderer } from '@elah/core'
+export { GpuRenderer } from '@elah/core'
+export type { RendererOptions } from '@elah/core'
 
-// --- Core: renderer / debug counters (read-only metrics for tests + diagnostics) ---
-export { GpuDebugCounters } from './core/renderer/gpu/debug/GpuDebugCounters'
-export type { CounterSnapshot } from './core/renderer/gpu/debug/GpuDebugCounters'
+export { GpuDebugCounters } from '@elah/core'
+export type { CounterSnapshot } from '@elah/core'
 
-// --- Core: renderer / demuxer (optional integration surface) ---
-// Import mediabunny separately in your app; this file never depends on it.
-export { createMediabunnyBackend, isMediabunnyCompatible } from './core/media/video/demuxer/createMediabunnyBackend'
-export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './core/media/video/demuxer/createMediabunnyBackend'
-export type { DemuxerBackend, DemuxerFactory } from './core/media/video/demuxer/MediabunnyDemuxer'
+export { createMediabunnyBackend, isMediabunnyCompatible } from '@elah/core'
+export type { MediabunnyModule, CreateMediabunnyBackendOpts } from '@elah/core'
+export type { DemuxerBackend, DemuxerFactory } from '@elah/core'
 
-// --- Core: media (frame producers) ---
-export type { VideoFrameProvider, VideoFrameProviderDeps } from './core/media/video'
-export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from './core/media/video'
+export type { VideoFrameProvider, VideoFrameProviderDeps } from '@elah/core'
+export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from '@elah/core'
 
-// --- Core: media (audio playback) ---
-export { AudioPlaybackController } from './core/media/audio/AudioPlaybackController'
-export type { AudioPlaybackControllerOptions } from './core/media/audio/AudioPlaybackController'
+export { AudioPlaybackController } from '@elah/core'
+export type { AudioPlaybackControllerOptions } from '@elah/core'
 
-// --- Core: assets ---
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './core/assets'
-export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './core/assets'
+export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from '@elah/core'
+export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from '@elah/core'
 
-// --- Core: stores (low-level; prefer the hooks below) ---
-export { useTracksStore } from './core/stores/tracks.store'
-export { usePlaybackStore } from './core/stores/playback.store'
-export { useSelectionStore } from './core/stores/selection.store'
+export { useTracksStore } from '@elah/core'
+export { usePlaybackStore } from '@elah/core'
+export { useSelectionStore } from '@elah/core'
 
-// --- Core: clip factories ---
-export { createVideoClip } from './core/elements/video'
-export { createAudioClip } from './core/elements/audio'
-export { createTextClip } from './core/elements/text'
-export { createImageClip } from './core/elements/image'
+export { createVideoClip } from '@elah/core'
+export { createAudioClip } from '@elah/core'
+export { createTextClip } from '@elah/core'
+export { createImageClip } from '@elah/core'
 
-// --- Core: actions ---
-export { splitClipAtPlayhead } from './core/actions/splitClipAtPlayhead'
-export type { SplitAtPlayheadData } from './core/actions/splitClipAtPlayhead'
-export type { ActionResult, ActionFailureReason } from './core/actions/types'
+export { splitClipAtPlayhead } from '@elah/core'
+export type { SplitAtPlayheadData } from '@elah/core'
+export type { ActionResult, ActionFailureReason } from '@elah/core'
 
-// --- Core: utilities ---
-export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames } from './core/utils/frames'
-export { generateId } from './core/utils/id'
+export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames } from '@elah/core'
+export { generateId } from '@elah/core'
 
-// --- Timeline: UI ---
-export { Timeline } from './timeline/Timeline'
-export type { TimelineProps, TimelineRef } from './timeline/Timeline'
+export { exportVideo } from '@elah/core'
+export { lazyExportVideo } from '@elah/core'
+export type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from '@elah/core'
 
-// --- Timeline: hooks ---
-export { useTimeline } from './timeline/engine-context'
-export { useTracks } from './timeline/hooks/useTracks'
-export { usePlayback } from './timeline/hooks/usePlayback'
-export { useSelection } from './timeline/hooks/useSelection'
-export { useTimelineDrop } from './timeline/useTimelineDrop'
-export { ELEMENT_DRAG_MIME } from './timeline/elementDrag'
-export type { DragElementPayload, ElementKind } from './timeline/elementDrag'
+// --- Re-export timeline ---
+export { Timeline } from '@elah/timeline'
+export type { TimelineProps, TimelineRef } from '@elah/timeline'
 
-// --- Core: export ---
-export { exportVideo } from './core/export'
-export { lazyExportVideo } from './core/export/lazyExport'
-export type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from './core/export'
+export { useTimeline } from '@elah/timeline'
+export { useTracks } from '@elah/timeline'
+export { usePlayback } from '@elah/timeline'
+export { useSelection } from '@elah/timeline'
+export { useTimelineDrop } from '@elah/timeline'
+export { ELEMENT_DRAG_MIME } from '@elah/timeline'
+export type { DragElementPayload, ElementKind } from '@elah/timeline'
 
-// --- Editor: composition ---
+// --- Editor composition layer ---
 export { EditorProvider } from './editor/EditorProvider'
 export type { EditorProviderProps } from './editor/EditorProvider'
-export {
-  useEditor,
-  useTimelineEngine,
-  usePlaybackEngine,
-} from './core/editor-context'
+
+export { useEditor, useTimelineEngine, usePlaybackEngine } from '@elah/core'
+
 export { useResolvedScene } from './editor/useResolvedScene'
+
 export { AssetPanel } from './editor/AssetPanel'
 export type { AssetPanelProps } from './editor/AssetPanel'
+
 export { ElementsPanel } from './editor/ElementsPanel'
 export type { ElementsPanelProps } from './editor/ElementsPanel'
+
 export { Preview } from './editor/Preview'
 export type { PreviewProps, PreviewHandle } from './editor/Preview'

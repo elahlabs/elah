@@ -5,11 +5,11 @@ import {
   useRef,
   type CSSProperties,
 } from 'react'
-import { GpuRenderer } from '../../core/renderer/gpu/GpuRenderer'
-import { resolveTimeline } from '../../core/resolver/resolveTimeline'
-import { useTimelineEngine, usePlaybackEngine } from '../../core/editor-context'
-import type { DemuxerFactory } from '../../core/media/video/demuxer/MediabunnyDemuxer'
-import { AudioPlaybackController } from '../../core/media/audio/AudioPlaybackController'
+import { GpuRenderer } from '@elah/core'
+import { resolveTimeline } from '@elah/core'
+import { useTimelineEngine, usePlaybackEngine } from '@elah/core'
+import type { DemuxerFactory } from '@elah/core'
+import { AudioPlaybackController } from '@elah/core'
 import { TextOverlay } from './TextOverlay'
 import { MediaTransformOverlay } from './MediaTransformOverlay'
 import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
@@ -179,3 +179,5 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     </div>
   )
 })
+
+

@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
-import type { Scene } from '../../core/resolver/scene'
+import type { Scene } from '@elah/core'
 
 /**
  * `<TransitionOverlay>` — snapshot-based transition surface.
@@ -122,3 +122,5 @@ export const TransitionOverlay = forwardRef<TransitionOverlayHandle>(
     )
   },
 )
+
+

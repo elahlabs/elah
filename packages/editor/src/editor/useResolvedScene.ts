@@ -1,9 +1,11 @@
 import { useMemo, useRef } from 'react'
-import { useTimelineEngine } from '../core/editor-context'
-import { useTracksStore } from '../core/stores/tracks.store'
-import { usePlaybackStore } from '../core/stores/playback.store'
-import { resolveTimeline } from '../core/resolver/resolveTimeline'
-import type { Scene } from '../core/resolver/scene'
+import {
+  useTimelineEngine,
+  useTracksStore,
+  usePlaybackStore,
+  resolveTimeline,
+  type Scene,
+} from '@elah/core'
 
 /**
  * Returns a memoized Scene for the current playhead frame (or `frameOverride` if given).
@@ -61,3 +63,5 @@ export function useResolvedScene(frameOverride?: number): Scene {
     return scene
   }, [frame, project])
 }
+
+

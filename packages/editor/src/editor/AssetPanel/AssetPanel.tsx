@@ -12,10 +12,12 @@ import {
   importFiles,
   MEDIA_DRAG_MIME,
   useMediaLibrary,
-} from '../../core/assets'
-import { useMediaLibraryStore } from '../../core/assets/store'
-import type { SkippedImport } from '../../core/assets'
-import type { DragMediaPayload, MediaAsset, MediaKind } from '../../core/assets/types'
+  useMediaLibraryStore,
+  type SkippedImport,
+  type MediaAsset,
+  type MediaKind,
+  type DragMediaPayload,
+} from '@elah/core'
 
 export interface AssetPanelProps {
   style?: CSSProperties

@@ -1,7 +1,7 @@
 import { memo, useState, useMemo } from 'react'
-import type { Track } from '../core/types'
-import { useTracksStore } from '../core/stores/tracks.store'
-import { useSelectionStore } from '../core/stores/selection.store'
+import type { Track } from '@elah/core'
+import { useTracksStore } from '@elah/core'
+import { useSelectionStore } from '@elah/core'
 import { ClipBlock } from './ClipBlock'
 import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
@@ -139,3 +139,5 @@ export const TrackRow = memo(function TrackRow({
     </div>
   )
 })
+
+

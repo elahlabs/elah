@@ -1,6 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { computeContainViewport } from '../../core/renderer/gpu/viewport'
-import { useTracksStore } from '../../core/stores/tracks.store'
+import { computeContainViewport, useTracksStore } from '@elah/core'
 
 /**
  * `<StageBorder>` — a thin, non-interactive outline of the project frame inside
@@ -57,3 +56,5 @@ export function StageBorder() {
     </div>
   )
 }
+
+

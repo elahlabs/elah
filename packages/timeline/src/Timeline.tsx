@@ -6,15 +6,15 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react'
-import type { TimelineEngine } from '../core/editor/TimelineEngine'
-import type { PlaybackEngine } from '../core/playback/PlaybackEngine'
-import type { Clip } from '../core/types'
-import type { CreateClipOptions } from '../core/elements/base'
-import { useTracksStore } from '../core/stores/tracks.store'
-import { usePlaybackStore } from '../core/stores/playback.store'
-import { useSelectionStore } from '../core/stores/selection.store'
-import { splitClipAtPlayhead } from '../core/actions/splitClipAtPlayhead'
-import { useEditor } from '../core/editor-context'
+import type { TimelineEngine } from '@elah/core'
+import type { PlaybackEngine } from '@elah/core'
+import type { Clip } from '@elah/core'
+import type { CreateClipOptions } from '@elah/core'
+import { useTracksStore } from '@elah/core'
+import { usePlaybackStore } from '@elah/core'
+import { useSelectionStore } from '@elah/core'
+import { splitClipAtPlayhead } from '@elah/core'
+import { useEditor } from '@elah/core'
 import { Ruler } from './Ruler'
 import { Playhead } from './Playhead'
 import { TrackRow } from './TrackRow'
@@ -352,3 +352,5 @@ export const Timeline = memo(
     )
   }),
 )
+
+
