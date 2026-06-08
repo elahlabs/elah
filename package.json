@@ -9,7 +9,7 @@
     "dev": "npm run dev --workspace=apps/playground",
     "build": "npm run build --workspace=packages/editor",
     "typecheck": "tsc --build",
-    "test": "npm run test --workspace=packages/editor"
+    "test": "npm run test --workspace=packages/core --workspace=packages/timeline"
   },
   "devDependencies": {
     "rollup-plugin-visualizer": "^7.0.1"
