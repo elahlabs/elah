@@ -40,17 +40,13 @@ export default function ExportPage() {
             code={`import {
   exportVideo,
   useTimelineEngine,
-  createMediabunnyBackend,
+  createDefaultDemuxerFactory,
   type ExportOptions,
   type ExportProgress,
 } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
 import { useState } from 'react'
 
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 export function ExportButton() {
   const engine = useTimelineEngine()

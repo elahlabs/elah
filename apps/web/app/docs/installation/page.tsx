@@ -6,10 +6,10 @@ export const metadata: Metadata = { title: 'Installation' }
 
 const toc = [
   { id: 'requirements', title: 'Requirements', level: 2 },
-  { id: 'npm-install', title: 'npm install', level: 2 },
-  { id: 'workspace-setup', title: 'Workspace Setup', level: 2 },
-  { id: 'vite-config', title: 'Vite / Webpack Config', level: 2 },
-  { id: 'tsconfig', title: 'TypeScript Config', level: 2 },
+  { id: 'npm-install', title: 'Install', level: 2 },
+  { id: 'peer-deps', title: 'Peer Dependencies', level: 2 },
+  { id: 'nextjs-config', title: 'Next.js Setup', level: 2 },
+  { id: 'vite-config', title: 'Vite Setup', level: 2 },
 ]
 
 export default function InstallationPage() {
@@ -26,7 +26,8 @@ export default function InstallationPage() {
             Installation
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            Add elah to your React application. The SDK ships as an npm workspace package — set it up as a monorepo dependency or install directly.
+            Add elah to your React application. The SDK is published to npm as{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/editor</code> — install it with your package manager and wire it into Next.js or Vite.
           </p>
         </div>
 
@@ -41,7 +42,7 @@ export default function InstallationPage() {
               { dep: 'TypeScript', version: '≥ 5.0', note: 'Strict mode recommended' },
               { dep: 'Node.js', version: '≥ 18.0', note: 'Required for build tooling' },
               { dep: 'Browser', version: 'Chromium 108+', note: 'WebCodecs + WebGL2 required; Firefox partial support' },
-              { dep: 'mediabunny', version: '≥ 0.x', note: 'Required peer dependency for video demux and MP4 export' },
+              { dep: 'mediabunny', version: 'bundled', note: 'Ships as a dependency of @elah/core — no separate install needed' },
             ].map((row, i) => (
               <div
                 key={row.dep}
@@ -55,85 +56,105 @@ export default function InstallationPage() {
           </div>
         </section>
 
-        {/* npm install */}
+        {/* Install */}
         <section className="mb-10">
           <h2 id="npm-install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Install
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Clone the repository and install dependencies from the monorepo root:
+            Install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code>. The decode/export backend (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code>) ships bundled — there's nothing else to add:
           </p>
           <CodeBlock
             language="bash"
-            filename="terminal"
-            code={`git clone https://github.com/elahlabs/elah.git
-cd elah/video-editor
-npm install`}
+            filename="npm"
+            code={`npm install @elah/editor`}
           />
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Start the playground dev server:
+            Using a different package manager:
           </p>
           <CodeBlock
             language="bash"
-            filename="terminal"
-            code={`npm run dev
-# → http://localhost:5173`}
+            filename="pnpm / yarn / bun"
+            code={`pnpm add @elah/editor
+yarn add @elah/editor
+bun add @elah/editor`}
           />
-          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Or install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> as a workspace dependency in your own app:
+        </section>
+
+        {/* Peer dependencies */}
+        <section className="mb-10">
+          <h2 id="peer-deps" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Peer Dependencies
+          </h2>
+          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> only expects React to be provided by your app — <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> and the rest of the pipeline are pulled in transitively. A typical <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code> looks like:
           </p>
           <CodeBlock
             language="json"
-            filename="your-app/package.json"
+            filename="package.json"
             code={`{
   "dependencies": {
-    "@elah/editor": "*",
-    "mediabunny": "^0.x",
-    "react": "^18",
-    "react-dom": "^18"
-  }
-}`}
-          />
-        </section>
-
-        {/* Workspace setup */}
-        <section className="mb-10">
-          <h2 id="workspace-setup" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            Workspace Setup
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The monorepo uses npm workspaces. The root <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code> declares the workspace layout:
-          </p>
-          <CodeBlock
-            language="json"
-            filename="video-editor/package.json"
-            code={`{
-  "name": "myeditor",
-  "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "scripts": {
-    "dev": "npm run dev --workspace=apps/playground",
-    "build": "npm run build --workspace=packages/editor",
-    "typecheck": "tsc --build",
-    "test": "npm run test --workspace=packages/core --workspace=packages/timeline"
+    "@elah/editor": "^0.2.0",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
   }
 }`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Packages are resolved by npm workspaces — <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>, and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code> are symlinked into <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">node_modules</code> automatically.
+            The package ships ESM with bundled TypeScript declarations — no separate{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@types</code> install required.
           </p>
         </section>
 
-        {/* Vite config */}
+        {/* Next.js setup */}
         <section className="mb-10">
-          <h2 id="vite-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            Vite Configuration
+          <h2 id="nextjs-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Next.js Setup
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The playground uses Vite. Key configuration for WebCodecs and Worker support:
+            Add the SDK packages to <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">transpilePackages</code> so the bundler can resolve the export Web Worker that <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> spawns via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">new URL('./ExportWorker.js', import.meta.url)</code>:
+          </p>
+          <CodeBlock
+            language="javascript"
+            filename="next.config.mjs"
+            code={`/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  // @elah/editor (+ its @elah/core / @elah/timeline deps) and mediabunny
+  // ship modern ESM that must be transpiled by the consuming app.
+  transpilePackages: ['@elah/editor', '@elah/core', '@elah/timeline', 'mediabunny'],
+}
+
+export default nextConfig`}
+          />
+          <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
+            The editor touches browser-only APIs (Canvas, Web Audio, Workers), so render it client-side only with a dynamic import:
+          </p>
+          <CodeBlock
+            language="tsx"
+            filename="app/editor/page.tsx"
+            code={`'use client'
+
+import dynamic from 'next/dynamic'
+
+// ssr: false keeps the editor out of the server bundle.
+const Editor = dynamic(() => import('@/components/Editor'), {
+  ssr: false,
+})
+
+export default function Page() {
+  return <Editor />
+}`}
+          />
+        </section>
+
+        {/* Vite setup */}
+        <section className="mb-10">
+          <h2 id="vite-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Vite Setup
+          </h2>
+          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
+            Serve the SDK packages from their real files (instead of esbuild's pre-bundle) so the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">new URL(...)</code> worker reference inside <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> resolves correctly:
           </p>
           <CodeBlock
             language="typescript"
@@ -144,64 +165,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   worker: {
+    // @elah/core spawns the MP4 export worker as a module worker.
     format: 'es',
   },
   optimizeDeps: {
-    exclude: ['mediabunny'],
-  },
-  server: {
-    headers: {
-      // Required for SharedArrayBuffer (used by mediabunny)
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
+    exclude: ['@elah/editor', '@elah/core', '@elah/timeline', 'mediabunny'],
   },
 })`}
-          />
-        </section>
-
-        {/* TypeScript config */}
-        <section className="mb-10">
-          <h2 id="tsconfig" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            TypeScript Config
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Project references are used for incremental builds across packages:
-          </p>
-          <CodeBlock
-            language="json"
-            filename="video-editor/tsconfig.json"
-            code={`{
-  "files": [],
-  "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/timeline" },
-    { "path": "./packages/editor" },
-    { "path": "./apps/playground" }
-  ]
-}`}
-          />
-          <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Each package has its own <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">tsconfig.json</code> extending a shared base:
-          </p>
-          <CodeBlock
-            language="json"
-            filename="packages/editor/tsconfig.json"
-            code={`{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true
-  },
-  "include": ["src"],
-  "references": [
-    { "path": "../core" },
-    { "path": "../timeline" }
-  ]
-}`}
           />
         </section>
 

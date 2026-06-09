@@ -127,17 +127,13 @@ import {
   EditorProvider,
   Preview,
   Timeline,
-  createMediabunnyBackend,
+  createDefaultDemuxerFactory,
   type PreviewHandle,
   type TimelineRef,
 } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
 
-// Wire the mediabunny demuxer once at module level
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+// Zero-config demuxer — mediabunny ships bundled with @elah/editor
+const demuxerFactory = createDefaultDemuxerFactory()
 
 export default function App() {
   const previewRef = useRef<PreviewHandle>(null)
@@ -194,7 +190,7 @@ import {
   AssetPanel,
   Preview,
   Timeline,
-  createMediabunnyBackend,
+  createDefaultDemuxerFactory,
   usePlaybackStore,
   useTimelineEngine,
   framesToTimecode,
@@ -203,7 +199,6 @@ import {
   type PreviewHandle,
   type InitialTrackConfig,
 } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
 
 const FPS = 30
 
@@ -213,10 +208,7 @@ const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'text', name: 'Text' },
 ]
 
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 function Toolbar() {
   const engine = useTimelineEngine()

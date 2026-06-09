@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Github } from 'lucide-react'
 import '@/styles/playground.css'
 import { PlaygroundTabs } from '@/components/playground/PlaygroundTabs'
+import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: {
@@ -22,10 +24,21 @@ export default function PlaygroundLayout({
           ← Playgrounds
         </Link>
         <div className="pg-nav-divider" />
-        <span style={{ fontSize: 12, color: 'var(--pg-text-muted)' }}>
-          @elah/editor
+        <span className="pg-brand">
+          <span className="pg-brand-dot" />
+          <span className="pg-brand-name">elah</span>
+          <span className="pg-brand-pkg">@elah/editor</span>
         </span>
         <PlaygroundTabs />
+        <a
+          href={siteConfig.links.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pg-nav-link"
+          title="View source on GitHub"
+        >
+          <Github size={14} />
+        </a>
       </nav>
       <div className="pg-content">{children}</div>
     </div>

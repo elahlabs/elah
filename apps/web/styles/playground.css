@@ -1,33 +1,36 @@
-/* Playground dark shell — Precision Studio theme — applied to .pg-shell on the layout root */
+/* Playground shell — aligned with the editor theme (components/playground/theme.ts).
+   Applied to .pg-shell on the layout root. */
 
 .pg-shell {
   /* ── Surface hierarchy (tonal layers, no shadows) ── */
-  --pg-bg:               #08100a; /* surface-container-lowest — deepest background */
-  --pg-bg-secondary:     #0d150f; /* surface                  — main shell background */
-  --pg-bg-panel:         #161d16; /* surface-container-low    — sidebar, panels */
-  --pg-bg-container:     #1a221a; /* surface-container        — cards, sections */
-  --pg-bg-elevated:      #242c24; /* surface-container-high   — modals, menus */
-  --pg-bg-highest:       #2f372f; /* surface-container-highest — scrollbar, chips */
+  --pg-bg:               #06070A; /* deepest background — matches theme.bgPrimary */
+  --pg-bg-secondary:     #0D1017; /* shell chrome — theme.bgSecondary */
+  --pg-bg-panel:         #121722; /* sidebars, panels — theme.bgPanel */
+  --pg-bg-container:     #151A26; /* cards, sections */
+  --pg-bg-elevated:      #171D2B; /* modals, menus, hover — theme.bgElevated */
+  --pg-bg-highest:       #232938; /* scrollbar, chips — theme.border */
 
   /* ── Borders / outlines ── */
-  --pg-border:           #5a403f; /* outline-variant — low-contrast component edges */
-  --pg-border-subtle:    #2f372f; /* surface-container-highest used as hairline */
-  --pg-outline:          #a98988; /* outline — focused / interactive edges */
+  --pg-border:           #232938; /* component edges — theme.border */
+  --pg-border-subtle:    #1A1F2B; /* hairline — theme.borderSubtle */
+  --pg-outline:          #3A4256; /* focused / interactive edges */
 
   /* ── Text ── */
-  --pg-text:             #dce5d9; /* on-surface */
-  --pg-text-secondary:   #e1bebc; /* on-surface-variant (warm rose tint) */
-  --pg-text-muted:       #a98988; /* outline — used for de-emphasised labels */
+  --pg-text:             #F3F4F6; /* theme.textPrimary */
+  --pg-text-secondary:   #A7AFBF; /* theme.textSecondary */
+  --pg-text-muted:       #6B7280; /* theme.textMuted */
 
-  /* ── Accent — Crimson signal ── */
-  --pg-accent:           #a81d29; /* primary-container — button fill, active state bg */
-  --pg-accent-hover:     #b32630; /* inverse-primary   — hover lift on accent fill */
-  --pg-accent-text:      #ffbbb8; /* on-primary-container — text on crimson fill */
-  --pg-accent-dim:       #ffb3b0; /* primary — highlight, underlines, focus rings */
+  /* ── Accent — Rose signal ── */
+  --pg-accent:           #E11D48; /* theme.accent — button fill, active state */
+  --pg-accent-hover:     #FB7185; /* theme.accentHover — hover lift */
+  --pg-accent-text:      #FFFFFF; /* text on accent fill */
+  --pg-accent-dim:       #FB7185; /* highlight, underlines, focus rings */
+  --pg-accent-glow:      rgba(225, 29, 72, 0.35);
+  --pg-accent-soft:      rgba(225, 29, 72, 0.12);
 
   /* ── Typography ── */
   --pg-font-ui:    'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --pg-font-mono:  'JetBrains Mono', 'Geist Mono', monospace;
+  --pg-font-mono:  'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
 
   display: flex;
   flex-direction: column;
@@ -41,12 +44,12 @@
 /* ── Navigation bar ──────────────────────────────────────────────────────── */
 
 .pg-nav {
-  height: 40px;
+  height: 44px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 0 16px;
+  padding: 0 12px;
   background: var(--pg-bg-secondary);
   border-bottom: 1px solid var(--pg-border);
   z-index: 10;
@@ -56,11 +59,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 4px;
+  padding: 5px 10px;
+  border-radius: 6px;
   font-size: 12px;
   font-family: var(--pg-font-mono);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--pg-text-muted);
   text-decoration: none;
   transition: color 0.12s, background 0.12s;
@@ -74,26 +77,64 @@
   background: var(--pg-bg-elevated);
 }
 
-.pg-nav-divider {
-  width: 1px;
-  height: 14px;
-  background: var(--pg-border);
-  margin: 0 10px;
+/* Brand lockup — accent dot + wordmark + package label */
+.pg-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.pg-brand-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pg-accent);
+  box-shadow: 0 0 8px var(--pg-accent-glow);
   flex-shrink: 0;
 }
+
+.pg-brand-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--pg-text);
+}
+
+.pg-brand-pkg {
+  font-size: 11px;
+  font-family: var(--pg-font-mono);
+  color: var(--pg-text-muted);
+}
+
+.pg-nav-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--pg-border);
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+/* ── Tabs — segmented control ─────────────────────────────────────────────── */
 
 .pg-nav-tabs {
   display: flex;
   gap: 2px;
   margin-left: auto;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--pg-bg);
+  border: 1px solid var(--pg-border-subtle);
 }
 
 .pg-nav-tab {
-  padding: 4px 12px;
-  border-radius: 4px;
+  position: relative;
+  padding: 4px 14px;
+  border-radius: 6px;
   font-size: 12px;
-  font-family: var(--pg-font-mono);
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  font-family: var(--pg-font-ui);
+  letter-spacing: 0.01em;
   color: var(--pg-text-muted);
   text-decoration: none;
   transition: color 0.12s, background 0.12s;
@@ -101,13 +142,32 @@
 
 .pg-nav-tab:hover {
   color: var(--pg-text-secondary);
-  background: var(--pg-bg-elevated);
 }
 
 .pg-nav-tab[data-active='true'] {
   color: var(--pg-text);
   background: var(--pg-bg-elevated);
-  border: 1px solid var(--pg-border);
+  box-shadow: inset 0 0 0 1px var(--pg-border);
+}
+
+/* ── External / GitHub link ──────────────────────────────────────────────── */
+
+.pg-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--pg-text-muted);
+  text-decoration: none;
+  transition: color 0.12s, background 0.12s;
+}
+
+.pg-nav-link:hover {
+  color: var(--pg-text);
+  background: var(--pg-bg-elevated);
 }
 
 /* ── Content area ────────────────────────────────────────────────────────── */
@@ -133,12 +193,18 @@
 }
 
 .elah-root *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 .elah-root *::-webkit-scrollbar-thumb {
   background: var(--pg-bg-highest);
-  border-radius: 3px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.elah-root *::-webkit-scrollbar-thumb:hover {
+  background: var(--pg-outline);
+  background-clip: padding-box;
 }
 .elah-root *::-webkit-scrollbar-track {
   background: transparent;
@@ -162,7 +228,7 @@
   background: var(--pg-accent);
   border: 2px solid var(--pg-bg-elevated);
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(168, 29, 41, 0.3);
+  box-shadow: 0 0 0 1px var(--pg-accent-glow);
 }
 .elah-range::-moz-range-thumb {
   width: 12px;
@@ -177,14 +243,14 @@
 
 .elah-toolbar-btn:hover:not(:disabled) {
   background: var(--pg-bg-elevated) !important;
-  border-color: var(--pg-border) !important;
+  border-color: var(--pg-outline) !important;
   color: var(--pg-text) !important;
 }
 .elah-toolbar-btn--active {
-  background: rgba(168, 29, 41, 0.15) !important;
+  background: var(--pg-accent-soft) !important;
   border-color: var(--pg-accent) !important;
   color: var(--pg-accent-dim) !important;
-  box-shadow: 0 0 12px rgba(168, 29, 41, 0.2);
+  box-shadow: 0 0 12px var(--pg-accent-glow);
 }
 
 /* ── Export / primary action button ─────────────────────────────────────── */
@@ -208,9 +274,9 @@
 
 .elah-media-card:hover {
   background: var(--pg-bg-elevated) !important;
-  border-color: var(--pg-border) !important;
+  border-color: var(--pg-outline) !important;
 }
 .elah-element-card:hover {
   background: var(--pg-bg-elevated) !important;
-  border-color: var(--pg-border) !important;
+  border-color: var(--pg-outline) !important;
 }

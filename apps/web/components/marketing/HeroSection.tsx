@@ -1,8 +1,38 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowRight, ExternalLink, Play } from 'lucide-react'
+import { ArrowRight, Check, Copy, Play } from 'lucide-react'
+
+function InstallCommand() {
+  const command = 'npm install @elah/editor'
+  const [copied, setCopied] = useState(false)
+
+  const copy = () => {
+    navigator.clipboard?.writeText(command).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="group inline-flex items-center gap-3 rounded border border-outline-variant bg-surface-container px-3.5 py-2.5 font-mono text-xs text-on-surface transition-colors hover:border-outline"
+      title="Copy to clipboard"
+    >
+      <span className="select-none text-primary">$</span>
+      <span>{command}</span>
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-tertiary" />
+      ) : (
+        <Copy className="h-3.5 w-3.5 text-on-surface-variant opacity-50 transition-opacity group-hover:opacity-100" />
+      )}
+    </button>
+  )
+}
 
 const FADE_UP = {
   initial: { opacity: 0, y: 8 },
@@ -105,6 +135,11 @@ export function HeroSection() {
               <Play className="h-3.5 w-3.5" />
               Open Playgrounds
             </Link>
+          </motion.div>
+
+          {/* Install command */}
+          <motion.div variants={FADE_UP} className="mt-6">
+            <InstallCommand />
           </motion.div>
 
           {/* Technical stats */}

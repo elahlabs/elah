@@ -6,9 +6,8 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/playground",
-    "dev:web": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=packages/editor",
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
     "typecheck": "tsc --build",
     "test": "npm run test --workspace=packages/core --workspace=packages/timeline"
   },

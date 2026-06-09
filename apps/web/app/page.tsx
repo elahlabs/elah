@@ -272,15 +272,10 @@ function CodePreview() {
   AssetPanel,
   Preview,
   Timeline,
-  createMediabunnyBackend,
+  createDefaultDemuxerFactory,
 } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
 
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) =>
-      fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 export default function App() {
   return (

@@ -96,17 +96,13 @@ function App() {
             filename="Preview usage"
             code={`import {
   Preview,
-  createMediabunnyBackend,
+  createDefaultDemuxerFactory,
   type PreviewHandle,
 } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
 import { useRef } from 'react'
 
 // Build the factory once outside the component
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 function MyPreview() {
   const ref = useRef<PreviewHandle>(null)

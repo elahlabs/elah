@@ -2,8 +2,26 @@ import type { Metadata } from 'next'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { CodeBlock } from '@/components/docs/CodeBlock'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Github } from 'lucide-react'
 import Link from 'next/link'
+import { siteConfig } from '@/config/site'
+
+const fullExamples = [
+  {
+    framework: 'React',
+    runtime: 'Vite + React 19',
+    description:
+      'A complete production editor — preview, timeline, asset/element panels, text inspector, and MP4 export — wired as a standalone Vite app consuming @elah/editor from npm.',
+    href: `${siteConfig.links.github}/tree/main/playground/react`,
+  },
+  {
+    framework: 'Next.js',
+    runtime: 'Next.js 16 · App Router',
+    description:
+      'The same full editor composition in a Next.js App Router app, with the client-only dynamic import and transpilePackages config needed to ship it in production.',
+    href: `${siteConfig.links.github}/tree/main/playground/next`,
+  },
+]
 
 export const metadata: Metadata = {
   title: 'Examples',
@@ -113,15 +131,11 @@ export default function CustomDemuxerExample() {
 import {
   exportVideo,
   useTimelineEngine,
-  createMediabunnyBackend,
+  createDefaultDemuxerFactory,
   type ExportProgress,
 } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
 
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 export function ExportPanel() {
   const engine = useTimelineEngine()
@@ -277,6 +291,58 @@ export default function ExamplesPage() {
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-on-surface-variant">
               Integration examples for common use cases. Copy, adapt, ship.
             </p>
+          </div>
+        </div>
+
+        {/* Complete example apps */}
+        <div className="border-b border-outline-variant bg-surface-low py-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+              Full apps
+            </div>
+            <h2
+              className="text-xl font-semibold tracking-tight text-on-surface"
+              style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+            >
+              Complete production example
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+              Runnable, end-to-end editor apps consuming the published{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs">@elah/editor</code>{' '}
+              package. Clone, install, and run — or read the source on GitHub.
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {fullExamples.map((ex) => (
+                <a
+                  key={ex.framework}
+                  href={ex.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col rounded-md border border-outline-variant bg-surface p-5 transition-colors hover:border-outline hover:bg-surface-container"
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h3
+                      className="text-base font-semibold tracking-tight text-on-surface"
+                      style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+                    >
+                      {ex.framework}
+                    </h3>
+                    <Github className="h-4 w-4 shrink-0 text-on-surface-variant transition-colors group-hover:text-on-surface" />
+                  </div>
+                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+                    {ex.runtime}
+                  </div>
+                  <p className="flex-1 text-xs leading-relaxed text-on-surface-variant">
+                    {ex.description}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                    View on GitHub
+                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 

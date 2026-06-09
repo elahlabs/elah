@@ -189,7 +189,7 @@ export default function DocsPage() {
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
-              { title: 'Installation', desc: 'Add @elah/editor to your project and configure the workspace.', href: '/docs/installation' },
+              { title: 'Installation', desc: 'Install @elah/editor from npm and configure Next.js or Vite.', href: '/docs/installation' },
               { title: 'Quick Start', desc: 'Build the full editor in under 20 lines. Wire your demuxer, render, ship.', href: '/docs/getting-started' },
               { title: 'Timeline', desc: 'Deep-dive into tracks, clips, playback, snapping, and keyboard shortcuts.', href: '/docs/timeline' },
               { title: 'API Reference', desc: 'Full reference for TimelineEngine, PlaybackEngine, resolveTimeline, hooks.', href: '/docs/api' },
