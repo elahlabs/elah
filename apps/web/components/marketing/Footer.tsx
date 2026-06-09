@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Layers } from 'lucide-react'
 
 const footerLinks = {
   Product: [
@@ -31,9 +30,8 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="mb-4 flex items-center gap-2 no-underline">
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
-                <Layers className="h-3.5 w-3.5 text-white" />
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/elah-mark.png" alt="elah logo" className="h-6 w-6" />
               <span className="text-sm font-semibold text-on-surface">
                 elah
               </span>

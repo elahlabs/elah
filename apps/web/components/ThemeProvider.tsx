@@ -13,10 +13,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
+    // Light is the default; only an explicit saved choice switches to dark.
     const stored = localStorage.getItem('ps-theme') as Theme | null
-    const resolved =
-      stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    const resolved: Theme = stored ?? 'light'
     setTheme(resolved)
+    document.documentElement.classList.toggle('dark', resolved === 'dark')
   }, [])
 
   function toggle() {

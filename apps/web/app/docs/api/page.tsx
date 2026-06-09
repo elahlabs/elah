@@ -35,7 +35,7 @@ function ApiEntry({ name, signature, description, params }: {
   params?: { name: string; type: string; desc: string }[]
 }) {
   return (
-    <div className="mb-6 rounded-md border border-outline-variant bg-white overflow-hidden">
+    <div className="mb-6 rounded-md border border-outline-variant bg-surface-low overflow-hidden">
       <div className="border-b border-outline-variant bg-surface-low px-4 py-2.5">
         <span className="font-mono text-sm font-medium text-on-surface">{name}</span>
       </div>
@@ -278,7 +278,7 @@ renderer.destroy()     // cleanup on unmount`}
                 desc: 'Access the media library. Returns { assets, addAsset, removeAsset }.',
               },
             ].map(({ hook, returns, desc }) => (
-              <div key={hook} className="rounded-md border border-outline-variant bg-white p-4">
+              <div key={hook} className="rounded-md border border-outline-variant bg-surface-low p-4">
                 <div className="mb-1.5 flex items-start gap-3">
                   <code className="font-mono text-sm font-medium text-on-surface">{hook}</code>
                   <span className="mt-0.5 rounded bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface-variant">

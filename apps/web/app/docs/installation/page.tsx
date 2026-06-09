@@ -46,7 +46,7 @@ export default function InstallationPage() {
             ].map((row, i) => (
               <div
                 key={row.dep}
-                className={`flex items-start gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}
+                className={`flex items-start gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
                 <div className="w-28 shrink-0 font-mono text-xs font-medium text-on-surface">{row.dep}</div>
                 <div className="w-24 shrink-0 font-mono text-xs text-on-surface-variant">{row.version}</div>

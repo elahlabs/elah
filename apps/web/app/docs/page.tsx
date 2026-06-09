@@ -81,11 +81,11 @@ export default function DocsPage() {
           {/* Architecture layers diagram */}
           <div className="overflow-hidden rounded-md border border-outline-variant">
             {[
-              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays', 'TransitionOverlay'], bg: 'bg-white' },
+              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays', 'TransitionOverlay'], bg: 'bg-surface-low' },
               { label: 'Zustand Stores', items: ['useTracksStore', 'usePlaybackStore', 'useSelectionStore', 'useTransitionsStore'], bg: 'bg-surface-lowest' },
-              { label: 'Engine Layer', items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'], bg: 'bg-white' },
-              { label: 'Pure Resolver', items: ['resolveTimeline(frame, project) → Scene'], bg: 'bg-surface-low' },
-              { label: 'Renderer Interface', items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'], bg: 'bg-white' },
+              { label: 'Engine Layer', items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'], bg: 'bg-surface-low' },
+              { label: 'Pure Resolver', items: ['resolveTimeline(frame, project) → Scene'], bg: 'bg-surface-lowest' },
+              { label: 'Renderer Interface', items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'], bg: 'bg-surface-low' },
               { label: 'Media Pipeline', items: ['StreamingFrameProducer', 'WebCodecs API', 'mediabunny demux', 'ImageBitmap cache'], bg: 'bg-surface-lowest' },
             ].map((layer) => (
               <div key={layer.label} className={`flex gap-4 border-b border-outline-variant p-3 last:border-0 ${layer.bg}`}>
@@ -136,7 +136,7 @@ export default function DocsPage() {
                 icon: Clock,
               },
             ].map(({ name, desc, icon: Icon }) => (
-              <div key={name} className="flex gap-3 rounded-md border border-outline-variant bg-white p-4">
+              <div key={name} className="flex gap-3 rounded-md border border-outline-variant bg-surface-low p-4">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-low">
                   <Icon className="h-4 w-4 text-on-surface-variant" />
                 </div>
@@ -197,7 +197,7 @@ export default function DocsPage() {
               <Link
                 key={href}
                 href={href}
-                className="group flex items-start justify-between gap-2 rounded-md border border-outline-variant bg-white p-4 no-underline transition-colors hover:border-outline"
+                className="group flex items-start justify-between gap-2 rounded-md border border-outline-variant bg-surface-low p-4 no-underline transition-colors hover:border-outline"
               >
                 <div>
                   <div className="mb-1 text-sm font-medium text-on-surface">{title}</div>

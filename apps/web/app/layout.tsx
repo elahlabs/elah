@@ -39,17 +39,16 @@ export const metadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
   },
-  icons: {
-    icon: '/favicon.ico',
-  },
+  // Favicon + touch icon are provided by app/icon.png and app/apple-icon.png
+  // (Next.js file-based metadata), so no manual `icons` entry is needed.
 }
 
-// Runs synchronously before first paint to avoid flash of wrong theme
+// Runs synchronously before first paint to avoid flash of wrong theme.
+// Defaults to light mode; only an explicit saved choice can switch to dark.
 const themeInitScript = `
 (function(){
   try{
     var t=localStorage.getItem('ps-theme');
-    if(!t) t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
     if(t==='dark') document.documentElement.classList.add('dark');
   }catch(e){}
 })();

@@ -114,7 +114,7 @@ export function ExportButton() {
             ].map((row, i) => (
               <div
                 key={row.step}
-                className={`flex items-start gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}
+                className={`flex items-start gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
                 <span className="label-mono w-4 shrink-0 text-xs text-primary">{row.step}</span>
                 <div className="w-32 shrink-0 text-xs font-medium text-on-surface">{row.label}</div>
@@ -209,7 +209,7 @@ const blob = await exportVideo(project, {
             ].map((row, i) => (
               <div
                 key={row.item}
-                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}
+                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
                 <div className="w-48 shrink-0 text-xs font-medium text-on-surface">{row.item}</div>
                 <div className="text-xs text-on-surface-variant">{row.detail}</div>

@@ -208,12 +208,6 @@ function EditorMockup() {
         {/* Preview */}
         <div className="relative flex flex-1 items-center justify-center bg-[#050505]">
           <div className="relative aspect-video w-2/3 overflow-hidden rounded border border-white/10 bg-[#111]">
-            {/* Mock video frame */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-12 w-12 rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center">
-                <Play className="h-5 w-5 text-white/40 ml-0.5" />
-              </div>
-            </div>
             {/* Fake filmstrip overlay */}
             <div className="absolute bottom-0 left-0 right-0 flex h-6 items-center gap-1 bg-black/60 px-2">
               {Array.from({ length: 8 }).map((_, i) => (

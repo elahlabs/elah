@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { TextClipProperties } from './TextClipProperties'
 import { ExportModal } from './ExportModal'
+import { loadElahDemo } from './loadElahDemo'
 import { btnDisabled, theme } from './theme'
 import {
   AssetPanel,
@@ -46,10 +47,44 @@ const divider: React.CSSProperties = {
   margin: '0 8px',
 }
 
-const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }) {
+const AppHeader = memo(function AppHeader({
+  onExport,
+  timelineRef,
+}: {
+  onExport: () => void
+  timelineRef: React.RefObject<TimelineRef | null>
+}) {
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
+  const [loadingDemo, setLoadingDemo] = useState(false)
+
+  const handleLoadDemo = useCallback(async () => {
+    setLoadingDemo(true)
+    try {
+      await loadElahDemo({ engine, timelineRef })
+    } catch (err) {
+      console.error('[playground] Failed to load Elah demo project:', err)
+      globalThis.alert?.('Could not load the demo project — check the console for details.')
+    } finally {
+      setLoadingDemo(false)
+    }
+  }, [engine, timelineRef])
+
+  const demoBtnStyle: React.CSSProperties = {
+    ...btnDisabled(loadingDemo),
+    padding: '6px 14px',
+    fontSize: 12,
+    fontWeight: 600,
+    color: loadingDemo ? theme.textMuted : '#fff',
+    background: loadingDemo
+      ? theme.bgPanel
+      : `linear-gradient(180deg, ${theme.accentHover}, ${theme.accent})`,
+    border: `1px solid ${theme.accent}`,
+    boxShadow: loadingDemo ? 'none' : `0 0 14px ${theme.accentGlow}`,
+    cursor: loadingDemo ? 'wait' : 'pointer',
+    letterSpacing: '-0.01em',
+  }
 
   return (
     <header
@@ -64,16 +99,27 @@ const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }
         flexShrink: 0,
       }}
     >
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: theme.textPrimary,
-          letterSpacing: '-0.02em',
-        }}
-      >
-        @elah/editor
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: theme.textPrimary,
+            letterSpacing: '-0.02em',
+          }}
+        >
+          @elah/editor
+        </span>
+        <button
+          type="button"
+          style={demoBtnStyle}
+          disabled={loadingDemo}
+          onClick={handleLoadDemo}
+          title="Load a cinematic demo project: assets, fades, and text overlays"
+        >
+          {loadingDemo ? 'Loading…' : '✦ Load Elah Demo Project'}
+        </button>
+      </div>
 
       <div style={{ display: 'flex', gap: 4 }}>
         <button
@@ -329,7 +375,7 @@ export default function ProductionEditor() {
         className="elah-root"
         style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
       >
-        <AppHeader onExport={() => setShowExportModal(true)} />
+        <AppHeader onExport={() => setShowExportModal(true)} timelineRef={timelineRef} />
         {showExportModal && (
           <ExportModal
             onClose={() => setShowExportModal(false)}

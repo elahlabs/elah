@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Menu, X, ExternalLink, Layers } from 'lucide-react'
+import { Menu, X, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -28,9 +28,8 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2.5 text-on-surface no-underline transition-opacity hover:opacity-75"
         >
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
-            <Layers className="h-3.5 w-3.5 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/elah-mark.png" alt="elah logo" className="h-6 w-6" />
           <span
             className="text-sm font-semibold tracking-tight"
             style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
