@@ -36,13 +36,9 @@ function App() {
 ## With preview and asset panel
 
 ```tsx
-import { EditorProvider, Timeline, Preview, AssetPanel, createMediabunnyBackend } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
+import { EditorProvider, Timeline, Preview, AssetPanel, createDefaultDemuxerFactory } from '@elah/editor'
 
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 function App() {
   return (

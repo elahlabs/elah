@@ -45,7 +45,7 @@ Three goals shape every decision:
 
 See [`ROADMAP.md`](./ROADMAP.md) for current state and the next layer,
 [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) for known gaps, and
-[`packages/editor/src/core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md)
+[`packages/core/src/renderer/architecture.md`](./packages/core/src/renderer/architecture.md)
 for the GPU render + decode pipeline in depth.
 
 > **Single-video-track + single-audio-track is the current v1 constraint** — the
@@ -159,17 +159,14 @@ function App() {
 the engines from `EditorProvider` context and renders the resolved `Scene` to a
 canvas (letterboxed to the project aspect) — video **and** text clips, composited by
 `zIndex`. It also paints interactive transform overlays — drag / resize / inline-edit for text clips, and drag / uniform-scale for video & image clips — and plays the project's audio track in sync (toggle with
-`enableAudio`, default on). You inject a **demuxer factory** so the SDK never
-hard-depends on a specific decode backend:
+`enableAudio`, default on). You pass a **demuxer factory** — the bundled
+`createDefaultDemuxerFactory()` wires up mediabunny for you, while advanced
+consumers can swap in their own decode backend:
 
 ```tsx
-import { EditorProvider, Preview, createMediabunnyBackend } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
+import { EditorProvider, Preview, createDefaultDemuxerFactory } from '@elah/editor'
 
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, {
-    blobResolver: (src) => fetch(src).then((r) => r.blob()),
-  })
+const demuxerFactory = createDefaultDemuxerFactory()
 
 function App() {
   return (

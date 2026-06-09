@@ -392,7 +392,7 @@ The shipped `GpuRenderer` consumes `Scene.videos` / `.images` / `.texts`, upload
 
 ## 6. The render abstraction
 
-The `Renderer` interface lives in `packages/editor/src/core/renderer/types.ts`:
+The `Renderer` interface lives in `packages/core/src/renderer/types.ts`:
 
 ```ts
 interface Renderer {
@@ -434,7 +434,7 @@ production wiring; the playground's `GpuPreview.tsx` is the reference shell.
   helpers — `gpu/layers/drawRect.ts`, `objectFit.ts`, `textLayout.ts`.
 
 The full GPU + decode pipeline is documented in
-[`core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md).
+[`core/renderer/architecture.md`](./packages/core/src/renderer/architecture.md).
 
 ### Export is a parallel path, not a `Renderer`
 
@@ -443,7 +443,7 @@ Export does **not** instantiate a `Renderer`. The export worker draws to a 2D
 `computeTextLayout`) so preview and export produce identical geometry without a
 GPU context in the worker. Both paths consume the same `resolveTimeline` output —
 that shared resolution, not a shared draw call, is what keeps them in sync. See
-[`core/export/Architecture.md`](./packages/editor/src/core/export/Architecture.md).
+[`core/export/Architecture.md`](./packages/core/src/export/Architecture.md).
 
 ### Future renderers
 
@@ -709,7 +709,7 @@ Good: extract before it's painful. The cost of refactoring scales superlinearly 
 - [`ROADMAP.md`](./ROADMAP.md) — current state and the next architectural layer.
 - [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) — known gaps and trade-offs.
 - [`packages/editor/src/core/Architecture.md`](./packages/editor/src/core/Architecture.md) — cold-start reference for `core/` implementation agents.
-- [`packages/editor/src/core/renderer/architecture.md`](./packages/editor/src/core/renderer/architecture.md) — the GPU render + decode pipeline in depth.
-- [`packages/editor/src/core/export/Architecture.md`](./packages/editor/src/core/export/Architecture.md) — the export pipeline.
+- [`packages/core/src/renderer/architecture.md`](./packages/core/src/renderer/architecture.md) — the GPU render + decode pipeline in depth.
+- [`packages/core/src/export/Architecture.md`](./packages/core/src/export/Architecture.md) — the export pipeline.
 - [`docs/glossary.md`](./docs/glossary.md) — terminology in one place.
 - [`docs/known-bugs.md`](./docs/known-bugs.md) — deliberate workarounds and their real fixes.

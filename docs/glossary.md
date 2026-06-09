@@ -30,7 +30,7 @@ A single placed media segment on a track. Has `startFrame`, `durationFrames`, `s
 
 ### Copy-and-close
 
-The frame-ownership fix on the real decode path: each decoded `VideoFrame` is copied into an `ImageBitmap` and closed immediately, returning its slot in the decoder's output pool. The cache then holds plain memory, not pool slots. See [`renderer/architecture.md` § 6.5](../packages/editor/src/core/renderer/architecture.md).
+The frame-ownership fix on the real decode path: each decoded `VideoFrame` is copied into an `ImageBitmap` and closed immediately, returning its slot in the decoder's output pool. The cache then holds plain memory, not pool slots. See [`renderer/architecture.md` § 6.5](../packages/core/src/renderer/architecture.md).
 
 ### `currentFrame`
 

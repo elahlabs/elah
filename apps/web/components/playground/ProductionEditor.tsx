@@ -198,6 +198,11 @@ const TimelineControls = memo(function TimelineControls({
     if (!result.ok) console.warn('[playground] split failed:', result.reason)
   }, [engine])
 
+  const addTextTrack = useCallback(() => {
+    const n = useTracksStore.getState().tracks.filter((t) => t.kind === 'text').length + 1
+    engine.addTrack('text', { name: `Text ${n}` })
+  }, [engine])
+
   const aspectActive = (w: number, h: number) =>
     Math.abs(stage.width / stage.height - w / h) < 0.001
 
@@ -241,7 +246,7 @@ const TimelineControls = memo(function TimelineControls({
         flexShrink: 0,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <button
           type="button"
           className="elah-toolbar-btn"
@@ -251,6 +256,15 @@ const TimelineControls = memo(function TimelineControls({
           title="Split at playhead (S)"
         >
           ✂ Split
+        </button>
+        <button
+          type="button"
+          className="elah-toolbar-btn"
+          style={btnDisabled(false)}
+          onClick={addTextTrack}
+          title="Add another text track (for overlapping / stacked text)"
+        >
+          ＋ Text Track
         </button>
       </div>
 

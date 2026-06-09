@@ -67,7 +67,7 @@ docs: sync renderer architecture with shipped layers
 
 Renderer and decode changes must preserve the load-bearing invariants. These are
 enforced by tests and stated in full in
-[`packages/editor/src/core/renderer/EVOLUTION.md` § 3](./packages/editor/src/core/renderer/EVOLUTION.md):
+[`packages/core/src/renderer/EVOLUTION.md` § 3](./packages/core/src/renderer/EVOLUTION.md):
 
 - `render(scene)` is synchronous and never awaits.
 - The renderer reads only `Scene` — never `Project`, the engines, stores, or React.
@@ -78,7 +78,7 @@ enforced by tests and stated in full in
 - All project mutations funnel through `TimelineEngine.commit()`.
 
 The renderer subsystem additionally documents agent-facing guardrails in
-[`renderer/AI-Rules.md`](./packages/editor/src/core/renderer/AI-Rules.md).
+[`renderer/AI-Rules.md`](./packages/core/src/renderer/AI-Rules.md).
 
 ---
 
