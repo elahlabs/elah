@@ -107,12 +107,22 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
 
   const audio = await renderAudioMix(project)
 
+  const { signal } = options
+  if (signal?.aborted) return Promise.reject(signal.reason ?? new DOMException('Export aborted', 'AbortError'))
+
   return new Promise((resolve, reject) => {
     mlog('EXPORT', 'spawning ExportWorker (module worker)')
     const worker = new Worker(
       new URL('./ExportWorker.ts', import.meta.url),
       { type: 'module' },
     )
+
+    const abort = () => {
+      worker.terminate()
+      mlog('EXPORT', 'aborted by signal')
+      reject(signal?.reason ?? new DOMException('Export aborted', 'AbortError'))
+    }
+    signal?.addEventListener('abort', abort, { once: true })
 
     let lastLoggedPct = -1
 
@@ -126,12 +136,14 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
           mlog('EXPORT_FRAMES', `progress ${pct}% (frame ${msg.frame}/${msg.totalFrames})`)
         }
       } else if (msg.type === 'done') {
+        signal?.removeEventListener('abort', abort)
         worker.terminate()
         const elapsed = ((performance.now() - t0) / 1000).toFixed(2)
         const blob = new Blob([msg.buffer], { type: 'video/mp4' })
         mlog('EXPORT', `done — blob=${(blob.size / 1_000_000).toFixed(2)}MB totalTime=${elapsed}s`)
         resolve(blob)
       } else if (msg.type === 'error') {
+        signal?.removeEventListener('abort', abort)
         worker.terminate()
         console.error(`[export:main] worker reported error: ${msg.message}`)
         reject(new Error(msg.message))
@@ -139,6 +151,7 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
     }
 
     worker.onerror = (e) => {
+      signal?.removeEventListener('abort', abort)
       worker.terminate()
       console.error(`[export:main] worker crashed: ${e.message}`)
       reject(new Error(`ExportWorker crashed: ${e.message}`))
@@ -149,7 +162,7 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
       {
         type: 'start',
         project,
-        options: { ...options, onProgress: undefined },
+        options: { ...options, onProgress: undefined, signal: undefined },
         audio,
         // Forward the main thread's enabled channels so the Worker's tracer
         // mirrors them — it can't read `__trace`/localStorage on its own.

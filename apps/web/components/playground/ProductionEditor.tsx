@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { TextClipProperties } from './TextClipProperties'
+import { ExportModal } from './ExportModal'
 import { createPlaygroundDemuxerFactory } from '@/lib/createPlaygroundDemuxerFactory'
 import { btnDisabled, theme } from './theme'
 import {
@@ -18,6 +19,8 @@ import {
   framesToTimecode,
   type InitialTrackConfig,
   type TimelineRef,
+  type ExportVideoCodec,
+  type ExportAudioCodec,
 } from '@elah/editor'
 
 const FPS = 30
@@ -43,15 +46,7 @@ const divider: React.CSSProperties = {
   margin: '0 8px',
 }
 
-const AppHeader = memo(function AppHeader({
-  isExporting,
-  exportProgress,
-  onExport,
-}: {
-  isExporting: boolean
-  exportProgress: number
-  onExport: () => void
-}) {
+const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }) {
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
@@ -107,12 +102,11 @@ const AppHeader = memo(function AppHeader({
         <button
           type="button"
           className="elah-export-btn"
-          style={btnDisabled(isExporting)}
-          disabled={isExporting}
+          style={btnDisabled(false)}
           onClick={onExport}
           title="Export to MP4"
         >
-          {isExporting ? `Exporting ${exportProgress}%` : '⬇ Export'}
+          ⬇ Export
         </button>
       </div>
     </header>
@@ -300,38 +294,34 @@ export default function ProductionEditor() {
   const timelineRef = useRef<TimelineRef>(null)
   const demuxerFactoryRef = useRef(createPlaygroundDemuxerFactory())
 
-  const [isExporting, setIsExporting] = useState(false)
-  const [exportProgress, setExportProgress] = useState(0)
+  const [showExportModal, setShowExportModal] = useState(false)
 
-  const handleExport = useCallback(async () => {
+  const handleExportStart = useCallback(async (opts: {
+    videoBitrate: number
+    videoCodec: ExportVideoCodec
+    audioCodec: ExportAudioCodec
+    signal: AbortSignal
+    onProgress: (frame: number, totalFrames: number) => void
+  }) => {
     const e = timelineRef.current?.engine
-    if (!e || isExporting) return
-
+    if (!e) return
+    usePlaybackStore.getState().pause()
     const project = e.getProject()
-    setIsExporting(true)
-    setExportProgress(0)
-    try {
-      const { lazyExportVideo } = await import('@elah/editor')
-      const blob = await lazyExportVideo(project, {
-        videoBitrate: 8_000_000,
-        onProgress: ({ frame, totalFrames }) => {
-          setExportProgress(Math.round((frame / totalFrames) * 100))
-        },
-      })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'export.mp4'
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
-    } catch (err) {
-      console.error('[export:ui] export failed:', err)
-      alert(`Export failed: ${String(err)}`)
-    } finally {
-      setIsExporting(false)
-      setExportProgress(0)
-    }
-  }, [isExporting])
+    const { lazyExportVideo } = await import('@elah/editor')
+    const blob = await lazyExportVideo(project, {
+      videoBitrate: opts.videoBitrate,
+      videoCodec: opts.videoCodec,
+      audioCodec: opts.audioCodec,
+      signal: opts.signal,
+      onProgress: ({ frame, totalFrames }) => opts.onProgress(frame, totalFrames),
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'export.mp4'
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }, [])
 
   return (
     <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
@@ -339,11 +329,13 @@ export default function ProductionEditor() {
         className="elah-root"
         style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
       >
-        <AppHeader
-          isExporting={isExporting}
-          exportProgress={exportProgress}
-          onExport={handleExport}
-        />
+        <AppHeader onExport={() => setShowExportModal(true)} />
+        {showExportModal && (
+          <ExportModal
+            onClose={() => setShowExportModal(false)}
+            onExport={handleExportStart}
+          />
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>

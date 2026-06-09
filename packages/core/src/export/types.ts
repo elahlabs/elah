@@ -9,6 +9,8 @@ export interface ExportOptions {
   /** Target audio bitrate in bits/s. Default 128 kbps. */
   audioBitrate?: number
   onProgress?: (progress: ExportProgress) => void
+  /** Abort signal — reject the export promise and terminate the worker when aborted. */
+  signal?: AbortSignal
 }
 
 export interface ExportProgress {

@@ -12,7 +12,7 @@
  * - All pieces work together through shared state
  */
 
-import { memo, useRef } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import {
   EditorProvider,
   AssetPanel,
@@ -22,10 +22,98 @@ import {
   useTracksStore,
   useTimelineEngine,
   framesToTimecode,
+  lazyExportVideo,
   type InitialTrackConfig,
   type TimelineRef,
   type PreviewHandle,
+  type ExportVideoCodec,
+  type ExportAudioCodec,
 } from '@elah/editor'
+
+// ---------------------------------------------------------------------------
+// Minimal export modal for the standalone playground
+// ---------------------------------------------------------------------------
+
+type ExportPhase = 'idle' | 'rendering' | 'error'
+
+function ExportOverlay({
+  phase,
+  frame,
+  totalFrames,
+  error,
+  onCancel,
+  onClose,
+}: {
+  phase: ExportPhase
+  frame: number
+  totalFrames: number
+  error: string
+  onCancel: () => void
+  onClose: () => void
+}) {
+  if (phase === 'idle') return null
+  const pct = totalFrames > 0 ? Math.round((frame / totalFrames) * 100) : 0
+
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.75)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    fontFamily: 'system-ui, sans-serif',
+  }
+
+  const cardStyle: React.CSSProperties = {
+    background: '#1a1a1a',
+    border: '1px solid #333',
+    borderRadius: 8,
+    padding: '20px 24px',
+    width: 340,
+    color: '#f3f4f6',
+  }
+
+  const btnStyle: React.CSSProperties = {
+    padding: '7px 16px',
+    background: '#262626',
+    color: '#a7afbf',
+    border: '1px solid #333',
+    borderRadius: 6,
+    fontSize: 12,
+    cursor: 'pointer',
+  }
+
+  return (
+    <div style={overlayStyle}>
+      <div style={cardStyle}>
+        {phase === 'rendering' ? (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Exporting…</div>
+            <div style={{ fontSize: 12, color: '#a7afbf', marginBottom: 10 }}>
+              {totalFrames > 0 ? `Frame ${frame} / ${totalFrames}` : 'Preparing…'}
+            </div>
+            <div style={{ height: 6, background: '#333', borderRadius: 3, overflow: 'hidden', marginBottom: 6 }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: '#e11d48', borderRadius: 3, transition: 'width 0.3s' }} />
+            </div>
+            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 16 }}>{pct}%</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button style={btnStyle} onClick={onCancel}>Cancel</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Export failed</div>
+            <div style={{ fontSize: 11, color: '#fb7185', fontFamily: 'monospace', marginBottom: 16, wordBreak: 'break-word' }}>{error}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button style={btnStyle} onClick={onClose}>Close</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 const FPS = 30
 
@@ -36,7 +124,7 @@ const INITIAL_TRACKS: InitialTrackConfig[] = [
 ]
 
 // Toolbar with playback controls and demo buttons
-const Toolbar = memo(function Toolbar() {
+const Toolbar = memo(function Toolbar({ onExport }: { onExport: () => void }) {
   const engine = useTimelineEngine()
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
@@ -175,6 +263,13 @@ const Toolbar = memo(function Toolbar() {
           🗑 Clear All
         </button>
       </div>
+
+      {/* Export */}
+      <div style={{ marginLeft: 'auto' }}>
+        <button onClick={onExport} style={primaryButtonStyle}>
+          ⬇ Export
+        </button>
+      </div>
     </div>
   )
 })
@@ -182,10 +277,64 @@ const Toolbar = memo(function Toolbar() {
 export default function FullEditorPage() {
   const timelineRef = useRef<TimelineRef>(null)
   const previewRef = useRef<PreviewHandle>(null)
+  const abortRef = useRef<AbortController | null>(null)
+
+  const [exportPhase, setExportPhase] = useState<ExportPhase>('idle')
+  const [exportFrame, setExportFrame] = useState(0)
+  const [exportTotalFrames, setExportTotalFrames] = useState(0)
+  const [exportError, setExportError] = useState('')
+
+  const handleExport = useCallback(async () => {
+    const engine = timelineRef.current?.engine
+    if (!engine) return
+    usePlaybackStore.getState().pause()
+    const project = engine.getProject()
+    const controller = new AbortController()
+    abortRef.current = controller
+    setExportPhase('rendering')
+    setExportFrame(0)
+    setExportTotalFrames(0)
+    try {
+      const blob = await lazyExportVideo(project, {
+        videoBitrate: 8_000_000,
+        videoCodec: 'avc' as ExportVideoCodec,
+        audioCodec: 'aac' as ExportAudioCodec,
+        signal: controller.signal,
+        onProgress: ({ frame, totalFrames }) => {
+          setExportFrame(frame)
+          setExportTotalFrames(totalFrames)
+        },
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'export.mp4'
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      setExportPhase('idle')
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        setExportPhase('idle')
+      } else {
+        setExportError(String(err))
+        setExportPhase('error')
+      }
+    } finally {
+      abortRef.current = null
+    }
+  }, [])
 
   return (
     <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <ExportOverlay
+        phase={exportPhase}
+        frame={exportFrame}
+        totalFrames={exportTotalFrames}
+        error={exportError}
+        onCancel={() => abortRef.current?.abort()}
+        onClose={() => setExportPhase('idle')}
+      />
         {/* Header */}
         <header
           style={{
@@ -202,7 +351,7 @@ export default function FullEditorPage() {
         </header>
 
         {/* Toolbar */}
-        <Toolbar />
+        <Toolbar onExport={handleExport} />
 
         {/* Main content */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
