@@ -1,13 +1,85 @@
 import type { Metadata } from 'next'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { MermaidDiagram } from '@/components/docs/MermaidDiagram'
 
 export const metadata: Metadata = { title: 'Architecture' }
 
 const toc = [
-  { id: 'overview', title: 'System Overview', level: 2 },
-  { id: 'core-to-ui', title: 'Core → UI Communication', level: 2 },
-  { id: 'playback', title: 'Playback Pipeline', level: 2 },
+  { id: 'ring-states', title: 'Three-Ring State Model', level: 2 },
+  { id: 'timeline-engine', title: 'Timeline Engine', level: 2 },
+  { id: 'playback-clock', title: 'Playback Engine & Clock', level: 2 },
+  { id: 'rendering-engine', title: 'Rendering Engine', level: 2 },
+  { id: 'overview', title: 'Layer Reference', level: 2 },
 ]
+
+const ringStatesDiagram = `
+flowchart TD
+    subgraph R0["Ring 0 — Engine (Source of Truth)"]
+        TE["TimelineEngine\nImmer · history · events"]
+        PE["PlaybackEngine\nanchor-integrate clock"]
+    end
+    subgraph R1["Ring 1 — Zustand Stores (Reactive Mirror)"]
+        TS[useTracksStore]
+        PS[usePlaybackStore]
+        SS[useSelectionStore]
+    end
+    subgraph R2["Ring 2 — React UI (Transient)"]
+        UI["Timeline · Preview · AssetPanel"]
+    end
+    R0 -->|"emit 'change' event"| R1
+    R1 -->|"selector subscriptions → re-render"| R2
+    R2 -->|"engine.addClip() / seek() / …"| R0
+`
+
+const timelineEngineDiagram = `
+sequenceDiagram
+    participant UI as React UI
+    participant TE as TimelineEngine
+    participant ZS as Zustand Stores
+
+    UI->>TE: engine.addClip() / updateClip()
+    TE->>TE: commit() — Immer draft → new Project
+    TE-->>ZS: emit 'change' event
+    ZS-->>UI: setState — only subscribed slices re-render
+
+    UI->>TE: engine.undo()
+    TE->>TE: pop history stack → restore prior Project
+    TE-->>ZS: emit 'change' event
+    ZS-->>UI: setState — UI reflects previous state
+`
+
+const playbackClockDiagram = `
+flowchart TD
+    A(["play() / seek(frame)"]) --> B["Set anchorFrame + anchorTime\n= current frame + performance.now()"]
+    B --> C["RAF tick"]
+    C --> D["currentFrame =\nanchorFrame + (now − anchorTime) × fps × rate"]
+    D --> E{"integer frame\nchanged?"}
+    E -->|no| C
+    E -->|yes| F["Notify subscribers"]
+    F --> G["usePlaybackStore.setState"]
+    G --> H["resolveTimeline(frame, project) → Scene"]
+    H --> I["GpuRenderer.render(scene)"]
+    I --> C
+`
+
+const renderingEngineDiagram = `
+flowchart LR
+    Scene --> RG["RenderGraph\nsort layers by zIndex"]
+    RG --> VL["VideoLayer"]
+    RG --> IL["ImageLayer"]
+    RG --> TL["TextLayer"]
+
+    VL --> FC{"FrameCache\nhit?"}
+    FC -->|yes| TX["Upload to GPU Texture"]
+    FC -->|no| DEC["VideoDecoderManager\nWebCodecs async decode"]
+    DEC --> FC
+
+    IL --> TX
+    TL -->|"Canvas 2D rasterize\n→ ImageBitmap"| TX
+
+    TX --> WGL["gl.drawArrays() × N layers\nunit quad + opacity"]
+    WGL --> OUT["canvas output"]
+`
 
 export default function ArchitecturePage() {
   return (
@@ -16,17 +88,81 @@ export default function ArchitecturePage() {
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Architecture</div>
           <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            Architecture
+            Architecture Overview
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            How the engine, stores, renderer, and media pipeline fit together. Three diagrams: system overview, core↔UI data flow, and the playback loop.
+            Four diagrams covering the state model, timeline mutations, the playback clock, and the GPU rendering pipeline.
           </p>
         </div>
 
-        {/* ── System Overview ── */}
+        {/* ── Ring States ── */}
+        <section className="mb-12">
+          <h2 id="ring-states" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Three-Ring State Model
+          </h2>
+          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
+            State lives in three concentric rings. Ring 0 is the single source of truth — a plain TypeScript class with no framework dependencies. Ring 1 mirrors it into Zustand so React can subscribe. Ring 2 holds ephemeral UI state (selection, drag) that never persists to history.
+          </p>
+          <MermaidDiagram chart={ringStatesDiagram} />
+          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+            <p className="text-xs leading-relaxed text-on-surface-variant">
+              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine can run in Node, Web Workers, or WASM with no changes. Tests import it directly without mounting any React tree.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Timeline Engine ── */}
+        <section className="mb-12">
+          <h2 id="timeline-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Timeline Engine
+          </h2>
+          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
+            All project mutations — adding clips, trimming, splitting, undo/redo — go through one method: <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">commit()</code>. Immer applies the draft, records a history entry, and emits a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">&apos;change&apos;</code> event. Zustand listeners pick it up and React re-renders only the changed slices.
+          </p>
+          <MermaidDiagram chart={timelineEngineDiagram} />
+          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+            <p className="text-xs leading-relaxed text-on-surface-variant">
+              <strong className="text-on-surface font-medium">Single mutation funnel.</strong> There is no direct way to mutate the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Project</code> from outside the engine. Every edit automatically lands in the undo history and notifies all subscribers.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Playback Clock ── */}
+        <section className="mb-12">
+          <h2 id="playback-clock" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Playback Engine & Clock
+          </h2>
+          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
+            The clock uses an <em>anchor-and-integrate</em> model rather than a counter. On every <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">play()</code> or <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">seek()</code>, it records the current frame and wall-clock time. Each RAF tick derives the current frame from that anchor — no accumulated drift, and rate changes are instantaneous.
+          </p>
+          <MermaidDiagram chart={playbackClockDiagram} />
+          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+            <p className="text-xs leading-relaxed text-on-surface-variant">
+              <strong className="text-on-surface font-medium">Tab visibility.</strong> When the tab is hidden, the engine freezes the anchor frame so playback does not fast-forward on resume. Audio syncs to the same anchor so there is no A/V drift.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Rendering Engine ── */}
+        <section className="mb-12">
+          <h2 id="rendering-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Rendering Engine
+          </h2>
+          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
+            The renderer receives a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Scene</code> — a plain list of active layers — and draws textured quads to a WebGL2 canvas. It knows nothing about the project, history, or React. Video frames are decoded asynchronously into a ring-buffer cache; the render call itself is synchronous and stays under 1 ms on the main thread.
+          </p>
+          <MermaidDiagram chart={renderingEngineDiagram} />
+          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+            <p className="text-xs leading-relaxed text-on-surface-variant">
+              <strong className="text-on-surface font-medium">Cache miss graceful degradation.</strong> On a seek or cold start the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">FrameCache</code> may not have the target frame yet. The renderer shows the last cached frame while the async decoder catches up — no blank frames, no stalls.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Layer Reference ── */}
         <section className="mb-12">
           <h2 id="overview" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            System Overview
+            Layer Reference
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
             Six vertical layers. Each layer only talks to the one directly below it — the React UI never touches WebGL; the renderer never imports React.
@@ -99,7 +235,6 @@ export default function ArchitecturePage() {
             ].map((layer, i) => (
               <div key={layer.label} className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}>
                 <div className="flex gap-0 sm:gap-4">
-                  {/* Layer label column */}
                   <div
                     className="flex w-8 shrink-0 items-stretch sm:w-28"
                     style={{ borderRight: `2px solid ${layer.color}22` }}
@@ -118,7 +253,6 @@ export default function ArchitecturePage() {
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="flex flex-1 flex-col gap-2 px-3 py-3 sm:flex-row sm:items-start sm:gap-6">
                     <div className="flex flex-1 flex-wrap gap-1">
                       {layer.items.map((item) => (
@@ -141,304 +275,6 @@ export default function ArchitecturePage() {
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* ── Core → UI Communication ── */}
-        <section className="mb-12">
-          <h2 id="core-to-ui" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            Core → UI Communication
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The engine is framework-agnostic — it emits typed events and never imports React or Zustand. Zustand stores are wired up once inside <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">EditorProvider</code> by subscribing to engine events. From there React's normal reactivity takes over.
-          </p>
-
-          {/* Mutation flow */}
-          <div className="mb-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Mutation flow — e.g. engine.addClip()</div>
-            <div className="flex flex-col gap-0 overflow-hidden rounded-md border border-outline-variant">
-              {[
-                {
-                  step: '1',
-                  who: 'React component',
-                  what: 'User drags a clip or clicks a button',
-                  detail: 'onClick, onDrop, keyboard handler',
-                  color: '#b7102a',
-                },
-                {
-                  step: '2',
-                  who: 'TimelineEngine',
-                  what: 'engine.addClip() / updateClip() / undo() / …',
-                  detail: 'Any public engine method',
-                  color: '#006860',
-                },
-                {
-                  step: '3',
-                  who: 'TimelineEngine.commit()',
-                  what: 'Immer draft applied → new Project snapshot',
-                  detail: 'Structural sharing — only changed nodes allocate',
-                  color: '#006860',
-                },
-                {
-                  step: '4',
-                  who: 'TimelineEngine',
-                  what: "Emits 'change' event with new Project",
-                  detail: "engine.on('change', (project) => { … })",
-                  color: '#006860',
-                },
-                {
-                  step: '5',
-                  who: 'Zustand stores',
-                  what: 'useTracksStore, useTransitionsStore update',
-                  detail: "Listeners wired once in EditorProvider's useEffect",
-                  color: '#485f84',
-                },
-                {
-                  step: '6',
-                  who: 'React',
-                  what: 'Only components subscribed to changed slices re-render',
-                  detail: 'Zustand selector equality check prevents unnecessary renders',
-                  color: '#b7102a',
-                },
-              ].map((row, i) => (
-                <div
-                  key={row.step}
-                  className={`relative flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
-                >
-                  <div
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-bold text-white"
-                    style={{ backgroundColor: row.color }}
-                  >
-                    {row.step}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="label-mono text-2xs font-semibold" style={{ color: row.color }}>{row.who}</span>
-                      <span className="text-xs text-on-surface">{row.what}</span>
-                    </div>
-                    <div className="mt-0.5 font-mono text-2xs text-on-surface-variant opacity-70">{row.detail}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Playback store update */}
-          <div>
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Playback store update — separate path via PlaybackEngine</div>
-            <div className="flex flex-col gap-0 overflow-hidden rounded-md border border-outline-variant">
-              {[
-                {
-                  step: '1',
-                  who: 'React component',
-                  what: 'Calls engine.play() / pause() / seek(frame)',
-                  detail: 'toolbar button, keyboard Space key, timeline scrub',
-                  color: '#b7102a',
-                },
-                {
-                  step: '2',
-                  who: 'PlaybackEngine',
-                  what: 'Stores anchor frame + anchor time, starts RAF loop',
-                  detail: 'requestAnimationFrame(() => tick())',
-                  color: '#006860',
-                },
-                {
-                  step: '3',
-                  who: 'PlaybackEngine tick',
-                  what: 'Notifies listeners on integer frame advance',
-                  detail: 'listeners.forEach(cb) — only fires when frame number changes',
-                  color: '#006860',
-                },
-                {
-                  step: '4',
-                  who: 'Timeline.tsx subscriber',
-                  what: 'usePlaybackStore.setState({ currentFrame, isPlaying })',
-                  detail: 'Wired once in Timeline component mount',
-                  color: '#485f84',
-                },
-                {
-                  step: '5',
-                  who: 'Preview component',
-                  what: 'usePlaybackStore(s => s.currentFrame) triggers re-render',
-                  detail: 'Calls resolveTimeline(frame, project) → Scene → GpuRenderer.drawScene()',
-                  color: '#b7102a',
-                },
-              ].map((row, i) => (
-                <div
-                  key={row.step}
-                  className={`relative flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
-                >
-                  <div
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-bold text-white"
-                    style={{ backgroundColor: row.color }}
-                  >
-                    {row.step}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="label-mono text-2xs font-semibold" style={{ color: row.color }}>{row.who}</span>
-                      <span className="text-xs text-on-surface">{row.what}</span>
-                    </div>
-                    <div className="mt-0.5 font-mono text-2xs text-on-surface-variant opacity-70">{row.detail}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Why two paths?</strong> Project mutations (clips, tracks, transitions) are infrequent and go through <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">TimelineEngine</code>. Frame ticks happen 30–60× per second — <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">PlaybackEngine</code> keeps that hot path completely separate so timeline mutations never block the RAF loop and vice versa.
-            </p>
-          </div>
-        </section>
-
-        {/* ── Playback Pipeline ── */}
-        <section className="mb-12">
-          <h2 id="playback" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-            Playback Pipeline
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            What happens between <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">play()</code> and a composited frame appearing on screen. Each RAF tick runs the full path in under 1 ms on the main thread; the heavy decode work is async and pre-buffered.
-          </p>
-
-          {/* RAF clock */}
-          <div className="mb-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">A — Clock integration (main thread, every RAF tick)</div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {[
-                {
-                  title: 'Anchor-integrate',
-                  body: 'currentFrame = anchorFrame + (now − anchorTime) × fps × rate',
-                  note: 'performance.now() is the single time source. Floored to integer.',
-                  color: '#006860',
-                },
-                {
-                  title: 'Frame-change gate',
-                  body: 'Only notifies listeners when the integer frame differs from last tick',
-                  note: 'Prevents redundant resolveTimeline + draw calls at high frame rates.',
-                  color: '#006860',
-                },
-                {
-                  title: 'Visibility handling',
-                  body: 'document.hidden → freeze anchor frame; visible → re-anchor time',
-                  note: 'Prevents "time warp" catch-up when the tab is backgrounded.',
-                  color: '#006860',
-                },
-              ].map((card) => (
-                <div
-                  key={card.title}
-                  className="rounded-md border p-3"
-                  style={{ borderColor: card.color + '30', backgroundColor: card.color + '06' }}
-                >
-                  <div className="mb-1 text-xs font-semibold text-on-surface">{card.title}</div>
-                  <div className="mb-1 font-mono text-2xs leading-relaxed text-on-surface">{card.body}</div>
-                  <div className="text-2xs leading-relaxed text-on-surface-variant opacity-70">{card.note}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Scene resolution + draw */}
-          <div className="mb-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">B — Scene resolution + GPU draw (triggered by frame tick)</div>
-            <div className="flex flex-col gap-0 overflow-hidden rounded-md border border-outline-variant">
-              {[
-                {
-                  node: 'resolveTimeline(frame, project)',
-                  type: 'Pure function',
-                  desc: 'Returns a Scene: an ordered list of layers active at this frame. Clips outside [startFrame, startFrame+duration) are excluded. Transition overlap frames get opacity weights.',
-                  color: '#6b21a8',
-                },
-                {
-                  node: 'RenderGraph.build(scene)',
-                  type: 'GpuRenderer',
-                  desc: 'Sorts layers by z-index, allocates or reuses TexturePool slots per clip ID. One WebGL draw call per layer.',
-                  color: '#b45309',
-                },
-                {
-                  node: 'VideoLayer',
-                  type: 'Per video/image clip',
-                  desc: 'Calls StreamingFrameProducer.getFrameSync(frame). If FrameCache has the ImageBitmap → upload to GPU texture immediately. If miss → returns last cached frame and schedules async decode.',
-                  color: '#b45309',
-                },
-                {
-                  node: 'TextLayer',
-                  type: 'Per text clip',
-                  desc: 'Rasterizes text to an OffscreenCanvas 2D context. Uploads the resulting ImageBitmap as a WebGL texture. Re-rasterizes only when text content or layout changes.',
-                  color: '#b45309',
-                },
-                {
-                  node: 'gl.drawArrays() × N',
-                  type: 'WebGL2',
-                  desc: 'Each layer draws a unit quad scaled/translated to the clip\'s resolved position. Fragment shader samples the texture and applies opacity from the Scene layer.',
-                  color: '#b45309',
-                },
-              ].map((row, i) => (
-                <div
-                  key={row.node}
-                  className={`flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
-                >
-                  <div className="w-2 shrink-0 rounded-sm" style={{ backgroundColor: row.color + '60' }} />
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
-                      <span className="font-mono text-xs font-medium text-on-surface">{row.node}</span>
-                      <span
-                        className="label-mono rounded px-1.5 py-0.5 text-2xs"
-                        style={{ color: row.color, backgroundColor: row.color + '10' }}
-                      >
-                        {row.type}
-                      </span>
-                    </div>
-                    <p className="text-2xs leading-relaxed text-on-surface-variant">{row.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Media pipeline async path */}
-          <div>
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">C — Async media pipeline (StreamingFrameProducer, off the RAF path)</div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {[
-                {
-                  title: 'FrameCache (ring buffer)',
-                  body: 'Stores decoded ImageBitmaps keyed by frame index. Evicts oldest entries when capacity is exceeded. Cache hits return synchronously to the GPU layer.',
-                  color: '#0f766e',
-                },
-                {
-                  title: 'VideoDecoderManager',
-                  body: 'Manages a WebCodecs VideoDecoder per clip. Enqueues encoded chunks from the demuxer in decode order; resolves promises when the target frame is decoded.',
-                  color: '#0f766e',
-                },
-                {
-                  title: 'Look-ahead buffering',
-                  body: 'StreamingFrameProducer pre-decodes several frames ahead of the current playhead so the FrameCache is warm before the RAF tick needs them.',
-                  color: '#0f766e',
-                },
-                {
-                  title: 'Seek recovery',
-                  body: 'On a jump seek, the decoder flushes, re-seeks to the nearest keyframe in the demuxer, and re-primes the FrameCache. Stale frames are discarded.',
-                  color: '#0f766e',
-                },
-              ].map((card) => (
-                <div
-                  key={card.title}
-                  className="rounded-md border p-3"
-                  style={{ borderColor: card.color + '30', backgroundColor: card.color + '06' }}
-                >
-                  <div className="mb-1 text-xs font-semibold text-on-surface">{card.title}</div>
-                  <p className="text-2xs leading-relaxed text-on-surface-variant">{card.body}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-              <p className="text-xs leading-relaxed text-on-surface-variant">
-                <strong className="text-on-surface font-medium">Audio is parallel.</strong> <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">AudioPlaybackController</code> decodes audio tracks into <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">AudioBuffer</code>s and schedules them on a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">WebAudio AudioContext</code>. It syncs to the same <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">PlaybackEngine</code> anchor, so audio and video advance from the same clock with no drift.
-              </p>
-            </div>
           </div>
         </section>
       </article>

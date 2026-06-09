@@ -65,9 +65,11 @@ export const docsNav: DocNavSection[] = [
     title: 'Architecture',
     items: [
       { title: 'Overview', href: '/docs/architecture' },
-      { title: 'System Overview', href: '/docs/architecture#overview' },
-      { title: 'Core → UI', href: '/docs/architecture#core-to-ui' },
-      { title: 'Playback Pipeline', href: '/docs/architecture#playback' },
+      { title: 'Three-Ring State Model', href: '/docs/architecture#ring-states' },
+      { title: 'Timeline Engine', href: '/docs/architecture#timeline-engine' },
+      { title: 'Playback Engine & Clock', href: '/docs/architecture#playback-clock' },
+      { title: 'Rendering Engine', href: '/docs/architecture#rendering-engine' },
+      { title: 'Layer Reference', href: '/docs/architecture#overview' },
     ],
   },
   {
