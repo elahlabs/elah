@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc --noEmit && tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json"
   },
   "keywords": [
     "video-editor",
