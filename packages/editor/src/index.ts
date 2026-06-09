@@ -47,7 +47,7 @@ export type { RendererOptions } from '@elah/core'
 export { GpuDebugCounters } from '@elah/core'
 export type { CounterSnapshot } from '@elah/core'
 
-export { createMediabunnyBackend, isMediabunnyCompatible } from '@elah/core'
+export { createDefaultDemuxerFactory, createMediabunnyBackend, isMediabunnyCompatible } from '@elah/core'
 export type { MediabunnyModule, CreateMediabunnyBackendOpts } from '@elah/core'
 export type { DemuxerBackend, DemuxerFactory } from '@elah/core'
 

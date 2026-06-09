@@ -63,6 +63,7 @@ export { GpuDebugCounters } from './renderer/gpu/debug/GpuDebugCounters'
 export type { CounterSnapshot } from './renderer/gpu/debug/GpuDebugCounters'
 
 // --- Demuxer integration ---
+export { createDefaultDemuxerFactory } from './media/video/demuxer/createDefaultDemuxerFactory'
 export { createMediabunnyBackend, isMediabunnyCompatible } from './media/video/demuxer/createMediabunnyBackend'
 export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './media/video/demuxer/createMediabunnyBackend'
 export type { DemuxerBackend, DemuxerFactory } from './media/video/demuxer/MediabunnyDemuxer'

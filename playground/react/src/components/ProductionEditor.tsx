@@ -1,5 +1,3 @@
-'use client'
-
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { TextClipProperties } from './TextClipProperties'
 import { ExportModal } from './ExportModal'
@@ -72,7 +70,7 @@ const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }
           letterSpacing: '-0.02em',
         }}
       >
-        @elah/editor
+        @elah/editor · React
       </span>
 
       <div style={{ display: 'flex', gap: 4 }}>

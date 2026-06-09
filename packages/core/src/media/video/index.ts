@@ -6,3 +6,4 @@ export { DecoderBackedVideoFrameProvider } from './DecoderBackedVideoFrameProvid
 export { FrameCache } from './FrameCache'
 export type { DemuxerFactory, DemuxerBackend } from './demuxer/MediabunnyDemuxer'
 export { createMediabunnyBackend, isMediabunnyCompatible } from './demuxer/createMediabunnyBackend'
+export { createDefaultDemuxerFactory } from './demuxer/createDefaultDemuxerFactory'

@@ -1,6 +1,10 @@
 node_modules
 apps/*/node_modules
 apps/*/.next
+playground/*/node_modules
+playground/*/.next
+playground/*/dist
+playground/*/package-lock.json
 dist
 *.tsbuildinfo
 .DS_Store

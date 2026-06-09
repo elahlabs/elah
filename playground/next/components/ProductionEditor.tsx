@@ -72,7 +72,7 @@ const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }
           letterSpacing: '-0.02em',
         }}
       >
-        @elah/editor
+        @elah/editor · Next.js
       </span>
 
       <div style={{ display: 'flex', gap: 4 }}>
