@@ -113,7 +113,7 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
   return new Promise((resolve, reject) => {
     mlog('EXPORT', 'spawning ExportWorker (module worker)')
     const worker = new Worker(
-      new URL('./ExportWorker.ts', import.meta.url),
+      new URL('./ExportWorker.js', import.meta.url),
       { type: 'module' },
     )
 

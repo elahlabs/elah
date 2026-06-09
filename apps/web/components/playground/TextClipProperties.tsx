@@ -232,7 +232,7 @@ export function TextClipProperties() {
               resize: 'vertical',
               minHeight: 56,
               lineHeight: 1.4,
-              borderColor: theme.accent,
+              border: `1px solid ${theme.accent}`,
             }}
           />
         </FieldRow>

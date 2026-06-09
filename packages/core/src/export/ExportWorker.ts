@@ -397,7 +397,12 @@ async function renderFrame(
           })
         }
         const seekStart = isDebugFrame ? performance.now() : 0
-        const wrapped = await sink.getCanvas(sourceTimeSec)
+        let wrapped: Awaited<ReturnType<typeof sink.getCanvas>> = null
+        try {
+          wrapped = await sink.getCanvas(sourceTimeSec)
+        } catch (err) {
+          xlog('render:frame0', `video layer — getCanvas() failed (frame skipped): ${String(err)}`)
+        }
         if (isDebugFrame) {
           xlog('render:frame0', `video layer — getCanvas()`, {
             gotFrame: !!wrapped,

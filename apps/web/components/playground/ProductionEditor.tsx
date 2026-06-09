@@ -162,7 +162,7 @@ const TimelineControls = memo(function TimelineControls({
     ...(active
       ? {
           background: 'rgba(225, 29, 72, 0.12)',
-          borderColor: theme.accent,
+          border: `1px solid ${theme.accent}`,
           color: theme.accentHover,
           boxShadow: `0 0 10px rgba(225, 29, 72, 0.35)`,
         }
@@ -176,7 +176,7 @@ const TimelineControls = memo(function TimelineControls({
     ...(isPlaying
       ? {
           background: 'rgba(34, 197, 94, 0.12)',
-          borderColor: theme.success,
+          border: `1px solid ${theme.success}`,
           color: theme.success,
         }
       : {}),

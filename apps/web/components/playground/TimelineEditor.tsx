@@ -87,7 +87,7 @@ const TimelineToolbar = memo(function TimelineToolbar() {
   const primaryButtonStyle = {
     ...buttonStyle,
     background: isPlaying ? 'rgba(34, 197, 94, 0.12)' : '#E11D48',
-    borderColor: isPlaying ? '#22C55E' : '#E11D48',
+    border: isPlaying ? '1px solid #22C55E' : '1px solid #E11D48',
     color: isPlaying ? '#22C55E' : '#fff',
   } as React.CSSProperties
 
@@ -126,21 +126,21 @@ const TimelineToolbar = memo(function TimelineToolbar() {
         <span style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, fontFamily: 'system-ui, sans-serif', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Add:</span>
         <button
           onClick={() => tracks[0] && handleAddClip(tracks[0].id, 'video', FPS * 3)}
-          style={{ ...buttonStyle, background: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563EB', color: '#60A5FA' }}
+          style={{ ...buttonStyle, background: 'rgba(37, 99, 235, 0.15)', border: '1px solid #2563EB', color: '#60A5FA' }}
           title="Add 3-second video clip"
         >
           + Video
         </button>
         <button
           onClick={() => tracks[1] && handleAddClip(tracks[1].id, 'audio', FPS * 5)}
-          style={{ ...buttonStyle, background: 'rgba(22, 163, 74, 0.15)', borderColor: '#16A34A', color: '#4ADE80' }}
+          style={{ ...buttonStyle, background: 'rgba(22, 163, 74, 0.15)', border: '1px solid #16A34A', color: '#4ADE80' }}
           title="Add 5-second audio clip"
         >
           + Audio
         </button>
         <button
           onClick={() => tracks[2] && handleAddClip(tracks[2].id, 'text', FPS * 2)}
-          style={{ ...buttonStyle, background: 'rgba(147, 51, 234, 0.15)', borderColor: '#9333EA', color: '#C084FC' }}
+          style={{ ...buttonStyle, background: 'rgba(147, 51, 234, 0.15)', border: '1px solid #9333EA', color: '#C084FC' }}
           title="Add 2-second text clip"
         >
           + Text
@@ -148,7 +148,7 @@ const TimelineToolbar = memo(function TimelineToolbar() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={handleClearAll} style={{ ...buttonStyle, background: 'rgba(225, 29, 72, 0.1)', borderColor: '#E11D48', color: '#FB7185' }}>
+        <button onClick={handleClearAll} style={{ ...buttonStyle, background: 'rgba(225, 29, 72, 0.1)', border: '1px solid #E11D48', color: '#FB7185' }}>
           ✕ Clear All
         </button>
       </div>
