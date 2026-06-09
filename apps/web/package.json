@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
+    "prebuild": "npm --prefix ../.. run build:packages",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
