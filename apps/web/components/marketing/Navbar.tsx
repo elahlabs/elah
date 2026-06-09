@@ -35,7 +35,7 @@ export function Navbar() {
             className="text-sm font-semibold tracking-tight"
             style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
           >
-            Precision Studio
+            elah
           </span>
         </Link>
 
@@ -60,7 +60,7 @@ export function Navbar() {
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
           <Link
-            href="https://github.com/your-org/precision-studio"
+            href="https://github.com/elahlabs/elah"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"

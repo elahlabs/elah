@@ -1,6 +1,6 @@
 {
   "name": "@elah/core",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Framework-agnostic video timeline engine — playback, frame resolution, WebGL2 renderer, and media management",
   "type": "module",
   "main": "./dist/index.js",

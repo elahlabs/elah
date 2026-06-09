@@ -5,7 +5,7 @@ import { ExternalLink, Layers, Clock, FileVideo, Cpu } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Showcase',
-  description: 'Projects and tools built with Precision Studio.',
+  description: 'Projects and tools built with elah.',
 }
 
 const showcaseItems = [
@@ -61,7 +61,7 @@ export default function ShowcasePage() {
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
             >
-              Built with Precision Studio
+              Built with elah
             </h1>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-on-surface-variant">
               Reference implementations, integration demos, and tools built on the SDK.
@@ -160,10 +160,10 @@ export default function ShowcasePage() {
               Share your project
             </h3>
             <p className="mb-4 text-xs leading-relaxed text-on-surface-variant">
-              If you have built something with Precision Studio, open a PR to add it to the showcase.
+              If you have built something with elah, open a PR to add it to the showcase.
             </p>
             <a
-              href="https://github.com/your-org/precision-studio/issues/new?template=showcase.md"
+              href="https://github.com/elahlabs/elah/issues/new?template=showcase.md"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded border border-outline-variant px-4 py-2 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"

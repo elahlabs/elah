@@ -59,10 +59,29 @@ export function HeroSection() {
             className="mt-5 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg"
             style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
           >
-            Precision Studio provides the timeline, rendering, and editing foundation for
+            elah provides the timeline, rendering, and editing foundation for
             professional creative applications built entirely on the web. Engine-first,
             renderer-agnostic, scalable from prototype to production.
           </motion.p>
+
+          {/* Framework support */}
+          <motion.div variants={FADE_UP} className="mt-6 flex flex-wrap items-center gap-2">
+            <span className="label-mono text-2xs text-on-surface-variant opacity-60">
+              Framework-agnostic core ·
+            </span>
+            <span className="label-mono rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-2xs text-primary">
+              Next.js
+            </span>
+            <span className="label-mono rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-2xs text-primary">
+              React
+            </span>
+            <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
+              React Native · experimental
+            </span>
+            <span className="label-mono rounded border border-dashed border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant opacity-70">
+              More frameworks coming soon
+            </span>
+          </motion.div>
 
           {/* CTAs */}
           <motion.div variants={FADE_UP} className="mt-8 flex flex-wrap items-center gap-3">
@@ -127,7 +146,7 @@ function EditorMockup() {
         <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
         <div className="h-2.5 w-2.5 rounded-full bg-green-500/80" />
         <div className="ml-3 h-5 flex-1 rounded border border-white/10 bg-white/5 px-2 flex items-center">
-          <span className="font-mono text-2xs text-white/30">precision-studio · Full Editor</span>
+          <span className="font-mono text-2xs text-white/30">elah · Full Editor</span>
         </div>
       </div>
 

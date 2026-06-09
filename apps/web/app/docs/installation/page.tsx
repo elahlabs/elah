@@ -26,7 +26,7 @@ export default function InstallationPage() {
             Installation
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            Add Precision Studio to your React application. The SDK ships as an npm workspace package — set it up as a monorepo dependency or install directly.
+            Add elah to your React application. The SDK ships as an npm workspace package — set it up as a monorepo dependency or install directly.
           </p>
         </div>
 
@@ -66,8 +66,8 @@ export default function InstallationPage() {
           <CodeBlock
             language="bash"
             filename="terminal"
-            code={`git clone https://github.com/your-org/precision-studio.git
-cd precision-studio/video-editor
+            code={`git clone https://github.com/elahlabs/elah.git
+cd elah/video-editor
 npm install`}
           />
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">

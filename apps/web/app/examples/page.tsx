@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Examples',
-  description: 'Code examples showing how to integrate Precision Studio for specific use cases.',
+  description: 'Code examples showing how to integrate elah for specific use cases.',
 }
 
 const examples = [

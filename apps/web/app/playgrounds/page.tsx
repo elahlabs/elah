@@ -6,7 +6,7 @@ import { Terminal } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Playgrounds',
-  description: 'Interactive playground environments for Precision Studio. Explore the full editor, timeline-only, and demo modes.',
+  description: 'Interactive playground environments for elah. Explore the full editor, timeline-only, and demo modes.',
 }
 
 const playgrounds = [
@@ -79,7 +79,7 @@ export default function PlaygroundsPage() {
               Playgrounds
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-surface-variant">
-              Each playground is a live deployment of the Precision Studio SDK. Launch one to explore the editor, test your integration, or demo the capabilities.
+              Each playground is a live deployment of the elah SDK. Launch one to explore the editor, test your integration, or demo the capabilities.
             </p>
 
             <div className="mt-6 inline-flex items-start gap-3 rounded-md border border-outline-variant bg-surface-low p-4">

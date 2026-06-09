@@ -5,7 +5,7 @@ import { DocsToc } from '@/components/docs/DocsToc'
 
 export const metadata: Metadata = {
   title: 'Documentation',
-  description: 'Precision Studio documentation. Browser-native video infrastructure.',
+  description: 'elah documentation. Browser-native video infrastructure.',
 }
 
 const toc = [
@@ -23,7 +23,7 @@ export default function DocsPage() {
         {/* Page header */}
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
-            Precision Studio
+            elah
           </div>
           <h1
             className="text-3xl font-semibold tracking-tight text-on-surface"
@@ -33,14 +33,14 @@ export default function DocsPage() {
             Introduction
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            Precision Studio is an open architecture for building browser-native video editors on top of React. Engine-first, renderer-agnostic, scalable from MVP to production.
+            elah is an open, framework-agnostic architecture for building browser-native video editors. It currently ships first-class support for Next.js and React, with React Native (experimental) and more frameworks coming soon. Engine-first, renderer-agnostic, scalable from MVP to production.
           </p>
         </div>
 
         {/* What is it */}
         <section className="mb-10">
           <p className="text-sm leading-relaxed text-on-surface-variant mb-4">
-            Precision Studio is <strong className="text-on-surface font-medium">not</strong> a drag-and-drop video editing app you open in a browser. It is the <strong className="text-on-surface font-medium">engine, resolver, and timeline SDK</strong> that any modern web-based video editor should sit on.
+            elah is <strong className="text-on-surface font-medium">not</strong> a drag-and-drop video editing app you open in a browser. It is the <strong className="text-on-surface font-medium">engine, resolver, and timeline SDK</strong> that any modern web-based video editor should sit on.
           </p>
           <p className="text-sm leading-relaxed text-on-surface-variant mb-4">
             Three goals shape every decision:

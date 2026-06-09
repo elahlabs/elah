@@ -28,7 +28,7 @@ export function CTASection() {
               video tooling on the web.
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-on-surface-variant">
-              Precision Studio is open source. Drop in the timeline and preview components, wire your demuxer, and ship.
+              elah is open source. Drop in the timeline and preview components, wire your demuxer, and ship.
             </p>
           </div>
 
@@ -41,7 +41,7 @@ export function CTASection() {
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
-              href="https://github.com/your-org/precision-studio"
+              href="https://github.com/elahlabs/elah"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-5 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"

@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: 'Engineering deep-dives, architecture decisions, and release notes from Precision Studio.',
+  description: 'Engineering deep-dives, architecture decisions, and release notes from elah.',
 }
 
 const posts = [

@@ -24,8 +24,8 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: siteConfig.keywords,
-  authors: [{ name: 'Precision Studio' }],
-  creator: 'Precision Studio',
+  authors: [{ name: 'elah' }],
+  creator: 'elah',
   openGraph: {
     type: 'website',
     locale: 'en_US',

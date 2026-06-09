@@ -17,9 +17,9 @@ const footerLinks = {
     { label: 'Architecture', href: '/docs#architecture' },
   ],
   Company: [
-    { label: 'GitHub', href: 'https://github.com/your-org/precision-studio' },
-    { label: 'Contributing', href: 'https://github.com/your-org/precision-studio/blob/main/CONTRIBUTING.md' },
-    { label: 'License', href: 'https://github.com/your-org/precision-studio/blob/main/LICENSE' },
+    { label: 'GitHub', href: 'https://github.com/elahlabs/elah' },
+    { label: 'Contributing', href: 'https://github.com/elahlabs/elah/blob/main/CONTRIBUTING.md' },
+    { label: 'License', href: 'https://github.com/elahlabs/elah/blob/main/LICENSE' },
   ],
 }
 
@@ -35,7 +35,7 @@ export function Footer() {
                 <Layers className="h-3.5 w-3.5 text-white" />
               </div>
               <span className="text-sm font-semibold text-on-surface">
-                Precision Studio
+                elah
               </span>
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-on-surface-variant" style={{ maxWidth: '18rem' }}>
@@ -79,7 +79,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-outline-variant pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-on-surface-variant">
-            © {new Date().getFullYear()} Precision Studio. Open source under MIT license.
+            © {new Date().getFullYear()} elah. Open source under MIT license.
           </p>
           <p className="label-mono text-2xs text-on-surface-variant opacity-60">
             Built with Next.js · Deployed on Vercel
