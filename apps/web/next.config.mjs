@@ -8,6 +8,7 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  transpilePackages: ['@elah/editor', '@elah/core', '@elah/timeline', 'mediabunny'],
 }
 
 export default nextConfig

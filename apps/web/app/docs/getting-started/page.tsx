@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
@@ -97,6 +98,17 @@ export default function TimelineOnly() {
   )
 }`}
           />
+          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
+            <p className="text-xs leading-relaxed text-on-surface-variant">
+              This is the same integration used in the live Timeline playground.
+            </p>
+            <Link
+              href="/playground/timeline"
+              className="shrink-0 rounded border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
+            >
+              Open Timeline →
+            </Link>
+          </div>
         </section>
 
         {/* Preview component */}
@@ -272,6 +284,17 @@ export default function FullEditor() {
   )
 }`}
           />
+          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
+            <p className="text-xs leading-relaxed text-on-surface-variant">
+              This is the same integration used in the live Production playground — asset panel, preview, timeline, transport, and export.
+            </p>
+            <Link
+              href="/playground/production"
+              className="shrink-0 rounded border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
+            >
+              Open Production →
+            </Link>
+          </div>
         </section>
 
         {/* Keyboard shortcuts */}

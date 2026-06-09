@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { PlaygroundCard } from '@/components/marketing/PlaygroundCard'
-import { ExternalLink, Terminal } from 'lucide-react'
+import { Terminal } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Playgrounds',
@@ -15,7 +15,7 @@ const playgrounds = [
     description:
       'The complete editor composition: asset panel with drag-drop import, GPU-accelerated preview with interactive transform overlays, full timeline with snapping, audio playback, transitions, and MP4 export.',
     techLabels: ['WebGL2', 'WebCodecs', 'Timeline', 'Audio', 'Export'],
-    href: 'http://localhost:5173/full-editor',
+    href: '/playground/production',
     status: 'live' as const,
     variant: 'full' as const,
     detail: [
@@ -31,7 +31,7 @@ const playgrounds = [
     description:
       'The timeline component in isolation. Explore the full editing interaction model without the WebGL renderer or decode pipeline. Ideal for integration testing or building a custom rendering layer.',
     techLabels: ['Timeline', 'React', 'Zustand', 'Framer Motion'],
-    href: 'http://localhost:5173/timeline-only',
+    href: '/playground/timeline',
     status: 'live' as const,
     variant: 'timeline' as const,
     detail: [
@@ -47,7 +47,7 @@ const playgrounds = [
     description:
       'Guided demo with sample media pre-loaded. Walks through the major features: cut editing, title overlays, fade transition, and MP4 export — in a single browser session.',
     techLabels: ['Full Stack', 'Sample Media', 'Transitions', 'Export'],
-    href: 'http://localhost:5173/',
+    href: '/playground/raw',
     status: 'preview' as const,
     variant: 'demo' as const,
     detail: [
@@ -82,17 +82,14 @@ export default function PlaygroundsPage() {
               Each playground is a live deployment of the Precision Studio SDK. Launch one to explore the editor, test your integration, or demo the capabilities.
             </p>
 
-            {/* Local run note */}
             <div className="mt-6 inline-flex items-start gap-3 rounded-md border border-outline-variant bg-surface-low p-4">
               <Terminal className="mt-0.5 h-4 w-4 shrink-0 text-on-surface-variant" />
               <div>
                 <div className="text-sm font-medium text-on-surface">Running locally?</div>
                 <p className="mt-0.5 text-xs leading-relaxed text-on-surface-variant">
-                  Start the dev server with{' '}
-                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">npm run dev</code>{' '}
-                  from the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">video-editor</code> directory.
-                  Playgrounds are served at{' '}
-                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">localhost:5173</code>.
+                  Start the web app with{' '}
+                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">npm run dev:web</code>{' '}
+                  and open any playground above directly in the browser.
                 </p>
               </div>
             </div>

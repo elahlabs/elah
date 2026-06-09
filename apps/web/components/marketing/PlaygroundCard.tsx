@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ExternalLink, Play, Layers, Clock, Cpu } from 'lucide-react'
+import { Play, Layers, Clock, Cpu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PlaygroundCardProps {
@@ -102,10 +103,8 @@ export function PlaygroundCard({
           ))}
         </div>
 
-        <a
+        <Link
           href={href}
-          target="_blank"
-          rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 rounded border px-3 py-2 text-xs font-medium transition-colors"
           style={{
             borderColor: accentColor + '40',
@@ -121,8 +120,7 @@ export function PlaygroundCard({
         >
           <Play className="h-3 w-3" />
           Launch Playground
-          <ExternalLink className="h-3 w-3 opacity-60" />
-        </a>
+        </Link>
       </div>
     </motion.div>
   )

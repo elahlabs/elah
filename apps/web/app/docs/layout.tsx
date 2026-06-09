@@ -8,7 +8,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
       <Navbar />
       <div className="mx-auto flex w-full max-w-7xl flex-1 px-4 sm:px-6">
         <DocsSidebar />
-        <main className="min-w-0 flex-1 py-10">{children}</main>
+        <main className="min-w-0 flex-1 px-8 py-10">{children}</main>
       </div>
       <Footer />
     </div>

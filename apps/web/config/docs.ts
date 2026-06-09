@@ -62,6 +62,15 @@ export const docsNav: DocNavSection[] = [
     ],
   },
   {
+    title: 'Architecture',
+    items: [
+      { title: 'Overview', href: '/docs/architecture' },
+      { title: 'System Overview', href: '/docs/architecture#overview' },
+      { title: 'Core → UI', href: '/docs/architecture#core-to-ui' },
+      { title: 'Playback Pipeline', href: '/docs/architecture#playback' },
+    ],
+  },
+  {
     title: 'Plugins',
     items: [
       { title: 'Custom Renderers', href: '/docs/plugins' },

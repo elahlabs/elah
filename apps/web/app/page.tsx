@@ -76,7 +76,7 @@ const playgrounds = [
     description:
       'Complete editor with asset panel, GPU-accelerated preview, interactive overlays, timeline, and export pipeline. The full @elah/editor composition.',
     techLabels: ['WebGL2', 'WebCodecs', 'Timeline', 'Export', 'Audio'],
-    href: 'http://localhost:5173/full-editor',
+    href: '/playground/production',
     status: 'live' as const,
     variant: 'full' as const,
   },
@@ -85,7 +85,7 @@ const playgrounds = [
     description:
       'Isolated timeline UI demo. Explore tracks, clips, snapping, keyboard shortcuts, and the TimelineEngine without the full editor stack.',
     techLabels: ['Timeline', 'React', 'Zustand'],
-    href: 'http://localhost:5173/timeline-only',
+    href: '/playground/timeline',
     status: 'live' as const,
     variant: 'timeline' as const,
   },
@@ -94,7 +94,7 @@ const playgrounds = [
     description:
       'Guided demo with pre-loaded sample media. Walks through the major features — cut, trim, text, transitions, and export — in a single session.',
     techLabels: ['Full Stack', 'Demo', 'Sample Media'],
-    href: 'http://localhost:5173/demo',
+    href: '/playground/raw',
     status: 'preview' as const,
     variant: 'demo' as const,
   },
