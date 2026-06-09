@@ -21,8 +21,8 @@ export function HeroSection() {
         className="pointer-events-none absolute inset-0 opacity-40"
         style={{
           backgroundImage: `
-            linear-gradient(to right, #e4bebc 1px, transparent 1px),
-            linear-gradient(to bottom, #e4bebc 1px, transparent 1px)
+            linear-gradient(to right, var(--color-outline-variant) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--color-outline-variant) 1px, transparent 1px)
           `,
           backgroundSize: '48px 48px',
           maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)',

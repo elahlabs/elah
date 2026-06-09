@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Menu, X, ExternalLink, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const navLinks = [
   { label: 'Docs', href: '/docs' },
@@ -66,6 +67,7 @@ export function Navbar() {
             GitHub
             <ExternalLink className="h-3 w-3" />
           </Link>
+          <ThemeToggle />
           <Link
             href="/docs/getting-started"
             className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
@@ -110,7 +112,8 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <div className="mt-2 border-t border-outline-variant pt-2">
+              <div className="mt-2 flex items-center justify-between border-t border-outline-variant pt-2">
+                <ThemeToggle />
                 <Link
                   href="/docs/getting-started"
                   onClick={() => setMobileOpen(false)}

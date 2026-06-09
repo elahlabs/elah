@@ -227,40 +227,20 @@ export default function HomePage() {
 
 function ArchitectureDiagram() {
   const layers = [
-    {
-      label: 'React UI',
-      items: ['Timeline', 'Preview', 'AssetPanel', 'TransformOverlay'],
-      color: '#e4bebc',
-    },
-    {
-      label: 'Engine Layer',
-      items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'],
-      color: '#dcd9d9',
-    },
-    {
-      label: 'Pure Resolver',
-      items: ['resolveTimeline(frame, project) → Scene'],
-      color: '#e5e2e1',
-    },
-    {
-      label: 'Renderers',
-      items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'],
-      color: '#eae7e7',
-    },
-    {
-      label: 'Media Pipeline',
-      items: ['StreamingFrameProducer', 'WebCodecs', 'mediabunny demux'],
-      color: '#f0eded',
-    },
+    { label: 'React UI',       items: ['Timeline', 'Preview', 'AssetPanel', 'TransformOverlay'] },
+    { label: 'Engine Layer',   items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'] },
+    { label: 'Pure Resolver',  items: ['resolveTimeline(frame, project) → Scene'] },
+    { label: 'Renderers',      items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'] },
+    { label: 'Media Pipeline', items: ['StreamingFrameProducer', 'WebCodecs', 'mediabunny demux'] },
   ]
 
   return (
-    <div className="overflow-hidden rounded-md border border-outline-variant bg-white">
+    <div className="overflow-hidden rounded-md border border-outline-variant bg-surface-container">
       {layers.map((layer, i) => (
         <div
           key={layer.label}
           className="flex items-start gap-4 border-b border-outline-variant p-4 last:border-0"
-          style={{ backgroundColor: i % 2 === 0 ? 'white' : '#faf8f8' }}
+          style={{ backgroundColor: i % 2 === 0 ? 'var(--color-surface-container)' : 'var(--color-surface-high)' }}
         >
           <div className="w-28 shrink-0">
             <span

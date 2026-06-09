@@ -3,19 +3,72 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Light theme (Precision Studio — warm neutral foundation) ─────────── */
   :root {
     --font-geist-sans: 'Geist', system-ui, sans-serif;
     --font-geist-mono: 'Geist Mono', 'JetBrains Mono', monospace;
     --font-inter: 'Inter', system-ui, sans-serif;
 
-    --color-surface: #fcf9f8;
-    --color-on-surface: #1c1b1b;
-    --color-primary: #b7102a;
-    --color-outline: #8f6f6e;
-    --color-outline-variant: #e4bebc;
-    --color-surface-container: #f0eded;
-    --color-surface-low: #f6f3f2;
-    --color-surface-high: #eae7e7;
+    /* Surface hierarchy — tonal layers, lightest at top */
+    --color-surface:             #fcf9f8;
+    --color-surface-dim:         #dcd9d9;
+    --color-surface-bright:      #fcf9f8;
+    --color-surface-lowest:      #ffffff;
+    --color-surface-low:         #f6f3f2;
+    --color-surface-container:   #f0eded;
+    --color-surface-high:        #eae7e7;
+    --color-surface-highest:     #e5e2e1;
+
+    /* Text */
+    --color-on-surface:          #1c1b1b;
+    --color-on-surface-variant:  #5b403f;
+    --color-inverse-surface:     #313030;
+    --color-inverse-on-surface:  #f3f0ef;
+
+    /* Borders */
+    --color-outline:             #8f6f6e;
+    --color-outline-variant:     #e4bebc;
+
+    /* Accent — Crimson */
+    --color-primary:             #b7102a;
+    --color-primary-hover:       #9a0d23;
+    --color-primary-dim:         #b7102a; /* same as primary in light */
+
+    /* Supporting */
+    --color-secondary:           #485f84;
+    --color-tertiary:            #006860;
+  }
+
+  /* ── Dark theme (Precision Studio — warm charcoal + crimson) ────────── */
+  .dark {
+    /* Surface hierarchy — tonal lift via warm charcoal steps */
+    --color-surface:             #111010; /* main background */
+    --color-surface-dim:         #0d0c0c;
+    --color-surface-bright:      #2c2828;
+    --color-surface-lowest:      #0a0909; /* deepest — nav underlay */
+    --color-surface-low:         #181616; /* panels, sidebars */
+    --color-surface-container:   #201d1d; /* cards, sections */
+    --color-surface-high:        #282424; /* modals, elevated menus */
+    --color-surface-highest:     #312d2d; /* chips, scrollbar thumb */
+
+    /* Text */
+    --color-on-surface:          #f0ecea; /* warm off-white */
+    --color-on-surface-variant:  #9e918f; /* warm mid-gray */
+    --color-inverse-surface:     #f0ecea;
+    --color-inverse-on-surface:  #231f1f;
+
+    /* Borders */
+    --color-outline:             #564848; /* interactive / focus edges */
+    --color-outline-variant:     #302828; /* structural hairlines */
+
+    /* Accent — Crimson (slightly more vibrant for dark bg contrast) */
+    --color-primary:             #e03050;
+    --color-primary-hover:       #cc2846;
+    --color-primary-dim:         #f08090; /* soft glow for highlights */
+
+    /* Supporting */
+    --color-secondary:           #a09898;
+    --color-tertiary:            #6ab0d0;
   }
 
   * {
@@ -36,11 +89,16 @@
     color: var(--color-on-surface);
     font-family: var(--font-inter);
     line-height: 1.6;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   ::selection {
-    background-color: rgba(183, 16, 42, 0.12);
+    background-color: rgba(183, 16, 42, 0.15);
     color: var(--color-on-surface);
+  }
+
+  .dark ::selection {
+    background-color: rgba(168, 29, 41, 0.3);
   }
 }
 
@@ -65,14 +123,14 @@
   }
 
   .card-base {
-    background: #ffffff;
-    border: 1px solid #e4bebc;
+    background: var(--color-surface-lowest);
+    border: 1px solid var(--color-outline-variant);
     border-radius: 6px;
   }
 
   .card-base-muted {
-    background: #f6f3f2;
-    border: 1px solid #e5e2e1;
+    background: var(--color-surface-low);
+    border: 1px solid var(--color-surface-highest);
     border-radius: 6px;
   }
 
@@ -81,7 +139,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background-color: #b7102a;
+    background-color: var(--color-primary);
     color: #ffffff;
     border-radius: 4px;
     font-size: 0.875rem;
@@ -94,7 +152,7 @@
   }
 
   .btn-primary:hover {
-    background-color: #9a0d23;
+    background-color: var(--color-primary-hover);
   }
 
   .btn-ghost {
@@ -103,26 +161,26 @@
     gap: 0.5rem;
     padding: 0.5rem 1rem;
     background-color: transparent;
-    color: #1c1b1b;
+    color: var(--color-on-surface);
     border-radius: 4px;
     font-size: 0.875rem;
     font-weight: 500;
     font-family: var(--font-geist-sans);
     transition: background-color 0.15s ease;
-    border: 1px solid #e4bebc;
+    border: 1px solid var(--color-outline-variant);
     cursor: pointer;
     text-decoration: none;
   }
 
   .btn-ghost:hover {
-    background-color: #f0eded;
+    background-color: var(--color-surface-container);
   }
 }
 
 /* Syntax highlight overrides */
 .shiki {
-  background: #f6f3f2 !important;
-  border: 1px solid #e4bebc;
+  background: var(--color-surface-low) !important;
+  border: 1px solid var(--color-outline-variant);
   border-radius: 6px;
   padding: 1.25rem 1.5rem;
   overflow-x: auto;
@@ -142,10 +200,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #dcd9d9;
+  background: var(--color-surface-highest);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8f6f6e;
+  background: var(--color-outline);
 }

@@ -97,7 +97,7 @@ export default function ArchitecturePage() {
                 desc: 'Async decode pipeline feeding ImageBitmaps to the GPU textures and PCM chunks to WebAudio.',
               },
             ].map((layer, i) => (
-              <div key={layer.label} className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}>
+              <div key={layer.label} className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}>
                 <div className="flex gap-0 sm:gap-4">
                   {/* Layer label column */}
                   <div
@@ -203,7 +203,7 @@ export default function ArchitecturePage() {
               ].map((row, i) => (
                 <div
                   key={row.step}
-                  className={`relative flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}
+                  className={`relative flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
                 >
                   <div
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-bold text-white"
@@ -266,7 +266,7 @@ export default function ArchitecturePage() {
               ].map((row, i) => (
                 <div
                   key={row.step}
-                  className={`relative flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}
+                  className={`relative flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
                 >
                   <div
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-bold text-white"
@@ -377,7 +377,7 @@ export default function ArchitecturePage() {
               ].map((row, i) => (
                 <div
                   key={row.node}
-                  className={`flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-surface-lowest'}`}
+                  className={`flex gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
                 >
                   <div className="w-2 shrink-0 rounded-sm" style={{ backgroundColor: row.color + '60' }} />
                   <div className="flex-1">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import '@/styles/globals.css'
 import { siteConfig } from '@/config/site'
+import { ThemeProvider } from '@/components/ThemeProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,6 +44,17 @@ export const metadata: Metadata = {
   },
 }
 
+// Runs synchronously before first paint to avoid flash of wrong theme
+const themeInitScript = `
+(function(){
+  try{
+    var t=localStorage.getItem('ps-theme');
+    if(!t) t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(t==='dark') document.documentElement.classList.add('dark');
+  }catch(e){}
+})();
+`
+
 export default function RootLayout({
   children,
 }: {
@@ -50,11 +62,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} bg-surface text-on-surface antialiased`}
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
       >
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

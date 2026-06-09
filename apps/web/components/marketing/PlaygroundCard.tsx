@@ -16,9 +16,9 @@ interface PlaygroundCardProps {
 }
 
 const statusStyles = {
-  live: 'text-green-700 bg-green-50 border-green-200',
-  beta: 'text-amber-700 bg-amber-50 border-amber-200',
-  preview: 'text-blue-700 bg-blue-50 border-blue-200',
+  live:    'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/50',
+  beta:    'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/50',
+  preview: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900/50',
 }
 
 const variantIcons = {
@@ -51,7 +51,7 @@ export function PlaygroundCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.4, delay: index * 0.07 }}
-      className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-white transition-colors hover:border-outline"
+      className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-surface-lowest dark:bg-surface-container transition-colors hover:border-outline"
     >
       {/* Preview area */}
       <div

@@ -53,7 +53,7 @@ export function FeatureCard({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
       className={cn(
-        'group rounded-md border border-outline-variant bg-white p-5 transition-colors hover:border-outline',
+        'group rounded-md border border-outline-variant bg-surface-lowest dark:bg-surface-container p-5 transition-colors hover:border-outline dark:hover:bg-surface-high',
         className
       )}
     >

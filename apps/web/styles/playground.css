@@ -1,17 +1,33 @@
-/* Playground dark shell — applied to .pg-shell on the layout root */
+/* Playground dark shell — Precision Studio theme — applied to .pg-shell on the layout root */
 
 .pg-shell {
-  --pg-bg: #06070A;
-  --pg-bg-secondary: #0D1017;
-  --pg-bg-panel: #121722;
-  --pg-bg-elevated: #171D2B;
-  --pg-border: #232938;
-  --pg-border-subtle: #1A1F2B;
-  --pg-text: #F3F4F6;
-  --pg-text-secondary: #A7AFBF;
-  --pg-text-muted: #6B7280;
-  --pg-accent: #E11D48;
-  --pg-accent-hover: #FB7185;
+  /* ── Surface hierarchy (tonal layers, no shadows) ── */
+  --pg-bg:               #08100a; /* surface-container-lowest — deepest background */
+  --pg-bg-secondary:     #0d150f; /* surface                  — main shell background */
+  --pg-bg-panel:         #161d16; /* surface-container-low    — sidebar, panels */
+  --pg-bg-container:     #1a221a; /* surface-container        — cards, sections */
+  --pg-bg-elevated:      #242c24; /* surface-container-high   — modals, menus */
+  --pg-bg-highest:       #2f372f; /* surface-container-highest — scrollbar, chips */
+
+  /* ── Borders / outlines ── */
+  --pg-border:           #5a403f; /* outline-variant — low-contrast component edges */
+  --pg-border-subtle:    #2f372f; /* surface-container-highest used as hairline */
+  --pg-outline:          #a98988; /* outline — focused / interactive edges */
+
+  /* ── Text ── */
+  --pg-text:             #dce5d9; /* on-surface */
+  --pg-text-secondary:   #e1bebc; /* on-surface-variant (warm rose tint) */
+  --pg-text-muted:       #a98988; /* outline — used for de-emphasised labels */
+
+  /* ── Accent — Crimson signal ── */
+  --pg-accent:           #a81d29; /* primary-container — button fill, active state bg */
+  --pg-accent-hover:     #b32630; /* inverse-primary   — hover lift on accent fill */
+  --pg-accent-text:      #ffbbb8; /* on-primary-container — text on crimson fill */
+  --pg-accent-dim:       #ffb3b0; /* primary — highlight, underlines, focus rings */
+
+  /* ── Typography ── */
+  --pg-font-ui:    'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --pg-font-mono:  'JetBrains Mono', 'Geist Mono', monospace;
 
   display: flex;
   flex-direction: column;
@@ -19,8 +35,10 @@
   overflow: hidden;
   background: var(--pg-bg);
   color: var(--pg-text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--pg-font-ui);
 }
+
+/* ── Navigation bar ──────────────────────────────────────────────────────── */
 
 .pg-nav {
   height: 40px;
@@ -41,6 +59,8 @@
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 12px;
+  font-family: var(--pg-font-mono);
+  letter-spacing: 0.05em;
   color: var(--pg-text-muted);
   text-decoration: none;
   transition: color 0.12s, background 0.12s;
@@ -72,6 +92,8 @@
   padding: 4px 12px;
   border-radius: 4px;
   font-size: 12px;
+  font-family: var(--pg-font-mono);
+  letter-spacing: 0.05em;
   color: var(--pg-text-muted);
   text-decoration: none;
   transition: color 0.12s, background 0.12s;
@@ -88,6 +110,8 @@
   border: 1px solid var(--pg-border);
 }
 
+/* ── Content area ────────────────────────────────────────────────────────── */
+
 .pg-content {
   flex: 1;
   min-height: 0;
@@ -95,14 +119,15 @@
   position: relative;
 }
 
-/* ── Editor chrome (from playground editor-ui.css) ─────────────────────── */
+/* ── Editor chrome ───────────────────────────────────────────────────────── */
 
 .elah-root {
-  --elah-bg: #06070A;
-  --elah-border: #232938;
-  --elah-accent: #E11D48;
-  --elah-text: #F3F4F6;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --elah-bg:      var(--pg-bg);
+  --elah-border:  var(--pg-border);
+  --elah-accent:  var(--pg-accent);
+  --elah-text:    var(--pg-text);
+
+  font-family: var(--pg-font-ui);
   color: var(--elah-text);
   background: var(--elah-bg);
 }
@@ -112,19 +137,21 @@
   height: 6px;
 }
 .elah-root *::-webkit-scrollbar-thumb {
-  background: #2a3142;
+  background: var(--pg-bg-highest);
   border-radius: 3px;
 }
 .elah-root *::-webkit-scrollbar-track {
   background: transparent;
 }
 
+/* ── Range / scrubber ────────────────────────────────────────────────────── */
+
 .elah-range {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
   border-radius: 2px;
-  background: #1A1F2B;
+  background: var(--pg-bg-panel);
   outline: none;
 }
 .elah-range::-webkit-slider-thumb {
@@ -132,48 +159,58 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #E11D48;
-  border: 2px solid #171D2B;
+  background: var(--pg-accent);
+  border: 2px solid var(--pg-bg-elevated);
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.25);
+  box-shadow: 0 0 0 1px rgba(168, 29, 41, 0.3);
 }
 .elah-range::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #E11D48;
-  border: 2px solid #171D2B;
+  background: var(--pg-accent);
+  border: 2px solid var(--pg-bg-elevated);
   cursor: pointer;
 }
 
+/* ── Toolbar buttons ─────────────────────────────────────────────────────── */
+
 .elah-toolbar-btn:hover:not(:disabled) {
-  background: #1e2433 !important;
-  border-color: #2f384c !important;
-  color: #F3F4F6 !important;
+  background: var(--pg-bg-elevated) !important;
+  border-color: var(--pg-border) !important;
+  color: var(--pg-text) !important;
 }
 .elah-toolbar-btn--active {
-  background: rgba(225, 29, 72, 0.15) !important;
-  border-color: #E11D48 !important;
-  color: #FB7185 !important;
-  box-shadow: 0 0 12px rgba(225, 29, 72, 0.2);
+  background: rgba(168, 29, 41, 0.15) !important;
+  border-color: var(--pg-accent) !important;
+  color: var(--pg-accent-dim) !important;
+  box-shadow: 0 0 12px rgba(168, 29, 41, 0.2);
 }
+
+/* ── Export / primary action button ─────────────────────────────────────── */
+
 .elah-export-btn {
-  background: #E11D48 !important;
-  border-color: #E11D48 !important;
-  color: #fff !important;
-  font-weight: 600;
+  background: var(--pg-accent) !important;
+  border-color: var(--pg-accent) !important;
+  color: var(--pg-accent-text) !important;
+  font-family: var(--pg-font-mono) !important;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   padding: 6px 18px !important;
 }
 .elah-export-btn:hover {
-  background: #FB7185 !important;
-  border-color: #FB7185 !important;
+  background: var(--pg-accent-hover) !important;
+  border-color: var(--pg-accent-hover) !important;
 }
 
+/* ── Media / element cards ───────────────────────────────────────────────── */
+
 .elah-media-card:hover {
-  background: #171D2B !important;
-  border-color: #2f384c !important;
+  background: var(--pg-bg-elevated) !important;
+  border-color: var(--pg-border) !important;
 }
 .elah-element-card:hover {
-  background: #171D2B !important;
-  border-color: #2f384c !important;
+  background: var(--pg-bg-elevated) !important;
+  border-color: var(--pg-border) !important;
 }
