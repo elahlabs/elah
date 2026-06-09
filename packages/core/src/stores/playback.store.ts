@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { toFrame } from '../utils/frames'
 
-interface PlaybackState {
+export interface PlaybackState {
   /** Current playhead position in frames */
   currentFrame: number
   /**
@@ -23,7 +23,7 @@ interface PlaybackState {
   snapEnabled: boolean
 }
 
-interface PlaybackActions {
+export interface PlaybackActions {
   setCurrentFrame: (frame: number) => void
   play: () => void
   pause: () => void

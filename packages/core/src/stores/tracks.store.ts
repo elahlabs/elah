@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Clip, Project, Track } from '../types'
 
-interface TracksState {
+export interface TracksState {
   tracks: Track[]
   clips: Record<string, Clip[]>
   /** Output canvas dimensions; mirrored so React re-renders on aspect changes. */
@@ -11,7 +11,7 @@ interface TracksState {
   canRedo: boolean
 }
 
-interface TracksActions {
+export interface TracksActions {
   /** Called by Timeline component when the engine emits 'change' */
   sync: (project: Project, meta: { canUndo: boolean; canRedo: boolean }) => void
 }

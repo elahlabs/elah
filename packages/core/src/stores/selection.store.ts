@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 
-interface SelectionState {
+export interface SelectionState {
   selectedClipIds: Set<string>
   activeTrackId: string | null
 }
 
-interface SelectionActions {
+export interface SelectionActions {
   selectClip: (clipId: string) => void
   toggleClipSelection: (clipId: string) => void
   selectClips: (clipIds: string[]) => void

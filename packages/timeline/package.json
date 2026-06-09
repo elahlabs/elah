@@ -1,18 +1,50 @@
 {
   "name": "@elah/timeline",
-  "version": "0.1.0",
-  "description": "Reusable timeline UI framework",
+  "version": "0.1.1",
+  "description": "React timeline UI for the Elah video engine — tracks, clips, ruler, playhead, drag and trim gestures",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc --noEmit && tsc -p tsconfig.build.json"
   },
+  "keywords": [
+    "video-editor",
+    "timeline",
+    "react",
+    "timeline-component",
+    "video-timeline",
+    "clips",
+    "tracks",
+    "drag-drop",
+    "trim",
+    "scrub",
+    "typescript",
+    "browser"
+  ],
+  "homepage": "https://www.elah.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elahlabs/elah.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elahlabs/elah/issues"
+  },
+  "license": "SEE LICENSE IN LICENSE",
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"

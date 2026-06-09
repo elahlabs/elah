@@ -1,18 +1,52 @@
 {
   "name": "@elah/core",
-  "version": "0.1.0",
-  "description": "Framework-agnostic video timeline engine",
+  "version": "0.1.1",
+  "description": "Framework-agnostic video timeline engine — playback, frame resolution, WebGL2 renderer, and media management",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc --noEmit && tsc -p tsconfig.build.json"
   },
+  "keywords": [
+    "video-editor",
+    "timeline",
+    "video-engine",
+    "webgl",
+    "webgl2",
+    "gpu-renderer",
+    "playback",
+    "frame-accurate",
+    "media",
+    "export",
+    "mp4",
+    "typescript",
+    "browser",
+    "react"
+  ],
+  "homepage": "https://www.elah.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elahlabs/elah.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elahlabs/elah/issues"
+  },
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "immer": "^10.1.1",
     "zustand": "^5.0.3"

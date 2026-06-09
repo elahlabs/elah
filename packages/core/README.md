@@ -1,0 +1,82 @@
+# @elah/core
+
+Framework-agnostic video timeline engine. No React. No renderer. Just the pure logic layer — project state, playback, frame resolution, and media management.
+
+Used internally by `@elah/timeline` and `@elah/editor`, but can be consumed directly for custom rendering pipelines or headless environments.
+
+[![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core)
+[![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
+
+---
+
+## Install
+
+```bash
+npm install @elah/core
+```
+
+---
+
+## What's inside
+
+| Module | Description |
+|---|---|
+| `TimelineEngine` | Manages project state — tracks, clips, undo/redo |
+| `PlaybackEngine` | Frame-accurate playback clock |
+| `resolveTimeline` | Pure function — project → active scene at a given frame |
+| `GpuRenderer` | WebGL2 renderer for video, image, and text layers |
+| `useTracksStore` | Zustand mirror of project state for React |
+| `usePlaybackStore` | Zustand mirror of playback state for React |
+| `useSelectionStore` | Zustand mirror of selection state for React |
+| `useMediaLibrary` | Media asset library with thumbnail generation |
+| `importFiles` | Import local files into the media library |
+| `exportVideo` | Export the timeline to MP4 via a web worker |
+
+---
+
+## Quick start
+
+```ts
+import { TimelineEngine, PlaybackEngine, createVideoClip } from '@elah/core'
+
+const engine = new TimelineEngine({ fps: 30, stage: { width: 1920, height: 1080 } })
+const playback = new PlaybackEngine(engine)
+
+// Add a video clip
+engine.addClip('track-1', createVideoClip({ src: 'video.mp4', startFrame: 0, durationFrames: 90 }))
+
+// Resolve the scene at a given frame
+import { resolveTimeline } from '@elah/core'
+const scene = resolveTimeline(engine.getProject(), { currentFrame: 15 })
+```
+
+---
+
+## Clip factories
+
+```ts
+import { createVideoClip, createAudioClip, createTextClip, createImageClip } from '@elah/core'
+```
+
+---
+
+## Export
+
+```ts
+import { exportVideo } from '@elah/core'
+
+const blob = await exportVideo(engine.getProject(), {
+  videoBitrate: 8_000_000,
+  onProgress: ({ frame, totalFrames }) => console.log(frame, '/', totalFrames),
+})
+```
+
+---
+
+## Links
+
+- [Website](https://www.elah.dev)
+- [GitHub](https://github.com/elahlabs/elah)
+- [Full SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
+- [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
+- [Commercial licensing](mailto:contact@elah.dev)

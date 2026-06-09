@@ -1,18 +1,21 @@
 # @elah/editor
 
-Engine-first video timeline SDK for React. Internally layered as `core/` → `timeline/` → `editor/`.
+The full Elah video editor SDK for React. Combines the core engine, timeline UI, WebGL2 renderer, media library, and export pipeline into a single package.
 
-See the repo root [README](../../README.md) for project overview and the [core architecture reference](src/core/Architecture.md) for a cold-start guide to the engine.
+[![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
+[![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
+
+---
 
 ## Install
 
-This package is part of the monorepo workspace:
-
 ```bash
-npm install
+npm install @elah/editor
 ```
 
-Peer dependencies: `react`, `react-dom` (>= 18).
+Peer dependencies: `react`, `react-dom` >= 18.
+
+---
 
 ## Quick start
 
@@ -28,93 +31,48 @@ function App() {
 }
 ```
 
-## Import media files
+---
 
-Register local files into the media library from a file input or drop handler:
-
-```ts
-import { importFiles, useMediaLibraryStore } from '@elah/editor'
-
-async function onFilesSelected(files: FileList | File[]) {
-  const list = Array.from(files)
-  const assets = await importFiles(list)
-
-  // Assets are in the store immediately; thumbnails arrive shortly after.
-  console.log(useMediaLibraryStore.getState().assets)
-
-  // Subscribe in React via useMediaLibrary() for UI updates.
-  return assets
-}
-```
-
-`importFiles`:
-
-- Creates object URLs and probes duration/dimensions via DOM media elements
-- Skips unsupported MIME types with a console warning
-- Registers assets in `useMediaLibraryStore` synchronously
-- Generates JPEG thumbnails on the main thread and patches `thumbnailUrl` asynchronously
-
-## AssetPanel
-
-Browse, drop, and drag media assets from a sidebar panel. Render as a sibling of `<Timeline>` inside `<EditorProvider>`:
+## With preview and asset panel
 
 ```tsx
-import { EditorProvider, Timeline, AssetPanel } from '@elah/editor'
+import { EditorProvider, Timeline, Preview, AssetPanel, createMediabunnyBackend } from '@elah/editor'
+import * as mediabunny from 'mediabunny'
+
+const demuxerFactory = () =>
+  createMediabunnyBackend(mediabunny, {
+    blobResolver: (src) => fetch(src).then((r) => r.blob()),
+  })
 
 function App() {
   return (
     <EditorProvider fps={30}>
       <div style={{ display: 'flex', height: '100vh' }}>
         <AssetPanel style={{ width: 220 }} />
-        <Timeline style={{ flex: 1 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Preview demuxerFactory={demuxerFactory} style={{ flex: 1 }} />
+          <Timeline style={{ height: 300 }} />
+        </div>
       </div>
     </EditorProvider>
   )
 }
 ```
 
-- **Add** opens a file picker; **drop** onto the panel imports via `importFiles`
-- Thumbnails appear asynchronously after import
-- Drag a thumbnail onto a timeline track lane to create a clip (see Timeline drop below)
+---
 
-## Timeline drop
+## Import media
 
-With `<AssetPanel>` and `<Timeline>` as siblings inside `<EditorProvider>`, drag a thumbnail onto any track lane:
+```ts
+import { importFiles, useMediaLibrary } from '@elah/editor'
 
-- Drop position becomes the clip `startFrame` (respects timeline zoom)
-- Clip duration comes from the asset (`durationSec × project.fps`; images default to 5 seconds)
-- Video/image assets go on video tracks; audio on audio tracks
-- When snap is enabled (`usePlaybackStore.snapEnabled`), the drop snaps to the playhead and nearby clip edges
+await importFiles(Array.from(fileList))
 
-No extra wiring beyond `TrackRow` — `useTimelineDrop` is attached automatically per lane.
-
-## Render pixels with `<Preview>`
-
-`<Preview>` mounts the WebGL2 `GpuRenderer`, drives the RAF loop, and paints
-interactive transform overlays — drag / uniform-scale for video & image clips
-(`MediaTransformOverlay`), and drag / resize / inline-edit for text clips
-(`TextOverlay`) — plus the project's audio.
-Inject a **demuxer factory** so the SDK never hard-depends on a decode backend:
-
-```tsx
-import { EditorProvider, Preview, createMediabunnyBackend } from '@elah/editor'
-import * as mediabunny from 'mediabunny'
-
-const demuxerFactory = () =>
-  createMediabunnyBackend(mediabunny, { blobResolver: (src) => fetch(src).then((r) => r.blob()) })
-
-function App() {
-  return (
-    <EditorProvider fps={30}>
-      <Preview demuxerFactory={demuxerFactory} style={{ height: 480 }} />
-    </EditorProvider>
-  )
-}
+// Subscribe in React
+const assets = useMediaLibrary(s => s.assets)
 ```
 
-Omit `demuxerFactory` for a synthetic dev preview (no media files, no mediabunny).
-For a lower-level renderer handle, `GpuRenderer` is exported directly. See
-[`src/core/renderer/README.md`](src/core/renderer/README.md).
+---
 
 ## Export to MP4
 
@@ -123,47 +81,47 @@ import { exportVideo } from '@elah/editor'
 
 const blob = await exportVideo(engine.getProject(), {
   videoBitrate: 8_000_000,
-  onProgress: ({ frame, totalFrames }) => setPct(Math.round((frame / totalFrames) * 100)),
+  onProgress: ({ frame, totalFrames }) => {
+    console.log(`${Math.round((frame / totalFrames) * 100)}%`)
+  },
 })
 ```
 
-Runs in a worker; reuses `resolveTimeline` + the renderer's placement math. See
-[`src/core/export/README.md`](src/core/export/README.md).
+Runs in a web worker. Reuses `resolveTimeline` + the GPU renderer's placement math.
 
-## Package layout
-
-```
-src/
-  core/       types, engine, playback, resolver, stores, assets, media, export, debug, actions
-  timeline/   Timeline UI + hooks
-  editor/     EditorProvider, AssetPanel, Preview, useResolvedScene
-```
+---
 
 ## Keyboard shortcuts
 
-The `<Timeline>` component registers these global keyboard shortcuts when focused:
-
 | Key | Action |
 |---|---|
-| **Space** | Play / pause |
-| **S** | Split selected clip at playhead |
-| **Delete** / **Backspace** | Delete selected clip(s) |
-| **Ctrl/Cmd + C** | Copy selected clip(s) to clipboard |
-| **Ctrl/Cmd + V** | Paste copied clip(s) — placed at current playhead position, same track |
-| **Ctrl/Cmd + Z** | Undo |
-| **Ctrl/Cmd + Shift + Z** / **Ctrl/Cmd + Y** | Redo |
-| **Ctrl/Cmd + scroll** | Zoom in / out |
-| **← / →** | Step one frame back / forward |
+| `Space` | Play / pause |
+| `S` | Split clip at playhead |
+| `Delete` / `Backspace` | Delete selected clip(s) |
+| `Ctrl/Cmd + C` | Copy |
+| `Ctrl/Cmd + V` | Paste at playhead |
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + scroll` | Zoom |
+| `← / →` | Step one frame |
 
-**Right-click** any clip to open a context menu with a **Delete** option.
+---
 
-## Scripts
+## Package layers
 
-```bash
-npm run typecheck   # from packages/editor
-npm run test
+```
+@elah/core      — engine, playback, resolver, stores, media, export (framework-agnostic)
+@elah/timeline  — React timeline UI components and hooks
+@elah/editor    — EditorProvider, Preview, AssetPanel + re-exports everything above
 ```
 
-## License
+Use `@elah/editor` for the full experience. Use `@elah/core` directly for headless or custom rendering pipelines.
 
-To be decided — see root README.
+---
+
+## Links
+
+- [Website](https://www.elah.dev)
+- [GitHub](https://github.com/elahlabs/elah)
+- [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
+- [Commercial licensing](mailto:contact@elah.dev)

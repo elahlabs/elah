@@ -81,8 +81,11 @@ export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, Impor
 
 // --- Stores (Ring 1: Zustand mirrors) ---
 export { useTracksStore } from './stores/tracks.store'
+export type { TracksState, TracksActions } from './stores/tracks.store'
 export { usePlaybackStore } from './stores/playback.store'
+export type { PlaybackState, PlaybackActions } from './stores/playback.store'
 export { useSelectionStore } from './stores/selection.store'
+export type { SelectionState, SelectionActions } from './stores/selection.store'
 export { useTransitionsStore } from './stores/transitions.store'
 
 // --- Clip factories ---

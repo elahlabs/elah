@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "declaration": false,
+    "declaration": true,
     "sourceMap": false,
     "removeComments": true,
     "noUnusedLocals": false,
