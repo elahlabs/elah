@@ -623,3 +623,12 @@ engine.addClip({ trackId, type: 'video', startFrame: 0, durationFrames: 90 })
 export function getPost(slug: string): Post | undefined {
   return posts.find((p) => p.slug === slug)
 }
+
+// Theme-aware category badge styles: flat filled chips (no border — tinted
+// borders rendered as a muddy outline). Using the secondary/tertiary tokens
+// (which flip per theme) keeps all three consistent in light and dark mode.
+export const categoryColors: Record<Post['category'], string> = {
+  Architecture: 'text-secondary bg-secondary/10',
+  Design: 'text-tertiary bg-tertiary/10',
+  Implementation: 'text-on-surface-variant bg-surface-high',
+}

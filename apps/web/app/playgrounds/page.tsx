@@ -139,7 +139,7 @@ export default function PlaygroundsPage() {
                 { label: 'Build', value: 'Vite + TypeScript', sub: 'npm workspaces, project refs' },
                 { label: 'Audio', value: 'Web Audio API', sub: 'Main-thread scheduling' },
               ].map(({ label, value, sub }) => (
-                <div key={label} className="rounded-md border border-outline-variant bg-white p-4">
+                <div key={label} className="rounded-md border border-outline-variant bg-surface-container p-4">
                   <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">{label}</div>
                   <div className="text-sm font-medium text-on-surface">{value}</div>
                   <div className="mt-0.5 text-xs text-on-surface-variant">{sub}</div>

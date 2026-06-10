@@ -14,6 +14,7 @@ const navLinks = [
   { label: 'Examples', href: '/examples' },
   { label: 'Playgrounds', href: '/playgrounds' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Pricing', href: '/pricing' },
 ]
 
 export function Navbar() {

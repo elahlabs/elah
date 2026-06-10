@@ -5,13 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { CodeBlock, InlineCode } from '@/components/docs/CodeBlock'
-import { posts, getPost, type Block } from '../posts'
-
-const categoryColors: Record<string, string> = {
-  Architecture: 'text-secondary bg-blue-50 border-blue-200',
-  Design: 'text-tertiary bg-green-50 border-green-200',
-  Implementation: 'text-on-surface-variant bg-surface-high border-outline-variant',
-}
+import { posts, getPost, categoryColors, type Block } from '../posts'
 
 export function generateStaticParams() {
   return posts.map((post) => ({ slug: post.slug }))
@@ -131,7 +125,7 @@ export default async function BlogPostPage({
             </Link>
             <div className="mb-3 flex items-center gap-2">
               <span
-                className={`rounded border px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high border-outline-variant'}`}
+                className={`rounded px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high'}`}
               >
                 {post.category}
               </span>

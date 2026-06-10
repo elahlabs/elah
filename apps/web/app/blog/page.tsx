@@ -3,17 +3,11 @@ import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { posts } from './posts'
+import { posts, categoryColors } from './posts'
 
 export const metadata: Metadata = {
   title: 'Blog',
   description: 'Engineering deep-dives, architecture decisions, and release notes from elah.',
-}
-
-const categoryColors: Record<string, string> = {
-  Architecture: 'text-secondary bg-blue-50 border-blue-200',
-  Design: 'text-tertiary bg-green-50 border-green-200',
-  Implementation: 'text-on-surface-variant bg-surface-high border-outline-variant',
 }
 
 export default function BlogPage() {
@@ -44,10 +38,10 @@ export default function BlogPage() {
             {posts.map((post) => (
               <article
                 key={post.slug}
-                className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-white p-5 transition-colors hover:border-outline"
+                className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-surface-container p-5 transition-colors hover:border-outline"
               >
                 <div className="mb-3 flex items-center gap-2">
-                  <span className={`rounded border px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high border-outline-variant'}`}>
+                  <span className={`rounded px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high'}`}>
                     {post.category}
                   </span>
                   <span className="text-2xs text-on-surface-variant">{post.readingTime}</span>

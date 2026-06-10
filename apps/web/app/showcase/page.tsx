@@ -78,7 +78,7 @@ export default function ShowcasePage() {
               return (
                 <div
                   key={item.name}
-                  className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-white"
+                  className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-surface-container"
                 >
                   {/* Preview mockup */}
                   <div

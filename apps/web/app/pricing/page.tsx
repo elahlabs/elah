@@ -47,7 +47,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Open source */}
-            <div className="flex flex-col rounded-lg border border-outline-variant bg-white p-7">
+            <div className="flex flex-col rounded-lg border border-outline-variant bg-surface-container p-7">
               <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
                 Open source
               </div>
@@ -110,7 +110,7 @@ export default function PricingPage() {
               <div className="mt-6 space-y-3">
                 <a
                   href="mailto:paul@elah.dev"
-                  className="flex items-center gap-3 rounded-md border border-outline-variant bg-white p-4 transition-colors hover:border-outline"
+                  className="flex items-center gap-3 rounded-md border border-outline-variant bg-surface-container p-4 transition-colors hover:border-outline"
                 >
                   <Mail className="h-4 w-4 shrink-0 text-primary" />
                   <span className="text-sm font-medium text-on-surface">paul@elah.dev</span>
@@ -119,7 +119,7 @@ export default function PricingPage() {
                   href="https://discord.gg/8CeZ2XbPy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-md border border-outline-variant bg-white p-4 transition-colors hover:border-outline"
+                  className="flex items-center gap-3 rounded-md border border-outline-variant bg-surface-container p-4 transition-colors hover:border-outline"
                 >
                   <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
                   <span className="text-sm font-medium text-on-surface">Join the Discord</span>
