@@ -59,6 +59,15 @@ export function Navbar() {
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
           <Link
+            href="https://discord.gg/8CeZ2XbPy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+          >
+            Discord
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+          <Link
             href="https://github.com/elahlabs/elah"
             target="_blank"
             rel="noopener noreferrer"
@@ -112,6 +121,26 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href="https://discord.gg/8CeZ2XbPy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-1.5 rounded px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              >
+                Discord
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+              <Link
+                href="https://github.com/elahlabs/elah"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-1.5 rounded px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              >
+                GitHub
+                <ExternalLink className="h-3 w-3" />
+              </Link>
               <div className="mt-2 flex items-center justify-between border-t border-outline-variant pt-2">
                 <ThemeToggle />
                 <Link

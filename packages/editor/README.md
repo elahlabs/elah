@@ -119,5 +119,6 @@ Use `@elah/editor` for the full experience. Use `@elah/core` directly for headle
 
 - [Website](https://www.elah.dev)
 - [GitHub](https://github.com/elahlabs/elah)
+- [Discord](https://discord.gg/8CeZ2XbPy)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
-- [Commercial licensing](mailto:contact@elah.dev)
+- [Commercial licensing](mailto:paul@elah.dev)

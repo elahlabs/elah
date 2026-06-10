@@ -6,7 +6,7 @@
 [![license](https://img.shields.io/badge/license-ECL--1.0-blue)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 
-[**Website**](https://www.elah.dev) · [**Docs**](https://www.elah.dev/docs) · [**Playground**](https://www.elah.dev/playgrounds) · [**npm**](https://www.npmjs.com/package/@elah/editor)
+[**Website**](https://www.elah.dev) · [**Docs**](https://www.elah.dev/docs) · [**Playground**](https://www.elah.dev/playgrounds) · [**npm**](https://www.npmjs.com/package/@elah/editor) · [**Discord**](https://discord.gg/8CeZ2XbPy)
 
 ![Elah video editor — timeline, WebGL2 preview, and export running in the browser](./docs/demo.gif)
 
@@ -266,6 +266,14 @@ hardening PRs against a live engine. Start from [`ROADMAP.md`](./ROADMAP.md) and
 [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md), then see
 [`CONTRIBUTING.md`](./CONTRIBUTING.md) for branch/commit conventions, PR rules,
 and the architectural invariants every renderer/decode change must preserve.
+
+---
+
+## Community & support
+
+- **Discord** — [join the server](https://discord.gg/8CeZ2XbPy) for questions, help, and discussion.
+- **Issues** — [github.com/elahlabs/elah/issues](https://github.com/elahlabs/elah/issues)
+- **Commercial licensing & support** — [paul@elah.dev](mailto:paul@elah.dev)
 
 ---
 

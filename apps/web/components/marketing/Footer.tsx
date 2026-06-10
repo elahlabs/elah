@@ -17,6 +17,8 @@ const footerLinks = {
   ],
   Company: [
     { label: 'GitHub', href: 'https://github.com/elahlabs/elah' },
+    { label: 'Discord', href: 'https://discord.gg/8CeZ2XbPy' },
+    { label: 'Contact', href: 'mailto:paul@elah.dev' },
     { label: 'Contributing', href: 'https://github.com/elahlabs/elah/blob/main/CONTRIBUTING.md' },
     { label: 'License', href: 'https://github.com/elahlabs/elah/blob/main/LICENSE' },
   ],
