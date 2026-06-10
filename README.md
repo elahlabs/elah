@@ -1,6 +1,38 @@
 # Elah
 
-> **A browser-native, frame-accurate video editor for any aspect ratio (9:16 reels, 16:9 YouTube, 1:1, and beyond) — engine-first, renderer-agnostic, scalable from MVP to production.**
+**A browser-native, frame-accurate video editing engine for the web.** A framework-agnostic core — timeline, WebGL2 renderer, media pipeline, and MP4 export — with thin UI bindings on top. **React is the first UI layer** (shipping today); the engine knows nothing about it, so React Native and other frameworks can bind to the same core. Works for any aspect ratio (9:16 Reels, 16:9 YouTube, 1:1, or any custom stage).
+
+[![npm](https://img.shields.io/npm/v/@elah/editor?label=%40elah%2Feditor)](https://www.npmjs.com/package/@elah/editor)
+[![license](https://img.shields.io/badge/license-ECL--1.0-blue)](./LICENSE)
+[![types](https://img.shields.io/npm/types/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
+
+[**Website**](https://www.elah.dev) · [**Docs**](https://www.elah.dev/docs) · [**Playground**](https://www.elah.dev/playgrounds) · [**npm**](https://www.npmjs.com/package/@elah/editor)
+
+![Elah video editor — timeline, WebGL2 preview, and export running in the browser](./docs/demo.gif)
+
+Using the React layer (`@elah/editor`):
+
+```bash
+npm install @elah/editor
+```
+
+```tsx
+import { EditorProvider, Preview, Timeline, AssetPanel, createDefaultDemuxerFactory } from '@elah/editor'
+
+const demuxerFactory = createDefaultDemuxerFactory()
+
+export default function App() {
+  return (
+    <EditorProvider fps={30}>
+      <AssetPanel style={{ width: 220 }} />
+      <Preview demuxerFactory={demuxerFactory} style={{ height: 480 }} />
+      <Timeline style={{ height: 300 }} />
+    </EditorProvider>
+  )
+}
+```
+
+That's a working editor: drag a file into the asset panel, drop it on the timeline, hit **Space** to play. See [Install](#install) for the package layers and [How to use the SDK](#how-to-use-the-sdk-in-your-own-app) for more.
 
 ---
 
@@ -91,7 +123,9 @@ docs/
 
 ---
 
-## Quick start
+## Run the playground locally
+
+Cloning the repo to develop Elah itself (not just consume the npm package):
 
 ```bash
 git clone <repo-url>
@@ -116,6 +150,29 @@ Then in the playground, add a video track, add a clip, hit **Space** to play. Ke
 | **← / →** | Step one frame back / forward |
 
 Right-click any clip on the timeline to open the context menu (Delete).
+
+---
+
+## Install
+
+Elah ships as three published npm packages:
+
+| Package | npm | What it is |
+|---|---|---|
+| [`@elah/editor`](https://www.npmjs.com/package/@elah/editor) | [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor) | Full React editor SDK — `EditorProvider`, `Preview`, `Timeline`, `AssetPanel` + re-exports everything below |
+| [`@elah/timeline`](https://www.npmjs.com/package/@elah/timeline) | [![npm](https://img.shields.io/npm/v/@elah/timeline)](https://www.npmjs.com/package/@elah/timeline) | React timeline UI components and hooks |
+| [`@elah/core`](https://www.npmjs.com/package/@elah/core) | [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core) | Framework-agnostic engine, resolver, renderer, export (headless) |
+
+For the full experience, install `@elah/editor` — it pulls in the other two:
+
+```bash
+npm install @elah/editor
+# or: pnpm add @elah/editor  /  yarn add @elah/editor
+```
+
+Peer dependencies: `react`, `react-dom` >= 18.
+
+Use `@elah/core` directly if you only need the headless engine for a custom renderer or export pipeline.
 
 ---
 
