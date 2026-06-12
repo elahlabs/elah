@@ -6,6 +6,42 @@
 
 ---
 
+## Installation
+
+**Requirements:** Node 18+ and npm 9+.
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/elahlabs/elah.git
+cd elah
+
+# 2. Install dependencies (npm workspaces monorepo — always run from the root)
+npm install
+
+# 3. Build the packages (core → timeline → editor, in dependency order)
+npm run build:packages
+
+# 4. Verify everything works
+npm run typecheck
+npm test
+
+# 5. Start the dev playground (apps/web)
+npm run dev
+```
+
+Repo layout:
+
+```
+packages/core      # framework-agnostic engine, resolver, renderer, export
+packages/timeline  # React timeline UI components and hooks
+packages/editor    # full React editor SDK (bundles core + timeline)
+apps/web           # dev playground started by `npm run dev`
+playground/        # standalone apps consuming @elah/editor from npm — not
+                   # part of the workspace; see playground/README.md
+```
+
+---
+
 ## How to pick up work
 
 1. Skim [`ROADMAP.md`](./ROADMAP.md) (current state) and
@@ -36,6 +72,12 @@ docs: sync renderer architecture with shipped layers
 ---
 
 ## PR rules
+
+When you open a PR, GitHub will load the [PR template](./.github/PULL_REQUEST_TEMPLATE.md) automatically — fill in every section, don't delete any.
+
+When you open an issue, choose the right template:
+- [Bug report](./.github/ISSUE_TEMPLATE/bug_report.md) — reproduction steps + environment
+- [Feature request](./.github/ISSUE_TEMPLATE/feature_request.md) — problem + proposed solution + acceptance criteria
 
 ### Every PR must
 
