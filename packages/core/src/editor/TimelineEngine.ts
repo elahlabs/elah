@@ -129,18 +129,22 @@ export class TimelineEngine {
   // Queries
   // ---------------------------------------------------------------------------
 
+  /** Returns an immutable snapshot that is replaced on every commit — re-read after edits, never mutate it. */
   getProject(): Project {
     return this.project
   }
 
+  /** Returns undefined for unknown ids — callers decide whether a missing track is an error. */
   getTrack(trackId: string): Track | undefined {
     return this.project.tracks.find((t) => t.id === trackId)
   }
 
+  /** Always sorted by startFrame; returns [] for unknown tracks so callers can iterate without guarding. */
   getClipsOnTrack(trackId: string): Clip[] {
     return this.project.clips[trackId] ?? []
   }
 
+  /** Scans every track for a clip by id alone — use when the caller doesn't know which track holds it. */
   findClip(clipId: string): { clip: Clip; trackId: string } | null {
     for (const [trackId, clips] of Object.entries(this.project.clips)) {
       const clip = clips.find((c) => c.id === clipId)
@@ -149,14 +153,17 @@ export class TimelineEngine {
     return null
   }
 
+  /** Effective timeline length: the frame where the last clip on any track ends, not a configured value. */
   getTotalFrames(): number {
     return getTotalFrames(this.project.clips)
   }
 
+  /** History is capped, so the oldest edits eventually stop being undoable; track via 'history:change' rather than polling. */
   canUndo(): boolean {
     return this.undoStack.length > 0
   }
 
+  /** Any new edit after an undo clears the redo stack, flipping this back to false. */
   canRedo(): boolean {
     return this.redoStack.length > 0
   }
@@ -180,6 +187,7 @@ export class TimelineEngine {
   // Track operations
   // ---------------------------------------------------------------------------
 
+  /** New tracks append below existing ones (order = current count) and start with an empty clip list. */
   addTrack(kind: TrackKind, options?: Partial<CreateTrackOptions>): Track {
     const order = this.project.tracks.length
     const track = createTrack({
@@ -201,6 +209,7 @@ export class TimelineEngine {
     return track
   }
 
+  /** Removes the track's clips with it, all in a single undo entry. */
   removeTrack(trackId: string): void {
     this.commit(
       (draft) => removeTrack(draft, trackId),
@@ -209,6 +218,7 @@ export class TimelineEngine {
     this.emit('track:removed', trackId)
   }
 
+  /** Shallow-merges partial updates; for order changes prefer reorderTracks, which keeps all indices consistent. */
   updateTrack(trackId: string, updates: Partial<Track>): void {
     this.commit(
       (draft) => updateTrack(draft, trackId, updates),
@@ -216,6 +226,7 @@ export class TimelineEngine {
     )
   }
 
+  /** Expects the complete id list — tracks omitted from it keep stale order values. */
   reorderTracks(orderedIds: string[]): void {
     this.commit((draft) => {
       orderedIds.forEach((id, index) => {
@@ -230,6 +241,7 @@ export class TimelineEngine {
   // Clip operations
   // ---------------------------------------------------------------------------
 
+  /** Throws if the target track is missing or the clip would overlap an existing one — validate placement first. */
   addClip(options: CreateClipOptions): Clip {
     const clip = createClip(options)
 
@@ -242,6 +254,7 @@ export class TimelineEngine {
     return clip
   }
 
+  /** Transitions referencing the removed clip are pruned in the same undo entry. */
   removeClip(clipId: string, trackId: string): void {
     this.commit(
       (draft) => removeClip(draft, clipId, trackId),
@@ -250,6 +263,7 @@ export class TimelineEngine {
     this.emit('clip:removed', { clipId, trackId })
   }
 
+  /** Positional changes are validated against neighbouring clips and re-sort the track; undoable — use previewClip during gestures. */
   updateClip(clipId: string, trackId: string, updates: Partial<Clip>): void {
     this.commit(
       (draft) => updateClip(draft, clipId, trackId, updates),
@@ -424,6 +438,7 @@ export class TimelineEngine {
     }, 'Trim clip')
   }
 
+  /** The left half keeps the original clip id; returns null when atFrame isn't strictly inside the clip. */
   splitClip(
     clipId: string,
     trackId: string,
@@ -447,6 +462,7 @@ export class TimelineEngine {
     return result
   }
 
+  /** Copies onto the same track at startFrame; returns null instead of throwing when the spot is occupied. */
   cloneClip(
     clipId: string,
     trackId: string,
