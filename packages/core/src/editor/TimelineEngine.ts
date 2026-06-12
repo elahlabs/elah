@@ -129,6 +129,7 @@ export class TimelineEngine {
   // Queries
   // ---------------------------------------------------------------------------
 
+  /** Returns an immutable snapshot that is replaced on every commit — re-read after edits, never mutate it. */
   getProject(): Project {
     return this.project
   }
