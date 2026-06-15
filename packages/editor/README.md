@@ -3,6 +3,7 @@
 The full Elah video editor SDK for React. Combines the core engine, timeline UI, WebGL2 renderer, media library, and export pipeline into a single package.
 
 [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
+[![gzip size](https://img.shields.io/badge/gzip-~63%20KiB%20full%20SDK-brightgreen)](../../BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
@@ -14,6 +15,8 @@ npm install @elah/editor
 ```
 
 Peer dependencies: `react`, `react-dom` >= 18.
+
+**Bundle size:** ~10 KiB gzipped for the editor layer (51 KiB raw); ~63 KiB gzipped for the full SDK graph (`core` + `timeline` + `editor`, 330 KiB raw). `mediabunny` is injected, never bundled — see [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md).
 
 ---
 

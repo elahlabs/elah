@@ -6,6 +6,25 @@
 
 ---
 
+## Measured size
+
+Per-package `dist/` (ESM output of `tsc`, no app bundler), measured on the
+current `main`:
+
+| Package | gzipped | raw |
+|---|---|---|
+| `@elah/core` | ~41 KiB | 218 KiB |
+| `@elah/timeline` | ~12 KiB | 61 KiB |
+| `@elah/editor` (layer only) | ~10 KiB | 51 KiB |
+| **Full SDK** (`core` + `timeline` + `editor`) | **~63 KiB** | 330 KiB |
+
+Runtime deps that ship with the SDK: `immer` (~9 KiB gz) and `zustand`
+(<1 KiB gz). `react` / `react-dom` are peers and not counted. `mediabunny`
+(the heavy media codec layer) is injected by the host app and never bundled —
+see below.
+
+---
+
 ## Dependency budget
 
 The published package depends on exactly two runtime libraries:

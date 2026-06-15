@@ -5,6 +5,7 @@ Framework-agnostic video timeline engine. No React. No renderer. Just the pure l
 Used internally by `@elah/timeline` and `@elah/editor`, but can be consumed directly for custom rendering pipelines or headless environments.
 
 [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core)
+[![gzip size](https://img.shields.io/badge/gzip-41%20KiB-brightgreen)](../../BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
@@ -14,6 +15,8 @@ Used internally by `@elah/timeline` and `@elah/editor`, but can be consumed dire
 ```bash
 npm install @elah/core
 ```
+
+**Bundle size:** ~41 KiB gzipped (218 KiB raw, `tsc` ESM output). Runtime deps: `immer` (~9 KiB gz) + `zustand` (<1 KiB gz). No WASM, no bundled media toolchain.
 
 ---
 

@@ -3,6 +3,7 @@
 **A browser-native, frame-accurate video editing engine for the web.** A framework-agnostic core — timeline, WebGL2 renderer, media pipeline, and MP4 export — with thin UI bindings on top. **React is the first UI layer** (shipping today); the engine knows nothing about it, so React Native and other frameworks can bind to the same core. Works for any aspect ratio (9:16 Reels, 16:9 YouTube, 1:1, or any custom stage).
 
 [![npm](https://img.shields.io/npm/v/@elah/editor?label=%40elah%2Feditor)](https://www.npmjs.com/package/@elah/editor)
+[![gzip size](https://img.shields.io/badge/gzip-~63%20KiB%20full%20SDK-brightgreen)](./BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-ECL--1.0-blue)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 
@@ -102,7 +103,7 @@ video-editor/
 ├── ROADMAP.md                    # current state + next architectural layer
 ├── CURRENT_LIMITATIONS.md        # known gaps and trade-offs
 ├── PERFORMANCE.md                # performance philosophy + techniques
-├── BUNDLE_STRATEGY.md            # dependency budget + tree-shaking
+├── BUNDLE_STRATEGY.md            # dependency budget + tree-shaking + measured sizes (~63 KiB gz full SDK)
 ├── CONTRIBUTING.md               # branch/commit conventions, PR rules
 ├── apps/
 │   └── playground/               # Vite + React demo app (mediabunny wired here)

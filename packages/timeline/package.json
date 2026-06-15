@@ -1,14 +1,16 @@
 {
   "name": "@elah/timeline",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "React timeline UI for the Elah video engine — tracks, clips, ruler, playhead, drag and trim gestures",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -20,7 +22,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
   },
   "keywords": [
     "video-editor",
@@ -50,7 +52,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@elah/core": "^0.2.0"
+    "@elah/core": "^0.2.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

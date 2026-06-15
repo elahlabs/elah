@@ -1,6 +1,6 @@
 {
   "name": "@elah/editor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Full React video editor SDK — timeline UI, WebGL2 preview, media library, drag and drop, and MP4 export",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,8 +8,9 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -21,7 +22,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
   },
   "keywords": [
     "video-editor",
@@ -54,15 +55,14 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@elah/core": "^0.2.0",
-    "@elah/timeline": "^0.2.0",
+    "@elah/core": "^0.2.1",
+    "@elah/timeline": "^0.2.1",
     "immer": "^10.1.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "fast-glob": "^3.3.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.6"
   }
