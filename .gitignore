@@ -8,3 +8,6 @@ playground/*/package-lock.json
 dist
 *.tsbuildinfo
 .DS_Store
+
+# Local docs and issues (not committed)
+doc/

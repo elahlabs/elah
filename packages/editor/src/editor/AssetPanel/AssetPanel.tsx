@@ -10,6 +10,7 @@ import {
 import { createPortal } from 'react-dom'
 import {
   importFiles,
+  importUrl,
   MEDIA_DRAG_MIME,
   useMediaLibrary,
   useMediaLibraryStore,
@@ -279,6 +280,8 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
   const [toast, setToast] = useState<ImportToast | null>(null)
+  const [urlInputOpen, setUrlInputOpen] = useState(false)
+  const [urlValue, setUrlValue] = useState('')
 
   const handleDeleteAsset = useCallback((id: string) => {
     removeAsset(id)
@@ -301,6 +304,37 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
       setImporting(false)
     }
   }, [])
+
+  const handleImportUrl = useCallback(async () => {
+    const url = urlValue.trim()
+    if (!url) return
+    setImporting(true)
+    try {
+      await importUrl(url)
+      setUrlValue('')
+      setUrlInputOpen(false)
+    } catch (err) {
+      setToast({
+        message: `Failed to import URL: ${err instanceof Error ? err.message : String(err)}`,
+        tone: 'warn',
+      })
+    } finally {
+      setImporting(false)
+    }
+  }, [urlValue])
+
+  const onUrlKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        void handleImportUrl()
+      } else if (e.key === 'Escape') {
+        setUrlInputOpen(false)
+        setUrlValue('')
+      }
+    },
+    [handleImportUrl],
+  )
 
   const onBrowseClick = useCallback(() => {
     fileInputRef.current?.click()
@@ -381,24 +415,95 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
         <span style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', letterSpacing: '0.08em' }}>
           MEDIA
         </span>
-        <button
-          type="button"
-          onClick={onBrowseClick}
-          disabled={importing}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => setUrlInputOpen((open) => !open)}
+            disabled={importing}
+            data-testid="asset-url-toggle"
+            style={{
+              padding: '4px 12px',
+              fontSize: 11,
+              fontWeight: 600,
+              background: urlInputOpen ? '#232938' : '#171D2B',
+              color: importing ? '#6B7280' : '#E11D48',
+              border: '1px solid #232938',
+              borderRadius: 6,
+              cursor: importing ? 'wait' : 'pointer',
+            }}
+          >
+            + URL
+          </button>
+          <button
+            type="button"
+            onClick={onBrowseClick}
+            disabled={importing}
+            style={{
+              padding: '4px 12px',
+              fontSize: 11,
+              fontWeight: 600,
+              background: importing ? '#121722' : '#171D2B',
+              color: importing ? '#6B7280' : '#E11D48',
+              border: '1px solid #232938',
+              borderRadius: 6,
+              cursor: importing ? 'wait' : 'pointer',
+            }}
+          >
+            {importing ? '…' : '+ Add'}
+          </button>
+        </div>
+      </div>
+
+      {urlInputOpen && (
+        <div
           style={{
-            padding: '4px 12px',
-            fontSize: 11,
-            fontWeight: 600,
-            background: importing ? '#121722' : '#171D2B',
-            color: importing ? '#6B7280' : '#E11D48',
-            border: '1px solid #232938',
-            borderRadius: 6,
-            cursor: importing ? 'wait' : 'pointer',
+            display: 'flex',
+            gap: 6,
+            padding: '8px 12px',
+            borderBottom: '1px solid #232938',
+            flexShrink: 0,
           }}
         >
-          {importing ? '…' : '+ Add'}
-        </button>
-      </div>
+          <input
+            type="url"
+            value={urlValue}
+            onChange={(e) => setUrlValue(e.target.value)}
+            onKeyDown={onUrlKeyDown}
+            placeholder="https://…/media.mp4"
+            autoFocus
+            data-testid="asset-url-input"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: '5px 8px',
+              fontSize: 11,
+              fontFamily: 'ui-monospace, monospace',
+              color: '#F3F4F6',
+              background: '#06070A',
+              border: '1px solid #232938',
+              borderRadius: 6,
+              outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => void handleImportUrl()}
+            disabled={importing || urlValue.trim().length === 0}
+            style={{
+              padding: '5px 12px',
+              fontSize: 11,
+              fontWeight: 600,
+              background: '#171D2B',
+              color: importing || urlValue.trim().length === 0 ? '#6B7280' : '#E11D48',
+              border: '1px solid #232938',
+              borderRadius: 6,
+              cursor: importing ? 'wait' : 'pointer',
+            }}
+          >
+            Add
+          </button>
+        </div>
+      )}
 
       <div
         style={{

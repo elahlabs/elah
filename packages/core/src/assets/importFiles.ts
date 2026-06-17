@@ -9,6 +9,20 @@ export interface ImportFilesOptions {
   thumbnailMaxDim?: number
 }
 
+export interface ImportUrlOptions extends ImportFilesOptions {
+  /** Display name. Defaults to the last decoded path segment of the URL. */
+  name?: string
+  /** Override the media kind instead of inferring it from the URL/content-type. */
+  kind?: MediaKind
+}
+
+export interface ImportBlobOptions extends ImportFilesOptions {
+  /** Display name. Defaults to a generated name from the blob's MIME type. */
+  name?: string
+  /** Override the media kind instead of inferring it from the blob's MIME type. */
+  kind?: MediaKind
+}
+
 export interface SkippedImport {
   file: File
   reason: 'duplicate' | 'unsupported'
@@ -67,6 +81,79 @@ function inferKind(mimeType: string): MediaKind | null {
   return null
 }
 
+/** File-extension → media kind. `.ogg` is ambiguous; default to audio (override via opts.kind). */
+const EXTENSION_KIND: Record<string, MediaKind> = {
+  mp4: 'video',
+  webm: 'video',
+  mov: 'video',
+  m4v: 'video',
+  mkv: 'video',
+  mp3: 'audio',
+  wav: 'audio',
+  m4a: 'audio',
+  aac: 'audio',
+  ogg: 'audio',
+  oga: 'audio',
+  flac: 'audio',
+  png: 'image',
+  jpg: 'image',
+  jpeg: 'image',
+  gif: 'image',
+  webp: 'image',
+  avif: 'image',
+  svg: 'image',
+}
+
+/** Whether a source is an http(s) URL (vs. a blob:/data:/object URL). */
+function isHttpUrl(src: string): boolean {
+  return /^https?:/i.test(src)
+}
+
+/** Parse a URL's pathname, tolerating relative URLs and query/hash suffixes. */
+function urlPathname(url: string): string {
+  try {
+    return new URL(url, 'http://_').pathname
+  } catch {
+    return url.split(/[?#]/)[0]
+  }
+}
+
+function inferKindFromUrl(url: string): MediaKind | null {
+  const path = urlPathname(url)
+  const ext = path.split('.').pop()?.toLowerCase() ?? ''
+  return EXTENSION_KIND[ext] ?? null
+}
+
+/** Derive a human-ish name from a URL's last path segment. */
+function deriveNameFromUrl(url: string): string {
+  const path = urlPathname(url)
+  const last = path.split('/').filter(Boolean).pop() ?? ''
+  try {
+    return decodeURIComponent(last) || 'media'
+  } catch {
+    return last || 'media'
+  }
+}
+
+/** Best-effort kind from a HEAD request's Content-Type. Returns null if blocked/unknown. */
+async function inferKindFromHead(url: string): Promise<MediaKind | null> {
+  try {
+    const res = await fetch(url, { method: 'HEAD' })
+    const contentType = res.headers.get('content-type')?.split(';')[0]?.trim() ?? ''
+    return inferKind(contentType)
+  } catch {
+    return null
+  }
+}
+
+/** Generate a fallback name for a blob with no filename, e.g. `clip.mp4` / `media`. */
+function generateBlobName(kind: MediaKind, mimeType: string): string {
+  const subtype = mimeType.split('/')[1]?.split(';')[0]?.trim()
+  const ext = subtype ? `.${subtype}` : ''
+  const base = kind === 'video' ? 'clip' : kind === 'audio' ? 'audio' : 'image'
+  return `${base}${ext}`
+}
+
 function loadMediaElement<T extends HTMLMediaElement>(
   tag: 'video' | 'audio',
   src: string,
@@ -76,6 +163,10 @@ function loadMediaElement<T extends HTMLMediaElement>(
     const el = document.createElement(tag) as T
     el.preload = 'metadata'
     el.muted = true
+    // Cross-origin sources (e.g. CDN URLs) must opt into CORS, otherwise frames
+    // drawn to a canvas taint it and `toDataURL()` throws (no thumbnails).
+    // Harmless for same-origin / blob: / data: sources.
+    if (isHttpUrl(src)) el.crossOrigin = 'anonymous'
 
     const cleanup = () => {
       el.removeEventListener('loadedmetadata', onLoaded)
@@ -278,6 +369,8 @@ export async function makeVideoThumbnailStrip(
 export async function makeImageThumbnail(src: string, maxDim: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = document.createElement('img')
+    // Same CORS requirement as video frames — needed to draw onto a canvas.
+    if (isHttpUrl(src)) img.crossOrigin = 'anonymous'
 
     const cleanup = () => {
       img.onload = null
@@ -411,33 +504,57 @@ function scheduleAudioAnalysis(asset: MediaAsset): void {
     })
 }
 
-async function importSingleFile(
-  file: File,
-  kind: MediaKind,
-  thumbnailMaxDim: number,
-): Promise<MediaAsset> {
-  const src = URL.createObjectURL(file)
-  const metadata = await probeMetadata(kind, src)
+interface RegisterAssetInput {
+  kind: MediaKind
+  name: string
+  /** Source URL: object URL (file/blob) or a direct http(s)/data URL. */
+  src: string
+  byteSize: number
+  lastModified: number
+  thumbnailMaxDim: number
+}
+
+/**
+ * Probe a source, register it as a `MediaAsset` in the store, and schedule its
+ * thumbnail + waveform generation. Shared by every import path (file/url/blob).
+ */
+async function registerAsset(input: RegisterAssetInput): Promise<MediaAsset> {
+  const metadata = await probeMetadata(input.kind, input.src)
 
   const asset: MediaAsset = {
     id: generateId(),
-    kind,
-    name: file.name,
-    src,
+    kind: input.kind,
+    name: input.name,
+    src: input.src,
     durationSec: metadata.durationSec,
     width: metadata.width,
     height: metadata.height,
-    ...(kind === 'video' ? { hasAudio: metadata.hasAudio ?? false } : {}),
-    byteSize: file.size,
-    lastModified: file.lastModified,
+    ...(input.kind === 'video' ? { hasAudio: metadata.hasAudio ?? false } : {}),
+    byteSize: input.byteSize,
+    lastModified: input.lastModified,
     addedAt: Date.now(),
   }
 
   useMediaLibraryStore.getState().addAsset(asset)
-  scheduleThumbnail(asset, thumbnailMaxDim)
+  scheduleThumbnail(asset, input.thumbnailMaxDim)
   scheduleAudioAnalysis(asset)
 
   return asset
+}
+
+function importSingleFile(
+  file: File,
+  kind: MediaKind,
+  thumbnailMaxDim: number,
+): Promise<MediaAsset> {
+  return registerAsset({
+    kind,
+    name: file.name,
+    src: URL.createObjectURL(file),
+    byteSize: file.size,
+    lastModified: file.lastModified,
+    thumbnailMaxDim,
+  })
 }
 
 function partitionFiles(
@@ -501,4 +618,61 @@ export async function importFiles(
   )
 
   return { imported, skipped }
+}
+
+/**
+ * Import a media source by URL (e.g. a CDN asset) into the media library.
+ *
+ * The URL is used directly as the asset `src` — the probe and decode pipeline
+ * accept http(s) URLs, so no download/object-URL conversion happens here.
+ * Thumbnail and waveform generation `fetch()` the source later, which requires
+ * the origin to allow CORS.
+ *
+ * Re-importing a URL that is already in the library returns the existing asset.
+ * The kind is taken from `opts.kind`, else the file extension, else a `HEAD`
+ * content-type probe; throws if none of those determine a supported media kind.
+ */
+export async function importUrl(url: string, opts?: ImportUrlOptions): Promise<MediaAsset> {
+  const existing = Object.values(useMediaLibraryStore.getState().assets).find(
+    (asset) => asset.src === url,
+  )
+  if (existing) return existing
+
+  const kind = opts?.kind ?? inferKindFromUrl(url) ?? (await inferKindFromHead(url))
+  if (!kind) {
+    throw new Error(`[importUrl] Could not determine media kind for "${url}"`)
+  }
+
+  return registerAsset({
+    kind,
+    name: opts?.name ?? deriveNameFromUrl(url),
+    src: url,
+    // Unknown without downloading the source; URLs dedupe on `src`, not size.
+    byteSize: 0,
+    lastModified: Date.now(),
+    thumbnailMaxDim: opts?.thumbnailMaxDim ?? DEFAULT_THUMBNAIL_MAX_DIM,
+  })
+}
+
+/**
+ * Import an in-memory `Blob` into the media library.
+ *
+ * Wraps the blob in an object URL and runs the same probe/thumbnail/waveform
+ * pipeline as `importFiles`. The kind is taken from `opts.kind`, else the blob's
+ * MIME type; throws if neither yields a supported media kind.
+ */
+export async function importBlob(blob: Blob, opts?: ImportBlobOptions): Promise<MediaAsset> {
+  const kind = opts?.kind ?? inferKind(blob.type)
+  if (!kind) {
+    throw new Error(`[importBlob] Unsupported blob type: "${blob.type || 'unknown'}"`)
+  }
+
+  return registerAsset({
+    kind,
+    name: opts?.name ?? generateBlobName(kind, blob.type),
+    src: URL.createObjectURL(blob),
+    byteSize: blob.size,
+    lastModified: Date.now(),
+    thumbnailMaxDim: opts?.thumbnailMaxDim ?? DEFAULT_THUMBNAIL_MAX_DIM,
+  })
 }
