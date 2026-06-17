@@ -62,10 +62,10 @@ export const TrackRow = memo(function TrackRow({
 
   const kindAccent =
     track.kind === 'video'
-      ? '#2563EB'
+      ? 'var(--elah-clip-video-mid)'
       : track.kind === 'audio'
-        ? '#16A34A'
-        : '#9333EA'
+        ? 'var(--elah-clip-audio-mid)'
+        : 'var(--elah-clip-text-mid)'
 
   return (
     <div style={{ display: 'flex', height: track.height }}>
@@ -80,9 +80,9 @@ export const TrackRow = memo(function TrackRow({
           width: 160,
           flexShrink: 0,
           borderLeft: `3px solid ${kindAccent}`,
-          borderRight: '1px solid #232938',
-          borderBottom: '1px solid #1A1F2B',
-          background: isActive ? '#171D2B' : '#121722',
+          borderRight: '1px solid var(--elah-border)',
+          borderBottom: '1px solid var(--elah-border-subtle)',
+          background: isActive ? 'var(--elah-bg-card)' : 'var(--elah-bg-panel)',
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 12,
@@ -93,7 +93,7 @@ export const TrackRow = memo(function TrackRow({
         <span
           style={{
             fontSize: 11,
-            color: isActive ? '#F3F4F6' : '#A7AFBF',
+            color: isActive ? 'var(--elah-text)' : 'var(--elah-text-muted)',
             fontWeight: isActive ? 600 : 500,
             overflow: 'hidden',
             whiteSpace: 'nowrap',
@@ -111,8 +111,8 @@ export const TrackRow = memo(function TrackRow({
           position: 'relative',
           flex: 1,
           minWidth: rowMinWidth,
-          borderBottom: '1px solid #1A1F2B',
-          background: isActive ? '#0D1017' : '#0A0D14',
+          borderBottom: '1px solid var(--elah-border-subtle)',
+          background: isActive ? 'var(--elah-bg-secondary)' : 'var(--elah-bg)',
           overflow: 'visible',
         }}
       >

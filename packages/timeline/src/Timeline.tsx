@@ -269,11 +269,11 @@ export const Timeline = memo(
         style={{
           display: 'flex',
           flexDirection: 'column',
-          background: '#0A0D14',
-          color: '#F3F4F6',
+          background: 'var(--elah-bg)',
+          color: 'var(--elah-text)',
           overflow: 'hidden',
           position: 'relative',
-          fontFamily: 'sans-serif',
+          fontFamily: 'var(--elah-font-ui, sans-serif)',
           ...style,
         }}
       >
@@ -285,9 +285,9 @@ export const Timeline = memo(
               width: SIDEBAR_WIDTH,
               flexShrink: 0,
               height: rulerHeight,
-              background: '#121722',
-              borderRight: '1px solid #232938',
-              borderBottom: '1px solid #1A1F2B',
+              background: 'var(--elah-bg-panel)',
+              borderRight: '1px solid var(--elah-border)',
+              borderBottom: '1px solid var(--elah-border-subtle)',
             }}
           />
           {/* Ruler — overflow hidden, scrollLeft driven by track area scroll */}

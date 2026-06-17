@@ -21,9 +21,9 @@ export const Ruler = memo(function Ruler({
   totalFrames,
   zoom,
   height = 24,
-  color = '#121722',
-  tickColor = '#232938',
-  labelColor = '#6B7280',
+  color = 'var(--elah-bg-panel)',
+  tickColor = 'var(--elah-tick-color)',
+  labelColor = 'var(--elah-tick-label)',
   onSeek,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on

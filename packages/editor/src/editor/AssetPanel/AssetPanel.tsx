@@ -31,10 +31,10 @@ const KIND_ICONS: Record<MediaKind, string> = {
   image: '◻',
 }
 
-const KIND_TAG: Record<MediaKind, { label: string; color: string; bg: string }> = {
-  video: { label: 'VIDEO', color: '#93C5FD', bg: 'rgba(37, 99, 235, 0.2)' },
-  audio: { label: 'AUDIO', color: '#86EFAC', bg: 'rgba(22, 163, 74, 0.2)' },
-  image: { label: 'IMAGE', color: '#FCD34D', bg: 'rgba(245, 158, 11, 0.2)' },
+const KIND_TOKEN: Record<MediaKind, { label: string; fg: string; bg: string }> = {
+  video: { label: 'VIDEO', fg: 'var(--elah-tag-video-fg)', bg: 'var(--elah-tag-video-bg)' },
+  audio: { label: 'AUDIO', fg: 'var(--elah-tag-audio-fg)', bg: 'var(--elah-tag-audio-bg)' },
+  image: { label: 'IMAGE', fg: 'var(--elah-tag-image-fg)', bg: 'var(--elah-tag-image-bg)' },
 }
 
 function formatDuration(sec: number): string {
@@ -109,7 +109,7 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
     setCtxMenu(null)
   }, [asset.id, onDelete])
 
-  const tag = KIND_TAG[asset.kind]
+  const tag = KIND_TOKEN[asset.kind]
 
   return (
     <>
@@ -124,11 +124,11 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
           alignItems: 'center',
           gap: 10,
           padding: '8px 10px',
-          borderRadius: 8,
+          borderRadius: 'var(--elah-radius-md)',
           cursor: 'grab',
           userSelect: 'none',
-          background: '#171D2B',
-          border: '1px solid #232938',
+          background: 'var(--elah-bg-card)',
+          border: '1px solid var(--elah-border)',
           transition: 'background 0.15s, border-color 0.15s',
         }}
       >
@@ -138,9 +138,9 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
             width: THUMB_SIZE,
             height: THUMB_SIZE,
             flexShrink: 0,
-            background: '#06070A',
-            borderRadius: 6,
-            border: '1px solid #1A1F2B',
+            background: 'var(--elah-bg)',
+            borderRadius: 'var(--elah-radius-sm)',
+            border: '1px solid var(--elah-border-subtle)',
             overflow: 'hidden',
           }}
         >
@@ -165,7 +165,7 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 20,
-                color: '#555',
+                color: 'var(--elah-text-muted)',
               }}
             >
               {KIND_ICONS[asset.kind]}
@@ -184,7 +184,7 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
           <span
             style={{
               fontSize: 11,
-              color: '#F3F4F6',
+              color: 'var(--elah-text)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -200,13 +200,13 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
                 letterSpacing: '0.06em',
                 padding: '2px 5px',
                 borderRadius: 3,
-                color: tag.color,
+                color: tag.fg,
                 background: tag.bg,
               }}
             >
               {tag.label}
             </span>
-            <span style={{ fontSize: 10, color: '#6B7280', fontFamily: 'ui-monospace, monospace' }}>
+            <span style={{ fontSize: 10, color: 'var(--elah-text-muted)', fontFamily: 'var(--elah-font-mono)' }}>
               {formatDuration(asset.durationSec)}
             </span>
           </div>
@@ -225,13 +225,13 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
               top: ctxMenu.y,
               left: ctxMenu.x,
               zIndex: 9999,
-              background: '#1E2433',
-              border: '1px solid #2D3548',
-              borderRadius: 6,
+              background: 'var(--elah-bg-elevated)',
+              border: '1px solid var(--elah-outline)',
+              borderRadius: 'var(--elah-radius-sm)',
               padding: '4px 0',
               minWidth: 140,
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-              fontFamily: 'sans-serif',
+              fontFamily: 'var(--elah-font-ui)',
             }}
           >
             <button
@@ -245,13 +245,13 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
                 textAlign: 'left',
                 background: 'none',
                 border: 'none',
-                color: '#FF6B6B',
+                color: 'var(--elah-color-error)',
                 fontSize: 13,
                 cursor: 'pointer',
                 letterSpacing: '0.01em',
               }}
               onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,107,107,0.12)'
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
               }}
               onMouseLeave={(e) => {
                 ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
@@ -408,11 +408,11 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '10px 12px',
-          borderBottom: '1px solid #232938',
+          borderBottom: '1px solid var(--elah-border)',
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', letterSpacing: '0.08em' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--elah-text-muted)', letterSpacing: '0.08em' }}>
           MEDIA
         </span>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -425,10 +425,10 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               padding: '4px 12px',
               fontSize: 11,
               fontWeight: 600,
-              background: urlInputOpen ? '#232938' : '#171D2B',
-              color: importing ? '#6B7280' : '#E11D48',
-              border: '1px solid #232938',
-              borderRadius: 6,
+              background: urlInputOpen ? 'var(--elah-bg-elevated)' : 'var(--elah-bg-card)',
+              color: importing ? 'var(--elah-text-muted)' : 'var(--elah-accent)',
+              border: '1px solid var(--elah-border)',
+              borderRadius: 'var(--elah-radius-sm)',
               cursor: importing ? 'wait' : 'pointer',
             }}
           >
@@ -442,10 +442,10 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               padding: '4px 12px',
               fontSize: 11,
               fontWeight: 600,
-              background: importing ? '#121722' : '#171D2B',
-              color: importing ? '#6B7280' : '#E11D48',
-              border: '1px solid #232938',
-              borderRadius: 6,
+              background: importing ? 'var(--elah-bg-panel)' : 'var(--elah-bg-card)',
+              color: importing ? 'var(--elah-text-muted)' : 'var(--elah-accent)',
+              border: '1px solid var(--elah-border)',
+              borderRadius: 'var(--elah-radius-sm)',
               cursor: importing ? 'wait' : 'pointer',
             }}
           >
@@ -460,7 +460,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
             display: 'flex',
             gap: 6,
             padding: '8px 12px',
-            borderBottom: '1px solid #232938',
+            borderBottom: '1px solid var(--elah-border)',
             flexShrink: 0,
           }}
         >
@@ -477,11 +477,11 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               minWidth: 0,
               padding: '5px 8px',
               fontSize: 11,
-              fontFamily: 'ui-monospace, monospace',
-              color: '#F3F4F6',
-              background: '#06070A',
-              border: '1px solid #232938',
-              borderRadius: 6,
+              fontFamily: 'var(--elah-font-mono)',
+              color: 'var(--elah-text)',
+              background: 'var(--elah-bg)',
+              border: '1px solid var(--elah-border)',
+              borderRadius: 'var(--elah-radius-sm)',
               outline: 'none',
             }}
           />
@@ -493,10 +493,10 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               padding: '5px 12px',
               fontSize: 11,
               fontWeight: 600,
-              background: '#171D2B',
-              color: importing || urlValue.trim().length === 0 ? '#6B7280' : '#E11D48',
-              border: '1px solid #232938',
-              borderRadius: 6,
+              background: 'var(--elah-bg-card)',
+              color: importing || urlValue.trim().length === 0 ? 'var(--elah-text-muted)' : 'var(--elah-accent)',
+              border: '1px solid var(--elah-border)',
+              borderRadius: 'var(--elah-radius-sm)',
               cursor: importing ? 'wait' : 'pointer',
             }}
           >
@@ -510,7 +510,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
           flex: 1,
           overflow: 'auto',
           padding: 8,
-          outline: isDragOver ? '2px dashed #E11D48' : 'none',
+          outline: isDragOver ? '2px dashed var(--elah-accent)' : 'none',
           outlineOffset: -4,
           borderRadius: 4,
           position: 'relative',
@@ -526,9 +526,9 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               right: 8,
               zIndex: 2,
               padding: '8px 10px',
-              borderRadius: 6,
+              borderRadius: 'var(--elah-radius-sm)',
               fontSize: 10,
-              fontFamily: 'monospace',
+              fontFamily: 'var(--elah-font-mono)',
               lineHeight: 1.4,
               whiteSpace: 'pre-line',
               color: toast.tone === 'warn' ? '#f5d0a9' : '#c8d8f0',
@@ -550,10 +550,10 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
               minHeight: 120,
               padding: 16,
               textAlign: 'center',
-              color: '#6B7280',
+              color: 'var(--elah-text-muted)',
               fontSize: 11,
-              border: '1px dashed #232938',
-              borderRadius: 8,
+              border: '1px dashed var(--elah-border)',
+              borderRadius: 'var(--elah-radius-md)',
             }}
           >
             <span style={{ marginBottom: 8, fontSize: 24, opacity: 0.5 }}>↓</span>

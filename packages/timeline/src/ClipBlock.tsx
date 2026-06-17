@@ -18,28 +18,28 @@ const CLIP_STYLES: Record<
   { top: string; mid: string; bottom: string; accent: string }
 > = {
   video: {
-    top: '#3B82F6',
-    mid: '#2563EB',
-    bottom: '#1D4ED8',
-    accent: '#60A5FA',
+    top: 'var(--elah-clip-video-top)',
+    mid: 'var(--elah-clip-video-mid)',
+    bottom: 'var(--elah-clip-video-bottom)',
+    accent: 'var(--elah-clip-video-accent)',
   },
   audio: {
-    top: '#22C55E',
-    mid: '#16A34A',
-    bottom: '#15803D',
-    accent: '#4ADE80',
+    top: 'var(--elah-clip-audio-top)',
+    mid: 'var(--elah-clip-audio-mid)',
+    bottom: 'var(--elah-clip-audio-bottom)',
+    accent: 'var(--elah-clip-audio-accent)',
   },
   text: {
-    top: '#A855F7',
-    mid: '#9333EA',
-    bottom: '#7E22CE',
-    accent: '#C084FC',
+    top: 'var(--elah-clip-text-top)',
+    mid: 'var(--elah-clip-text-mid)',
+    bottom: 'var(--elah-clip-text-bottom)',
+    accent: 'var(--elah-clip-text-accent)',
   },
   image: {
-    top: '#FBBF24',
-    mid: '#D97706',
-    bottom: '#B45309',
-    accent: '#FCD34D',
+    top: 'var(--elah-clip-image-top)',
+    mid: 'var(--elah-clip-image-mid)',
+    bottom: 'var(--elah-clip-image-bottom)',
+    accent: 'var(--elah-clip-image-accent)',
   },
 }
 
@@ -302,10 +302,10 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
         boxSizing: 'border-box',
         background: `linear-gradient(180deg, ${palette.top} 0%, ${palette.mid} 42%, ${palette.bottom} 100%)`,
         border: isSelected
-          ? '2px solid #FF2D55'
+          ? '2px solid var(--elah-playhead)'
           : `1px solid ${palette.accent}55`,
         boxShadow: isSelected
-          ? '0 0 14px rgba(255, 45, 85, 0.4), inset 0 1px 0 rgba(255,255,255,0.15)'
+          ? '0 0 14px var(--elah-accent-glow), inset 0 1px 0 rgba(255,255,255,0.15)'
           : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.35)',
         cursor: 'grab',
         overflow: 'hidden',
@@ -522,13 +522,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
               top: ctxMenu.y,
               left: ctxMenu.x,
               zIndex: 9999,
-              background: '#1E2433',
-              border: '1px solid #2D3548',
-              borderRadius: 6,
+              background: 'var(--elah-bg-elevated)',
+              border: '1px solid var(--elah-outline)',
+              borderRadius: 'var(--elah-radius-sm)',
               padding: '4px 0',
               minWidth: 140,
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-              fontFamily: 'sans-serif',
+              fontFamily: 'var(--elah-font-ui, sans-serif)',
             }}
           >
             <button
@@ -542,13 +542,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                 textAlign: 'left',
                 background: 'none',
                 border: 'none',
-                color: '#FF6B6B',
+                color: 'var(--elah-color-error)',
                 fontSize: 13,
                 cursor: 'pointer',
                 letterSpacing: '0.01em',
               }}
               onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,107,107,0.12)'
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
               }}
               onMouseLeave={(e) => {
                 ;(e.currentTarget as HTMLButtonElement).style.background = 'none'

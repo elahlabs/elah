@@ -177,6 +177,104 @@
   }
 }
 
+/* ── @elah/editor token bridge ───────────────────────────────────────────────
+   Maps --elah-* editor tokens onto the app's --color-* design system so the
+   editor inherits light/dark mode automatically via CSS variable inheritance.
+   Clip colours and typography remain hard-coded (editor-domain semantics).   */
+
+.elah-root {
+  /* Surfaces */
+  --elah-bg:            var(--color-surface-lowest);
+  --elah-bg-secondary:  var(--color-surface-dim);
+  --elah-bg-panel:      var(--color-surface-low);
+  --elah-bg-card:       var(--color-surface-container);
+  --elah-bg-elevated:   var(--color-surface-high);
+  --elah-bg-highest:    var(--color-surface-highest);
+
+  /* Borders */
+  --elah-border:        var(--color-outline-variant);
+  --elah-border-subtle: var(--color-outline-variant);
+  --elah-outline:       var(--color-outline);
+
+  /* Text */
+  --elah-text:          var(--color-on-surface);
+  --elah-text-muted:    var(--color-on-surface-variant);
+
+  /* Accent */
+  --elah-accent:        var(--color-primary);
+  --elah-accent-hover:  var(--color-primary-hover);
+  --elah-accent-dim:    var(--color-primary-dim);
+  --elah-accent-glow:   color-mix(in srgb, var(--color-primary) 35%, transparent);
+  --elah-accent-soft:   color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --elah-accent-text:   #ffffff;
+
+  /* Semantic */
+  --elah-color-error:   #f87171;
+
+  /* Timeline */
+  --elah-playhead:      var(--color-primary);
+  --elah-tick-color:    var(--color-outline-variant);
+  --elah-tick-label:    var(--color-on-surface-variant);
+
+  /* Typography */
+  --elah-font-ui:   var(--font-geist-sans, system-ui, sans-serif);
+  --elah-font-mono: var(--font-geist-mono, ui-monospace, monospace);
+
+  /* Geometry */
+  --elah-radius-sm: 6px;
+  --elah-radius-md: 8px;
+
+  /* Kind tag colours — light defaults (accessible on light bg) */
+  --elah-tag-video-fg:  #1d4ed8;
+  --elah-tag-video-bg:  rgba(37, 99, 235, 0.1);
+  --elah-tag-audio-fg:  #15803d;
+  --elah-tag-audio-bg:  rgba(22, 163, 74, 0.1);
+  --elah-tag-image-fg:  #b45309;
+  --elah-tag-image-bg:  rgba(245, 158, 11, 0.12);
+
+  /* Element type colours — light defaults */
+  --elah-tag-text-fg:     #7c3aed;
+  --elah-tag-text-bg:     rgba(109, 40, 217, 0.1);
+  --elah-tag-text-border: rgba(109, 40, 217, 0.25);
+
+  /* Clip colours are editor-domain and don't vary by light/dark */
+  --elah-clip-video-top:    #3b82f6;
+  --elah-clip-video-mid:    #2563eb;
+  --elah-clip-video-bottom: #1d4ed8;
+  --elah-clip-video-accent: #60a5fa;
+
+  --elah-clip-audio-top:    #22c55e;
+  --elah-clip-audio-mid:    #16a34a;
+  --elah-clip-audio-bottom: #15803d;
+  --elah-clip-audio-accent: #4ade80;
+
+  --elah-clip-text-top:    #a855f7;
+  --elah-clip-text-mid:    #9333ea;
+  --elah-clip-text-bottom: #7e22ce;
+  --elah-clip-text-accent: #c084fc;
+
+  --elah-clip-image-top:    #fbbf24;
+  --elah-clip-image-mid:    #d97706;
+  --elah-clip-image-bottom: #b45309;
+  --elah-clip-image-accent: #fcd34d;
+}
+
+/* Dark-mode overrides for kind tags — pale tones read on dark surfaces */
+.dark .elah-root {
+  --elah-tag-video-fg:  #93c5fd;
+  --elah-tag-video-bg:  rgba(37, 99, 235, 0.2);
+  --elah-tag-audio-fg:  #86efac;
+  --elah-tag-audio-bg:  rgba(22, 163, 74, 0.2);
+  --elah-tag-image-fg:  #fcd34d;
+  --elah-tag-image-bg:  rgba(245, 158, 11, 0.2);
+
+  --elah-tag-text-fg:     #c4b5fd;
+  --elah-tag-text-bg:     rgba(147, 51, 234, 0.25);
+  --elah-tag-text-border: rgba(147, 51, 234, 0.4);
+
+  --elah-color-error:   #f87171;
+}
+
 /* Syntax highlight overrides */
 .shiki {
   background: var(--color-surface-low) !important;

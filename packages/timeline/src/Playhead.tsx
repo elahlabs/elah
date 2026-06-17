@@ -25,7 +25,7 @@ interface PlayheadProps {
 export function Playhead({
   zoom,
   height,
-  color = '#FF2D55',
+  color = 'var(--elah-playhead)',
   scrollContainerRef,
   sidebarWidth = 0,
 }: PlayheadProps) {

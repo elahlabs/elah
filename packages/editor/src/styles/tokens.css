@@ -1,0 +1,98 @@
+/**
+ * @elah/editor — CSS token layer
+ *
+ * Standalone dark defaults for consumers who do NOT use the elah web-app
+ * design system (globals.css). Values mirror the warm-charcoal dark palette
+ * from globals.css .dark so the web-app and library stay visually in sync.
+ *
+ * Web-app consumers: import globals.css as usual — it defines .elah-root with
+ * --elah-* mapped to --color-* so light + dark modes work automatically.
+ *
+ * Third-party consumers: import this file and optionally override .elah-root
+ * in your own stylesheet:
+ *
+ *   .elah-root {
+ *     --elah-accent: #6366f1;
+ *     --elah-bg-card: #1e1e2e;
+ *   }
+ */
+
+.elah-root {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+  --elah-bg:            #0a0909; /* deepest bg — canvas, input fields      */
+  --elah-bg-secondary:  #0d0c0c; /* second-deepest — timeline track areas  */
+  --elah-bg-panel:      #181616; /* panels, sidebars, ruler                */
+  --elah-bg-card:       #201d1d; /* cards, list rows, inactive track label */
+  --elah-bg-elevated:   #282424; /* hover, context menus, modals           */
+  --elah-bg-highest:    #312d2d; /* chips, scrollbar thumb                 */
+
+  /* ── Borders ──────────────────────────────────────────────────────────── */
+  --elah-border:        #302828; /* structural edges                       */
+  --elah-border-subtle: #231f1f; /* hairline — thumbnail frames, dividers  */
+  --elah-outline:       #564848; /* interactive / focus ring               */
+
+  /* ── Text ─────────────────────────────────────────────────────────────── */
+  --elah-text:          #f0ecea; /* primary                                */
+  --elah-text-muted:    #9e918f; /* labels, secondary, inactive            */
+
+  /* ── Accent — Crimson ─────────────────────────────────────────────────── */
+  --elah-accent:        #e03050;
+  --elah-accent-hover:  #cc2846;
+  --elah-accent-dim:    #f08090; /* highlights, underlines, focus rings    */
+  --elah-accent-glow:   rgba(224, 48, 80, 0.35);
+  --elah-accent-soft:   rgba(224, 48, 80, 0.12);
+  --elah-accent-text:   #ffffff; /* text on a filled accent surface        */
+
+  /* ── Semantic ─────────────────────────────────────────────────────────── */
+  --elah-color-error:   #f87171; /* delete, destructive actions            */
+
+  /* ── Timeline ─────────────────────────────────────────────────────────── */
+  --elah-playhead:      #ff2d55; /* playhead needle + clip selection ring  */
+  --elah-tick-color:    #302828; /* ruler tick marks                       */
+  --elah-tick-label:    #9e918f; /* ruler timecode labels                  */
+
+  /* ── Clip colours — video ─────────────────────────────────────────────── */
+  --elah-clip-video-top:    #3b82f6;
+  --elah-clip-video-mid:    #2563eb;
+  --elah-clip-video-bottom: #1d4ed8;
+  --elah-clip-video-accent: #60a5fa;
+
+  /* ── Clip colours — audio ─────────────────────────────────────────────── */
+  --elah-clip-audio-top:    #22c55e;
+  --elah-clip-audio-mid:    #16a34a;
+  --elah-clip-audio-bottom: #15803d;
+  --elah-clip-audio-accent: #4ade80;
+
+  /* ── Clip colours — text ──────────────────────────────────────────────── */
+  --elah-clip-text-top:    #a855f7;
+  --elah-clip-text-mid:    #9333ea;
+  --elah-clip-text-bottom: #7e22ce;
+  --elah-clip-text-accent: #c084fc;
+
+  /* ── Clip colours — image ─────────────────────────────────────────────── */
+  --elah-clip-image-top:    #fbbf24;
+  --elah-clip-image-mid:    #d97706;
+  --elah-clip-image-bottom: #b45309;
+  --elah-clip-image-accent: #fcd34d;
+
+  /* ── Kind tag colours — panel chips (dark defaults) ──────────────────── */
+  --elah-tag-video-fg:  #93c5fd;
+  --elah-tag-video-bg:  rgba(37, 99, 235, 0.2);
+  --elah-tag-audio-fg:  #86efac;
+  --elah-tag-audio-bg:  rgba(22, 163, 74, 0.2);
+  --elah-tag-image-fg:  #fcd34d;
+  --elah-tag-image-bg:  rgba(245, 158, 11, 0.2);
+
+  /* ── Element type colours — palette tiles (dark defaults) ─────────────── */
+  --elah-tag-text-fg:     #c4b5fd;
+  --elah-tag-text-bg:     rgba(147, 51, 234, 0.25);
+  --elah-tag-text-border: rgba(147, 51, 234, 0.4);
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --elah-font-ui:   system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --elah-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+
+  /* ── Geometry ─────────────────────────────────────────────────────────── */
+  --elah-radius-sm: 6px;
+  --elah-radius-md: 8px;
+}
