@@ -8,3 +8,10 @@ playground/*/package-lock.json
 dist
 *.tsbuildinfo
 .DS_Store
+
+# Compiled JS emitted in-place beside TS sources (no outDir configured).
+# The repo never tracks hand-written .js, so all of these are build output.
+packages/**/src/**/*.js
+packages/*/vitest.config.js
+apps/web/**/*.js
+playground/*/**/*.js
