@@ -10,6 +10,10 @@
 export { Timeline } from './Timeline'
 export type { TimelineProps, TimelineRef } from './Timeline'
 
+// --- Design tokens (single source of truth for timeline colors) ---
+export { timelineTheme } from './theme'
+export type { TimelineTheme } from './theme'
+
 // --- Timeline hooks ---
 export { useTimeline } from './engine-context'
 export { useTracks } from './hooks/useTracks'
