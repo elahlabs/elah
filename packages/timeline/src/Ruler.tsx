@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react'
 import { framesToTimecode } from '@elah/core'
+import { timelineTheme } from './theme'
 
 interface RulerProps {
   fps: number
@@ -21,9 +22,9 @@ export const Ruler = memo(function Ruler({
   totalFrames,
   zoom,
   height = 24,
-  color = '#121722',
-  tickColor = '#232938',
-  labelColor = '#6B7280',
+  color = timelineTheme.surface.sidebar,
+  tickColor = timelineTheme.ruler.tick,
+  labelColor = timelineTheme.ruler.label,
   onSeek,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on

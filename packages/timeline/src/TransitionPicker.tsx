@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TransitionKind, Transition } from '@elah/core'
+import { timelineTheme } from './theme'
 
 interface TransitionOption {
   kind: TransitionKind
@@ -111,18 +112,18 @@ export function TransitionPicker({
         left: anchorX,
         top: anchorY - 200,
         zIndex: 1000,
-        background: '#1A1F2B',
-        border: '1px solid #2D3548',
+        background: timelineTheme.popover.background,
+        border: `1px solid ${timelineTheme.popover.border}`,
         borderRadius: 10,
         padding: 10,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+        boxShadow: timelineTheme.popover.shadow,
         width: 184,
       }}
     >
       <div
         style={{
           fontSize: 10,
-          color: '#6B7280',
+          color: timelineTheme.text.faint,
           fontWeight: 600,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
@@ -156,19 +157,21 @@ export function TransitionPicker({
                 alignItems: 'center',
                 gap: 4,
                 padding: '8px 6px',
-                background: isActive ? '#3B4A6B' : '#232938',
-                border: isActive ? '1px solid #6B8CFF' : '1px solid #2D3548',
+                background: isActive ? timelineTheme.popover.optionBgActive : timelineTheme.popover.optionBg,
+                border: isActive
+                  ? `1px solid ${timelineTheme.popover.accent}`
+                  : `1px solid ${timelineTheme.popover.border}`,
                 borderRadius: 7,
                 cursor: 'pointer',
                 transition: 'background 0.12s',
               }}
               onMouseEnter={(e) => {
                 if (!isActive)
-                  (e.currentTarget as HTMLButtonElement).style.background = '#2D3548'
+                  (e.currentTarget as HTMLButtonElement).style.background = timelineTheme.popover.optionBgHover
               }}
               onMouseLeave={(e) => {
                 if (!isActive)
-                  (e.currentTarget as HTMLButtonElement).style.background = '#232938'
+                  (e.currentTarget as HTMLButtonElement).style.background = timelineTheme.popover.optionBg
               }}
             >
               <svg
@@ -176,14 +179,14 @@ export function TransitionPicker({
                 height={24}
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke={isActive ? '#6B8CFF' : '#9CA3AF'}
+                stroke={isActive ? timelineTheme.popover.accent : timelineTheme.popover.icon}
                 strokeWidth={1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <path d={opt.icon} />
               </svg>
-              <span style={{ fontSize: 9, color: isActive ? '#A5B4FC' : '#9CA3AF', fontWeight: 500 }}>
+              <span style={{ fontSize: 9, color: isActive ? timelineTheme.popover.accentText : timelineTheme.popover.icon, fontWeight: 500 }}>
                 {opt.label}
               </span>
             </button>
@@ -194,8 +197,8 @@ export function TransitionPicker({
       {/* Duration slider */}
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>Duration</span>
-          <span style={{ fontSize: 10, color: '#E5E7EB', fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 10, color: timelineTheme.text.muted, fontWeight: 500 }}>Duration</span>
+          <span style={{ fontSize: 10, color: timelineTheme.text.bright, fontFamily: 'monospace' }}>
             {durationFrames}f &nbsp;{durationSec}s
           </span>
         </div>
@@ -205,15 +208,15 @@ export function TransitionPicker({
           max={MAX_DURATION}
           value={durationFrames}
           onChange={(e) => handleDurationChange(Number(e.target.value))}
-          style={{ width: '100%', accentColor: '#6B8CFF', cursor: 'pointer' }}
+          style={{ width: '100%', accentColor: timelineTheme.popover.accent, cursor: 'pointer' }}
         />
       </div>
 
       {/* Position slider */}
       <div style={{ marginTop: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>Position</span>
-          <span style={{ fontSize: 10, color: '#E5E7EB', fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 10, color: timelineTheme.text.muted, fontWeight: 500 }}>Position</span>
+          <span style={{ fontSize: 10, color: timelineTheme.text.bright, fontFamily: 'monospace' }}>
             {before}f ◆ {after}f
           </span>
         </div>
@@ -223,11 +226,11 @@ export function TransitionPicker({
           max={maxOffset}
           value={offsetFrames}
           onChange={(e) => handleOffsetChange(Number(e.target.value))}
-          style={{ width: '100%', accentColor: '#6B8CFF', cursor: 'pointer' }}
+          style={{ width: '100%', accentColor: timelineTheme.popover.accent, cursor: 'pointer' }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-          <span style={{ fontSize: 8, color: '#4B5563' }}>← before cut</span>
-          <span style={{ fontSize: 8, color: '#4B5563' }}>after cut →</span>
+          <span style={{ fontSize: 8, color: timelineTheme.text.hint }}>← before cut</span>
+          <span style={{ fontSize: 8, color: timelineTheme.text.hint }}>after cut →</span>
         </div>
       </div>
 
@@ -240,9 +243,9 @@ export function TransitionPicker({
             width: '100%',
             padding: '5px 0',
             fontSize: 10,
-            color: '#F87171',
+            color: timelineTheme.danger.textAlt,
             background: 'transparent',
-            border: '1px solid #3F2A2A',
+            border: `1px solid ${timelineTheme.danger.border}`,
             borderRadius: 6,
             cursor: 'pointer',
           }}

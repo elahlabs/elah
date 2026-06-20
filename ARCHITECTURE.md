@@ -713,3 +713,4 @@ Good: extract before it's painful. The cost of refactoring scales superlinearly 
 - [`packages/core/src/export/Architecture.md`](./packages/core/src/export/Architecture.md) — the export pipeline.
 - [`docs/glossary.md`](./docs/glossary.md) — terminology in one place.
 - [`docs/known-bugs.md`](./docs/known-bugs.md) — deliberate workarounds and their real fixes.
+- [`docs/design-tokens.md`](./docs/design-tokens.md) — the timeline color/theme token system.

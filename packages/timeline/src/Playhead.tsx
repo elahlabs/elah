@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { usePlaybackStore } from '@elah/core'
+import { timelineTheme } from './theme'
 
 interface PlayheadProps {
   zoom: number
@@ -25,7 +26,7 @@ interface PlayheadProps {
 export function Playhead({
   zoom,
   height,
-  color = '#FF2D55',
+  color = timelineTheme.playhead,
   scrollContainerRef,
   sidebarWidth = 0,
 }: PlayheadProps) {

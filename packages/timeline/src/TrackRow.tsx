@@ -5,6 +5,7 @@ import { useSelectionStore } from '@elah/core'
 import { ClipBlock } from './ClipBlock'
 import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
+import { timelineTheme } from './theme'
 
 interface TrackRowProps {
   track: Track
@@ -62,10 +63,10 @@ export const TrackRow = memo(function TrackRow({
 
   const kindAccent =
     track.kind === 'video'
-      ? '#2563EB'
+      ? timelineTheme.clip.video.mid
       : track.kind === 'audio'
-        ? '#16A34A'
-        : '#9333EA'
+        ? timelineTheme.clip.audio.mid
+        : timelineTheme.clip.text.mid
 
   return (
     <div style={{ display: 'flex', height: track.height }}>
@@ -80,9 +81,9 @@ export const TrackRow = memo(function TrackRow({
           width: 160,
           flexShrink: 0,
           borderLeft: `3px solid ${kindAccent}`,
-          borderRight: '1px solid #232938',
-          borderBottom: '1px solid #1A1F2B',
-          background: isActive ? '#171D2B' : '#121722',
+          borderRight: `1px solid ${timelineTheme.border.strong}`,
+          borderBottom: `1px solid ${timelineTheme.border.subtle}`,
+          background: isActive ? timelineTheme.surface.sidebarActive : timelineTheme.surface.sidebar,
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 12,
@@ -93,7 +94,7 @@ export const TrackRow = memo(function TrackRow({
         <span
           style={{
             fontSize: 11,
-            color: isActive ? '#F3F4F6' : '#A7AFBF',
+            color: isActive ? timelineTheme.text.primary : timelineTheme.text.secondary,
             fontWeight: isActive ? 600 : 500,
             overflow: 'hidden',
             whiteSpace: 'nowrap',
@@ -111,8 +112,8 @@ export const TrackRow = memo(function TrackRow({
           position: 'relative',
           flex: 1,
           minWidth: rowMinWidth,
-          borderBottom: '1px solid #1A1F2B',
-          background: isActive ? '#0D1017' : '#0A0D14',
+          borderBottom: `1px solid ${timelineTheme.border.subtle}`,
+          background: isActive ? timelineTheme.surface.laneActive : timelineTheme.surface.background,
           overflow: 'visible',
         }}
       >
