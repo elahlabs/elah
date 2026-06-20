@@ -1,4 +1,5 @@
 import { useAudioDropDialogStore, type AudioDropChoice } from './audioDropDialog.store'
+import { timelineTheme } from './theme'
 
 interface ChoiceDef {
   choice: AudioDropChoice
@@ -43,7 +44,7 @@ export function AudioDropDialog() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(5, 7, 12, 0.6)',
+        background: timelineTheme.dialog.overlay,
         backdropFilter: 'blur(2px)',
         fontFamily: 'sans-serif',
       }}
@@ -52,10 +53,10 @@ export function AudioDropDialog() {
         style={{
           width: 380,
           maxWidth: '90vw',
-          background: '#171D2B',
-          border: '1px solid #232938',
+          background: timelineTheme.dialog.background,
+          border: `1px solid ${timelineTheme.dialog.border}`,
           borderRadius: 12,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
+          boxShadow: timelineTheme.dialog.shadow,
           padding: 22,
         }}
       >
@@ -64,7 +65,7 @@ export function AudioDropDialog() {
             margin: 0,
             fontSize: 15,
             fontWeight: 700,
-            color: '#F3F4F6',
+            color: timelineTheme.text.primary,
             letterSpacing: '-0.01em',
           }}
         >
@@ -75,11 +76,11 @@ export function AudioDropDialog() {
             margin: '6px 0 18px',
             fontSize: 12,
             lineHeight: 1.5,
-            color: '#9CA3AF',
+            color: timelineTheme.text.muted,
           }}
         >
           How should{' '}
-          <span style={{ color: '#E5E7EB', fontWeight: 600 }}>{assetName}</span>{' '}
+          <span style={{ color: timelineTheme.text.bright, fontWeight: 600 }}>{assetName}</span>{' '}
           be added to the timeline?
         </p>
 
@@ -99,24 +100,26 @@ export function AudioDropDialog() {
                 textAlign: 'left',
                 cursor: 'pointer',
                 borderRadius: 8,
-                border: primary ? '1px solid #2563EB' : '1px solid #2A3142',
-                background: primary ? 'rgba(37, 99, 235, 0.16)' : '#1B2230',
-                color: '#F3F4F6',
+                border: primary
+                  ? `1px solid ${timelineTheme.dialog.primaryBorder}`
+                  : `1px solid ${timelineTheme.dialog.optionBorder}`,
+                background: primary ? timelineTheme.dialog.primaryBg : timelineTheme.dialog.optionBg,
+                color: timelineTheme.text.primary,
                 transition: 'background 0.12s, border-color 0.12s',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = primary
-                  ? 'rgba(37, 99, 235, 0.28)'
-                  : '#222B3C'
+                  ? timelineTheme.dialog.primaryBgHover
+                  : timelineTheme.dialog.optionBgHover
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = primary
-                  ? 'rgba(37, 99, 235, 0.16)'
-                  : '#1B2230'
+                  ? timelineTheme.dialog.primaryBg
+                  : timelineTheme.dialog.optionBg
               }}
             >
               <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
-              <span style={{ fontSize: 11, color: '#9CA3AF' }}>{hint}</span>
+              <span style={{ fontSize: 11, color: timelineTheme.text.muted }}>{hint}</span>
             </button>
           ))}
         </div>

@@ -5,6 +5,7 @@ import { useSelectionStore } from '@elah/core'
 import { ClipBlock } from './ClipBlock'
 import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
+import { timelineTheme } from './theme'
 
 interface TrackRowProps {
   track: Track
@@ -62,10 +63,10 @@ export const TrackRow = memo(function TrackRow({
 
   const kindAccent =
     track.kind === 'video'
-      ? 'var(--elah-clip-video-mid)'
+      ? timelineTheme.clip.video.mid
       : track.kind === 'audio'
-        ? 'var(--elah-clip-audio-mid)'
-        : 'var(--elah-clip-text-mid)'
+        ? timelineTheme.clip.audio.mid
+        : timelineTheme.clip.text.mid
 
   return (
     <div style={{ display: 'flex', height: track.height }}>
@@ -80,9 +81,9 @@ export const TrackRow = memo(function TrackRow({
           width: 160,
           flexShrink: 0,
           borderLeft: `3px solid ${kindAccent}`,
-          borderRight: '1px solid var(--elah-border)',
-          borderBottom: '1px solid var(--elah-border-subtle)',
-          background: isActive ? 'var(--elah-bg-card)' : 'var(--elah-bg-panel)',
+          borderRight: `1px solid ${timelineTheme.border.strong}`,
+          borderBottom: `1px solid ${timelineTheme.border.subtle}`,
+          background: isActive ? timelineTheme.surface.sidebarActive : timelineTheme.surface.sidebar,
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 12,
@@ -93,7 +94,7 @@ export const TrackRow = memo(function TrackRow({
         <span
           style={{
             fontSize: 11,
-            color: isActive ? 'var(--elah-text)' : 'var(--elah-text-muted)',
+            color: isActive ? timelineTheme.text.primary : timelineTheme.text.secondary,
             fontWeight: isActive ? 600 : 500,
             overflow: 'hidden',
             whiteSpace: 'nowrap',
@@ -111,8 +112,8 @@ export const TrackRow = memo(function TrackRow({
           position: 'relative',
           flex: 1,
           minWidth: rowMinWidth,
-          borderBottom: '1px solid var(--elah-border-subtle)',
-          background: isActive ? 'var(--elah-bg-secondary)' : 'var(--elah-bg)',
+          borderBottom: `1px solid ${timelineTheme.border.subtle}`,
+          background: isActive ? timelineTheme.surface.laneActive : timelineTheme.surface.background,
           overflow: 'visible',
         }}
       >

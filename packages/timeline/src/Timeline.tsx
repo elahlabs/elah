@@ -19,6 +19,7 @@ import { Ruler } from './Ruler'
 import { Playhead } from './Playhead'
 import { TrackRow } from './TrackRow'
 import { AudioDropDialog } from './AudioDropDialog'
+import { timelineTheme } from './theme'
 
 export interface TimelineRef {
   engine: TimelineEngine
@@ -269,8 +270,8 @@ export const Timeline = memo(
         style={{
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--elah-bg)',
-          color: 'var(--elah-text)',
+          background: timelineTheme.surface.background,
+          color: timelineTheme.text.primary,
           overflow: 'hidden',
           position: 'relative',
           fontFamily: 'var(--elah-font-ui, sans-serif)',
@@ -285,9 +286,9 @@ export const Timeline = memo(
               width: SIDEBAR_WIDTH,
               flexShrink: 0,
               height: rulerHeight,
-              background: 'var(--elah-bg-panel)',
-              borderRight: '1px solid var(--elah-border)',
-              borderBottom: '1px solid var(--elah-border-subtle)',
+              background: timelineTheme.surface.sidebar,
+              borderRight: `1px solid ${timelineTheme.border.strong}`,
+              borderBottom: `1px solid ${timelineTheme.border.subtle}`,
             }}
           />
           {/* Ruler — overflow hidden, scrollLeft driven by track area scroll */}
@@ -327,7 +328,7 @@ export const Timeline = memo(
             <div
               style={{
                 padding: 24,
-                color: '#555',
+                color: timelineTheme.text.disabled,
                 fontSize: 13,
                 textAlign: 'center',
               }}

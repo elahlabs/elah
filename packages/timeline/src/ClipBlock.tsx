@@ -12,36 +12,9 @@ import {
 } from '@elah/core'
 import { useTracksStore } from '@elah/core'
 import { useMediaLibraryStore } from '@elah/core'
+import { timelineTheme } from './theme'
 
-const CLIP_STYLES: Record<
-  string,
-  { top: string; mid: string; bottom: string; accent: string }
-> = {
-  video: {
-    top: 'var(--elah-clip-video-top)',
-    mid: 'var(--elah-clip-video-mid)',
-    bottom: 'var(--elah-clip-video-bottom)',
-    accent: 'var(--elah-clip-video-accent)',
-  },
-  audio: {
-    top: 'var(--elah-clip-audio-top)',
-    mid: 'var(--elah-clip-audio-mid)',
-    bottom: 'var(--elah-clip-audio-bottom)',
-    accent: 'var(--elah-clip-audio-accent)',
-  },
-  text: {
-    top: 'var(--elah-clip-text-top)',
-    mid: 'var(--elah-clip-text-mid)',
-    bottom: 'var(--elah-clip-text-bottom)',
-    accent: 'var(--elah-clip-text-accent)',
-  },
-  image: {
-    top: 'var(--elah-clip-image-top)',
-    mid: 'var(--elah-clip-image-mid)',
-    bottom: 'var(--elah-clip-image-bottom)',
-    accent: 'var(--elah-clip-image-accent)',
-  },
-}
+const CLIP_STYLES = timelineTheme.clip
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
@@ -302,11 +275,11 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
         boxSizing: 'border-box',
         background: `linear-gradient(180deg, ${palette.top} 0%, ${palette.mid} 42%, ${palette.bottom} 100%)`,
         border: isSelected
-          ? '2px solid var(--elah-playhead)'
+          ? `2px solid ${timelineTheme.selection.border}`
           : `1px solid ${palette.accent}55`,
         boxShadow: isSelected
-          ? '0 0 14px var(--elah-accent-glow), inset 0 1px 0 rgba(255,255,255,0.15)'
-          : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.35)',
+          ? `0 0 14px ${timelineTheme.selection.glow}, inset 0 1px 0 ${timelineTheme.effect.innerHighlightStrong}`
+          : `inset 0 1px 0 ${timelineTheme.effect.innerHighlight}, ${timelineTheme.effect.clipShadow}`,
         cursor: 'grab',
         overflow: 'hidden',
         userSelect: 'none',
@@ -342,7 +315,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                   backgroundImage: `url(${stripFrames[frameIdx]})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  boxShadow: 'inset -1px 0 0 rgba(0,0,0,0.28)',
+                  boxShadow: `inset -1px 0 0 ${timelineTheme.effect.tileSeparator}`,
                 }}
               />
             )
@@ -369,7 +342,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
         style={{
           position: 'absolute',
           inset: '0 0 55%',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 100%)',
+          background: `linear-gradient(180deg, ${timelineTheme.effect.gloss} 0%, transparent 100%)`,
           pointerEvents: 'none',
         }}
       />
@@ -399,7 +372,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                 maxWidth: 3,
                 // Floor keeps quiet passages visible as a thin line.
                 height: `${Math.max(6, h * 100)}%`,
-                background: 'rgba(255,255,255,0.85)',
+                background: timelineTheme.effect.waveform,
                 borderRadius: 1,
               }}
             />
@@ -419,8 +392,8 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
               bottom: 4,
               width: 14,
               borderRadius: 3,
-              background: 'rgba(0,0,0,0.22)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: timelineTheme.effect.placeholderBg,
+              border: `1px solid ${timelineTheme.effect.placeholderBorder}`,
               pointerEvents: 'none',
             }}
           />
@@ -436,7 +409,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
           cursor: 'ew-resize',
-          background: 'linear-gradient(90deg, rgba(0,0,0,0.35) 0%, transparent 100%)',
+          background: `linear-gradient(90deg, ${timelineTheme.effect.trimScrim} 0%, transparent 100%)`,
           zIndex: 2,
         }}
       />
@@ -451,13 +424,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
           paddingRight: TRIM_HANDLE_WIDTH + 6,
           paddingTop: 5,
           fontSize: 10,
-          color: 'rgba(255,255,255,0.95)',
+          color: timelineTheme.text.onClip,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           fontWeight: 600,
           letterSpacing: '0.01em',
-          textShadow: '0 1px 2px rgba(0,0,0,0.45)',
+          textShadow: timelineTheme.effect.labelShadow,
           pointerEvents: 'none',
         }}
       >
@@ -474,7 +447,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
           cursor: 'ew-resize',
-          background: 'linear-gradient(270deg, rgba(0,0,0,0.35) 0%, transparent 100%)',
+          background: `linear-gradient(270deg, ${timelineTheme.effect.trimScrim} 0%, transparent 100%)`,
           zIndex: 2,
         }}
       />
@@ -495,9 +468,9 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
             padding: 0,
             lineHeight: '14px',
             fontSize: 11,
-            color: '#fff',
-            background: 'rgba(0,0,0,0.5)',
-            border: '1px solid rgba(255,255,255,0.35)',
+            color: timelineTheme.effect.deleteBtnText,
+            background: timelineTheme.effect.deleteBtnBg,
+            border: `1px solid ${timelineTheme.effect.deleteBtnBorder}`,
             borderRadius: 4,
             cursor: 'pointer',
             zIndex: 4,
@@ -522,13 +495,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
               top: ctxMenu.y,
               left: ctxMenu.x,
               zIndex: 9999,
-              background: 'var(--elah-bg-elevated)',
-              border: '1px solid var(--elah-outline)',
-              borderRadius: 'var(--elah-radius-sm)',
+              background: timelineTheme.menu.background,
+              border: `1px solid ${timelineTheme.menu.border}`,
+              borderRadius: 6,
               padding: '4px 0',
               minWidth: 140,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-              fontFamily: 'var(--elah-font-ui, sans-serif)',
+              boxShadow: timelineTheme.menu.shadow,
+              fontFamily: 'sans-serif',
             }}
           >
             <button
@@ -542,13 +515,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                 textAlign: 'left',
                 background: 'none',
                 border: 'none',
-                color: 'var(--elah-color-error)',
+                color: timelineTheme.danger.text,
                 fontSize: 13,
                 cursor: 'pointer',
                 letterSpacing: '0.01em',
               }}
               onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
+                ;(e.currentTarget as HTMLButtonElement).style.background = timelineTheme.danger.bgHover
               }}
               onMouseLeave={(e) => {
                 ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
