@@ -119,7 +119,8 @@ video-editor/
             └── editor/           # EditorProvider, AssetPanel, Preview, useResolvedScene
 docs/
 ├── glossary.md                   # terminology
-└── known-bugs.md                 # deliberate workarounds + their real fixes
+├── known-bugs.md                 # deliberate workarounds + their real fixes
+└── design-tokens.md              # timeline color/theme token system
 ```
 
 ---
