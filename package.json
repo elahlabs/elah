@@ -9,7 +9,7 @@
     "dev": "npm run dev --workspace=apps/web",
     "build:packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor",
     "build": "npm run build --workspace=apps/web",
-    "typecheck": "tsc --build",
+    "typecheck": "tsc --noEmit",
     "test": "npm run test --workspace=packages/core --workspace=packages/timeline"
   },
   "devDependencies": {
@@ -19,3 +19,4 @@
     "react-router-dom": "^7.17.0"
   }
 }
+

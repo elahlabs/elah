@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMediaLibraryStore } from './store'
 import {
   computeWaveform,
+  importBlob,
   importFiles,
+  importUrl,
   makeImageThumbnail,
   makeVideoThumbnail,
   makeVideoThumbnailStrip,
@@ -342,6 +344,183 @@ describe('importFiles', () => {
   })
 })
 
+describe('importUrl', () => {
+  let createdMedia: StubMediaElement[]
+  let objectUrlCounter: number
+
+  beforeEach(() => {
+    createdMedia = []
+    objectUrlCounter = 0
+    useMediaLibraryStore.setState({ assets: {}, order: [] })
+
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => {
+        objectUrlCounter += 1
+        return `blob:mock-${objectUrlCounter}`
+      }),
+    })
+    vi.stubGlobal('document', {
+      createElement: vi.fn((tag: string) => {
+        if (tag === 'video' || tag === 'audio') {
+          const el = createStubMediaElement(tag)
+          createdMedia.push(el)
+          return el
+        }
+        if (tag === 'canvas') return createStubCanvas()
+        throw new Error(`Unexpected createElement tag: ${tag}`)
+      }),
+    })
+    vi.stubGlobal('HTMLMediaElement', { HAVE_CURRENT_DATA: 2 })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('infers video kind from the URL extension and uses the URL as src', async () => {
+    const url = 'https://cdn.example.com/path/to/clip.mp4'
+    const importPromise = importUrl(url)
+
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const asset = await importPromise
+
+    expect(asset).toMatchObject({
+      kind: 'video',
+      name: 'clip.mp4',
+      src: url, // NOT an object URL
+      durationSec: 12.5,
+      width: 1920,
+      height: 1080,
+      byteSize: 0,
+    })
+    expect(useMediaLibraryStore.getState().getAsset(asset.id)).toBeDefined()
+  })
+
+  it('returns the existing asset when the same URL is imported twice', async () => {
+    const url = 'https://cdn.example.com/path/to/clip.mp4'
+
+    const firstPromise = importUrl(url)
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+    const first = await firstPromise
+
+    // Second import dedupes on src and returns the existing asset.
+    const second = await importUrl(url)
+
+    expect(second).toBe(first)
+    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(1)
+  })
+
+  it('honors an explicit kind override and name', async () => {
+    const url = 'https://cdn.example.com/asset-with-no-extension'
+    const importPromise = importUrl(url, { kind: 'video', name: 'My Clip' })
+
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const asset = await importPromise
+    expect(asset).toMatchObject({ kind: 'video', name: 'My Clip', src: url })
+  })
+
+  it('falls back to a HEAD content-type probe when the extension is unknown', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      headers: { get: () => 'video/mp4' },
+    })))
+
+    const url = 'https://cdn.example.com/asset-with-no-extension'
+    const importPromise = importUrl(url)
+
+    await Promise.resolve()
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const asset = await importPromise
+    expect(asset.kind).toBe('video')
+  })
+
+  it('rejects when the media kind cannot be determined', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      headers: { get: () => 'text/html' },
+    })))
+
+    await expect(importUrl('https://cdn.example.com/page')).rejects.toThrow(
+      /Could not determine media kind/,
+    )
+    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(0)
+  })
+})
+
+describe('importBlob', () => {
+  let createdMedia: StubMediaElement[]
+  let objectUrlCounter: number
+
+  beforeEach(() => {
+    createdMedia = []
+    objectUrlCounter = 0
+    useMediaLibraryStore.setState({ assets: {}, order: [] })
+
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => {
+        objectUrlCounter += 1
+        return `blob:mock-${objectUrlCounter}`
+      }),
+    })
+    vi.stubGlobal('document', {
+      createElement: vi.fn((tag: string) => {
+        if (tag === 'video' || tag === 'audio') {
+          const el = createStubMediaElement(tag)
+          createdMedia.push(el)
+          return el
+        }
+        if (tag === 'canvas') return createStubCanvas()
+        throw new Error(`Unexpected createElement tag: ${tag}`)
+      }),
+    })
+    vi.stubGlobal('HTMLMediaElement', { HAVE_CURRENT_DATA: 2 })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('infers kind from the blob MIME type and registers via an object URL', async () => {
+    const blob = new Blob(['x'.repeat(2048)], { type: 'video/mp4' })
+    const importPromise = importBlob(blob)
+
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const asset = await importPromise
+    expect(asset).toMatchObject({
+      kind: 'video',
+      src: 'blob:mock-1',
+      byteSize: blob.size,
+    })
+    expect(asset.name).toContain('mp4')
+  })
+
+  it('honors an explicit name', async () => {
+    const blob = new Blob(['x'], { type: 'audio/mpeg' })
+    const importPromise = importBlob(blob, { name: 'voiceover.mp3' })
+
+    await Promise.resolve()
+    createdMedia[0]._emit('loadedmetadata')
+
+    const asset = await importPromise
+    expect(asset).toMatchObject({ kind: 'audio', name: 'voiceover.mp3' })
+  })
+
+  it('rejects unsupported blob types', async () => {
+    const blob = new Blob(['x'], { type: 'text/plain' })
+    await expect(importBlob(blob)).rejects.toThrow(/Unsupported blob type/)
+    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(0)
+  })
+})
+
 describe('media probe helpers', () => {
   beforeEach(() => {
     useMediaLibraryStore.setState({ assets: {}, order: [] })
@@ -384,6 +563,34 @@ describe('media probe helpers', () => {
     el._emit('loadedmetadata')
 
     await expect(probePromise).resolves.toMatchObject({ hasAudio: true })
+  })
+
+  it('sets crossOrigin=anonymous for http(s) sources so canvases stay untainted', async () => {
+    const el = createStubMediaElement('video')
+
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => el),
+    })
+
+    const probePromise = probeVideo('https://cdn.example.com/path/clip.mp4')
+    el._emit('loadedmetadata')
+    await probePromise
+
+    expect((el as unknown as { crossOrigin?: string }).crossOrigin).toBe('anonymous')
+  })
+
+  it('leaves crossOrigin unset for blob/object URLs', async () => {
+    const el = createStubMediaElement('video')
+
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => el),
+    })
+
+    const probePromise = probeVideo('blob:local-video')
+    el._emit('loadedmetadata')
+    await probePromise
+
+    expect((el as unknown as { crossOrigin?: string }).crossOrigin).toBeUndefined()
   })
 
   it('probeAudio resolves duration from loadedmetadata', async () => {

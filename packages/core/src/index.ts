@@ -77,8 +77,26 @@ export { AudioPlaybackController } from './media/audio/AudioPlaybackController'
 export type { AudioPlaybackControllerOptions } from './media/audio/AudioPlaybackController'
 
 // --- Assets / Media Library ---
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from './assets'
-export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from './assets'
+export {
+  useMediaLibrary,
+  useAssets,
+  useMediaLibraryStore,
+  MEDIA_DRAG_MIME,
+  importFiles,
+  importUrl,
+  importBlob,
+} from './assets'
+export type {
+  MediaAsset,
+  MediaKind,
+  DragMediaPayload,
+  ImportFilesOptions,
+  ImportFilesResult,
+  ImportUrlOptions,
+  ImportBlobOptions,
+  SkippedImport,
+  UseMediaLibraryApi,
+} from './assets'
 
 // --- Stores (Ring 1: Zustand mirrors) ---
 export { useTracksStore } from './stores/tracks.store'

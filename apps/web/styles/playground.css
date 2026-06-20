@@ -180,14 +180,11 @@
 }
 
 /* ── Editor chrome ───────────────────────────────────────────────────────── */
+/* Token definitions live in globals.css .elah-root; only presentational     */
+/* and scrollbar rules belong here.                                           */
 
 .elah-root {
-  --elah-bg:      var(--pg-bg);
-  --elah-border:  var(--pg-border);
-  --elah-accent:  var(--pg-accent);
-  --elah-text:    var(--pg-text);
-
-  font-family: var(--pg-font-ui);
+  font-family: var(--elah-font-ui);
   color: var(--elah-text);
   background: var(--elah-bg);
 }
@@ -197,13 +194,13 @@
   height: 7px;
 }
 .elah-root *::-webkit-scrollbar-thumb {
-  background: var(--pg-bg-highest);
+  background: var(--elah-bg-highest);
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 .elah-root *::-webkit-scrollbar-thumb:hover {
-  background: var(--pg-outline);
+  background: var(--elah-outline);
   background-clip: padding-box;
 }
 .elah-root *::-webkit-scrollbar-track {
@@ -242,41 +239,41 @@
 /* ── Toolbar buttons ─────────────────────────────────────────────────────── */
 
 .elah-toolbar-btn:hover:not(:disabled) {
-  background: var(--pg-bg-elevated) !important;
-  border-color: var(--pg-outline) !important;
-  color: var(--pg-text) !important;
+  background: var(--elah-bg-elevated) !important;
+  border-color: var(--elah-outline) !important;
+  color: var(--elah-text) !important;
 }
 .elah-toolbar-btn--active {
-  background: var(--pg-accent-soft) !important;
-  border-color: var(--pg-accent) !important;
-  color: var(--pg-accent-dim) !important;
-  box-shadow: 0 0 12px var(--pg-accent-glow);
+  background: var(--elah-accent-soft) !important;
+  border-color: var(--elah-accent) !important;
+  color: var(--elah-accent-dim) !important;
+  box-shadow: 0 0 12px var(--elah-accent-glow);
 }
 
 /* ── Export / primary action button ─────────────────────────────────────── */
 
 .elah-export-btn {
-  background: var(--pg-accent) !important;
-  border-color: var(--pg-accent) !important;
-  color: var(--pg-accent-text) !important;
-  font-family: var(--pg-font-mono) !important;
+  background: var(--elah-accent) !important;
+  border-color: var(--elah-accent) !important;
+  color: var(--elah-accent-text) !important;
+  font-family: var(--elah-font-mono) !important;
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 6px 18px !important;
 }
 .elah-export-btn:hover {
-  background: var(--pg-accent-hover) !important;
-  border-color: var(--pg-accent-hover) !important;
+  background: var(--elah-accent-hover) !important;
+  border-color: var(--elah-accent-hover) !important;
 }
 
 /* ── Media / element cards ───────────────────────────────────────────────── */
 
 .elah-media-card:hover {
-  background: var(--pg-bg-elevated) !important;
-  border-color: var(--pg-outline) !important;
+  background: var(--elah-bg-elevated) !important;
+  border-color: var(--elah-outline) !important;
 }
 .elah-element-card:hover {
-  background: var(--pg-bg-elevated) !important;
-  border-color: var(--pg-outline) !important;
+  background: var(--elah-bg-elevated) !important;
+  border-color: var(--elah-outline) !important;
 }

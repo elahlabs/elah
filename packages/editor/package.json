@@ -5,16 +5,18 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
+  "sideEffects": ["*.css"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./styles/tokens.css": "./src/styles/tokens.css"
   },
   "files": [
     "dist",
+    "src/styles",
     "README.md",
     "LICENSE"
   ],

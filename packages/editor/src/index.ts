@@ -106,5 +106,8 @@ export type { AssetPanelProps } from './editor/AssetPanel'
 export { ElementsPanel } from './editor/ElementsPanel'
 export type { ElementsPanelProps } from './editor/ElementsPanel'
 
+export { SourcePanel } from './editor/SourcePanel'
+export type { SourcePanelProps } from './editor/SourcePanel'
+
 export { Preview } from './editor/Preview'
 export type { PreviewProps, PreviewHandle } from './editor/Preview'

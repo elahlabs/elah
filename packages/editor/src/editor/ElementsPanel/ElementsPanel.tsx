@@ -1,17 +1,43 @@
 import { useCallback, type CSSProperties, type DragEvent } from 'react'
-import { ELEMENT_DRAG_MIME, type DragElementPayload } from '@elah/timeline'
+import { ELEMENT_DRAG_MIME, type DragElementPayload, type ElementKind } from '@elah/timeline'
 
 export interface ElementsPanelProps {
   style?: CSSProperties
   className?: string
 }
 
+interface PaletteTile {
+  element: ElementKind
+  label: string
+  icon: string
+  iconStyle?: CSSProperties
+}
+
+const TILES: PaletteTile[] = [
+  {
+    element: 'text',
+    label: 'Text',
+    icon: 'T',
+    iconStyle: {
+      background: 'var(--elah-tag-text-bg)',
+      border: '1px solid var(--elah-tag-text-border)',
+      color: 'var(--elah-tag-text-fg)',
+      fontFamily: 'Georgia, serif',
+      fontWeight: 700,
+      fontSize: 17,
+    },
+  },
+]
+
 export function ElementsPanel({ style, className }: ElementsPanelProps) {
-  const onTextDragStart = useCallback((e: DragEvent<HTMLDivElement>) => {
-    const payload: DragElementPayload = { kind: 'element', element: 'text' }
-    e.dataTransfer.setData(ELEMENT_DRAG_MIME, JSON.stringify(payload))
-    e.dataTransfer.effectAllowed = 'copy'
-  }, [])
+  const makeDragStart = useCallback(
+    (element: ElementKind) => (e: DragEvent<HTMLDivElement>) => {
+      const payload: DragElementPayload = { kind: 'element', element }
+      e.dataTransfer.setData(ELEMENT_DRAG_MIME, JSON.stringify(payload))
+      e.dataTransfer.effectAllowed = 'copy'
+    },
+    [],
+  )
 
   return (
     <div
@@ -20,14 +46,13 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
         display: 'flex',
         flexDirection: 'column',
         background: 'transparent',
-        borderBottom: '1px solid #232938',
         ...style,
       }}
     >
       <div
         style={{
           padding: '10px 12px',
-          borderBottom: '1px solid #232938',
+          borderBottom: '1px solid var(--elah-border)',
           flexShrink: 0,
         }}
       >
@@ -35,7 +60,7 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
           style={{
             fontSize: 10,
             fontWeight: 700,
-            color: '#6B7280',
+            color: 'var(--elah-text-muted)',
             letterSpacing: '0.08em',
           }}
         >
@@ -43,51 +68,56 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
         </span>
       </div>
 
-      <div style={{ padding: 10 }}>
-        <div
-          draggable
-          className="elah-element-card"
-          onDragStart={onTextDragStart}
-          title="Drag onto the Text track"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 8,
-            cursor: 'grab',
-            userSelect: 'none',
-            background: '#171D2B',
-            border: '1px solid #232938',
-            transition: 'background 0.15s, border-color 0.15s',
-          }}
-        >
-          <span
+      {/* 2-column palette grid — grouping-ready, matches Media grid rhythm */}
+      <div
+        style={{
+          padding: 10,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 6,
+        }}
+      >
+        {TILES.map(({ element, label, icon, iconStyle }) => (
+          <div
+            key={element}
+            draggable
+            className="elah-element-card"
+            onDragStart={makeDragStart(element)}
+            title={`Drag onto the ${label} track`}
             style={{
-              width: 32,
-              height: 32,
-              flexShrink: 0,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 6,
-              background: 'rgba(147, 51, 234, 0.25)',
-              border: '1px solid rgba(147, 51, 234, 0.4)',
-              color: '#C4B5FD',
-              fontWeight: 700,
-              fontFamily: 'Georgia, serif',
-              fontSize: 17,
+              gap: 6,
+              padding: '12px 8px',
+              borderRadius: 'var(--elah-radius-md)',
+              cursor: 'grab',
+              userSelect: 'none',
+              background: 'var(--elah-bg-card)',
+              border: '1px solid var(--elah-border)',
+              transition: 'background 0.15s, border-color 0.15s',
+              minHeight: 72,
             }}
           >
-            T
-          </span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-            <span style={{ fontSize: 12, color: '#F3F4F6', fontWeight: 500 }}>Text</span>
-            <span style={{ fontSize: 10, color: '#6B7280' }}>+ Drag onto timeline</span>
+            <span
+              style={{
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 'var(--elah-radius-sm)',
+                ...iconStyle,
+              }}
+            >
+              {icon}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--elah-text)', fontWeight: 500 }}>{label}</span>
           </div>
-        </div>
+        ))}
       </div>
     </div>
   )
 }
-

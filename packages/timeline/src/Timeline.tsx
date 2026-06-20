@@ -274,7 +274,7 @@ export const Timeline = memo(
           color: timelineTheme.text.primary,
           overflow: 'hidden',
           position: 'relative',
-          fontFamily: 'sans-serif',
+          fontFamily: 'var(--elah-font-ui, sans-serif)',
           ...style,
         }}
       >

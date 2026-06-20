@@ -9,6 +9,9 @@ dist
 *.tsbuildinfo
 .DS_Store
 
+# Local docs and issues (not committed)
+doc/
+
 # Compiled JS emitted in-place beside TS sources (no outDir configured).
 # The repo never tracks hand-written .js, so all of these are build output.
 packages/**/src/**/*.js

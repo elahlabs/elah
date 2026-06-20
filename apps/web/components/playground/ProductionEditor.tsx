@@ -6,8 +6,7 @@ import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
 import { btnDisabled, theme } from './theme'
 import {
-  AssetPanel,
-  ElementsPanel,
+  SourcePanel,
   EditorProvider,
   Preview,
   Timeline,
@@ -403,18 +402,15 @@ export default function ProductionEditor() {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                width: 220,
+                width: 240,
                 flexShrink: 0,
-                borderRight: `1px solid ${theme.border}`,
-                background: theme.bgPanel,
+                borderRight: '1px solid var(--elah-border)',
+                background: 'var(--elah-bg-panel)',
                 minHeight: 0,
                 overflow: 'hidden',
               }}
             >
-              <ElementsPanel
-                style={{ flexShrink: 0, borderBottom: `1px solid ${theme.border}` }}
-              />
-              <AssetPanel style={{ flex: 1, minHeight: 0 }} />
+              <SourcePanel style={{ flex: 1, minHeight: 0 }} />
             </div>
 
             <div
