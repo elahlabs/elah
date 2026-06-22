@@ -257,6 +257,66 @@
   --elah-clip-image-mid:    #d97706;
   --elah-clip-image-bottom: #b45309;
   --elah-clip-image-accent: #fcd34d;
+
+  /* Timeline chrome — menus, dialogs, transitions, clip effects.
+     Structural fills follow the theme (--color-*); overlays, shadows and
+     intrinsic accents (selection/transition) are literal and mode-agnostic. */
+  --elah-text-on-clip: rgba(255, 255, 255, 0.95);
+
+  --elah-selection-border: #ff2d55;
+  --elah-selection-glow:   rgba(255, 45, 85, 0.4);
+
+  --elah-transition-line:       rgba(107, 140, 255, 0.9);
+  --elah-transition-line-hover: rgba(255, 255, 255, 0.55);
+  --elah-transition-line-idle:  rgba(255, 255, 255, 0.18);
+  --elah-transition-fill:       #6b8cff;
+  --elah-transition-stroke:     #a5b4fc;
+  --elah-transition-add-fill:   rgba(255, 255, 255, 0.12);
+  --elah-transition-add-stroke: rgba(255, 255, 255, 0.7);
+
+  --elah-menu-bg:     var(--color-surface-high);
+  --elah-menu-border: var(--color-outline-variant);
+  --elah-menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  --elah-popover-bg:               var(--color-surface-high);
+  --elah-popover-border:           var(--color-outline-variant);
+  --elah-popover-shadow:           0 8px 32px rgba(0, 0, 0, 0.6);
+  --elah-popover-option-bg:        var(--color-surface-container);
+  --elah-popover-option-bg-hover:  var(--color-surface-highest);
+  --elah-popover-option-bg-active: #3b4a6b;
+  --elah-popover-accent:           #6b8cff;
+  --elah-popover-accent-text:      #a5b4fc;
+  --elah-popover-icon:             var(--color-on-surface-variant);
+
+  --elah-dialog-overlay:          rgba(5, 7, 12, 0.6);
+  --elah-dialog-bg:               var(--color-surface-high);
+  --elah-dialog-border:           var(--color-outline-variant);
+  --elah-dialog-shadow:           0 24px 60px rgba(0, 0, 0, 0.55);
+  --elah-dialog-option-bg:        var(--color-surface-container);
+  --elah-dialog-option-bg-hover:  var(--color-surface-highest);
+  --elah-dialog-option-border:    var(--color-outline-variant);
+  --elah-dialog-primary-border:   #2563eb;
+  --elah-dialog-primary-bg:       rgba(37, 99, 235, 0.16);
+  --elah-dialog-primary-bg-hover: rgba(37, 99, 235, 0.28);
+
+  --elah-danger-text:     #ff6b6b;
+  --elah-danger-text-alt: #f87171;
+  --elah-danger-bg-hover: rgba(255, 107, 107, 0.12);
+  --elah-danger-border:   #3f2a2a;
+
+  --elah-effect-gloss:                  rgba(255, 255, 255, 0.14);
+  --elah-effect-inner-highlight:        rgba(255, 255, 255, 0.12);
+  --elah-effect-inner-highlight-strong: rgba(255, 255, 255, 0.15);
+  --elah-effect-clip-shadow:            0 2px 6px rgba(0, 0, 0, 0.35);
+  --elah-effect-tile-separator:         rgba(0, 0, 0, 0.28);
+  --elah-effect-waveform:               rgba(255, 255, 255, 0.85);
+  --elah-effect-placeholder-bg:         rgba(0, 0, 0, 0.22);
+  --elah-effect-placeholder-border:     rgba(255, 255, 255, 0.08);
+  --elah-effect-trim-scrim:             rgba(0, 0, 0, 0.35);
+  --elah-effect-label-shadow:           0 1px 2px rgba(0, 0, 0, 0.45);
+  --elah-effect-delete-btn-bg:          rgba(0, 0, 0, 0.5);
+  --elah-effect-delete-btn-border:      rgba(255, 255, 255, 0.35);
+  --elah-effect-delete-btn-text:        #ffffff;
 }
 
 /* Dark-mode overrides for kind tags — pale tones read on dark surfaces */
