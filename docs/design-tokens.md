@@ -1,59 +1,95 @@
-# Timeline Design Tokens
+# Design Tokens
 
-> Every color, border, shadow and overlay used by the timeline UI lives in one
-> place: [`packages/timeline/src/theme.ts`](../packages/timeline/src/theme.ts).
-> Components import `timelineTheme` instead of inlining literals, so re-skinning
-> the entire timeline (a light theme, brand match, etc.) means editing one object.
+> Every color, border, shadow and overlay in the Elah editor UI flows through one
+> contract: the **`--elah-*` CSS variables**. Components never inline color
+> literals — they use a Tailwind token class (e.g. `bg-ed-panel`) or a
+> `var(--elah-*)` reference. Re-skinning the editor (light theme, brand match,
+> white-label) means overriding those variables in one place.
 
 ---
 
-## Why
+## The model
 
-Before this, colors were hard-coded across every timeline component (`ClipBlock`,
-`Ruler`, `Playhead`, dialogs, pickers…). Changing the look meant hunting literals
-through many files and risking drift between components that should match.
+There are two variable families, bridged so the editor works in both worlds:
 
-`timelineTheme` makes the token set the **single source of truth**. Tokens are
-grouped **by role, not by component**, so the same visual meaning (e.g. "muted
-text") is one token reused everywhere rather than five copies.
+| Family | Defined in | Used by |
+| --- | --- | --- |
+| `--color-*` | `apps/web/styles/globals.css` (`:root` / `.dark`) | the website's own chrome (marketing, docs) |
+| `--elah-*` | `@elah/editor/styles/tokens.css` (standalone) **or** the `.elah-root` block in `globals.css` (embedded) | the editor + timeline packages |
 
-## Usage
+- **Embedded in the website:** `globals.css` defines `.elah-root { --elah-*: var(--color-*) }`, so the editor inherits the site's light/dark theme automatically.
+- **Standalone (any vendor app):** import `@elah/editor/styles/tokens.css`, which sets `.elah-root { --elah-*: <dark defaults> }`. No website design system required.
+
+Authoring happens in Tailwind. The repo-root `tailwind.preset.ts` maps token
+classes to these variables (`bg-ed-panel` → `var(--elah-bg-panel)`,
+`bg-clip-video-top` → `var(--elah-clip-video-top)`, etc.). Each package compiles
+the classes its components use into a shipped `dist/styles.css` (preflight off —
+no global reset leaks into a consumer).
+
+## Consuming the packages
 
 ```ts
-import { timelineTheme, type TimelineTheme } from '@elah/timeline'
+// 1. token values — pick ONE source:
+import '@elah/editor/styles/tokens.css'   // standalone dark defaults, OR
+// (when embedding in an app that already defines .elah-root, skip this)
 
-const laneBg = timelineTheme.surface.background
-const videoAccent = timelineTheme.clip.video.accent
+// 2. compiled component styles — always import both:
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles.css'
 ```
 
-Both the `timelineTheme` object and the `TimelineTheme` type are exported from the
-package entry ([`packages/timeline/src/index.ts`](../packages/timeline/src/index.ts)).
+These are plain CSS files. The consumer does **not** need Tailwind, and no utility
+class names (`.flex`, `.p-2`) are exposed — only each package's own compiled rules.
+
+## Theming / white-label
+
+Override any `--elah-*` variable in your own `.elah-root` scope:
+
+```css
+.elah-root {
+  --elah-accent:   #6366f1;   /* indigo brand */
+  --elah-bg-panel: #1e1e2e;
+  --elah-playhead: #f43f5e;
+}
+```
+
+The full variable list is the public theming surface — see
+[`tokens.css`](../packages/editor/src/styles/tokens.css).
 
 ## Token groups
 
-| Group | Purpose |
+| Group (`--elah-…`) | Purpose |
 | --- | --- |
-| `surface` | Background fills for structural surfaces (lanes, sidebar, ruler), incl. active variants |
-| `border` | Hairline dividers — `strong` (vertical rules) and `subtle` (row separators) |
-| `text` | Foreground text ramp, brightest → faintest (`primary`…`hint`, plus `onClip`) |
-| `clip` | Per-clip-type color ramp (`video`/`audio`/`text`/`image`), each with `top`/`mid`/`bottom` gradient + `accent` |
-| `selection` | Selected-clip highlight (`border` + outer `glow`) |
-| `playhead` | Playhead needle color (line, handle, glow) |
-| `ruler` | Ruler `tick` marks and timecode `label`s |
-| `transition` | Cut-line + diamond marker states (exists / hover / idle) |
-| `menu` | Clip right-click context menu |
-| `popover` | Transition picker popover (incl. option idle/hover/active states) |
-| `dialog` | Blocking "video has audio" choice dialog (overlay, buttons, primary action) |
-| `danger` | Destructive actions (delete clip / remove transition) |
-| `effect` | Reusable light/dark overlays — glosses, inset highlights, scrims, drop shadows |
+| `bg`, `bg-secondary`, `bg-panel`, `bg-card`, `bg-elevated`, `bg-highest` | Structural surfaces (canvas, lanes, panels, cards, menus, chips) |
+| `border`, `border-subtle`, `outline` | Hairlines and interactive/focus edges |
+| `text`, `text-muted`, `text-on-clip` | Foreground text + label on a colored clip |
+| `accent*` | Primary accent (hover/dim/glow/soft/text variants) |
+| `clip-{video,audio,text,image}-{top,mid,bottom,accent}` | Per-clip-type gradient ramp + accent |
+| `tag-*` | Asset/element kind chips (fg/bg per kind) |
+| `playhead`, `tick-color`, `tick-label` | Playhead needle, ruler ticks and labels |
+| `selection-{border,glow}` | Selected-clip highlight |
+| `transition-*` | Cut-line + diamond marker states (line/hover/idle/fill/stroke/add) |
+| `menu-*`, `popover-*`, `dialog-*` | Context menu, transition picker popover, blocking dialog |
+| `danger-*` | Destructive actions (delete / remove) |
+| `effect-*` | Reusable overlays — glosses, inset highlights, scrims, drop shadows |
+| `preview-bg`, `stage-{border,glow}`, `selection-{color,handle}` | Preview canvas + media-transform overlay affordances |
 
 ## Adding or changing a token
 
-1. Edit the relevant group in [`theme.ts`](../packages/timeline/src/theme.ts).
-   Add a token where the **visual role** fits; don't duplicate an existing one.
-2. Keep the JSDoc comment on each token current — it's the inline reference for
-   what the token means.
-3. Reference it from components via `timelineTheme.<group>.<token>`. Never
-   re-introduce a color literal in a component file.
-4. `TimelineTheme` is derived from the object (`typeof timelineTheme`), so new
-   tokens are typed automatically.
+1. Add/edit the variable in **both**
+   [`packages/editor/src/styles/tokens.css`](../packages/editor/src/styles/tokens.css)
+   (standalone dark default) **and** the `.elah-root` block in
+   [`apps/web/styles/globals.css`](../apps/web/styles/globals.css) (app value —
+   map to a `--color-*` token when it's a neutral surface/text/border; keep a
+   literal for intrinsic accents like the selection red).
+2. If you want a named Tailwind class for it (vs `[var(--elah-x)]`), add the
+   color to [`tailwind.preset.ts`](../tailwind.preset.ts).
+3. Reference it from components as a token class or `var(--elah-*)` — **never** a
+   raw hex literal. The `npm run lint:tokens` guard enforces this for package
+   components.
+
+## Deprecated: `timelineTheme`
+
+`packages/timeline/src/theme.ts` (the old `timelineTheme` object of hex literals)
+is **deprecated** but still exported for backward compatibility. Components no
+longer use it; new code must use the `--elah-*` contract above.

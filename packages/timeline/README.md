@@ -49,6 +49,21 @@ function App() {
 
 ---
 
+## Styling
+
+Import the compiled stylesheet once (plain CSS — Tailwind is **not** required in
+your app, and no utility classes leak into your global scope):
+
+```ts
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles/tokens.css' // --elah-* defaults (standalone use)
+```
+
+Colors are driven by `--elah-*` CSS variables. Re-theme by overriding them in your
+own `.elah-root` scope — see [design-tokens.md](https://github.com/elahlabs/elah/blob/main/docs/design-tokens.md).
+
+---
+
 ## Hooks
 
 ```ts
