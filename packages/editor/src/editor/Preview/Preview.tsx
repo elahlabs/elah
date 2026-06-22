@@ -153,14 +153,8 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
   return (
     <div
       ref={containerRef}
-      className={className}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        background: '#06070A',
-        ...style,
-      }}
+      className={`relative w-full h-full bg-[var(--elah-preview-bg,#06070A)]${className ? ` ${className}` : ''}`}
+      style={style}
     >
       {/* Project-frame outline, drawn at the same letterbox fit the renderer
           uses so the active aspect ratio is always visible against the bars. */}
@@ -179,5 +173,3 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     </div>
   )
 })
-
-

@@ -115,98 +115,41 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
     <>
       <div
         draggable
-        className="elah-media-card"
+        className="elah-media-card flex items-center gap-[10px] px-[10px] py-2 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms]"
         onDragStart={onDragStart}
         onContextMenu={handleContextMenu}
         title={asset.name}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '8px 10px',
-          borderRadius: 'var(--elah-radius-md)',
-          cursor: 'grab',
-          userSelect: 'none',
-          background: 'var(--elah-bg-card)',
-          border: '1px solid var(--elah-border)',
-          transition: 'background 0.15s, border-color 0.15s',
-        }}
       >
         <div
-          style={{
-            position: 'relative',
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            flexShrink: 0,
-            background: 'var(--elah-bg)',
-            borderRadius: 'var(--elah-radius-sm)',
-            border: '1px solid var(--elah-border-subtle)',
-            overflow: 'hidden',
-          }}
+          className="relative shrink-0 bg-ed-bg rounded-sm border border-ed-border-subtle overflow-hidden"
+          style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
         >
           {asset.thumbnailUrl ? (
             <img
               src={asset.thumbnailUrl}
               alt=""
               draggable={false}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
+              className="w-full h-full object-cover block"
             />
           ) : (
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 20,
-                color: 'var(--elah-text-muted)',
-              }}
-            >
+            <div className="w-full h-full flex items-center justify-center text-xl text-ed-text-muted">
               {KIND_ICONS[asset.kind]}
             </div>
           )}
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3,
-            minWidth: 0,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 11,
-              color: 'var(--elah-text)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
+        <div className="flex flex-col gap-[3px] min-w-0">
+          <span className="text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap">
             {asset.name}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="flex items-center gap-[6px]">
             <span
-              style={{
-                fontSize: 8,
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-                padding: '2px 5px',
-                borderRadius: 3,
-                color: tag.fg,
-                background: tag.bg,
-              }}
+              className="text-[8px] font-bold tracking-[0.06em] px-[5px] py-[2px] rounded-sm"
+              style={{ color: tag.fg, background: tag.bg }}
             >
               {tag.label}
             </span>
-            <span style={{ fontSize: 10, color: 'var(--elah-text-muted)', fontFamily: 'var(--elah-font-mono)' }}>
+            <span className="text-[10px] text-ed-text-muted font-mono">
               {formatDuration(asset.durationSec)}
             </span>
           </div>
@@ -216,7 +159,7 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
       {ctxMenu && createPortal(
         <>
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            className="fixed inset-0 z-[9998]"
             onMouseDown={closeCtxMenu}
           />
           <div
@@ -230,7 +173,7 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
               borderRadius: 'var(--elah-radius-sm)',
               padding: '4px 0',
               minWidth: 140,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--elah-menu-shadow, 0 8px 24px rgba(0,0,0,0.5))',
               fontFamily: 'var(--elah-font-ui)',
             }}
           >
@@ -238,18 +181,7 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={handleDelete}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '7px 14px',
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                color: 'var(--elah-color-error)',
-                fontSize: 13,
-                cursor: 'pointer',
-                letterSpacing: '0.01em',
-              }}
+              className="block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer tracking-[0.01em]"
               onMouseEnter={(e) => {
                 ;(e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
               }}
@@ -379,43 +311,27 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
 
   return (
     <div
-      className={className}
+      className={`flex flex-col h-full bg-transparent${className ? ` ${className}` : ''}`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: 'transparent',
-        borderRight: 'none',
-        ...style,
-      }}
+      style={style}
     >
       <input
         ref={fileInputRef}
         type="file"
         multiple
         accept="video/*,audio/*,image/*"
-        style={{ display: 'none' }}
+        className="hidden"
         onChange={onFileInputChange}
         data-testid="asset-file-input"
       />
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 12px',
-          borderBottom: '1px solid var(--elah-border)',
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--elah-text-muted)', letterSpacing: '0.08em' }}>
+      <div className="flex items-center justify-between px-3 py-[10px] border-b border-ed-border shrink-0">
+        <span className="text-[10px] font-bold text-ed-text-muted tracking-[0.08em]">
           MEDIA
         </span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="flex gap-[6px]">
           <button
             type="button"
             onClick={() => setUrlInputOpen((open) => !open)}
@@ -455,15 +371,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
       </div>
 
       {urlInputOpen && (
-        <div
-          style={{
-            display: 'flex',
-            gap: 6,
-            padding: '8px 12px',
-            borderBottom: '1px solid var(--elah-border)',
-            flexShrink: 0,
-          }}
-        >
+        <div className="flex gap-[6px] px-3 py-2 border-b border-ed-border shrink-0">
           <input
             type="url"
             value={urlValue}
@@ -506,34 +414,20 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
       )}
 
       <div
+        className="flex-1 overflow-auto p-2 relative rounded"
         style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 8,
           outline: isDragOver ? '2px dashed var(--elah-accent)' : 'none',
           outlineOffset: -4,
-          borderRadius: 4,
-          position: 'relative',
         }}
       >
         {toast && (
           <div
             role="status"
+            className="absolute top-2 left-2 right-2 z-[2] px-[10px] py-2 rounded-sm text-[10px] font-mono leading-[1.4] whitespace-pre-line"
             style={{
-              position: 'absolute',
-              top: 8,
-              left: 8,
-              right: 8,
-              zIndex: 2,
-              padding: '8px 10px',
-              borderRadius: 'var(--elah-radius-sm)',
-              fontSize: 10,
-              fontFamily: 'var(--elah-font-mono)',
-              lineHeight: 1.4,
-              whiteSpace: 'pre-line',
-              color: toast.tone === 'warn' ? '#f5d0a9' : '#c8d8f0',
-              background: toast.tone === 'warn' ? '#3a2418' : '#1a2433',
-              border: `1px solid ${toast.tone === 'warn' ? '#7a4a2a' : '#355070'}`,
+              color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
+              background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+              border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
             }}
           >
@@ -541,34 +435,14 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
           </div>
         )}
         {assets.length === 0 ? (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 120,
-              padding: 16,
-              textAlign: 'center',
-              color: 'var(--elah-text-muted)',
-              fontSize: 11,
-              border: '1px dashed var(--elah-border)',
-              borderRadius: 'var(--elah-radius-md)',
-            }}
-          >
-            <span style={{ marginBottom: 8, fontSize: 24, opacity: 0.5 }}>↓</span>
+          <div className="flex flex-col items-center justify-center min-h-[120px] p-4 text-center text-ed-text-muted text-[11px] border border-dashed border-ed-border rounded-md">
+            <span className="mb-2 text-2xl opacity-50">↓</span>
             Drop files here
             <br />
             or click Add
           </div>
         ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-            }}
-          >
+          <div className="flex flex-col gap-[6px]">
             {assets.map((asset) => (
               <AssetThumbnail key={asset.id} asset={asset} onDelete={handleDeleteAsset} />
             ))}

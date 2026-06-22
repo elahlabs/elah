@@ -140,33 +140,24 @@ function ClipCard({
       <>
         <div
           draggable
-          className="elah-media-card"
+          className="elah-media-card flex items-center gap-2 px-[10px] py-[6px] rounded-sm cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[120ms]"
           onDragStart={onDragStart}
           onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
           title={asset.name}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '6px 10px',
-            borderRadius: 'var(--elah-radius-sm)',
-            cursor: 'grab',
-            userSelect: 'none',
-            background: 'var(--elah-bg-card)',
-            border: '1px solid var(--elah-border)',
-            transition: 'background 0.12s, border-color 0.12s',
-          }}
         >
-          <span style={{ fontSize: 14, color: 'var(--elah-text-muted)', flexShrink: 0, width: 18, textAlign: 'center' }}>
+          <span className="text-sm text-ed-text-muted shrink-0 w-[18px] text-center">
             {KIND_ICONS[asset.kind]}
           </span>
-          <span style={{ flex: 1, fontSize: 11, color: 'var(--elah-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span className="flex-1 text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap">
             {asset.name}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', padding: '1px 4px', borderRadius: 3, color: tag.fg, background: tag.bg, flexShrink: 0 }}>
+          <span
+            className="text-[9px] font-bold tracking-[0.06em] px-1 py-px rounded-sm shrink-0"
+            style={{ color: tag.fg, background: tag.bg }}
+          >
             {tag.label}
           </span>
-          <span style={{ fontSize: 10, color: 'var(--elah-text-muted)', fontFamily: 'var(--elah-font-mono)', flexShrink: 0 }}>
+          <span className="text-[10px] text-ed-text-muted font-mono shrink-0">
             {formatDuration(asset.durationSec)}
           </span>
         </div>
@@ -180,52 +171,35 @@ function ClipCard({
     <>
       <div
         draggable
-        className="elah-media-card"
+        className="elah-media-card flex items-center gap-[10px] px-[10px] py-2 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms]"
         onDragStart={onDragStart}
         onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
         title={asset.name}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '8px 10px',
-          borderRadius: 'var(--elah-radius-md)',
-          cursor: 'grab',
-          userSelect: 'none',
-          background: 'var(--elah-bg-card)',
-          border: '1px solid var(--elah-border)',
-          transition: 'background 0.15s, border-color 0.15s',
-        }}
       >
         <div
-          style={{
-            position: 'relative',
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            flexShrink: 0,
-            background: 'var(--elah-bg)',
-            borderRadius: 'var(--elah-radius-sm)',
-            border: '1px solid var(--elah-border-subtle)',
-            overflow: 'hidden',
-          }}
+          className="relative shrink-0 bg-ed-bg rounded-sm border border-ed-border-subtle overflow-hidden"
+          style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
         >
           {asset.thumbnailUrl ? (
-            <img src={asset.thumbnailUrl} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <img src={asset.thumbnailUrl} alt="" draggable={false} className="w-full h-full object-cover block" />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'var(--elah-text-muted)' }}>
+            <div className="w-full h-full flex items-center justify-center text-xl text-ed-text-muted">
               {KIND_ICONS[asset.kind]}
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-          <span style={{ fontSize: 11, color: 'var(--elah-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div className="flex flex-col gap-[3px] min-w-0">
+          <span className="text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap">
             {asset.name}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', padding: '2px 5px', borderRadius: 3, color: tag.fg, background: tag.bg }}>
+          <div className="flex items-center gap-[6px]">
+            <span
+              className="text-[8px] font-bold tracking-[0.06em] px-[5px] py-[2px] rounded-sm"
+              style={{ color: tag.fg, background: tag.bg }}
+            >
               {tag.label}
             </span>
-            <span style={{ fontSize: 10, color: 'var(--elah-text-muted)', fontFamily: 'var(--elah-font-mono)' }}>
+            <span className="text-[10px] text-ed-text-muted font-mono">
               {formatDuration(asset.durationSec)}
             </span>
           </div>
@@ -239,7 +213,7 @@ function ClipCard({
 function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: () => void; onDelete: () => void }) {
   return createPortal(
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={onClose} />
+      <div className="fixed inset-0 z-[9998]" onMouseDown={onClose} />
       <div
         style={{
           position: 'fixed',
@@ -251,7 +225,7 @@ function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: (
           borderRadius: 'var(--elah-radius-sm)',
           padding: '4px 0',
           minWidth: 140,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--elah-menu-shadow, 0 8px 24px rgba(0,0,0,0.5))',
           fontFamily: 'var(--elah-font-ui)',
         }}
       >
@@ -259,7 +233,7 @@ function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: (
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={onDelete}
-          style={{ display: 'block', width: '100%', padding: '7px 14px', textAlign: 'left', background: 'none', border: 'none', color: 'var(--elah-color-error)', fontSize: 13, cursor: 'pointer' }}
+          className="block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer"
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)' }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
         >
@@ -387,26 +361,11 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
   return (
     <div
-      className={className}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: 'transparent',
-        ...style,
-      }}
+      className={`flex flex-col h-full bg-transparent${className ? ` ${className}` : ''}`}
+      style={style}
     >
       {/* ── Lane selector ─────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '6px 8px',
-          borderBottom: '1px solid var(--elah-border)',
-          gap: 4,
-          flexShrink: 0,
-        }}
-      >
+      <div className="flex items-center px-2 py-[6px] border-b border-ed-border gap-1 shrink-0">
         {(['media', 'elements'] as Lane[]).map((l) => (
           <button
             key={l}
@@ -435,24 +394,15 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
       {/* ── Media lane ────────────────────────────────────────────────────── */}
       {lane === 'media' && (
         <div
-          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+          className="flex flex-col flex-1 min-h-0"
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <input ref={fileInputRef} type="file" multiple accept="video/*,audio/*,image/*" style={{ display: 'none' }} onChange={onFileChange} data-testid="source-file-input" />
+          <input ref={fileInputRef} type="file" multiple accept="video/*,audio/*,image/*" className="hidden" onChange={onFileChange} data-testid="source-file-input" />
 
           {/* Ingestion bar */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 10px',
-              borderBottom: '1px solid var(--elah-border)',
-              flexShrink: 0,
-            }}
-          >
+          <div className="flex items-center gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0">
             <button
               type="button"
               onClick={() => setUrlInputOpen((o) => !o)}
@@ -470,7 +420,7 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
             >
               {importing ? '…' : '+ Add'}
             </button>
-            <div style={{ flex: 1 }} />
+            <div className="flex-1" />
             {/* View mode toggle */}
             {(['grid', 'list'] as ViewMode[]).map((v) => (
               <button
@@ -499,7 +449,7 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
           {/* URL input */}
           {urlInputOpen && (
-            <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0 }}>
+            <div className="flex gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0">
               <input
                 type="url"
                 value={urlValue}
@@ -533,7 +483,7 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
           )}
 
           {/* Search + sort toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0 }}>
+          <div className="flex items-center gap-[6px] px-[10px] py-[6px] border-b border-ed-border shrink-0">
             <input
               type="search"
               value={search}
@@ -574,7 +524,7 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
           </div>
 
           {/* Kind chips */}
-          <div style={{ display: 'flex', gap: 4, padding: '6px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0, overflowX: 'auto' }}>
+          <div className="flex gap-1 px-[10px] py-[6px] border-b border-ed-border shrink-0 overflow-x-auto">
             {KIND_CHIPS.map(({ value, label }) => (
               <button
                 key={value}
@@ -600,34 +550,20 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
           {/* Asset list */}
           <div
+            className="flex-1 overflow-auto p-2 relative rounded"
             style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: 8,
               outline: isDragOver ? '2px dashed var(--elah-accent)' : 'none',
               outlineOffset: -4,
-              borderRadius: 4,
-              position: 'relative',
             }}
           >
             {toast && (
               <div
                 role="status"
+                className="absolute top-2 left-2 right-2 z-[2] px-[10px] py-2 rounded-sm text-[10px] font-mono leading-[1.4] whitespace-pre-line"
                 style={{
-                  position: 'absolute',
-                  top: 8,
-                  left: 8,
-                  right: 8,
-                  zIndex: 2,
-                  padding: '8px 10px',
-                  borderRadius: 'var(--elah-radius-sm)',
-                  fontSize: 10,
-                  fontFamily: 'var(--elah-font-mono)',
-                  lineHeight: 1.4,
-                  whiteSpace: 'pre-line',
-                  color: toast.tone === 'warn' ? '#f5d0a9' : '#c8d8f0',
-                  background: toast.tone === 'warn' ? '#3a2418' : '#1a2433',
-                  border: `1px solid ${toast.tone === 'warn' ? '#7a4a2a' : '#355070'}`,
+                  color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
+                  background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+                  border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
                 }}
               >
@@ -636,30 +572,16 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
             )}
 
             {assets.length === 0 ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: 120,
-                  padding: 16,
-                  textAlign: 'center',
-                  color: 'var(--elah-text-muted)',
-                  fontSize: 11,
-                  border: '1px dashed var(--elah-border)',
-                  borderRadius: 'var(--elah-radius-md)',
-                }}
-              >
-                <span style={{ marginBottom: 8, fontSize: 24, opacity: 0.5 }}>↓</span>
+              <div className="flex flex-col items-center justify-center min-h-[120px] p-4 text-center text-ed-text-muted text-[11px] border border-dashed border-ed-border rounded-md">
+                <span className="mb-2 text-2xl opacity-50">↓</span>
                 Drop files here<br />or click Add
               </div>
             ) : visibleAssets.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--elah-text-muted)', fontSize: 11, paddingTop: 32 }}>
+              <div className="text-center text-ed-text-muted text-[11px] pt-8">
                 No matches
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="flex flex-col gap-[6px]">
                 {visibleAssets.map((asset) => (
                   <ClipCard
                     key={asset.id}
@@ -676,9 +598,9 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
       {/* ── Elements lane ─────────────────────────────────────────────────── */}
       {lane === 'elements' && (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <div className="flex flex-col flex-1 min-h-0 overflow-auto">
           {/* Elements search (no chips, no filmstrip) */}
-          <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0 }}>
+          <div className="px-[10px] py-[6px] border-b border-ed-border shrink-0">
             <input
               type="search"
               placeholder="Search elements…"
@@ -698,51 +620,22 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
           </div>
 
           {/* Palette grid — 2-column */}
-          <div
-            style={{
-              padding: 10,
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 6,
-            }}
-          >
+          <div className="p-[10px] grid grid-cols-2 gap-[6px]">
             {PALETTE_TILES.map(({ element, label, icon, iconStyle }) => (
               <div
                 key={element}
                 draggable
-                className="elah-element-card"
+                className="elah-element-card flex flex-col items-center justify-center gap-[6px] px-2 py-3 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms] min-h-[72px]"
                 onDragStart={makeDragStart(element)}
                 title={`Drag ${label} onto the timeline`}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  padding: '12px 8px',
-                  borderRadius: 'var(--elah-radius-md)',
-                  cursor: 'grab',
-                  userSelect: 'none',
-                  background: 'var(--elah-bg-card)',
-                  border: '1px solid var(--elah-border)',
-                  transition: 'background 0.15s, border-color 0.15s',
-                  minHeight: 72,
-                }}
               >
                 <span
-                  style={{
-                    width: 32,
-                    height: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 'var(--elah-radius-sm)',
-                    ...iconStyle,
-                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-sm"
+                  style={iconStyle}
                 >
                   {icon}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--elah-text)', fontWeight: 500 }}>{label}</span>
+                <span className="text-[11px] text-ed-text font-medium">{label}</span>
               </div>
             ))}
           </div>
