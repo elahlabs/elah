@@ -153,4 +153,15 @@
   --elah-effect-delete-btn-bg:          rgba(0, 0, 0, 0.5);
   --elah-effect-delete-btn-border:      rgba(255, 255, 255, 0.35);
   --elah-effect-delete-btn-text:        #ffffff;
+
+  /* ── Editor overlays / toasts / preview (dark defaults) ────────────────── */
+  --elah-preview-bg:       #06070a;
+  --elah-stage-border:     rgba(225, 29, 72, 0.45);
+  --elah-stage-glow:       0 0 20px rgba(225, 29, 72, 0.08);
+  --elah-selection-color:  #4c9aff;
+  --elah-selection-handle: #ffffff;
+  --elah-danger-bg:        #3a2418;
+  --elah-info-bg:          #1a2433;
+  --elah-info-border:      #355070;
+  --elah-info-text:        #c8d8f0;
 }
