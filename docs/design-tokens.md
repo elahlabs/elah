@@ -10,15 +10,28 @@
 
 ## The model
 
-There are two variable families, bridged so the editor works in both worlds:
+There are two variable families:
 
 | Family | Defined in | Used by |
 | --- | --- | --- |
 | `--color-*` | `apps/web/styles/globals.css` (`:root` / `.dark`) | the website's own chrome (marketing, docs) |
-| `--elah-*` | `@elah/editor/styles/tokens.css` (standalone) **or** the `.elah-root` block in `globals.css` (embedded) | the editor + timeline packages |
+| `--elah-*` | `@elah/editor/styles/tokens.css` (standalone) **or** the `.elah-root` block in `globals.css` (this repo's app) | the editor + timeline packages |
 
-- **Embedded in the website:** `globals.css` defines `.elah-root { --elah-*: var(--color-*) }`, so the editor inherits the site's light/dark theme automatically.
-- **Standalone (any vendor app):** import `@elah/editor/styles/tokens.css`, which sets `.elah-root { --elah-*: <dark defaults> }`. No website design system required.
+Whoever defines `--elah-*` decides the editor's look. There are three ways to do it:
+
+1. **This website (current):** the `.elah-root` block in `globals.css` pins
+   `--elah-*` to a **fixed cool blue-gray scheme**, intentionally **decoupled**
+   from the site's warm `--color-*` light/dark theme — the editor reads as a dark
+   tool surface in both modes.
+2. **Standalone / vendor:** import `@elah/editor/styles/tokens.css`, which sets
+   `.elah-root { --elah-*: <warm-charcoal dark defaults> }`. No design system
+   required.
+3. **Inherit a host theme (optional pattern):** map `--elah-*` onto your own
+   tokens, e.g. `.elah-root { --elah-bg-panel: var(--color-surface-low); … }`, so
+   the editor follows your app's light/dark automatically. (This repo used to do
+   this before switching to mode 1.)
+
+In every case the components are identical; only the `--elah-*` values differ.
 
 Authoring happens in Tailwind. The repo-root `tailwind.preset.ts` maps token
 classes to these variables (`bg-ed-panel` → `var(--elah-bg-panel)`,
@@ -78,10 +91,10 @@ The full variable list is the public theming surface — see
 
 1. Add/edit the variable in **both**
    [`packages/editor/src/styles/tokens.css`](../packages/editor/src/styles/tokens.css)
-   (standalone dark default) **and** the `.elah-root` block in
-   [`apps/web/styles/globals.css`](../apps/web/styles/globals.css) (app value —
-   map to a `--color-*` token when it's a neutral surface/text/border; keep a
-   literal for intrinsic accents like the selection red).
+   (the standalone/vendor warm-charcoal default) **and** the `.elah-root` block in
+   [`apps/web/styles/globals.css`](../apps/web/styles/globals.css) (the app's fixed
+   cool blue-gray value). Keep the two in sync in structure; the literal values
+   differ by scheme.
 2. If you want a named Tailwind class for it (vs `[var(--elah-x)]`), add the
    color to [`tailwind.preset.ts`](../tailwind.preset.ts).
 3. Reference it from components as a token class or `var(--elah-*)` — **never** a
