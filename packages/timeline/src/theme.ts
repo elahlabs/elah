@@ -1,4 +1,9 @@
 /**
+ * @deprecated Superseded by the --elah-* CSS variable contract; see tokens.css.
+ * This object is kept for backward compatibility only. Components now use
+ * Tailwind utility classes (static styles) and `var(--elah-*)` (dynamic styles).
+ * Do not add new uses of `timelineTheme` in components.
+ *
  * Timeline design tokens — the single place to recolor the entire timeline UI.
  *
  * Every color, border, shadow and overlay used by the timeline components is

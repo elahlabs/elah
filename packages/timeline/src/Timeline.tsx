@@ -19,7 +19,6 @@ import { Ruler } from './Ruler'
 import { Playhead } from './Playhead'
 import { TrackRow } from './TrackRow'
 import { AudioDropDialog } from './AudioDropDialog'
-import { timelineTheme } from './theme'
 
 export interface TimelineRef {
   engine: TimelineEngine
@@ -266,12 +265,10 @@ export const Timeline = memo(
 
     return (
       <div
-        className={className}
+        className={['bg-ed-bg text-ed-text', className].filter(Boolean).join(' ')}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          background: timelineTheme.surface.background,
-          color: timelineTheme.text.primary,
           overflow: 'hidden',
           position: 'relative',
           fontFamily: 'var(--elah-font-ui, sans-serif)',
@@ -280,15 +277,17 @@ export const Timeline = memo(
       >
         {/* Ruler row */}
         <div style={{ display: 'flex' }}>
-          {/* Sidebar spacer */}
+          {/* Sidebar spacer — static surface tokens as className */}
           <div
+            className="bg-ed-panel border-ed-border border-ed-border-subtle"
             style={{
               width: SIDEBAR_WIDTH,
               flexShrink: 0,
               height: rulerHeight,
-              background: timelineTheme.surface.sidebar,
-              borderRight: `1px solid ${timelineTheme.border.strong}`,
-              borderBottom: `1px solid ${timelineTheme.border.subtle}`,
+              borderRightWidth: 1,
+              borderRightStyle: 'solid',
+              borderBottomWidth: 1,
+              borderBottomStyle: 'solid',
             }}
           />
           {/* Ruler — overflow hidden, scrollLeft driven by track area scroll */}
@@ -326,9 +325,9 @@ export const Timeline = memo(
 
           {tracks.length === 0 && (
             <div
+              className="text-ed-text-muted"
               style={{
                 padding: 24,
-                color: timelineTheme.text.disabled,
                 fontSize: 13,
                 textAlign: 'center',
               }}

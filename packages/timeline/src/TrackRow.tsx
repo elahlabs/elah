@@ -5,7 +5,6 @@ import { useSelectionStore } from '@elah/core'
 import { ClipBlock } from './ClipBlock'
 import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
-import { timelineTheme } from './theme'
 
 interface TrackRowProps {
   track: Track
@@ -61,29 +60,34 @@ export const TrackRow = memo(function TrackRow({
   // flex:1 grows it to fill the container when the container is larger.
   const rowMinWidth = Math.max(totalFrames * zoom, 800)
 
-  const kindAccent =
+  // Dynamic: per-track-kind accent color from the clip mid ramp
+  const kindAccentVar =
     track.kind === 'video'
-      ? timelineTheme.clip.video.mid
+      ? 'var(--elah-clip-video-mid)'
       : track.kind === 'audio'
-        ? timelineTheme.clip.audio.mid
-        : timelineTheme.clip.text.mid
+        ? 'var(--elah-clip-audio-mid)'
+        : 'var(--elah-clip-text-mid)'
 
   return (
     <div style={{ display: 'flex', height: track.height }}>
       {/* Track label sidebar — sticky so labels stay pinned while clips scroll
           horizontally underneath. zIndex keeps it above the clip blocks. */}
+      {/* Track label sidebar — static border tokens as className; bg/text are dynamic */}
       <div
         onClick={() => setActiveTrack(track.id)}
+        className="border-ed-border border-ed-border-subtle"
         style={{
           position: 'sticky',
           left: 0,
           zIndex: 6,
           width: 160,
           flexShrink: 0,
-          borderLeft: `3px solid ${kindAccent}`,
-          borderRight: `1px solid ${timelineTheme.border.strong}`,
-          borderBottom: `1px solid ${timelineTheme.border.subtle}`,
-          background: isActive ? timelineTheme.surface.sidebarActive : timelineTheme.surface.sidebar,
+          borderLeft: `3px solid ${kindAccentVar}`,
+          borderRightWidth: 1,
+          borderRightStyle: 'solid',
+          borderBottomWidth: 1,
+          borderBottomStyle: 'solid',
+          background: isActive ? `var(--elah-bg-elevated)` : `var(--elah-bg-panel)`,
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 12,
@@ -94,7 +98,7 @@ export const TrackRow = memo(function TrackRow({
         <span
           style={{
             fontSize: 11,
-            color: isActive ? timelineTheme.text.primary : timelineTheme.text.secondary,
+            color: isActive ? `var(--elah-text)` : `var(--elah-text-muted)`,
             fontWeight: isActive ? 600 : 500,
             overflow: 'hidden',
             whiteSpace: 'nowrap',
@@ -105,15 +109,17 @@ export const TrackRow = memo(function TrackRow({
         </span>
       </div>
 
-      {/* Clip area */}
+      {/* Clip area — bottom border is static */}
       <div
         ref={setLaneEl}
+        className="border-ed-border-subtle"
         style={{
           position: 'relative',
           flex: 1,
           minWidth: rowMinWidth,
-          borderBottom: `1px solid ${timelineTheme.border.subtle}`,
-          background: isActive ? timelineTheme.surface.laneActive : timelineTheme.surface.background,
+          borderBottomWidth: 1,
+          borderBottomStyle: 'solid',
+          background: isActive ? `var(--elah-bg-secondary)` : `var(--elah-bg)`,
           overflow: 'visible',
         }}
       >
@@ -140,5 +146,3 @@ export const TrackRow = memo(function TrackRow({
     </div>
   )
 })
-
-
