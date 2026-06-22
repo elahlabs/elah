@@ -14,6 +14,7 @@ import {
   type TimelineRef,
   type PreviewHandle,
 } from '@elah/editor'
+import { cn } from '@/lib/utils'
 
 const FPS = 30
 
@@ -75,81 +76,61 @@ const Toolbar = memo(function Toolbar() {
     }, 'Clear all clips')
   }
 
-  const buttonStyle = {
-    padding: '6px 12px',
-    background: '#1e2433',
-    color: '#A7AFBF',
-    border: '1px solid #232938',
-    borderRadius: 4,
-    cursor: 'pointer',
-    fontSize: 12,
-    fontWeight: 500,
-    whiteSpace: 'nowrap' as const,
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-  }
+  // Base button classes
+  const btnCls = 'px-3 py-1.5 bg-ed-elevated text-ed-text-muted border border-ed-border rounded cursor-pointer text-xs font-medium whitespace-nowrap font-sans'
 
-  const primaryButtonStyle = {
-    ...buttonStyle,
-    background: isPlaying ? 'rgba(34, 197, 94, 0.12)' : '#E11D48',
-    border: isPlaying ? '1px solid #22C55E' : '1px solid #E11D48',
-    color: isPlaying ? '#22C55E' : '#fff',
-  } as React.CSSProperties
+  // Dynamic play button — color switches on state, so we keep inline style for the color logic only
+  const playBtnStyle: React.CSSProperties = isPlaying
+    ? { background: 'rgba(34, 197, 94, 0.12)', border: '1px solid #22C55E', color: '#22C55E' }
+    : { background: 'var(--elah-accent)', border: '1px solid var(--elah-accent)', color: '#fff' }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '8px 16px',
-        background: '#0D1017',
-        borderBottom: '1px solid #232938',
-        flexShrink: 0,
-        overflowX: 'auto',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 12, borderRight: '1px solid #232938' }}>
-        <button onClick={togglePlayPause} style={primaryButtonStyle}>
+    <div className="flex items-center gap-3 px-4 py-2 bg-ed-bg-2 border-b border-ed-border shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-2 pr-3 border-r border-ed-border">
+        <button onClick={togglePlayPause} className={btnCls} style={playBtnStyle}>
           {isPlaying ? '⏸ Pause' : '▶ Play'}
         </button>
 
-        <span style={{ fontSize: 11, color: '#6B7280', fontFamily: 'monospace', minWidth: 90 }}>
+        <span className="text-[11px] text-ed-text-muted font-mono min-w-[90px]">
           {framesToTimecode(currentFrame, FPS)} / {framesToTimecode(Math.max(totalFrames, 1), FPS)}
         </span>
 
-        <button onClick={() => engine.undo()} style={buttonStyle}>
+        <button onClick={() => engine.undo()} className={btnCls}>
           ↶ Undo
         </button>
 
-        <button onClick={handleReset} style={buttonStyle}>
+        <button onClick={handleReset} className={btnCls}>
           ⏮ Reset
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 12, borderRight: '1px solid #232938' }}>
-        <span style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, fontFamily: 'system-ui, sans-serif', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Add:</span>
+      <div className="flex items-center gap-2 pr-3 border-r border-ed-border">
+        <span className="text-[11px] text-ed-text-muted font-semibold font-sans tracking-[0.06em] uppercase">Add:</span>
         <button
           onClick={() => tracks[0] && handleAddClip(tracks[0].id, 'video', FPS * 3)}
-          style={{ ...buttonStyle, background: 'rgba(37, 99, 235, 0.15)', border: '1px solid #2563EB', color: '#60A5FA' }}
+          className={cn(btnCls, 'bg-clip-video-mid/15 border-clip-video-mid text-clip-video-mid')}
         >
           + Video
         </button>
         <button
           onClick={() => tracks[1] && handleAddClip(tracks[1].id, 'audio', FPS * 5)}
-          style={{ ...buttonStyle, background: 'rgba(22, 163, 74, 0.15)', border: '1px solid #16A34A', color: '#4ADE80' }}
+          className={cn(btnCls, 'bg-clip-audio-mid/15 border-clip-audio-mid text-clip-audio-mid')}
         >
           + Audio
         </button>
         <button
           onClick={() => tracks[2] && handleAddClip(tracks[2].id, 'text', FPS * 2)}
-          style={{ ...buttonStyle, background: 'rgba(147, 51, 234, 0.15)', border: '1px solid #9333EA', color: '#C084FC' }}
+          className={cn(btnCls, 'bg-clip-text-mid/15 border-clip-text-mid text-clip-text-mid')}
         >
           + Text
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={handleClearAll} style={{ ...buttonStyle, background: 'rgba(225, 29, 72, 0.1)', border: '1px solid #E11D48', color: '#FB7185' }}>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleClearAll}
+          className={cn(btnCls, 'bg-ed-accent-soft border-ed-accent text-ed-accent-hover')}
+        >
           ✕ Clear All
         </button>
       </div>
@@ -164,32 +145,24 @@ export default function RawEditor() {
   return (
     <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
       <div
-        className="elah-root"
-        style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+        className="elah-root flex flex-col h-full"
       >
-        <header
-          style={{
-            padding: '12px 16px',
-            background: '#0D1017',
-            borderBottom: '1px solid #232938',
-            flexShrink: 0,
-          }}
-        >
-          <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#F3F4F6' }}>Raw Editor</h1>
-          <p style={{ margin: '3px 0 0 0', fontSize: 12, color: '#6B7280' }}>
+        <header className="px-4 py-3 bg-ed-bg-2 border-b border-ed-border shrink-0">
+          <h1 className="m-0 text-sm font-semibold text-ed-text">Raw Editor</h1>
+          <p className="m-0 mt-0.5 text-xs text-ed-text-muted">
             Full @elah/editor composition — asset panel, GPU preview, timeline
           </p>
         </header>
 
         <Toolbar />
 
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div className="flex flex-1 min-h-0">
           <AssetPanel
             style={{
               width: 240,
               flexShrink: 0,
-              borderRight: '1px solid #232938',
-              background: '#06070A',
+              borderRight: '1px solid var(--elah-border)',
+              background: 'var(--elah-bg)',
               minHeight: 0,
               overflowY: 'auto',
             }}
@@ -213,8 +186,8 @@ export default function RawEditor() {
             height: 240,
             flexShrink: 0,
             minWidth: 0,
-            background: '#0A0D14',
-            borderTop: '1px solid #232938',
+            background: 'var(--elah-bg)',
+            borderTop: '1px solid var(--elah-border)',
           }}
         />
       </div>
