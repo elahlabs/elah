@@ -10,6 +10,7 @@ import { resolveTimeline } from '@elah/core'
 import { useTimelineEngine, usePlaybackEngine } from '@elah/core'
 import type { DemuxerFactory } from '@elah/core'
 import { AudioPlaybackController } from '@elah/core'
+import { cn } from '@elah/timeline'
 import { TextOverlay } from './TextOverlay'
 import { MediaTransformOverlay } from './MediaTransformOverlay'
 import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
@@ -153,7 +154,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full bg-[var(--elah-preview-bg,#06070A)]${className ? ` ${className}` : ''}`}
+      className={cn('relative w-full h-full bg-[var(--elah-preview-bg,#06070A)]', className)}
       style={style}
     >
       {/* Project-frame outline, drawn at the same letterbox fit the renderer

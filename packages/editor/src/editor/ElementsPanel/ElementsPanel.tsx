@@ -1,5 +1,5 @@
 import { useCallback, type CSSProperties, type DragEvent } from 'react'
-import { ELEMENT_DRAG_MIME, type DragElementPayload, type ElementKind } from '@elah/timeline'
+import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind } from '@elah/timeline'
 
 export interface ElementsPanelProps {
   style?: CSSProperties
@@ -41,7 +41,7 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
 
   return (
     <div
-      className={`flex flex-col bg-transparent${className ? ` ${className}` : ''}`}
+      className={cn('flex flex-col bg-transparent', className)}
       style={style}
     >
       <div className="px-3 py-[10px] border-b border-ed-border shrink-0">

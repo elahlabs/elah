@@ -19,6 +19,7 @@ import {
   type MediaKind,
   type DragMediaPayload,
 } from '@elah/core'
+import { cn } from '@elah/timeline'
 
 export interface AssetPanelProps {
   style?: CSSProperties
@@ -311,7 +312,7 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
 
   return (
     <div
-      className={`flex flex-col h-full bg-transparent${className ? ` ${className}` : ''}`}
+      className={cn('flex flex-col h-full bg-transparent', className)}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
