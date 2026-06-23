@@ -332,6 +332,14 @@ export const Timeline = memo(
               labelClassName={classNames?.trackLabel}
               laneClassName={classNames?.lane}
               clipClassName={classNames?.clip}
+              clipVideo={classNames?.clipVideo}
+              clipAudio={classNames?.clipAudio}
+              clipText={classNames?.clipText}
+              clipImage={classNames?.clipImage}
+              clipVideoAccent={classNames?.clipVideoAccent}
+              clipAudioAccent={classNames?.clipAudioAccent}
+              clipTextAccent={classNames?.clipTextAccent}
+              clipImageAccent={classNames?.clipImageAccent}
             />
           ))}
 

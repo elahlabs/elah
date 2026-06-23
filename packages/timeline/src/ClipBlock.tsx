@@ -13,6 +13,7 @@ import {
 import { useTracksStore } from '@elah/core'
 import { useMediaLibraryStore } from '@elah/core'
 import { cn } from './cn'
+import { normBg } from './clipSlot'
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
@@ -22,15 +23,59 @@ const WAVE_BARS = [
 
 const TRIM_HANDLE_WIDTH = 8
 
+// Default clip body background per type — static literals so Tailwind generates
+// them. Same token colors + stops as the original gradient (look unchanged).
+const DEFAULT_CLIP_BG: Record<string, string> = {
+  video: 'bg-gradient-to-b from-clip-video-top via-clip-video-mid to-clip-video-bottom via-[42%]',
+  audio: 'bg-gradient-to-b from-clip-audio-top via-clip-audio-mid to-clip-audio-bottom via-[42%]',
+  text: 'bg-gradient-to-b from-clip-text-top via-clip-text-mid to-clip-text-bottom via-[42%]',
+  image: 'bg-gradient-to-b from-clip-image-top via-clip-image-mid to-clip-image-bottom via-[42%]',
+}
+
+// Default accent (left stripe + selected hairline) per type, applied as the
+// element's text color so the stripe/border can read it via currentColor.
+const DEFAULT_CLIP_ACCENT: Record<string, string> = {
+  video: 'text-clip-video-accent',
+  audio: 'text-clip-audio-accent',
+  text: 'text-clip-text-accent',
+  image: 'text-clip-image-accent',
+}
+
 interface ClipBlockProps {
   clip: Clip
   zoom: number
   trackHeight: number
   /** Override class for the clip body (merged so it wins over defaults). */
   className?: string
+  /**
+   * Per-clip-type body background (gradient 'from-teal-400 to-teal-600' or solid
+   * 'bg-teal-500') and accent ('text-*' for stripe + selected hairline). Only the
+   * pair matching the clip's own type is applied. Omit to keep the default.
+   */
+  clipVideo?: string
+  clipAudio?: string
+  clipText?: string
+  clipImage?: string
+  clipVideoAccent?: string
+  clipAudioAccent?: string
+  clipTextAccent?: string
+  clipImageAccent?: string
 }
 
-export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, className }: ClipBlockProps) {
+export const ClipBlock = memo(function ClipBlock({
+  clip,
+  zoom,
+  trackHeight,
+  className,
+  clipVideo,
+  clipAudio,
+  clipText,
+  clipImage,
+  clipVideoAccent,
+  clipAudioAccent,
+  clipTextAccent,
+  clipImageAccent,
+}: ClipBlockProps) {
   const engine = useTimeline()
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
   const selectClip = useSelectionStore((s) => s.selectClip)
@@ -47,6 +92,29 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, clas
   const left = clip.startFrame * zoom
   const width = Math.max(clip.durationFrames * zoom, 4)
   const blockHeight = trackHeight - 10
+
+  // Pick the slot for this clip's own type (explicit — no dynamic key access).
+  // Body + accent slots for this clip's own type (explicit — no dynamic keys).
+  const bodySlot =
+    clip.type === 'video'
+      ? clipVideo
+      : clip.type === 'audio'
+        ? clipAudio
+        : clip.type === 'text'
+          ? clipText
+          : clipImage
+  const accentSlot =
+    clip.type === 'video'
+      ? clipVideoAccent
+      : clip.type === 'audio'
+        ? clipAudioAccent
+        : clip.type === 'text'
+          ? clipTextAccent
+          : clipImageAccent
+  // Body bg: slot replaces the default gradient. Accent: slot text-* class, else
+  // the default token class (both feed currentColor for the stripe/border).
+  const clipBg = normBg(bodySlot) ?? DEFAULT_CLIP_BG[clip.type]
+  const clipAccent = accentSlot ?? DEFAULT_CLIP_ACCENT[clip.type]
 
   // Filmstrip tiles for video/image — decorative; tiles repeat/reduce with zoom.
   const stripFrames =
@@ -264,7 +332,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, clas
       ref={blockRef}
       onMouseDown={handleBodyMouseDown}
       onContextMenu={handleContextMenu}
-      className={cn('rounded-[7px]', className)}
+      className={cn('rounded-[7px]', clipAccent, clipBg, className)}
       style={{
         position: 'absolute',
         top: 5,
@@ -272,12 +340,11 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, clas
         width,
         height: blockHeight,
         boxSizing: 'border-box',
-        // Dynamic: per-clip-type gradient using CSS vars
-        background: `linear-gradient(180deg, var(--elah-clip-${clip.type}-top) 0%, var(--elah-clip-${clip.type}-mid) 42%, var(--elah-clip-${clip.type}-bottom) 100%)`,
-        // Dynamic: selection border vs accent border
+        // Background comes from clipBg (default gradient or the slot override).
+        // Selection border vs accent border (accent paints from currentColor).
         border: isSelected
           ? `2px solid var(--elah-selection-border)`
-          : `1px solid color-mix(in srgb, var(--elah-clip-${clip.type}-accent) 33%, transparent)`,
+          : `1px solid color-mix(in srgb, currentColor 33%, transparent)`,
         // Dynamic: selection glow vs default clip shadow + inner highlight
         boxShadow: isSelected
           ? `0 0 14px var(--elah-selection-glow), inset 0 1px 0 var(--elah-effect-inner-highlight-strong)`
@@ -325,7 +392,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, clas
         </div>
       )}
 
-      {/* Left accent stripe */}
+      {/* Left accent stripe — paints from currentColor (the clip's accent). */}
       <div
         style={{
           position: 'absolute',
@@ -333,7 +400,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, clas
           top: 0,
           bottom: 0,
           width: 3,
-          background: `var(--elah-clip-${clip.type}-accent)`,
+          background: 'currentColor',
           opacity: 0.85,
           pointerEvents: 'none',
         }}

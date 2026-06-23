@@ -69,6 +69,14 @@ Override any `--elah-*` variable in your own `.elah-root` scope:
 The full variable list is the public theming surface — see
 [`tokens.css`](../packages/editor/src/styles/tokens.css).
 
+### Per-instance: `<Timeline classNames>`
+
+Tokens recolor every editor instance globally. For a *single* timeline, pass the
+`classNames` prop — a per-slot map of Tailwind classes that wins over the
+defaults (via `tailwind-merge`). Use it for per-instance structure/color
+(ruler, lanes, per-clip-type body + accent, playhead). See the
+[`@elah/timeline` README](../packages/timeline/README.md#per-instance-overrides--classnames).
+
 ## Token groups
 
 | Group (`--elah-…`) | Purpose |

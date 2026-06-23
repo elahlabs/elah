@@ -7,6 +7,15 @@ import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
 import { cn } from './cn'
 
+// Default track-label accent (the colored left bar) per kind — the clip mid
+// ramp, applied as the label's text color so the bar can read it via
+// currentColor. A clip slot's text-* overrides it, keeping bar and clip in sync.
+const KIND_ACCENT: Record<string, string> = {
+  video: 'text-clip-video-mid',
+  audio: 'text-clip-audio-mid',
+  text: 'text-clip-text-mid',
+}
+
 interface TrackRowProps {
   track: Track
   totalFrames: number
@@ -20,6 +29,15 @@ interface TrackRowProps {
   laneClassName?: string
   /** Override class forwarded to each ClipBlock. */
   clipClassName?: string
+  /** Per-clip-type body + accent, forwarded to each ClipBlock (and bar). */
+  clipVideo?: string
+  clipAudio?: string
+  clipText?: string
+  clipImage?: string
+  clipVideoAccent?: string
+  clipAudioAccent?: string
+  clipTextAccent?: string
+  clipImageAccent?: string
 }
 
 /**
@@ -35,6 +53,14 @@ export const TrackRow = memo(function TrackRow({
   labelClassName,
   laneClassName,
   clipClassName,
+  clipVideo,
+  clipAudio,
+  clipText,
+  clipImage,
+  clipVideoAccent,
+  clipAudioAccent,
+  clipTextAccent,
+  clipImageAccent,
 }: TrackRowProps) {
   // Selector returns undefined (stable) when no clips exist.
   // ?? [] is intentionally outside the selector — returning a new [] inside
@@ -73,13 +99,16 @@ export const TrackRow = memo(function TrackRow({
   // flex:1 grows it to fill the container when the container is larger.
   const rowMinWidth = Math.max(totalFrames * zoom, 800)
 
-  // Dynamic: per-track-kind accent color from the clip mid ramp
-  const kindAccentVar =
+  // Per-track-kind accent (the colored left bar). The matching clip accent slot
+  // overrides the default mid token (both as a text-color class read via
+  // currentColor), so the bar follows clip-color overrides.
+  const kindAccentSlot =
     track.kind === 'video'
-      ? 'var(--elah-clip-video-mid)'
+      ? clipVideoAccent
       : track.kind === 'audio'
-        ? 'var(--elah-clip-audio-mid)'
-        : 'var(--elah-clip-text-mid)'
+        ? clipAudioAccent
+        : clipTextAccent
+  const kindAccentClass = kindAccentSlot ?? KIND_ACCENT[track.kind] ?? KIND_ACCENT.video
 
   return (
     <div className={className} style={{ display: 'flex', height: track.height }}>
@@ -91,6 +120,7 @@ export const TrackRow = memo(function TrackRow({
         className={cn(
           'border-ed-border border-ed-border-subtle',
           isActive ? 'bg-ed-elevated' : 'bg-ed-panel',
+          kindAccentClass,
           labelClassName,
         )}
         style={{
@@ -99,7 +129,8 @@ export const TrackRow = memo(function TrackRow({
           zIndex: 6,
           width: 160,
           flexShrink: 0,
-          borderLeft: `3px solid ${kindAccentVar}`,
+          // The left bar paints from currentColor (set by kindAccentClass above).
+          borderLeft: '3px solid currentColor',
           borderRightWidth: 1,
           borderRightStyle: 'solid',
           borderBottomWidth: 1,
@@ -149,6 +180,14 @@ export const TrackRow = memo(function TrackRow({
             zoom={zoom}
             trackHeight={track.height}
             className={clipClassName}
+            clipVideo={clipVideo}
+            clipAudio={clipAudio}
+            clipText={clipText}
+            clipImage={clipImage}
+            clipVideoAccent={clipVideoAccent}
+            clipAudioAccent={clipAudioAccent}
+            clipTextAccent={clipTextAccent}
+            clipImageAccent={clipImageAccent}
           />
         ))}
 
