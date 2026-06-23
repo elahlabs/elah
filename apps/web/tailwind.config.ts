@@ -8,10 +8,13 @@ import preset from '../../tailwind.preset'
 // and the typography plugin.
 const config: Config = {
   presets: [preset],
+  // Source is TS/MDX only. Scanning .js would match compiled build artifacts
+  // (tsc emits .js next to sources), which breaks incremental rebuilds when
+  // those artifacts are cleaned. Keep this to real source extensions.
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{ts,tsx,mdx}',
+    './components/**/*.{ts,tsx,mdx}',
+    './app/**/*.{ts,tsx,mdx}',
   ],
   theme: {
     extend: {
