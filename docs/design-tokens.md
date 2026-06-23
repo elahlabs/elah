@@ -69,13 +69,22 @@ Override any `--elah-*` variable in your own `.elah-root` scope:
 The full variable list is the public theming surface — see
 [`tokens.css`](../packages/editor/src/styles/tokens.css).
 
-### Per-instance: `<Timeline classNames>`
+### Per-instance: the `classNames` prop
 
-Tokens recolor every editor instance globally. For a *single* timeline, pass the
+Tokens recolor every editor instance globally. For a *single* component, pass a
 `classNames` prop — a per-slot map of Tailwind classes that wins over the
-defaults (via `tailwind-merge`). Use it for per-instance structure/color
-(ruler, lanes, per-clip-type body + accent, playhead). See the
-[`@elah/timeline` README](../packages/timeline/README.md#per-instance-overrides--classnames).
+defaults (via `tailwind-merge`). Two components expose one:
+
+- **`<Timeline classNames>`** — slots for ruler, tracks, lanes, per-clip-type
+  body + accent, and the playhead (`TimelineClassNames`). See the
+  [`@elah/timeline` README](../packages/timeline/README.md#per-instance-overrides--classnames).
+- **`<SourcePanel classNames>`** — slots for the tab bar, control bars, ingest
+  buttons, search, sort chips, media cards, kind badges (per kind), element
+  tiles, dropzone, toast and errors (`SourcePanelClassNames`).
+
+Convention in both: `bg-*`/gradients recolor surfaces and clip bodies; `text-*`
+recolors accents (playhead, clip stripe, track bar, kind badges) — they paint
+from `currentColor`.
 
 ## Token groups
 
@@ -91,7 +100,8 @@ defaults (via `tailwind-merge`). Use it for per-instance structure/color
 | `selection-{border,glow}` | Selected-clip highlight |
 | `transition-*` | Cut-line + diamond marker states (line/hover/idle/fill/stroke/add) |
 | `menu-*`, `popover-*`, `dialog-*` | Context menu, transition picker popover, blocking dialog |
-| `danger-*` | Destructive actions (delete / remove) |
+| `danger-*`, `color-error` | Destructive actions (delete / remove) + generic error text |
+| `info-{bg,border,text}` | Informational toast (e.g. "skipped N duplicates") |
 | `effect-*` | Reusable overlays — glosses, inset highlights, scrims, drop shadows |
 | `preview-bg`, `stage-{border,glow}`, `selection-{color,handle}` | Preview canvas + media-transform overlay affordances |
 
