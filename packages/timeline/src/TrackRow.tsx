@@ -5,12 +5,21 @@ import { useSelectionStore } from '@elah/core'
 import { ClipBlock } from './ClipBlock'
 import { TransitionChip } from './TransitionChip'
 import { useTimelineDrop } from './useTimelineDrop'
+import { cn } from './cn'
 
 interface TrackRowProps {
   track: Track
   totalFrames: number
   zoom: number
   fps: number
+  /** Override class for the row container. */
+  className?: string
+  /** Override class for the track-label sidebar. */
+  labelClassName?: string
+  /** Override class for the clip lane. */
+  laneClassName?: string
+  /** Override class forwarded to each ClipBlock. */
+  clipClassName?: string
 }
 
 /**
@@ -22,6 +31,10 @@ export const TrackRow = memo(function TrackRow({
   totalFrames,
   zoom,
   fps,
+  className,
+  labelClassName,
+  laneClassName,
+  clipClassName,
 }: TrackRowProps) {
   // Selector returns undefined (stable) when no clips exist.
   // ?? [] is intentionally outside the selector — returning a new [] inside
@@ -69,13 +82,13 @@ export const TrackRow = memo(function TrackRow({
         : 'var(--elah-clip-text-mid)'
 
   return (
-    <div style={{ display: 'flex', height: track.height }}>
+    <div className={className} style={{ display: 'flex', height: track.height }}>
       {/* Track label sidebar — sticky so labels stay pinned while clips scroll
           horizontally underneath. zIndex keeps it above the clip blocks. */}
       {/* Track label sidebar — static border tokens as className; bg/text are dynamic */}
       <div
         onClick={() => setActiveTrack(track.id)}
-        className="border-ed-border border-ed-border-subtle"
+        className={cn('border-ed-border border-ed-border-subtle', labelClassName)}
         style={{
           position: 'sticky',
           left: 0,
@@ -112,7 +125,7 @@ export const TrackRow = memo(function TrackRow({
       {/* Clip area — bottom border is static */}
       <div
         ref={setLaneEl}
-        className="border-ed-border-subtle"
+        className={cn('border-ed-border-subtle', laneClassName)}
         style={{
           position: 'relative',
           flex: 1,
@@ -129,6 +142,7 @@ export const TrackRow = memo(function TrackRow({
             clip={clip}
             zoom={zoom}
             trackHeight={track.height}
+            className={clipClassName}
           />
         ))}
 

@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { usePlaybackStore } from '@elah/core'
+import { cn } from './cn'
 
 interface PlayheadProps {
   zoom: number
   height: number | string
   color?: string
+  /**
+   * Override class for the needle. Note: needle color/width are inline
+   * (ref-driven) — recolor via the `color` prop or the `--elah-playhead` token,
+   * not a `bg-*` class.
+   */
+  className?: string
   /**
    * When the playhead is rendered outside the scroll container (e.g. in the
    * outer timeline wrapper), pass the scroll container ref so the playhead can
@@ -29,6 +36,7 @@ export function Playhead({
   color = 'var(--elah-playhead)',
   scrollContainerRef,
   sidebarWidth = 0,
+  className,
 }: PlayheadProps) {
   const needleRef = useRef<HTMLDivElement>(null)
 
@@ -120,6 +128,7 @@ export function Playhead({
     <div
       ref={needleRef}
       onMouseDown={handleMouseDown}
+      className={cn(className)}
       style={{
         position: 'absolute',
         top: 0,

@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react'
 import { framesToTimecode } from '@elah/core'
+import { cn } from './cn'
 
 interface RulerProps {
   fps: number
@@ -10,6 +11,8 @@ interface RulerProps {
   tickColor?: string
   labelColor?: string
   onSeek?: (frame: number) => void
+  /** Override class for the ruler root. */
+  className?: string
 }
 
 /**
@@ -26,6 +29,7 @@ export const Ruler = memo(function Ruler({
   tickColor = 'var(--elah-tick-color)',
   labelColor = 'var(--elah-tick-label)',
   onSeek,
+  className,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on
   // first load when the content is narrower than the visible area.
@@ -63,6 +67,7 @@ export const Ruler = memo(function Ruler({
 
   return (
     <div
+      className={cn(className)}
       style={{
         position: 'relative',
         width: contentWidth,

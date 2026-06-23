@@ -12,6 +12,7 @@ import {
 } from '@elah/core'
 import { useTracksStore } from '@elah/core'
 import { useMediaLibraryStore } from '@elah/core'
+import { cn } from './cn'
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
@@ -25,9 +26,11 @@ interface ClipBlockProps {
   clip: Clip
   zoom: number
   trackHeight: number
+  /** Override class for the clip body (merged so it wins over defaults). */
+  className?: string
 }
 
-export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
+export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight, className }: ClipBlockProps) {
   const engine = useTimeline()
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
   const selectClip = useSelectionStore((s) => s.selectClip)
@@ -261,13 +264,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
       ref={blockRef}
       onMouseDown={handleBodyMouseDown}
       onContextMenu={handleContextMenu}
+      className={cn('rounded-[7px]', className)}
       style={{
         position: 'absolute',
         top: 5,
         left,
         width,
         height: blockHeight,
-        borderRadius: 7,
         boxSizing: 'border-box',
         // Dynamic: per-clip-type gradient using CSS vars
         background: `linear-gradient(180deg, var(--elah-clip-${clip.type}-top) 0%, var(--elah-clip-${clip.type}-mid) 42%, var(--elah-clip-${clip.type}-bottom) 100%)`,

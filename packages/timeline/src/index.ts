@@ -9,6 +9,7 @@
 // --- Timeline UI ---
 export { Timeline } from './Timeline'
 export type { TimelineProps, TimelineRef } from './Timeline'
+export type { TimelineClassNames } from './classNames'
 
 // --- Design tokens (single source of truth for timeline colors) ---
 export { timelineTheme } from './theme'
