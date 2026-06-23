@@ -5,11 +5,16 @@ import { cn } from './cn'
 interface PlayheadProps {
   zoom: number
   height: number | string
+  /**
+   * Explicit needle color (any CSS color). Optional escape hatch — overrides
+   * both the default token and the `className`. Most callers should recolor via
+   * the `className` text-color class instead (see below).
+   */
   color?: string
   /**
-   * Override class for the needle. Note: needle color/width are inline
-   * (ref-driven) — recolor via the `color` prop or the `--elah-playhead` token,
-   * not a `bg-*` class.
+   * Override class for the needle. The line, glow, and handle all paint from
+   * `currentColor`, so a TEXT color class recolors the whole playhead — e.g.
+   * `text-cyan-400`. Defaults to `text-playhead` (the `--elah-playhead` token).
    */
   className?: string
   /**
@@ -32,8 +37,9 @@ interface PlayheadProps {
 export function Playhead({
   zoom,
   height,
-  // Default to the CSS variable so callers that omit it pick up the token.
-  color = 'var(--elah-playhead)',
+  // No default: color comes from the `text-playhead` class (currentColor) unless
+  // a caller passes an explicit color to force it inline.
+  color,
   scrollContainerRef,
   sidebarWidth = 0,
   className,
@@ -128,15 +134,18 @@ export function Playhead({
     <div
       ref={needleRef}
       onMouseDown={handleMouseDown}
-      className={cn(className)}
+      className={cn('text-playhead', className)}
       style={{
         position: 'absolute',
         top: 0,
         left: 0,
         width: 2,
         height,
-        background: color,
-        boxShadow: `0 0 8px ${color}`,
+        // Line, glow, and handle all paint from currentColor (set by the
+        // text-* class above), so one text color recolors the whole playhead.
+        background: 'currentColor',
+        boxShadow: '0 0 8px currentColor',
+        ...(color ? { color } : null),
         zIndex: 50,
         cursor: 'col-resize',
         willChange: 'left',
@@ -150,10 +159,11 @@ export function Playhead({
           left: -7,
           width: 16,
           height: 14,
-          background: color,
+          // Inherits the parent's currentColor, so it tracks the playhead color.
+          background: 'currentColor',
           borderRadius: '3px 3px 0 0',
           clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
-          boxShadow: `0 0 8px ${color}`,
+          boxShadow: '0 0 8px currentColor',
         }}
       />
     </div>

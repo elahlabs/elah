@@ -270,7 +270,7 @@ export const Timeline = memo(
 
     return (
       <div
-        className={cn('bg-ed-bg text-ed-text', classNames?.root, className)}
+        className={cn('bg-ed-bg-2 text-ed-text', classNames?.root, className)}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -304,6 +304,8 @@ export const Timeline = memo(
               height={rulerHeight}
               onSeek={setCurrentFrame}
               className={classNames?.ruler}
+              tickClassName={classNames?.rulerTick}
+              labelClassName={classNames?.rulerLabel}
             />
           </div>
         </div>

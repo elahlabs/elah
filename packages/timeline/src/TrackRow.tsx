@@ -88,7 +88,11 @@ export const TrackRow = memo(function TrackRow({
       {/* Track label sidebar — static border tokens as className; bg/text are dynamic */}
       <div
         onClick={() => setActiveTrack(track.id)}
-        className={cn('border-ed-border border-ed-border-subtle', labelClassName)}
+        className={cn(
+          'border-ed-border border-ed-border-subtle',
+          isActive ? 'bg-ed-elevated' : 'bg-ed-panel',
+          labelClassName,
+        )}
         style={{
           position: 'sticky',
           left: 0,
@@ -100,7 +104,6 @@ export const TrackRow = memo(function TrackRow({
           borderRightStyle: 'solid',
           borderBottomWidth: 1,
           borderBottomStyle: 'solid',
-          background: isActive ? `var(--elah-bg-elevated)` : `var(--elah-bg-panel)`,
           display: 'flex',
           alignItems: 'center',
           paddingLeft: 12,
@@ -125,14 +128,17 @@ export const TrackRow = memo(function TrackRow({
       {/* Clip area — bottom border is static */}
       <div
         ref={setLaneEl}
-        className={cn('border-ed-border-subtle', laneClassName)}
+        className={cn(
+          'border-ed-border-subtle',
+          isActive ? 'bg-ed-card' : 'bg-ed-bg-2',
+          laneClassName,
+        )}
         style={{
           position: 'relative',
           flex: 1,
           minWidth: rowMinWidth,
           borderBottomWidth: 1,
           borderBottomStyle: 'solid',
-          background: isActive ? `var(--elah-bg-secondary)` : `var(--elah-bg)`,
           overflow: 'visible',
         }}
       >

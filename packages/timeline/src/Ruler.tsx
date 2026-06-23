@@ -7,12 +7,13 @@ interface RulerProps {
   totalFrames: number
   zoom: number
   height?: number
-  color?: string
-  tickColor?: string
-  labelColor?: string
   onSeek?: (frame: number) => void
-  /** Override class for the ruler root. */
+  /** Override class for the ruler root (background). */
   className?: string
+  /** Override class for each tick mark. */
+  tickClassName?: string
+  /** Override class for each timecode label. */
+  labelClassName?: string
 }
 
 /**
@@ -24,12 +25,13 @@ export const Ruler = memo(function Ruler({
   totalFrames,
   zoom,
   height = 24,
-  // Defaults reference CSS vars so callers that omit them pick up the token.
-  color = 'var(--elah-bg-panel)',
-  tickColor = 'var(--elah-tick-color)',
-  labelColor = 'var(--elah-tick-label)',
   onSeek,
+  // Colors come from default token classes (bg-ed-panel / bg-tick /
+  // text-tick-label). Override per-instance via these slots, or globally via the
+  // --elah-* tokens. cn() ensures a passed class wins over the default.
   className,
+  tickClassName,
+  labelClassName,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on
   // first load when the content is narrower than the visible area.
@@ -67,13 +69,12 @@ export const Ruler = memo(function Ruler({
 
   return (
     <div
-      className={cn(className)}
+      className={cn('bg-ed-panel', className)}
       style={{
         position: 'relative',
         width: contentWidth,
         minWidth: '100%',
         height,
-        background: color,
         flexShrink: 0,
         cursor: onSeek ? 'pointer' : 'default',
         userSelect: 'none',
@@ -93,16 +94,16 @@ export const Ruler = memo(function Ruler({
           }}
         >
           <div
+            className={cn('bg-tick', tickClassName)}
             style={{
               width: 1,
               height: height * 0.5,
-              background: tickColor,
             }}
           />
           <span
+            className={cn('text-tick-label', labelClassName)}
             style={{
               fontSize: 9,
-              color: labelColor,
               whiteSpace: 'nowrap',
               transform: 'translateX(3px)',
               fontFamily: 'monospace',
