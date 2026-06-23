@@ -100,9 +100,3 @@ The full variable list is the public theming surface — see
 3. Reference it from components as a token class or `var(--elah-*)` — **never** a
    raw hex literal. The `npm run lint:tokens` guard enforces this for package
    components.
-
-## Deprecated: `timelineTheme`
-
-`packages/timeline/src/theme.ts` (the old `timelineTheme` object of hex literals)
-is **deprecated** but still exported for backward compatibility. Components no
-longer use it; new code must use the `--elah-*` contract above.
