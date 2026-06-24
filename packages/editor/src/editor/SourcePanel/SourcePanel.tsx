@@ -19,12 +19,67 @@ import {
   type MediaKind,
   type DragMediaPayload,
 } from '@elah/core'
-import { ELEMENT_DRAG_MIME, type DragElementPayload, type ElementKind } from '@elah/timeline'
+import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind } from '@elah/timeline'
+
+/**
+ * Per-slot className overrides for SourcePanel.
+ *
+ * Each key targets one visually-meaningful sub-part ("slot"). Values are
+ * Tailwind class strings merged via `cn` (tailwind-merge) so the passed class
+ * wins over the built-in default for the same CSS property.
+ */
+export interface SourcePanelClassNames {
+  /** Outer panel wrapper. Equivalent to the bare `className` prop. */
+  root?: string
+  /** The Media / Elements tab header bar. */
+  tabBar?: string
+  /** Each inactive tab button. */
+  tab?: string
+  /** The currently active tab button. */
+  tabActive?: string
+  /** Every horizontal toolbar row (import, URL, search/sort, kind chips). */
+  toolbar?: string
+  /** The ingest action buttons (+ URL, + Add, URL-input Add). */
+  ingestButton?: string
+  /** The search `<input>` field. */
+  searchInput?: string
+  /** An inactive kind-filter chip. */
+  sortChip?: string
+  /** The currently active kind-filter chip. */
+  sortChipActive?: string
+  /** Media item card (both list and grid views). */
+  card?: string
+  /** Card title / name text. */
+  cardTitle?: string
+  /** Card duration / meta text. */
+  cardMeta?: string
+  /** Thumbnail box (grid view only). */
+  thumb?: string
+  /** Kind badge (all types). */
+  badge?: string
+  /** Kind badge — video variant. */
+  badgeVideo?: string
+  /** Kind badge — audio variant. */
+  badgeAudio?: string
+  /** Kind badge — image variant. */
+  badgeImage?: string
+  /** Element palette tile (Elements lane). */
+  tile?: string
+  /** Tile label text. */
+  tileLabel?: string
+  /** Empty / drag-over dropzone area. */
+  dropzone?: string
+  /** Import result toast. */
+  toast?: string
+  /** Error text (e.g. delete button). */
+  error?: string
+}
 
 export interface SourcePanelProps {
   style?: CSSProperties
   className?: string
   defaultLane?: Lane
+  classNames?: SourcePanelClassNames
 }
 
 type Lane = 'media' | 'elements'
@@ -35,10 +90,22 @@ type SortKey = 'name' | 'kind' | 'duration' | 'added'
 
 const KIND_ICONS: Record<MediaKind, string> = { video: '▶', audio: '♪', image: '◻' }
 
-const KIND_TOKEN: Record<MediaKind, { label: string; fg: string; bg: string }> = {
-  video: { label: 'VIDEO', fg: 'var(--elah-tag-video-fg)', bg: 'var(--elah-tag-video-bg)' },
-  audio: { label: 'AUDIO', fg: 'var(--elah-tag-audio-fg)', bg: 'var(--elah-tag-audio-bg)' },
-  image: { label: 'IMAGE', fg: 'var(--elah-tag-image-fg)', bg: 'var(--elah-tag-image-bg)' },
+// Badge colors live in BADGE_CLASS (token classes); this only carries the label.
+const KIND_TOKEN: Record<MediaKind, { label: string }> = {
+  video: { label: 'VIDEO' },
+  audio: { label: 'AUDIO' },
+  image: { label: 'IMAGE' },
+}
+
+/**
+ * Static Tailwind class mapping for the kind badge.
+ * These resolve to the same CSS variables as the former inline `tag.*` style,
+ * but as classes so slot overrides from `classNames.badge*` can win via cn().
+ */
+const BADGE_CLASS: Record<MediaKind, string> = {
+  video: 'bg-tag-video-bg text-tag-video-fg',
+  audio: 'bg-tag-audio-bg text-tag-audio-fg',
+  image: 'bg-tag-image-bg text-tag-image-fg',
 }
 
 const TOAST_DISMISS_MS = 3000
@@ -109,19 +176,43 @@ const PALETTE_TILES: PaletteTile[] = [
   },
 ]
 
+// ── ClipCard slot props ────────────────────────────────────────────────────
+
+interface ClipCardSlots {
+  card?: string
+  cardTitle?: string
+  cardMeta?: string
+  thumb?: string
+  badge?: string
+  badgeVideo?: string
+  badgeAudio?: string
+  badgeImage?: string
+  error?: string
+}
+
 // ── Media clip card ────────────────────────────────────────────────────────
 
 function ClipCard({
   asset,
   viewMode,
   onDelete,
+  slots,
 }: {
   asset: MediaAsset
   viewMode: ViewMode
   onDelete: (id: string) => void
+  slots?: ClipCardSlots
 }) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const tag = KIND_TOKEN[asset.kind]
+
+  // Resolve the per-kind badge slot without dynamic key access (TS-safe).
+  const kindBadgeSlot =
+    asset.kind === 'video'
+      ? slots?.badgeVideo
+      : asset.kind === 'audio'
+        ? slots?.badgeAudio
+        : slots?.badgeImage
 
   const onDragStart = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -140,37 +231,36 @@ function ClipCard({
       <>
         <div
           draggable
-          className="elah-media-card"
+          className={cn(
+            'elah-media-card flex items-center gap-2 px-[10px] py-[6px] rounded-sm cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[120ms]',
+            slots?.card,
+          )}
           onDragStart={onDragStart}
           onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
           title={asset.name}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '6px 10px',
-            borderRadius: 'var(--elah-radius-sm)',
-            cursor: 'grab',
-            userSelect: 'none',
-            background: 'var(--elah-bg-card)',
-            border: '1px solid var(--elah-border)',
-            transition: 'background 0.12s, border-color 0.12s',
-          }}
         >
-          <span style={{ fontSize: 14, color: 'var(--elah-text-muted)', flexShrink: 0, width: 18, textAlign: 'center' }}>
+          <span className="text-sm text-ed-text-muted shrink-0 w-[18px] text-center">
             {KIND_ICONS[asset.kind]}
           </span>
-          <span style={{ flex: 1, fontSize: 11, color: 'var(--elah-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span className={cn('flex-1 text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap', slots?.cardTitle)}>
             {asset.name}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', padding: '1px 4px', borderRadius: 3, color: tag.fg, background: tag.bg, flexShrink: 0 }}>
+          {/* Badge: color moved from inline style to BADGE_CLASS so slot overrides land */}
+          <span
+            className={cn(
+              'text-[9px] font-bold tracking-[0.06em] px-1 py-px rounded-sm shrink-0',
+              BADGE_CLASS[asset.kind],
+              slots?.badge,
+              kindBadgeSlot,
+            )}
+          >
             {tag.label}
           </span>
-          <span style={{ fontSize: 10, color: 'var(--elah-text-muted)', fontFamily: 'var(--elah-font-mono)', flexShrink: 0 }}>
+          <span className={cn('text-[10px] text-ed-text-muted font-mono shrink-0', slots?.cardMeta)}>
             {formatDuration(asset.durationSec)}
           </span>
         </div>
-        {ctxMenu && <CtxMenu x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} onDelete={handleDelete} />}
+        {ctxMenu && <CtxMenu x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} onDelete={handleDelete} errorClassName={slots?.error} />}
       </>
     )
   }
@@ -180,66 +270,72 @@ function ClipCard({
     <>
       <div
         draggable
-        className="elah-media-card"
+        className={cn(
+          'elah-media-card flex items-center gap-[10px] px-[10px] py-2 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms]',
+          slots?.card,
+        )}
         onDragStart={onDragStart}
         onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
         title={asset.name}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '8px 10px',
-          borderRadius: 'var(--elah-radius-md)',
-          cursor: 'grab',
-          userSelect: 'none',
-          background: 'var(--elah-bg-card)',
-          border: '1px solid var(--elah-border)',
-          transition: 'background 0.15s, border-color 0.15s',
-        }}
       >
         <div
-          style={{
-            position: 'relative',
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            flexShrink: 0,
-            background: 'var(--elah-bg)',
-            borderRadius: 'var(--elah-radius-sm)',
-            border: '1px solid var(--elah-border-subtle)',
-            overflow: 'hidden',
-          }}
+          className={cn(
+            'relative shrink-0 bg-ed-bg rounded-sm border border-ed-border-subtle overflow-hidden',
+            slots?.thumb,
+          )}
+          style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
         >
           {asset.thumbnailUrl ? (
-            <img src={asset.thumbnailUrl} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <img src={asset.thumbnailUrl} alt="" draggable={false} className="w-full h-full object-cover block" />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'var(--elah-text-muted)' }}>
+            <div className="w-full h-full flex items-center justify-center text-xl text-ed-text-muted">
               {KIND_ICONS[asset.kind]}
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-          <span style={{ fontSize: 11, color: 'var(--elah-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div className="flex flex-col gap-[3px] min-w-0">
+          <span className={cn('text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap', slots?.cardTitle)}>
             {asset.name}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', padding: '2px 5px', borderRadius: 3, color: tag.fg, background: tag.bg }}>
+          <div className="flex items-center gap-[6px]">
+            {/* Badge: color moved from inline style to BADGE_CLASS so slot overrides land */}
+            <span
+              className={cn(
+                'text-[8px] font-bold tracking-[0.06em] px-[5px] py-[2px] rounded-sm',
+                BADGE_CLASS[asset.kind],
+                slots?.badge,
+                kindBadgeSlot,
+              )}
+            >
               {tag.label}
             </span>
-            <span style={{ fontSize: 10, color: 'var(--elah-text-muted)', fontFamily: 'var(--elah-font-mono)' }}>
+            <span className={cn('text-[10px] text-ed-text-muted font-mono', slots?.cardMeta)}>
               {formatDuration(asset.durationSec)}
             </span>
           </div>
         </div>
       </div>
-      {ctxMenu && <CtxMenu x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} onDelete={handleDelete} />}
+      {ctxMenu && <CtxMenu x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} onDelete={handleDelete} errorClassName={slots?.error} />}
     </>
   )
 }
 
-function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: () => void; onDelete: () => void }) {
+function CtxMenu({
+  x,
+  y,
+  onClose,
+  onDelete,
+  errorClassName,
+}: {
+  x: number
+  y: number
+  onClose: () => void
+  onDelete: () => void
+  errorClassName?: string
+}) {
   return createPortal(
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={onClose} />
+      <div className="fixed inset-0 z-[9998]" onMouseDown={onClose} />
       <div
         style={{
           position: 'fixed',
@@ -251,7 +347,7 @@ function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: (
           borderRadius: 'var(--elah-radius-sm)',
           padding: '4px 0',
           minWidth: 140,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--elah-menu-shadow, 0 8px 24px rgba(0,0,0,0.5))',
           fontFamily: 'var(--elah-font-ui)',
         }}
       >
@@ -259,7 +355,7 @@ function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: (
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={onDelete}
-          style={{ display: 'block', width: '100%', padding: '7px 14px', textAlign: 'left', background: 'none', border: 'none', color: 'var(--elah-color-error)', fontSize: 13, cursor: 'pointer' }}
+          className={cn('block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer', errorClassName)}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)' }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
         >
@@ -281,7 +377,7 @@ function CtxMenu({ x, y, onClose, onDelete }: { x: number; y: number; onClose: (
  *
  * Must be rendered inside `<EditorProvider>`.
  */
-export function SourcePanel({ style, className, defaultLane = 'media' }: SourcePanelProps) {
+export function SourcePanel({ style, className, defaultLane = 'media', classNames }: SourcePanelProps) {
   // ── Lane state
   const [lane, setLane] = useState<Lane>(defaultLane)
 
@@ -374,6 +470,19 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
     [],
   )
 
+  // Slots forwarded to ClipCard sub-component.
+  const cardSlots: ClipCardSlots = {
+    card: classNames?.card,
+    cardTitle: classNames?.cardTitle,
+    cardMeta: classNames?.cardMeta,
+    thumb: classNames?.thumb,
+    badge: classNames?.badge,
+    badgeVideo: classNames?.badgeVideo,
+    badgeAudio: classNames?.badgeAudio,
+    badgeImage: classNames?.badgeImage,
+    error: classNames?.error,
+  }
+
   const visibleAssets = filterSort(assets, search, kindFilter, sort)
   const kindCounts: Record<string, number> = { all: assets.length }
   for (const a of assets) kindCounts[a.kind] = (kindCounts[a.kind] ?? 0) + 1
@@ -387,44 +496,24 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
   return (
     <div
-      className={className}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: 'transparent',
-        ...style,
-      }}
+      className={cn('flex flex-col h-full bg-transparent', className, classNames?.root)}
+      style={style}
     >
       {/* ── Lane selector ─────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '6px 8px',
-          borderBottom: '1px solid var(--elah-border)',
-          gap: 4,
-          flexShrink: 0,
-        }}
-      >
+      <div className={cn('flex items-center px-2 py-[6px] border-b border-ed-border gap-1 shrink-0', classNames?.tabBar)}>
         {(['media', 'elements'] as Lane[]).map((l) => (
           <button
             key={l}
             type="button"
             onClick={() => setLane(l)}
+            className={cn(
+              // inactive tab base — explicit ternary for the active variant (no dynamic key access)
+              lane === l
+                ? cn('flex-1 py-[5px] text-[11px] font-semibold capitalize cursor-pointer transition-all duration-[120ms] rounded-sm bg-ed-elevated border border-ed-border text-ed-text', classNames?.tabActive)
+                : cn('flex-1 py-[5px] text-[11px] font-medium capitalize cursor-pointer transition-all duration-[120ms] rounded-sm bg-transparent border border-transparent text-ed-text-muted', classNames?.tab),
+            )}
             style={{
-              flex: 1,
-              padding: '5px 0',
-              fontSize: 11,
-              fontWeight: lane === l ? 600 : 500,
               fontFamily: 'var(--elah-font-ui)',
-              background: lane === l ? 'var(--elah-bg-elevated)' : 'transparent',
-              color: lane === l ? 'var(--elah-text)' : 'var(--elah-text-muted)',
-              border: lane === l ? '1px solid var(--elah-border)' : '1px solid transparent',
-              borderRadius: 'var(--elah-radius-sm)',
-              cursor: 'pointer',
-              transition: 'all 0.12s',
-              textTransform: 'capitalize',
             }}
           >
             {l}
@@ -435,30 +524,22 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
       {/* ── Media lane ────────────────────────────────────────────────────── */}
       {lane === 'media' && (
         <div
-          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+          className="flex flex-col flex-1 min-h-0"
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <input ref={fileInputRef} type="file" multiple accept="video/*,audio/*,image/*" style={{ display: 'none' }} onChange={onFileChange} data-testid="source-file-input" />
+          <input ref={fileInputRef} type="file" multiple accept="video/*,audio/*,image/*" className="hidden" onChange={onFileChange} data-testid="source-file-input" />
 
           {/* Ingestion bar */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 10px',
-              borderBottom: '1px solid var(--elah-border)',
-              flexShrink: 0,
-            }}
-          >
+          <div className={cn('flex items-center gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0', classNames?.toolbar)}>
             <button
               type="button"
               onClick={() => setUrlInputOpen((o) => !o)}
               disabled={importing}
               data-testid="source-url-toggle"
-              style={ingestBtnStyle(urlInputOpen, importing)}
+              className={ingestBtnClass(urlInputOpen, importing, classNames?.ingestButton)}
+              style={ingestBtnStyle(importing)}
             >
               + URL
             </button>
@@ -466,11 +547,12 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
-              style={ingestBtnStyle(false, importing)}
+              className={ingestBtnClass(false, importing, classNames?.ingestButton)}
+              style={ingestBtnStyle(importing)}
             >
               {importing ? '…' : '+ Add'}
             </button>
-            <div style={{ flex: 1 }} />
+            <div className="flex-1" />
             {/* View mode toggle */}
             {(['grid', 'list'] as ViewMode[]).map((v) => (
               <button
@@ -499,7 +581,7 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
           {/* URL input */}
           {urlInputOpen && (
-            <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0 }}>
+            <div className={cn('flex gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0', classNames?.toolbar)}>
               <input
                 type="url"
                 value={urlValue}
@@ -525,7 +607,8 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
                 type="button"
                 onClick={() => void handleImportUrl()}
                 disabled={importing || !urlValue.trim()}
-                style={ingestBtnStyle(false, importing || !urlValue.trim())}
+                className={ingestBtnClass(false, importing || !urlValue.trim(), classNames?.ingestButton)}
+                style={ingestBtnStyle(importing || !urlValue.trim())}
               >
                 Add
               </button>
@@ -533,12 +616,13 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
           )}
 
           {/* Search + sort toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0 }}>
+          <div className={cn('flex items-center gap-[6px] px-[10px] py-[6px] border-b border-ed-border shrink-0', classNames?.toolbar)}>
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
+              className={classNames?.searchInput}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -574,23 +658,20 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
           </div>
 
           {/* Kind chips */}
-          <div style={{ display: 'flex', gap: 4, padding: '6px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0, overflowX: 'auto' }}>
+          <div className={cn('flex gap-1 px-[10px] py-[6px] border-b border-ed-border shrink-0 overflow-x-auto', classNames?.toolbar)}>
             {KIND_CHIPS.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setKindFilter(value)}
+                className={cn(
+                  kindFilter === value
+                    ? cn('px-2 py-px text-[10px] font-bold rounded-full whitespace-nowrap cursor-pointer transition-all duration-[120ms] border bg-ed-accent-soft text-ed-accent-dim border-ed-accent', classNames?.sortChipActive)
+                    : cn('px-2 py-px text-[10px] font-medium rounded-full whitespace-nowrap cursor-pointer transition-all duration-[120ms] border bg-ed-card text-ed-text-muted border-ed-border', classNames?.sortChip),
+                )}
                 style={{
+                  // keep custom sizing via inline for backward-compat (spacing already in className above)
                   padding: '3px 8px',
-                  fontSize: 10,
-                  fontWeight: kindFilter === value ? 700 : 500,
-                  background: kindFilter === value ? 'var(--elah-accent-soft)' : 'var(--elah-bg-card)',
-                  color: kindFilter === value ? 'var(--elah-accent-dim)' : 'var(--elah-text-muted)',
-                  border: kindFilter === value ? '1px solid var(--elah-accent)' : '1px solid var(--elah-border)',
-                  borderRadius: 20,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.12s',
                 }}
               >
                 {label}
@@ -600,34 +681,20 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
           {/* Asset list */}
           <div
+            className={cn('flex-1 overflow-auto p-2 relative rounded', classNames?.dropzone)}
             style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: 8,
               outline: isDragOver ? '2px dashed var(--elah-accent)' : 'none',
               outlineOffset: -4,
-              borderRadius: 4,
-              position: 'relative',
             }}
           >
             {toast && (
               <div
                 role="status"
+                className={cn('absolute top-2 left-2 right-2 z-[2] px-[10px] py-2 rounded-sm text-[10px] font-mono leading-[1.4] whitespace-pre-line', classNames?.toast)}
                 style={{
-                  position: 'absolute',
-                  top: 8,
-                  left: 8,
-                  right: 8,
-                  zIndex: 2,
-                  padding: '8px 10px',
-                  borderRadius: 'var(--elah-radius-sm)',
-                  fontSize: 10,
-                  fontFamily: 'var(--elah-font-mono)',
-                  lineHeight: 1.4,
-                  whiteSpace: 'pre-line',
-                  color: toast.tone === 'warn' ? '#f5d0a9' : '#c8d8f0',
-                  background: toast.tone === 'warn' ? '#3a2418' : '#1a2433',
-                  border: `1px solid ${toast.tone === 'warn' ? '#7a4a2a' : '#355070'}`,
+                  color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
+                  background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+                  border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
                 }}
               >
@@ -636,36 +703,23 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
             )}
 
             {assets.length === 0 ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: 120,
-                  padding: 16,
-                  textAlign: 'center',
-                  color: 'var(--elah-text-muted)',
-                  fontSize: 11,
-                  border: '1px dashed var(--elah-border)',
-                  borderRadius: 'var(--elah-radius-md)',
-                }}
-              >
-                <span style={{ marginBottom: 8, fontSize: 24, opacity: 0.5 }}>↓</span>
+              <div className="flex flex-col items-center justify-center min-h-[120px] p-4 text-center text-ed-text-muted text-[11px] border border-dashed border-ed-border rounded-md">
+                <span className="mb-2 text-2xl opacity-50">↓</span>
                 Drop files here<br />or click Add
               </div>
             ) : visibleAssets.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--elah-text-muted)', fontSize: 11, paddingTop: 32 }}>
+              <div className="text-center text-ed-text-muted text-[11px] pt-8">
                 No matches
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="flex flex-col gap-[6px]">
                 {visibleAssets.map((asset) => (
                   <ClipCard
                     key={asset.id}
                     asset={asset}
                     viewMode={viewMode}
                     onDelete={handleDeleteAsset}
+                    slots={cardSlots}
                   />
                 ))}
               </div>
@@ -676,12 +730,13 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
       {/* ── Elements lane ─────────────────────────────────────────────────── */}
       {lane === 'elements' && (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <div className="flex flex-col flex-1 min-h-0 overflow-auto">
           {/* Elements search (no chips, no filmstrip) */}
-          <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--elah-border)', flexShrink: 0 }}>
+          <div className={cn('px-[10px] py-[6px] border-b border-ed-border shrink-0', classNames?.toolbar)}>
             <input
               type="search"
               placeholder="Search elements…"
+              className={classNames?.searchInput}
               style={{
                 width: '100%',
                 padding: '4px 8px',
@@ -698,51 +753,25 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
           </div>
 
           {/* Palette grid — 2-column */}
-          <div
-            style={{
-              padding: 10,
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 6,
-            }}
-          >
+          <div className="p-[10px] grid grid-cols-2 gap-[6px]">
             {PALETTE_TILES.map(({ element, label, icon, iconStyle }) => (
               <div
                 key={element}
                 draggable
-                className="elah-element-card"
+                className={cn(
+                  'elah-element-card flex flex-col items-center justify-center gap-[6px] px-2 py-3 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms] min-h-[72px]',
+                  classNames?.tile,
+                )}
                 onDragStart={makeDragStart(element)}
                 title={`Drag ${label} onto the timeline`}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  padding: '12px 8px',
-                  borderRadius: 'var(--elah-radius-md)',
-                  cursor: 'grab',
-                  userSelect: 'none',
-                  background: 'var(--elah-bg-card)',
-                  border: '1px solid var(--elah-border)',
-                  transition: 'background 0.15s, border-color 0.15s',
-                  minHeight: 72,
-                }}
               >
                 <span
-                  style={{
-                    width: 32,
-                    height: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 'var(--elah-radius-sm)',
-                    ...iconStyle,
-                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-sm"
+                  style={iconStyle}
                 >
                   {icon}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--elah-text)', fontWeight: 500 }}>{label}</span>
+                <span className={cn('text-[11px] text-ed-text font-medium', classNames?.tileLabel)}>{label}</span>
               </div>
             ))}
           </div>
@@ -754,17 +783,24 @@ export function SourcePanel({ style, className, defaultLane = 'media' }: SourceP
 
 // ── Style helpers ──────────────────────────────────────────────────────────
 
-function ingestBtnStyle(active: boolean, disabled: boolean): CSSProperties {
+// Structural (non-color) inline bits — color/bg/border live in ingestBtnClass so
+// the `ingestButton` slot can override them.
+function ingestBtnStyle(disabled: boolean): CSSProperties {
   return {
     padding: '4px 10px',
     fontSize: 11,
     fontWeight: 600,
     fontFamily: 'var(--elah-font-ui)',
-    background: active ? 'var(--elah-bg-elevated)' : 'var(--elah-bg-card)',
-    color: disabled ? 'var(--elah-text-muted)' : 'var(--elah-accent)',
-    border: '1px solid var(--elah-border)',
-    borderRadius: 'var(--elah-radius-sm)',
     cursor: disabled ? 'wait' : 'pointer',
     whiteSpace: 'nowrap',
   }
+}
+
+function ingestBtnClass(active: boolean, disabled: boolean, slot?: string): string {
+  return cn(
+    'rounded-sm border border-ed-border',
+    active ? 'bg-ed-elevated' : 'bg-ed-card',
+    disabled ? 'text-ed-text-muted' : 'text-ed-accent',
+    slot,
+  )
 }

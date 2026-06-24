@@ -109,18 +109,13 @@ export const TransitionOverlay = forwardRef<TransitionOverlayHandle>(
     return (
       <div
         ref={rootRef}
+        className="absolute inset-0 pointer-events-none overflow-hidden"
         style={{
-          position: 'absolute',
-          inset: 0,
           // zIndex 1: above the imperatively-appended WebGL canvas (no z-index),
           // below TextOverlay (zIndex 2).
           zIndex: 1,
-          pointerEvents: 'none',
-          overflow: 'hidden',
         }}
       />
     )
   },
 )
-
-

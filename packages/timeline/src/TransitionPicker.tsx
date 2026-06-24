@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TransitionKind, Transition } from '@elah/core'
-import { timelineTheme } from './theme'
 
 interface TransitionOption {
   kind: TransitionKind
@@ -112,18 +111,18 @@ export function TransitionPicker({
         left: anchorX,
         top: anchorY - 200,
         zIndex: 1000,
-        background: timelineTheme.popover.background,
-        border: `1px solid ${timelineTheme.popover.border}`,
+        background: `var(--elah-popover-bg)`,
+        border: `1px solid var(--elah-popover-border)`,
         borderRadius: 10,
         padding: 10,
-        boxShadow: timelineTheme.popover.shadow,
+        boxShadow: `var(--elah-popover-shadow)`,
         width: 184,
       }}
     >
       <div
         style={{
           fontSize: 10,
-          color: timelineTheme.text.faint,
+          color: `var(--elah-text-muted)`,
           fontWeight: 600,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
@@ -157,21 +156,23 @@ export function TransitionPicker({
                 alignItems: 'center',
                 gap: 4,
                 padding: '8px 6px',
-                background: isActive ? timelineTheme.popover.optionBgActive : timelineTheme.popover.optionBg,
+                background: isActive
+                  ? `var(--elah-popover-option-bg-active)`
+                  : `var(--elah-popover-option-bg)`,
                 border: isActive
-                  ? `1px solid ${timelineTheme.popover.accent}`
-                  : `1px solid ${timelineTheme.popover.border}`,
+                  ? `1px solid var(--elah-popover-accent)`
+                  : `1px solid var(--elah-popover-border)`,
                 borderRadius: 7,
                 cursor: 'pointer',
                 transition: 'background 0.12s',
               }}
               onMouseEnter={(e) => {
                 if (!isActive)
-                  (e.currentTarget as HTMLButtonElement).style.background = timelineTheme.popover.optionBgHover
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--elah-popover-option-bg-hover)'
               }}
               onMouseLeave={(e) => {
                 if (!isActive)
-                  (e.currentTarget as HTMLButtonElement).style.background = timelineTheme.popover.optionBg
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--elah-popover-option-bg)'
               }}
             >
               <svg
@@ -179,14 +180,14 @@ export function TransitionPicker({
                 height={24}
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke={isActive ? timelineTheme.popover.accent : timelineTheme.popover.icon}
+                stroke={isActive ? `var(--elah-popover-accent)` : `var(--elah-popover-icon)`}
                 strokeWidth={1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <path d={opt.icon} />
               </svg>
-              <span style={{ fontSize: 9, color: isActive ? timelineTheme.popover.accentText : timelineTheme.popover.icon, fontWeight: 500 }}>
+              <span style={{ fontSize: 9, color: isActive ? `var(--elah-popover-accent-text)` : `var(--elah-popover-icon)`, fontWeight: 500 }}>
                 {opt.label}
               </span>
             </button>
@@ -197,8 +198,8 @@ export function TransitionPicker({
       {/* Duration slider */}
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: timelineTheme.text.muted, fontWeight: 500 }}>Duration</span>
-          <span style={{ fontSize: 10, color: timelineTheme.text.bright, fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 10, color: `var(--elah-text-muted)`, fontWeight: 500 }}>Duration</span>
+          <span style={{ fontSize: 10, color: `var(--elah-text)`, fontFamily: 'monospace' }}>
             {durationFrames}f &nbsp;{durationSec}s
           </span>
         </div>
@@ -208,15 +209,15 @@ export function TransitionPicker({
           max={MAX_DURATION}
           value={durationFrames}
           onChange={(e) => handleDurationChange(Number(e.target.value))}
-          style={{ width: '100%', accentColor: timelineTheme.popover.accent, cursor: 'pointer' }}
+          style={{ width: '100%', accentColor: `var(--elah-popover-accent)`, cursor: 'pointer' }}
         />
       </div>
 
       {/* Position slider */}
       <div style={{ marginTop: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: timelineTheme.text.muted, fontWeight: 500 }}>Position</span>
-          <span style={{ fontSize: 10, color: timelineTheme.text.bright, fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 10, color: `var(--elah-text-muted)`, fontWeight: 500 }}>Position</span>
+          <span style={{ fontSize: 10, color: `var(--elah-text)`, fontFamily: 'monospace' }}>
             {before}f ◆ {after}f
           </span>
         </div>
@@ -226,11 +227,11 @@ export function TransitionPicker({
           max={maxOffset}
           value={offsetFrames}
           onChange={(e) => handleOffsetChange(Number(e.target.value))}
-          style={{ width: '100%', accentColor: timelineTheme.popover.accent, cursor: 'pointer' }}
+          style={{ width: '100%', accentColor: `var(--elah-popover-accent)`, cursor: 'pointer' }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-          <span style={{ fontSize: 8, color: timelineTheme.text.hint }}>← before cut</span>
-          <span style={{ fontSize: 8, color: timelineTheme.text.hint }}>after cut →</span>
+          <span style={{ fontSize: 8, color: `var(--elah-text-muted)` }}>← before cut</span>
+          <span style={{ fontSize: 8, color: `var(--elah-text-muted)` }}>after cut →</span>
         </div>
       </div>
 
@@ -243,9 +244,9 @@ export function TransitionPicker({
             width: '100%',
             padding: '5px 0',
             fontSize: 10,
-            color: timelineTheme.danger.textAlt,
+            color: `var(--elah-danger-text-alt)`,
             background: 'transparent',
-            border: `1px solid ${timelineTheme.danger.border}`,
+            border: `1px solid var(--elah-danger-border)`,
             borderRadius: 6,
             cursor: 'pointer',
           }}
@@ -256,5 +257,3 @@ export function TransitionPicker({
     </div>
   )
 }
-
-

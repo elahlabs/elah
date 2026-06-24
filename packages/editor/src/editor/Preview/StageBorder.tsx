@@ -37,18 +37,19 @@ export function StageBorder() {
   return (
     <div
       ref={rootRef}
-      style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', overflow: 'hidden' }}
+      className="absolute inset-0 z-[1] pointer-events-none overflow-hidden"
     >
       {fit.width > 0 && fit.height > 0 && (
         <div
           style={{
+            // Dynamic: position and dimensions are runtime-computed from fit rect
             position: 'absolute',
             left: fit.x,
             top: fit.y,
             width: fit.width,
             height: fit.height,
-            border: '1px solid rgba(225, 29, 72, 0.45)',
-            boxShadow: '0 0 20px rgba(225, 29, 72, 0.08)',
+            border: '1px solid var(--elah-stage-border, rgba(225, 29, 72, 0.45))',
+            boxShadow: 'var(--elah-stage-glow, 0 0 20px rgba(225, 29, 72, 0.08))',
             boxSizing: 'border-box',
           }}
         />
@@ -56,5 +57,3 @@ export function StageBorder() {
     </div>
   )
 }
-
-

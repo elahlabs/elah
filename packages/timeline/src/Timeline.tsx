@@ -19,7 +19,8 @@ import { Ruler } from './Ruler'
 import { Playhead } from './Playhead'
 import { TrackRow } from './TrackRow'
 import { AudioDropDialog } from './AudioDropDialog'
-import { timelineTheme } from './theme'
+import { cn } from './cn'
+import type { TimelineClassNames } from './classNames'
 
 export interface TimelineRef {
   engine: TimelineEngine
@@ -68,8 +69,11 @@ function buildPasteOptions(clip: Clip, startFrame: number): CreateClipOptions {
 
 export interface TimelineProps {
   fps?: number
+  /** Shorthand for `classNames.root`. Merged after it, so it takes precedence. */
   className?: string
   style?: React.CSSProperties
+  /** Per-slot Tailwind class overrides for the timeline subtree. */
+  classNames?: TimelineClassNames
 }
 
 /**
@@ -91,7 +95,7 @@ export interface TimelineProps {
  */
 export const Timeline = memo(
   forwardRef<TimelineRef, TimelineProps>(function Timeline(
-    { fps = 30, className, style },
+    { fps = 30, className, style, classNames },
     ref,
   ) {
     const { engine, playback } = useEditor()
@@ -266,12 +270,10 @@ export const Timeline = memo(
 
     return (
       <div
-        className={className}
+        className={cn('bg-ed-bg-2 text-ed-text', classNames?.root, className)}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          background: timelineTheme.surface.background,
-          color: timelineTheme.text.primary,
           overflow: 'hidden',
           position: 'relative',
           fontFamily: 'var(--elah-font-ui, sans-serif)',
@@ -280,15 +282,17 @@ export const Timeline = memo(
       >
         {/* Ruler row */}
         <div style={{ display: 'flex' }}>
-          {/* Sidebar spacer */}
+          {/* Sidebar spacer — static surface tokens as className */}
           <div
+            className="bg-ed-panel border-ed-border border-ed-border-subtle"
             style={{
               width: SIDEBAR_WIDTH,
               flexShrink: 0,
               height: rulerHeight,
-              background: timelineTheme.surface.sidebar,
-              borderRight: `1px solid ${timelineTheme.border.strong}`,
-              borderBottom: `1px solid ${timelineTheme.border.subtle}`,
+              borderRightWidth: 1,
+              borderRightStyle: 'solid',
+              borderBottomWidth: 1,
+              borderBottomStyle: 'solid',
             }}
           />
           {/* Ruler — overflow hidden, scrollLeft driven by track area scroll */}
@@ -299,6 +303,9 @@ export const Timeline = memo(
               zoom={zoom}
               height={rulerHeight}
               onSeek={setCurrentFrame}
+              className={classNames?.ruler}
+              tickClassName={classNames?.rulerTick}
+              labelClassName={classNames?.rulerLabel}
             />
           </div>
         </div>
@@ -321,14 +328,26 @@ export const Timeline = memo(
               totalFrames={Math.max(totalFrames, fps * 10)}
               zoom={zoom}
               fps={fps}
+              className={classNames?.track}
+              labelClassName={classNames?.trackLabel}
+              laneClassName={classNames?.lane}
+              clipClassName={classNames?.clip}
+              clipVideo={classNames?.clipVideo}
+              clipAudio={classNames?.clipAudio}
+              clipText={classNames?.clipText}
+              clipImage={classNames?.clipImage}
+              clipVideoAccent={classNames?.clipVideoAccent}
+              clipAudioAccent={classNames?.clipAudioAccent}
+              clipTextAccent={classNames?.clipTextAccent}
+              clipImageAccent={classNames?.clipImageAccent}
             />
           ))}
 
           {tracks.length === 0 && (
             <div
+              className="text-ed-text-muted"
               style={{
                 padding: 24,
-                color: timelineTheme.text.disabled,
                 fontSize: 13,
                 textAlign: 'center',
               }}
@@ -344,6 +363,7 @@ export const Timeline = memo(
           height="100%"
           scrollContainerRef={scrollRef}
           sidebarWidth={SIDEBAR_WIDTH}
+          className={classNames?.playhead}
         />
 
         {/* Blocking modal for the "video has audio" drop choice (position:fixed,

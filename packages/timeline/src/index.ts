@@ -9,10 +9,7 @@
 // --- Timeline UI ---
 export { Timeline } from './Timeline'
 export type { TimelineProps, TimelineRef } from './Timeline'
-
-// --- Design tokens (single source of truth for timeline colors) ---
-export { timelineTheme } from './theme'
-export type { TimelineTheme } from './theme'
+export type { TimelineClassNames } from './classNames'
 
 // --- Timeline hooks ---
 export { useTimeline } from './engine-context'
@@ -24,3 +21,6 @@ export { useTimelineDrop } from './useTimelineDrop'
 // --- Element drag infrastructure (public API) ---
 export { ELEMENT_DRAG_MIME } from './elementDrag'
 export type { DragElementPayload, ElementKind } from './elementDrag'
+
+// --- Styling util — merge classNames so a passed class wins over defaults ---
+export { cn } from './cn'

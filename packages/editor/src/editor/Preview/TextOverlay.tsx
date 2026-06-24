@@ -268,11 +268,11 @@ export function TextOverlay() {
       // something is active) opt back into pointer events.
       // zIndex keeps the overlay above the imperatively-appended WebGL canvas
       // regardless of DOM insertion order.
-      style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', overflow: 'hidden' }}
+      className="absolute inset-0 z-[3] pointer-events-none overflow-hidden"
     >
       {!isPlaying && (ownsSelection || editingId) && (
         <div
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}
+          className="absolute inset-0 pointer-events-auto"
           onPointerDown={() => {
             if (editingId) commitEditing()
             clearSelection()
@@ -285,6 +285,7 @@ export function TextOverlay() {
           const { clip, layout, rect } = item
           const selected = selectedClipIds.has(clip.id)
           const isEditing = editingId === clip.id
+          // Dynamic: position, size, border-color, cursor all depend on runtime state
           const boxStyle: CSSProperties = {
             position: 'absolute',
             left: rect.left - BOX_PAD,
@@ -292,7 +293,7 @@ export function TextOverlay() {
             width: rect.width + BOX_PAD * 2,
             height: rect.height + BOX_PAD * 2,
             boxSizing: 'border-box',
-            border: selected ? '1px solid #4c9aff' : '1px solid transparent',
+            border: selected ? '1px solid var(--elah-selection-color, #4c9aff)' : '1px solid transparent',
             borderRadius: 2,
             cursor: isEditing ? 'text' : 'move',
             pointerEvents: isEditing ? 'none' : 'auto',
@@ -323,8 +324,8 @@ export function TextOverlay() {
                     ...corner.pos,
                     width: 10,
                     height: 10,
-                    background: '#fff',
-                    border: '1px solid #4c9aff',
+                    background: 'var(--elah-selection-handle, #fff)',
+                    border: '1px solid var(--elah-selection-color, #4c9aff)',
                     borderRadius: 2,
                     cursor: corner.cursor,
                     pointerEvents: 'auto',
@@ -359,6 +360,8 @@ export function TextOverlay() {
           }}
           onFocus={(e) => e.currentTarget.select()}
           style={{
+            // All dynamic: position/size derived from stage rect + scale,
+            // font derived from clip's style, caretColor from clip's text color.
             position: 'absolute',
             left: editingItem.centerScreenX - (stage.width * (1 - 2 * SIDE_MARGIN) * scale) / 2,
             top: fit.y + editingItem.layout.box.y * scale,
@@ -373,7 +376,7 @@ export function TextOverlay() {
             font: `${editingItem.layout.style.fontWeight} ${editingItem.layout.style.fontSize * scale}px ${editingItem.layout.style.fontFamily}`,
             lineHeight: `${editingItem.layout.lineAdvance * scale}px`,
             textAlign: editingItem.layout.style.textAlign,
-            border: '1px solid #4c9aff',
+            border: '1px solid var(--elah-selection-color, #4c9aff)',
             outline: 'none',
             resize: 'none',
             padding: 0,
@@ -395,5 +398,3 @@ const CORNERS = [
   { key: 'sw', pos: { left: -5, bottom: -5 }, cursor: 'nesw-resize' as const },
   { key: 'se', pos: { right: -5, bottom: -5 }, cursor: 'nwse-resize' as const },
 ] satisfies ReadonlyArray<{ key: string; pos: CSSProperties; cursor: CSSProperties['cursor'] }>
-
-

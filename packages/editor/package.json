@@ -12,7 +12,8 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./styles/tokens.css": "./src/styles/tokens.css"
+    "./styles/tokens.css": "./src/styles/tokens.css",
+    "./styles.css": "./dist/styles.css"
   },
   "files": [
     "dist",
@@ -24,7 +25,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && tailwindcss -c ./tailwind.config.ts -i ./src/styles/index.css -o ./dist/styles.css --minify"
   },
   "keywords": [
     "video-editor",
@@ -65,6 +66,9 @@
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vitest": "^3.0.6"
   }

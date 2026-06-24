@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { TextClipProperties } from './TextClipProperties'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
-import { btnDisabled, theme } from './theme'
+import { cn } from '@/lib/utils'
 import {
   SourcePanel,
   EditorProvider,
@@ -38,13 +38,9 @@ const zoomToSlider = (z: number) =>
 const sliderToZoom = (s: number) =>
   Math.exp(Math.log(ZOOM_MIN) + s * (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN)))
 
-const divider: React.CSSProperties = {
-  width: 1,
-  height: 18,
-  background: theme.border,
-  flexShrink: 0,
-  margin: '0 8px',
-}
+// Base Tailwind classes for toolbar buttons
+const toolbarBtnCls =
+  'px-3 py-1.5 bg-ed-elevated text-ed-text-muted border border-ed-border rounded-md text-xs cursor-pointer font-sans transition-colors'
 
 const AppHeader = memo(function AppHeader({
   onExport,
@@ -70,47 +66,32 @@ const AppHeader = memo(function AppHeader({
     }
   }, [engine, timelineRef])
 
-  const demoBtnStyle: React.CSSProperties = {
-    ...btnDisabled(loadingDemo),
-    padding: '6px 14px',
-    fontSize: 12,
-    fontWeight: 600,
-    color: loadingDemo ? theme.textMuted : '#fff',
-    background: loadingDemo
-      ? theme.bgPanel
-      : `linear-gradient(180deg, ${theme.accentHover}, ${theme.accent})`,
-    border: `1px solid ${theme.accent}`,
-    boxShadow: loadingDemo ? 'none' : `0 0 14px ${theme.accentGlow}`,
-    cursor: loadingDemo ? 'wait' : 'pointer',
-    letterSpacing: '-0.01em',
-  }
+  // Demo button — gradient + glow are dynamic based on loadingDemo state
+  const demoBtnStyle: React.CSSProperties = loadingDemo
+    ? {
+        background: 'var(--elah-bg-panel)',
+        border: '1px solid var(--elah-border)',
+        color: 'var(--elah-text-muted)',
+        cursor: 'wait',
+        opacity: 0.6,
+      }
+    : {
+        background: `linear-gradient(180deg, var(--elah-accent-hover), var(--elah-accent))`,
+        border: '1px solid var(--elah-accent)',
+        color: '#fff',
+        boxShadow: '0 0 14px var(--elah-accent-glow)',
+        cursor: 'pointer',
+      }
 
   return (
-    <header
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        padding: '0 16px',
-        height: 46,
-        background: theme.bgSecondary,
-        borderBottom: `1px solid ${theme.border}`,
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: theme.textPrimary,
-            letterSpacing: '-0.02em',
-          }}
-        >
+    <header className="grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
+      <div className="flex items-center gap-3.5">
+        <span className="text-[13px] font-bold text-ed-text tracking-[-0.02em]">
           @elah/editor
         </span>
         <button
           type="button"
+          className="px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
           style={demoBtnStyle}
           disabled={loadingDemo}
           onClick={handleLoadDemo}
@@ -120,11 +101,10 @@ const AppHeader = memo(function AppHeader({
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 4 }}>
+      <div className="flex gap-1">
         <button
           type="button"
-          className="elah-toolbar-btn"
-          style={btnDisabled(!canUndo)}
+          className={cn(toolbarBtnCls, !canUndo && 'opacity-40 cursor-not-allowed')}
           disabled={!canUndo}
           onClick={() => engine.undo()}
           title="Undo (Ctrl+Z)"
@@ -133,8 +113,7 @@ const AppHeader = memo(function AppHeader({
         </button>
         <button
           type="button"
-          className="elah-toolbar-btn"
-          style={btnDisabled(!canRedo)}
+          className={cn(toolbarBtnCls, !canRedo && 'opacity-40 cursor-not-allowed')}
           disabled={!canRedo}
           onClick={() => engine.redo()}
           title="Redo (Ctrl+Y)"
@@ -143,11 +122,10 @@ const AppHeader = memo(function AppHeader({
         </button>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="flex justify-end">
         <button
           type="button"
-          className="elah-export-btn"
-          style={btnDisabled(false)}
+          className={toolbarBtnCls}
           onClick={onExport}
           title="Export to MP4"
         >
@@ -205,51 +183,32 @@ const TimelineControls = memo(function TimelineControls({
   const aspectActive = (w: number, h: number) =>
     Math.abs(stage.width / stage.height - w / h) < 0.001
 
-  const aspectBtn = (active: boolean): React.CSSProperties => ({
-    ...btnDisabled(false),
-    minWidth: 44,
-    padding: '5px 10px',
-    ...(active
+  // Aspect button: active state uses accent color — dynamic inline for the color only
+  const aspectBtnStyle = (active: boolean): React.CSSProperties =>
+    active
       ? {
           background: 'rgba(225, 29, 72, 0.12)',
-          border: `1px solid ${theme.accent}`,
-          color: theme.accentHover,
-          boxShadow: `0 0 10px rgba(225, 29, 72, 0.35)`,
+          border: '1px solid var(--elah-accent)',
+          color: 'var(--elah-accent-hover)',
+          boxShadow: '0 0 10px rgba(225, 29, 72, 0.35)',
         }
-      : {}),
-  })
+      : {}
 
-  const playBtnStyle: React.CSSProperties = {
-    ...btnDisabled(false),
-    minWidth: 36,
-    padding: '5px 12px',
-    ...(isPlaying
-      ? {
-          background: 'rgba(34, 197, 94, 0.12)',
-          border: `1px solid ${theme.success}`,
-          color: theme.success,
-        }
-      : {}),
-  }
+  // Play button — color switches on isPlaying
+  const playBtnStyle: React.CSSProperties = isPlaying
+    ? {
+        background: 'rgba(34, 197, 94, 0.12)',
+        border: '1px solid #22C55E',
+        color: '#22C55E',
+      }
+    : {}
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        height: 40,
-        padding: '0 16px',
-        background: theme.bgSecondary,
-        borderTop: `1px solid ${theme.border}`,
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center h-10 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
-          className="elah-toolbar-btn"
-          style={btnDisabled(!hasSelection)}
+          className={cn(toolbarBtnCls, !hasSelection && 'opacity-40 cursor-not-allowed')}
           disabled={!hasSelection}
           onClick={splitAtPlayhead}
           title="Split at playhead (S)"
@@ -258,8 +217,7 @@ const TimelineControls = memo(function TimelineControls({
         </button>
         <button
           type="button"
-          className="elah-toolbar-btn"
-          style={btnDisabled(false)}
+          className={toolbarBtnCls}
           onClick={addTextTrack}
           title="Add another text track (for overlapping / stacked text)"
         >
@@ -267,10 +225,10 @@ const TimelineControls = memo(function TimelineControls({
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="flex items-center gap-2.5">
         <button
           type="button"
-          className="elah-toolbar-btn"
+          className={cn(toolbarBtnCls, 'min-w-9 px-3')}
           style={playBtnStyle}
           onClick={togglePlayPause}
           title="Play / Pause (Space)"
@@ -279,66 +237,59 @@ const TimelineControls = memo(function TimelineControls({
         </button>
         <span
           ref={timecodeRef}
-          style={{
-            fontSize: 11,
-            color: theme.textSecondary,
-            fontFamily: theme.fontMono,
-            minWidth: 172,
-            letterSpacing: '0.02em',
-          }}
+          className="text-[11px] text-ed-text-muted font-mono min-w-[172px] tracking-[0.02em]"
         >
           00:00:00:00 / 00:00:00:00
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: 11, color: theme.textMuted }}>Zoom</span>
+      <div className="flex items-center gap-2 justify-end">
+        <span className="text-[11px] text-ed-text-muted">Zoom</span>
         <input
           type="range"
-          className="elah-range"
+          className="elah-range w-24"
           min={0}
           max={1}
           step={0.001}
           value={zoomToSlider(zoom)}
           onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
-          style={{ width: 96 }}
         />
-        <span style={{ fontSize: 11, color: theme.textMuted, fontFamily: theme.fontMono, minWidth: 56 }}>
+        <span className="text-[11px] text-ed-text-muted font-mono min-w-[56px]">
           {zoom < 1 ? zoom.toFixed(2) : zoom.toFixed(1)} px/f
         </span>
         <button
           type="button"
-          className="elah-toolbar-btn"
-          style={btnDisabled(false)}
+          className={toolbarBtnCls}
           onClick={() => timelineRef.current?.fitToWindow()}
           title="Zoom to fit timeline"
         >
           Fit
         </button>
 
-        <div style={divider} />
+        {/* Divider */}
+        <div className="w-px h-[18px] bg-ed-border shrink-0 mx-2" />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            className="elah-toolbar-btn"
-            style={aspectBtn(aspectActive(1920, 1080))}
+            className={cn(toolbarBtnCls, 'min-w-11')}
+            style={aspectBtnStyle(aspectActive(1920, 1080))}
             onClick={() => engine.setStage(1920, 1080)}
           >
             16:9
           </button>
           <button
             type="button"
-            className="elah-toolbar-btn"
-            style={aspectBtn(aspectActive(1080, 1920))}
+            className={cn(toolbarBtnCls, 'min-w-11')}
+            style={aspectBtnStyle(aspectActive(1080, 1920))}
             onClick={() => engine.setStage(1080, 1920)}
           >
             9:16
           </button>
           <button
             type="button"
-            className="elah-toolbar-btn"
-            style={aspectBtn(aspectActive(1080, 1080))}
+            className={cn(toolbarBtnCls, 'min-w-11')}
+            style={aspectBtnStyle(aspectActive(1080, 1080))}
             onClick={() => engine.setStage(1080, 1080)}
           >
             1:1
@@ -385,8 +336,7 @@ export default function ProductionEditor() {
   return (
     <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
       <div
-        className="elah-root"
-        style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+        className="elah-root flex flex-col h-full"
       >
         <AppHeader onExport={() => setShowExportModal(true)} timelineRef={timelineRef} />
         {showExportModal && (
@@ -396,8 +346,8 @@ export default function ProductionEditor() {
           />
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-1 min-h-0">
             <div
               style={{
                 display: 'flex',
@@ -414,13 +364,7 @@ export default function ProductionEditor() {
             </div>
 
             <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-                minHeight: 0,
-                position: 'relative',
-                background: theme.bgPrimary,
-              }}
+              className="flex-1 min-w-0 min-h-0 relative bg-ed-bg"
             >
               <Preview
                 demuxerFactory={demuxerFactoryRef.current}

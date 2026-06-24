@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { theme } from './theme'
+import { cn } from '@/lib/utils'
 import type { ExportVideoCodec, ExportAudioCodec } from '@elah/editor'
 
 // ---------------------------------------------------------------------------
@@ -43,83 +43,6 @@ export interface ExportModalProps {
 }
 
 // ---------------------------------------------------------------------------
-// Overlay / modal shell styles
-// ---------------------------------------------------------------------------
-
-const overlay: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.7)',
-  backdropFilter: 'blur(4px)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 9999,
-}
-
-const modal: React.CSSProperties = {
-  background: theme.bgPanel,
-  border: `1px solid ${theme.border}`,
-  borderRadius: 10,
-  width: 380,
-  maxWidth: 'calc(100vw - 32px)',
-  fontFamily: theme.fontSans,
-  overflow: 'hidden',
-}
-
-const header: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '14px 16px 12px',
-  borderBottom: `1px solid ${theme.border}`,
-}
-
-const closeBtn: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  color: theme.textMuted,
-  cursor: 'pointer',
-  fontSize: 18,
-  lineHeight: 1,
-  padding: 2,
-}
-
-const body: React.CSSProperties = {
-  padding: '16px 16px 8px',
-}
-
-const footer: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: 8,
-  padding: '12px 16px 14px',
-}
-
-const btnSecondary: React.CSSProperties = {
-  padding: '7px 16px',
-  background: theme.bgElevated,
-  color: theme.textSecondary,
-  border: `1px solid ${theme.border}`,
-  borderRadius: 6,
-  fontSize: 12,
-  cursor: 'pointer',
-  fontFamily: theme.fontSans,
-}
-
-const btnPrimary: React.CSSProperties = {
-  padding: '7px 18px',
-  background: theme.accent,
-  color: '#fff',
-  border: 'none',
-  borderRadius: 6,
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-  fontFamily: theme.fontSans,
-}
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
@@ -136,59 +59,67 @@ function SettingsPhase({
 }) {
   return (
     <>
-      <div style={header}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.01em' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ed-border">
+        <span className="text-[13px] font-bold text-ed-text tracking-[-0.01em]">
           Export Video
         </span>
-        <button style={closeBtn} onClick={onCancel} title="Close">✕</button>
+        <button
+          className="bg-transparent border-none text-ed-text-muted cursor-pointer text-lg leading-none p-0.5"
+          onClick={onCancel}
+          title="Close"
+        >
+          ✕
+        </button>
       </div>
 
-      <div style={body}>
-        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>
+      <div className="px-4 pt-4 pb-2">
+        <div className="text-[10px] font-semibold tracking-[0.08em] uppercase text-ed-text-muted mb-2">
           Quality
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="flex flex-col gap-1">
           {PRESETS.map((p, i) => (
             <button
               key={p.label}
               onClick={() => onSelect(i)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '8px 10px',
-                background: selectedPreset === i ? 'rgba(225, 29, 72, 0.08)' : theme.bgElevated,
-                border: `1px solid ${selectedPreset === i ? theme.accent : theme.border}`,
-                borderRadius: 6,
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontFamily: theme.fontSans,
-              }}
+              className={cn(
+                'flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-left font-sans border transition-colors',
+                selectedPreset === i
+                  ? 'bg-ed-accent-soft border-ed-accent'
+                  : 'bg-ed-elevated border-ed-border'
+              )}
             >
               <span
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: '50%',
-                  border: `2px solid ${selectedPreset === i ? theme.accent : theme.textMuted}`,
-                  background: selectedPreset === i ? theme.accent : 'transparent',
-                  flexShrink: 0,
-                }}
+                className={cn(
+                  'w-3.5 h-3.5 rounded-full border-2 shrink-0',
+                  selectedPreset === i
+                    ? 'border-ed-accent bg-ed-accent'
+                    : 'border-ed-text-muted bg-transparent'
+                )}
               />
-              <span style={{ fontSize: 12, fontWeight: 600, color: theme.textPrimary, minWidth: 52 }}>{p.label}</span>
-              <span style={{ fontSize: 11, color: theme.textMuted }}>{p.description}</span>
+              <span className="text-xs font-semibold text-ed-text min-w-[52px]">{p.label}</span>
+              <span className="text-[11px] text-ed-text-muted">{p.description}</span>
             </button>
           ))}
         </div>
 
-        <div style={{ marginTop: 12, fontSize: 11, color: theme.textMuted }}>
+        <div className="mt-3 text-[11px] text-ed-text-muted">
           Format: MP4 container · audio stereo 44.1 kHz
         </div>
       </div>
 
-      <div style={footer}>
-        <button style={btnSecondary} onClick={onCancel}>Cancel</button>
-        <button style={btnPrimary} onClick={onStart}>Export</button>
+      <div className="flex justify-end gap-2 px-4 pt-3 pb-3.5">
+        <button
+          className="px-4 py-[7px] bg-ed-elevated text-ed-text-muted border border-ed-border rounded-md text-xs cursor-pointer font-sans"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          className="px-4 py-[7px] bg-ed-accent text-white border-none rounded-md text-xs font-semibold cursor-pointer font-sans"
+          onClick={onStart}
+        >
+          Export
+        </button>
       </div>
     </>
   )
@@ -207,36 +138,39 @@ function RenderingPhase({
 
   return (
     <>
-      <div style={header}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.01em' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ed-border">
+        <span className="text-[13px] font-bold text-ed-text tracking-[-0.01em]">
           Exporting...
         </span>
       </div>
 
-      <div style={{ ...body, paddingBottom: 16 }}>
-        <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 12 }}>
+      <div className="px-4 pt-4 pb-4">
+        <div className="text-xs text-ed-text-muted mb-3">
           {totalFrames > 0
             ? `Rendering frame ${frame} of ${totalFrames}`
             : 'Preparing…'}
         </div>
 
         {/* Progress bar */}
-        <div style={{ height: 6, background: theme.bgElevated, borderRadius: 3, overflow: 'hidden', marginBottom: 6 }}>
+        <div className="h-1.5 bg-ed-elevated rounded-[3px] overflow-hidden mb-1.5">
           <div
+            className="h-full rounded-[3px] transition-[width] duration-300 ease-out"
             style={{
-              height: '100%',
               width: `${pct}%`,
-              background: `linear-gradient(90deg, ${theme.accent}, ${theme.accentHover})`,
-              borderRadius: 3,
-              transition: 'width 0.3s ease',
+              background: `linear-gradient(90deg, var(--elah-accent), var(--elah-accent-hover))`,
             }}
           />
         </div>
-        <div style={{ fontSize: 11, color: theme.textMuted, fontFamily: theme.fontMono }}>{pct}%</div>
+        <div className="text-[11px] text-ed-text-muted font-mono">{pct}%</div>
       </div>
 
-      <div style={footer}>
-        <button style={btnSecondary} onClick={onCancel}>Cancel</button>
+      <div className="flex justify-end gap-2 px-4 pt-3 pb-3.5">
+        <button
+          className="px-4 py-[7px] bg-ed-elevated text-ed-text-muted border border-ed-border rounded-md text-xs cursor-pointer font-sans"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
       </div>
     </>
   )
@@ -253,34 +187,38 @@ function ErrorPhase({
 }) {
   return (
     <>
-      <div style={header}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.01em' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ed-border">
+        <span className="text-[13px] font-bold text-ed-text tracking-[-0.01em]">
           Export failed
         </span>
-        <button style={closeBtn} onClick={onClose} title="Close">✕</button>
+        <button
+          className="bg-transparent border-none text-ed-text-muted cursor-pointer text-lg leading-none p-0.5"
+          onClick={onClose}
+          title="Close"
+        >
+          ✕
+        </button>
       </div>
 
-      <div style={body}>
-        <div
-          style={{
-            padding: '10px 12px',
-            background: 'rgba(225, 29, 72, 0.08)',
-            border: `1px solid rgba(225, 29, 72, 0.3)`,
-            borderRadius: 6,
-            fontSize: 12,
-            color: theme.accentHover,
-            fontFamily: theme.fontMono,
-            wordBreak: 'break-word',
-            marginBottom: 8,
-          }}
-        >
+      <div className="px-4 pt-4 pb-2">
+        <div className="px-3 py-2.5 bg-ed-accent-soft border border-ed-accent/30 rounded-md text-xs text-ed-accent-hover font-mono break-words mb-2">
           {message}
         </div>
       </div>
 
-      <div style={footer}>
-        <button style={btnSecondary} onClick={onClose}>Close</button>
-        <button style={btnPrimary} onClick={onRetry}>Retry</button>
+      <div className="flex justify-end gap-2 px-4 pt-3 pb-3.5">
+        <button
+          className="px-4 py-[7px] bg-ed-elevated text-ed-text-muted border border-ed-border rounded-md text-xs cursor-pointer font-sans"
+          onClick={onClose}
+        >
+          Close
+        </button>
+        <button
+          className="px-4 py-[7px] bg-ed-accent text-white border-none rounded-md text-xs font-semibold cursor-pointer font-sans"
+          onClick={onRetry}
+        >
+          Retry
+        </button>
       </div>
     </>
   )
@@ -350,8 +288,12 @@ export function ExportModal({ onClose, onExport }: ExportModalProps) {
   }, [handleClose])
 
   return (
-    <div style={overlay} onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}>
-      <div style={modal}>
+    <div
+      className="fixed inset-0 flex items-center justify-center z-[9999]"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
+    >
+      <div className="bg-ed-panel border border-ed-border rounded-[10px] w-[380px] max-w-[calc(100vw-32px)] font-sans overflow-hidden">
         {phase === 'settings' && (
           <SettingsPhase
             selectedPreset={selectedPreset}

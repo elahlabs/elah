@@ -95,4 +95,73 @@
   /* ── Geometry ─────────────────────────────────────────────────────────── */
   --elah-radius-sm: 6px;
   --elah-radius-md: 8px;
+
+  /* ── Timeline chrome (dark defaults) ──────────────────────────────────── */
+  --elah-text-on-clip: rgba(255, 255, 255, 0.95);
+
+  --elah-selection-border: #ff2d55;
+  --elah-selection-glow:   rgba(255, 45, 85, 0.4);
+
+  --elah-transition-line:       rgba(107, 140, 255, 0.9);
+  --elah-transition-line-hover: rgba(255, 255, 255, 0.55);
+  --elah-transition-line-idle:  rgba(255, 255, 255, 0.18);
+  --elah-transition-fill:       #6b8cff;
+  --elah-transition-stroke:     #a5b4fc;
+  --elah-transition-add-fill:   rgba(255, 255, 255, 0.12);
+  --elah-transition-add-stroke: rgba(255, 255, 255, 0.7);
+
+  --elah-menu-bg:     #1e2433;
+  --elah-menu-border: #2d3548;
+  --elah-menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  --elah-popover-bg:               #1a1f2b;
+  --elah-popover-border:           #2d3548;
+  --elah-popover-shadow:           0 8px 32px rgba(0, 0, 0, 0.6);
+  --elah-popover-option-bg:        #232938;
+  --elah-popover-option-bg-hover:  #2d3548;
+  --elah-popover-option-bg-active: #3b4a6b;
+  --elah-popover-accent:           #6b8cff;
+  --elah-popover-accent-text:      #a5b4fc;
+  --elah-popover-icon:             #9ca3af;
+
+  --elah-dialog-overlay:          rgba(5, 7, 12, 0.6);
+  --elah-dialog-bg:               #171d2b;
+  --elah-dialog-border:           #232938;
+  --elah-dialog-shadow:           0 24px 60px rgba(0, 0, 0, 0.55);
+  --elah-dialog-option-bg:        #1b2230;
+  --elah-dialog-option-bg-hover:  #222b3c;
+  --elah-dialog-option-border:    #2a3142;
+  --elah-dialog-primary-border:   #2563eb;
+  --elah-dialog-primary-bg:       rgba(37, 99, 235, 0.16);
+  --elah-dialog-primary-bg-hover: rgba(37, 99, 235, 0.28);
+
+  --elah-danger-text:     #ff6b6b;
+  --elah-danger-text-alt: #f87171;
+  --elah-danger-bg-hover: rgba(255, 107, 107, 0.12);
+  --elah-danger-border:   #3f2a2a;
+
+  --elah-effect-gloss:                  rgba(255, 255, 255, 0.14);
+  --elah-effect-inner-highlight:        rgba(255, 255, 255, 0.12);
+  --elah-effect-inner-highlight-strong: rgba(255, 255, 255, 0.15);
+  --elah-effect-clip-shadow:            0 2px 6px rgba(0, 0, 0, 0.35);
+  --elah-effect-tile-separator:         rgba(0, 0, 0, 0.28);
+  --elah-effect-waveform:               rgba(255, 255, 255, 0.85);
+  --elah-effect-placeholder-bg:         rgba(0, 0, 0, 0.22);
+  --elah-effect-placeholder-border:     rgba(255, 255, 255, 0.08);
+  --elah-effect-trim-scrim:             rgba(0, 0, 0, 0.35);
+  --elah-effect-label-shadow:           0 1px 2px rgba(0, 0, 0, 0.45);
+  --elah-effect-delete-btn-bg:          rgba(0, 0, 0, 0.5);
+  --elah-effect-delete-btn-border:      rgba(255, 255, 255, 0.35);
+  --elah-effect-delete-btn-text:        #ffffff;
+
+  /* ── Editor overlays / toasts / preview (dark defaults) ────────────────── */
+  --elah-preview-bg:       #06070a;
+  --elah-stage-border:     rgba(225, 29, 72, 0.45);
+  --elah-stage-glow:       0 0 20px rgba(225, 29, 72, 0.08);
+  --elah-selection-color:  #4c9aff;
+  --elah-selection-handle: #ffffff;
+  --elah-danger-bg:        #3a2418;
+  --elah-info-bg:          #1a2433;
+  --elah-info-border:      #355070;
+  --elah-info-text:        #c8d8f0;
 }

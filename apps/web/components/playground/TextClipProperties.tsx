@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   useSelectionStore,
   useTracksStore,
@@ -9,21 +9,13 @@ import {
   type TextAnimationKind,
   type TextAnimation,
 } from '@elah/editor'
-import { sectionLabel, theme } from './theme'
+import { cn } from '@/lib/utils'
 
 const FONTS = ['sans-serif', 'serif', 'monospace', 'Georgia', 'Impact']
 
-const inputStyle: CSSProperties = {
-  flex: 1,
-  background: theme.bgPrimary,
-  border: `1px solid ${theme.border}`,
-  borderRadius: 6,
-  color: theme.textPrimary,
-  fontSize: 12,
-  fontFamily: theme.fontSans,
-  padding: '6px 8px',
-  outline: 'none',
-}
+// Shared input className for all text/select/number inputs
+const inputCls =
+  'flex-1 bg-ed-bg border border-ed-border rounded-md text-ed-text text-xs font-sans px-2 py-1.5 outline-none'
 
 function CollapsibleSection({
   title,
@@ -37,35 +29,28 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div style={{ borderBottom: `1px solid ${theme.borderSubtle}` }}>
+    <div className="border-b border-ed-border-subtle">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          padding: '10px 14px',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          ...sectionLabel,
-          color: open ? theme.textSecondary : theme.textMuted,
-        }}
+        className={cn(
+          'flex items-center justify-between w-full px-3.5 py-2.5 bg-transparent border-none cursor-pointer',
+          'text-[10px] font-semibold tracking-[0.08em] uppercase',
+          open ? 'text-ed-text-muted' : 'text-ed-text-muted/70'
+        )}
       >
         {title}
-        <span style={{ fontSize: 10, opacity: 0.7 }}>{open ? '▾' : '▸'}</span>
+        <span className="text-[10px] opacity-70">{open ? '▾' : '▸'}</span>
       </button>
-      {open && <div style={{ padding: '0 14px 12px' }}>{children}</div>}
+      {open && <div className="px-3.5 pb-3">{children}</div>}
     </div>
   )
 }
 
 function FieldRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 10, color: theme.textMuted, marginBottom: 4 }}>{label}</div>
+    <div className="mb-2.5">
+      <div className="text-[10px] text-ed-text-muted mb-1">{label}</div>
       {children}
     </div>
   )
@@ -87,16 +72,12 @@ function AlignBtn({
       type="button"
       title={`Align ${value}`}
       onClick={onClick}
-      style={{
-        flex: 1,
-        padding: '6px 0',
-        fontSize: 13,
-        background: active ? 'rgba(225, 29, 72, 0.15)' : theme.bgElevated,
-        color: active ? theme.accentHover : theme.textMuted,
-        border: `1px solid ${active ? theme.accent : theme.border}`,
-        borderRadius: 6,
-        cursor: 'pointer',
-      }}
+      className={cn(
+        'flex-1 py-1.5 text-[13px] rounded-md cursor-pointer border',
+        active
+          ? 'bg-ed-accent-soft text-ed-accent-hover border-ed-accent'
+          : 'bg-ed-elevated text-ed-text-muted border-ed-border'
+      )}
     >
       {labels[value]}
     </button>
@@ -134,46 +115,19 @@ export function TextClipProperties() {
   }, [clip?.id])
 
   const panelShell = (
-    <div
-      style={{
-        width: 300,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        background: theme.bgPanel,
-        borderLeft: `1px solid ${theme.border}`,
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          padding: '14px 14px 10px',
-          borderBottom: `1px solid ${theme.border}`,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary }}>
+    <div className="w-[300px] shrink-0 flex flex-col bg-ed-panel border-l border-ed-border overflow-hidden">
+      <div className="px-3.5 pt-3.5 pb-2.5 border-b border-ed-border shrink-0">
+        <div className="text-[13px] font-semibold text-ed-text">
           {clip ? clip.name : 'Properties'}
         </div>
         {clip && (
-          <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4, fontFamily: theme.fontMono }}>
+          <div className="text-[10px] text-ed-text-muted mt-1 font-mono">
             Layer · text
           </div>
         )}
       </div>
       {!clip ? (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            textAlign: 'center',
-            fontSize: 12,
-            color: theme.textMuted,
-          }}
-        >
+        <div className="flex-1 flex items-center justify-center p-6 text-center text-xs text-ed-text-muted">
           Select a text clip to edit properties
         </div>
       ) : null}
@@ -193,26 +147,10 @@ export function TextClipProperties() {
   const endSec = ((clip.startFrame + clip.durationFrames) / 30).toFixed(0)
 
   return (
-    <div
-      style={{
-        width: 300,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        background: theme.bgPanel,
-        borderLeft: `1px solid ${theme.border}`,
-        overflow: 'auto',
-      }}
-    >
-      <div
-        style={{
-          padding: '14px 14px 10px',
-          borderBottom: `1px solid ${theme.border}`,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary }}>{clip.name}</div>
-        <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4, fontFamily: theme.fontMono }}>
+    <div className="w-[300px] shrink-0 flex flex-col bg-ed-panel border-l border-ed-border overflow-auto">
+      <div className="px-3.5 pt-3.5 pb-2.5 border-b border-ed-border shrink-0">
+        <div className="text-[13px] font-semibold text-ed-text">{clip.name}</div>
+        <div className="text-[10px] text-ed-text-muted mt-1 font-mono">
           0:{startSec.padStart(2, '0')} – 0:{endSec.padStart(2, '0')}
         </div>
       </div>
@@ -227,13 +165,7 @@ export function TextClipProperties() {
             }}
             onBlur={() => engine.commitInteraction('Edit text content')}
             rows={2}
-            style={{
-              ...inputStyle,
-              resize: 'vertical',
-              minHeight: 56,
-              lineHeight: 1.4,
-              border: `1px solid ${theme.accent}`,
-            }}
+            className={cn(inputCls, 'resize-y min-h-[56px] leading-[1.4] border-ed-accent w-full')}
           />
         </FieldRow>
       </CollapsibleSection>
@@ -243,7 +175,7 @@ export function TextClipProperties() {
           <select
             value={effective.fontFamily ?? 'sans-serif'}
             onChange={(e) => commit({ fontFamily: e.target.value })}
-            style={{ ...inputStyle, cursor: 'pointer' }}
+            className={cn(inputCls, 'cursor-pointer w-full')}
           >
             {FONTS.map((f) => (
               <option key={f} value={f} style={{ fontFamily: f }}>
@@ -252,12 +184,12 @@ export function TextClipProperties() {
             ))}
           </select>
         </FieldRow>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <FieldRow label="Weight">
             <select
               value={effective.fontWeight ?? 'normal'}
               onChange={(e) => commit({ fontWeight: e.target.value as 'normal' | 'bold' })}
-              style={{ ...inputStyle, cursor: 'pointer' }}
+              className={cn(inputCls, 'cursor-pointer w-full')}
             >
               <option value="normal">Regular</option>
               <option value="bold">Semibold</option>
@@ -274,7 +206,7 @@ export function TextClipProperties() {
                 const v = effective.fontSize ?? 48
                 if (v !== (clip.fontSize ?? 48)) commit({ fontSize: v })
               }}
-              style={{ ...inputStyle, width: '100%' }}
+              className={cn(inputCls, 'w-full')}
             />
           </FieldRow>
         </div>
@@ -282,7 +214,7 @@ export function TextClipProperties() {
 
       <CollapsibleSection title="STYLE">
         <FieldRow label="Alignment">
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div className="flex gap-1">
             {(['left', 'center', 'right'] as const).map((a) => (
               <AlignBtn
                 key={a}
@@ -294,20 +226,12 @@ export function TextClipProperties() {
           </div>
         </FieldRow>
         <FieldRow label="Fill">
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div className="flex gap-1.5 items-center">
             <input
               type="color"
               value={effective.color ?? '#ffffff'}
               onChange={(e) => commit({ color: e.target.value })}
-              style={{
-                width: 32,
-                height: 28,
-                padding: 0,
-                border: `1px solid ${theme.border}`,
-                borderRadius: 4,
-                background: 'none',
-                cursor: 'pointer',
-              }}
+              className="w-8 h-7 p-0 border border-ed-border rounded cursor-pointer bg-transparent"
             />
             <input
               type="text"
@@ -317,31 +241,22 @@ export function TextClipProperties() {
                 const v = effective.color ?? '#ffffff'
                 if (v !== (clip.color ?? '#ffffff')) commit({ color: v })
               }}
-              style={{ ...inputStyle, fontFamily: theme.fontMono, flex: 1 }}
+              className={cn(inputCls, 'font-mono flex-1')}
             />
           </div>
         </FieldRow>
         <FieldRow label="Opacity">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
             <input
               type="range"
-              className="elah-range"
+              className="elah-range flex-1"
               min={0}
               max={1}
               step={0.01}
               value={effective.opacity ?? 1}
               onChange={(e) => commit({ opacity: Number(e.target.value) })}
-              style={{ flex: 1 }}
             />
-            <span
-              style={{
-                fontSize: 10,
-                color: theme.textMuted,
-                fontFamily: theme.fontMono,
-                width: 36,
-                textAlign: 'right',
-              }}
-            >
+            <span className="text-[10px] text-ed-text-muted font-mono w-9 text-right">
               {Math.round((effective.opacity ?? 1) * 100)}%
             </span>
           </div>
@@ -349,7 +264,7 @@ export function TextClipProperties() {
       </CollapsibleSection>
 
       <CollapsibleSection title="TRANSFORM" defaultOpen={false}>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <FieldRow label="X (%)">
             <input
               type="number"
@@ -362,7 +277,7 @@ export function TextClipProperties() {
                 }))
               }
               onBlur={() => commit({ transform: mergeTransform(effective) })}
-              style={inputStyle}
+              className={inputCls}
             />
           </FieldRow>
           <FieldRow label="Y (%)">
@@ -377,11 +292,11 @@ export function TextClipProperties() {
                 }))
               }
               onBlur={() => commit({ transform: mergeTransform(effective) })}
-              style={inputStyle}
+              className={inputCls}
             />
           </FieldRow>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           <FieldRow label="Scale">
             <input
               type="number"
@@ -396,7 +311,7 @@ export function TextClipProperties() {
                 }))
               }
               onBlur={() => commit({ transform: mergeTransform(effective) })}
-              style={inputStyle}
+              className={inputCls}
             />
           </FieldRow>
           <FieldRow label="Rotation (°)">
@@ -414,7 +329,7 @@ export function TextClipProperties() {
                 }))
               }
               onBlur={() => commit({ transform: mergeTransform(effective) })}
-              style={inputStyle}
+              className={inputCls}
             />
           </FieldRow>
         </div>
@@ -434,7 +349,7 @@ export function TextClipProperties() {
                 },
               })
             }}
-            style={{ ...inputStyle, cursor: 'pointer' }}
+            className={cn(inputCls, 'cursor-pointer w-full')}
           >
             <option value="none">None</option>
             <option value="fade">Fade</option>
@@ -453,7 +368,7 @@ export function TextClipProperties() {
                 },
               })
             }}
-            style={{ ...inputStyle, cursor: 'pointer' }}
+            className={cn(inputCls, 'cursor-pointer w-full')}
           >
             <option value="none">None</option>
             <option value="fade">Fade</option>
@@ -473,7 +388,7 @@ export function TextClipProperties() {
                 }))
               }
               onBlur={() => commit({ textAnimation: mergeAnim(effective) })}
-              style={inputStyle}
+              className={inputCls}
             />
           </FieldRow>
         )}

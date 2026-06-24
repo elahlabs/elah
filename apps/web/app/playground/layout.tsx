@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Github } from 'lucide-react'
+// Published-package stylesheets: each @elah package ships its own compiled
+// Tailwind utilities (the app's Tailwind does not scan node_modules). The
+// --elah-* variables these classes consume are defined in globals.css .elah-root.
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles.css'
 import '@/styles/playground.css'
 import { PlaygroundTabs } from '@/components/playground/PlaygroundTabs'
 import { siteConfig } from '@/config/site'

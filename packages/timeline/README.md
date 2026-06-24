@@ -49,6 +49,55 @@ function App() {
 
 ---
 
+## Styling
+
+Import the compiled stylesheet once (plain CSS — Tailwind is **not** required in
+your app, and no utility classes leak into your global scope):
+
+```ts
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles/tokens.css' // --elah-* defaults (standalone use)
+```
+
+Colors are driven by `--elah-*` CSS variables. Re-theme by overriding them in your
+own `.elah-root` scope — see [design-tokens.md](https://github.com/elahlabs/elah/blob/main/docs/design-tokens.md).
+
+### Per-instance overrides — `classNames`
+
+For one-off styling on a specific timeline, pass `classNames` — a per-slot map of
+Tailwind classes. Whatever you pass wins over the built-in classes (`tailwind-merge`).
+
+```tsx
+<Timeline
+  classNames={{
+    root:       'rounded-xl',
+    ruler:      'bg-zinc-900',
+    rulerTick:  'bg-zinc-700',
+    rulerLabel: 'text-zinc-500',
+    trackLabel: 'bg-zinc-900',
+    lane:       'bg-zinc-950',
+    clip:       'rounded-lg shadow-lg',   // shape/shadow (all clip types)
+    // per-type clip color — body + accent are separate slots:
+    clipVideo:       'from-sky-400 to-sky-600',  // body (gradient or solid bg-*)
+    clipVideoAccent: 'text-sky-300',              // stripe + selection + track bar
+    playhead:   'text-rose-500',
+  }}
+/>
+```
+
+Conventions:
+
+- **Backgrounds** (ruler, lane, label, clip bodies) take `bg-*` or gradient
+  stops (`from-… to-…`; the gradient direction is added for you).
+- **Accents** (playhead, clip stripe/selection, track-label bar) paint from
+  `currentColor`, so recolor them with a **`text-*`** class.
+
+Slots: `root`, `ruler`, `rulerTick`, `rulerLabel`, `track`, `trackLabel`, `lane`,
+`clip`, `clip{Video,Audio,Text,Image}`, `clip{Video,Audio,Text,Image}Accent`,
+`playhead`. See the `TimelineClassNames` type for the full list.
+
+---
+
 ## Hooks
 
 ```ts

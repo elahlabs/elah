@@ -268,11 +268,11 @@ export function MediaTransformOverlay() {
       // a media clip is selected) opt back into pointer events. zIndex keeps the
       // overlay above the imperatively-appended WebGL canvas regardless of DOM
       // insertion order; TextOverlay sits one layer above this.
-      style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', overflow: 'hidden' }}
+      className="absolute inset-0 z-[2] pointer-events-none overflow-hidden"
     >
       {!isPlaying && ownsSelection && (
         <div
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}
+          className="absolute inset-0 pointer-events-auto"
           onPointerDown={() => clearSelection()}
         />
       )}
@@ -281,6 +281,7 @@ export function MediaTransformOverlay() {
         items.map((item) => {
           const { clip, rect } = item
           const selected = selectedClipIds.has(clip.id)
+          // Dynamic: position, size, border-color all depend on runtime state
           const boxStyle: CSSProperties = {
             position: 'absolute',
             left: rect.left - BOX_PAD,
@@ -288,7 +289,7 @@ export function MediaTransformOverlay() {
             width: rect.width + BOX_PAD * 2,
             height: rect.height + BOX_PAD * 2,
             boxSizing: 'border-box',
-            border: selected ? '1px solid #4c9aff' : '1px solid transparent',
+            border: selected ? '1px solid var(--elah-selection-color, #4c9aff)' : '1px solid transparent',
             borderRadius: 2,
             cursor: 'move',
             pointerEvents: 'auto',
@@ -316,8 +317,8 @@ export function MediaTransformOverlay() {
                       ...corner.pos,
                       width: 10,
                       height: 10,
-                      background: '#fff',
-                      border: '1px solid #4c9aff',
+                      background: 'var(--elah-selection-handle, #fff)',
+                      border: '1px solid var(--elah-selection-color, #4c9aff)',
                       borderRadius: 2,
                       cursor: corner.cursor,
                       pointerEvents: 'auto',
@@ -338,4 +339,3 @@ const CORNERS = [
   { key: 'sw', pos: { left: -5, bottom: -5 }, cursor: 'nesw-resize' as const },
   { key: 'se', pos: { right: -5, bottom: -5 }, cursor: 'nwse-resize' as const },
 ] satisfies ReadonlyArray<{ key: string; pos: CSSProperties; cursor: CSSProperties['cursor'] }>
-
