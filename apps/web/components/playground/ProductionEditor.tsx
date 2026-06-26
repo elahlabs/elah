@@ -1,6 +1,26 @@
 'use client'
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Plus,
+  Type as TypeIcon,
+  Scissors,
+  Trash2,
+  Copy,
+  Play,
+  Pause,
+  Square,
+  Magnet,
+  Maximize2,
+  Minus,
+  ChevronDown,
+  RectangleHorizontal,
+  UploadCloud,
+  Film,
+  Image as ImageIcon,
+  Music,
+  Captions,
+} from 'lucide-react'
 import { TextClipProperties } from './TextClipProperties'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
@@ -25,10 +45,14 @@ import {
 
 const FPS = 30
 
+// Minimal default — one of each. The model allows a single video track but any
+// number of audio / text tracks; more are added from the toolbar at runtime.
+// Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
+// per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
-  { kind: 'video', name: 'Video / Image' },
-  { kind: 'audio', name: 'Audio' },
   { kind: 'text', name: 'Text' },
+  { kind: 'video', name: 'Video' },
+  { kind: 'audio', name: 'Audio' },
 ]
 
 const ZOOM_MIN = 0.02
@@ -136,39 +160,231 @@ const AppHeader = memo(function AppHeader({
   )
 })
 
+// Left icon rail — far-left vertical nav (Figma). UI-only for now: clicking
+// moves the active highlight but doesn't switch panels yet.
+const RAIL_ITEMS = [
+  { id: 'media', label: 'Media', Icon: UploadCloud },
+  { id: 'stock', label: 'Stock', Icon: Film },
+  { id: 'photos', label: 'Photos', Icon: ImageIcon },
+  { id: 'audio', label: 'Audio', Icon: Music },
+  { id: 'text', label: 'Text', Icon: TypeIcon },
+  { id: 'captions', label: 'Captions', Icon: Captions },
+] as const
+
+const LeftRail = memo(function LeftRail() {
+  const [active, setActive] = useState('media')
+  return (
+    <div className="w-[68px] shrink-0 flex flex-col items-center gap-1.5 py-3 border-r border-ed-border bg-ed-bg overflow-y-auto">
+      {RAIL_ITEMS.map(({ id, label, Icon }) => {
+        const on = active === id
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActive(id)}
+            className="w-full flex flex-col items-center gap-1.5 py-1 cursor-pointer"
+          >
+            <span
+              className={cn(
+                'flex items-center justify-center w-10 h-10 rounded-xl transition-colors',
+                on ? 'text-white' : 'text-ed-text-muted',
+              )}
+              style={
+                on
+                  ? { background: 'linear-gradient(160deg, rgba(0,194,255,0.5), rgba(0,194,255,0.1))' }
+                  : undefined
+              }
+            >
+              <Icon size={18} />
+            </span>
+            <span
+              className={cn(
+                'text-[10px] leading-none',
+                on ? 'text-ed-text font-semibold' : 'text-ed-text-muted',
+              )}
+            >
+              {label}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+})
+
+// Aspect-ratio segmented control — floats centered above the preview (Figma),
+// not in the timeline toolbar. Each option shows a glyph shaped like its ratio.
+const ASPECTS = [
+  { label: '16:9', w: 1920, h: 1080, gw: 14, gh: 8 },
+  { label: '9:16', w: 1080, h: 1920, gw: 8, gh: 14 },
+  { label: '1:1', w: 1080, h: 1080, gw: 11, gh: 11 },
+] as const
+
+const AspectControl = memo(function AspectControl() {
+  const engine = useTimelineEngine()
+  const stage = useTracksStore((s) => s.stage)
+  const isActive = (w: number, h: number) =>
+    Math.abs(stage.width / stage.height - w / h) < 0.001
+
+  return (
+    <div className="flex items-center justify-center py-2 shrink-0">
+      <div className="flex items-center gap-1">
+        {ASPECTS.map((a) => {
+        const active = isActive(a.w, a.h)
+        return (
+          <button
+            key={a.label}
+            type="button"
+            onClick={() => engine.setStage(a.w, a.h)}
+            title={`${a.label} aspect ratio`}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs cursor-pointer transition-colors',
+              active
+                ? 'bg-ed-elevated text-ed-text'
+                : 'text-ed-text-muted hover:text-ed-text',
+            )}
+            style={
+              active ? { boxShadow: 'inset 0 0 0 1px var(--elah-accent)' } : undefined
+            }
+          >
+            <span
+              style={{
+                width: a.gw,
+                height: a.gh,
+                borderRadius: 2,
+                background: 'currentColor',
+              }}
+            />
+            {a.label}
+          </button>
+        )
+        })}
+      </div>
+    </div>
+  )
+})
+
+// Video transport — lives under the Preview (not in the timeline toolbar),
+// matching the Figma. Play/pause, stop, and current | total time (cyan current).
+const TransportBar = memo(function TransportBar() {
+  const isPlaying = usePlaybackStore((s) => s.isPlaying)
+  const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
+  const totalFrames = useTracksStore((s) => s.totalFrames)
+  const currentTimeRef = useRef<HTMLSpanElement>(null)
+  const totalTimeRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    return usePlaybackStore.subscribe((state) => {
+      if (currentTimeRef.current) {
+        currentTimeRef.current.textContent = framesToTimecode(state.currentFrame, FPS)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    const dur = Math.max(totalFrames, 1)
+    if (totalTimeRef.current) totalTimeRef.current.textContent = framesToTimecode(dur, FPS)
+    if (currentTimeRef.current) {
+      currentTimeRef.current.textContent = framesToTimecode(
+        usePlaybackStore.getState().currentFrame,
+        FPS,
+      )
+    }
+  }, [totalFrames])
+
+  const handleStop = useCallback(() => {
+    usePlaybackStore.getState().pause()
+    usePlaybackStore.getState().setCurrentFrame(0)
+  }, [])
+
+  const ghostIcon =
+    'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
+
+  return (
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center h-11 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
+      {/* Left — current | total time (current in accent) */}
+      <span className="font-mono text-[11px] tracking-[0.02em] tabular-nums whitespace-nowrap">
+        <span ref={currentTimeRef} style={{ color: 'var(--elah-accent)' }}>00:00:00:00</span>
+        <span className="text-ed-text-muted mx-1.5">|</span>
+        <span ref={totalTimeRef} className="text-ed-text-muted">00:00:00:00</span>
+      </span>
+
+      {/* Center — video controls */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={togglePlayPause}
+          title="Play / Pause (Space)"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white text-black hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+        >
+          {isPlaying ? (
+            <Pause size={15} fill="currentColor" />
+          ) : (
+            <Play size={15} fill="currentColor" className="ml-0.5" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={handleStop}
+          title="Stop"
+          className={ghostIcon}
+        >
+          <Square size={13} fill="currentColor" />
+        </button>
+      </div>
+
+      {/* Right — preview view controls from the Figma (visual only for now). */}
+      <div className="flex items-center gap-1.5 justify-end">
+        <button type="button" title="Fullscreen" className={ghostIcon}>
+          <Maximize2 size={14} />
+        </button>
+        <button
+          type="button"
+          title="Fit"
+          className="inline-flex items-center gap-1 px-2 h-7 rounded border border-ed-border text-ed-text-muted text-[11px] hover:text-ed-text transition-colors cursor-pointer"
+        >
+          Fit <ChevronDown size={12} />
+        </button>
+        <button type="button" title="Frame" className={ghostIcon}>
+          <RectangleHorizontal size={15} />
+        </button>
+      </div>
+    </div>
+  )
+})
+
 const TimelineControls = memo(function TimelineControls({
   timelineRef,
 }: {
   timelineRef: React.RefObject<TimelineRef | null>
 }) {
   const engine = useTimelineEngine()
-  const isPlaying = usePlaybackStore((s) => s.isPlaying)
-  const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
   const zoom = usePlaybackStore((s) => s.zoom)
   const setZoom = usePlaybackStore((s) => s.setZoom)
-  const totalFrames = useTracksStore((s) => s.totalFrames)
-  const stage = useTracksStore((s) => s.stage)
   const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
-  const timecodeRef = useRef<HTMLSpanElement>(null)
+  const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
+  const toggleSnap = usePlaybackStore((s) => s.toggleSnap)
+  const [addOpen, setAddOpen] = useState(false)
 
-  useEffect(() => {
-    return usePlaybackStore.subscribe((state) => {
-      if (timecodeRef.current) {
-        const dur = Math.max(totalFrames, 1)
-        timecodeRef.current.textContent =
-          `${framesToTimecode(state.currentFrame, FPS)} / ${framesToTimecode(dur, FPS)}`
-      }
-    })
-  }, [totalFrames])
+  const handleDeleteSelected = useCallback(() => {
+    const ids = useSelectionStore.getState().selectedClipIds
+    if (ids.size !== 1) return
+    const id = [...ids][0]
+    const found = engine.findClip(id)
+    if (!found) return
+    engine.removeClip(id, found.clip.trackId)
+    useSelectionStore.getState().clearSelection()
+  }, [engine])
 
-  useEffect(() => {
-    if (timecodeRef.current) {
-      const frame = usePlaybackStore.getState().currentFrame
-      const dur = Math.max(totalFrames, 1)
-      timecodeRef.current.textContent =
-        `${framesToTimecode(frame, FPS)} / ${framesToTimecode(dur, FPS)}`
-    }
-  }, [totalFrames])
+  const handleDuplicateSelected = useCallback(() => {
+    const ids = useSelectionStore.getState().selectedClipIds
+    if (ids.size !== 1) return
+    const id = [...ids][0]
+    const found = engine.findClip(id)
+    if (!found) return
+    const c = found.clip
+    engine.cloneClip(id, c.trackId, c.startFrame + c.durationFrames)
+  }, [engine])
 
   const splitAtPlayhead = useCallback(() => {
     const result = splitClipAtPlayhead(engine)
@@ -180,71 +396,103 @@ const TimelineControls = memo(function TimelineControls({
     engine.addTrack('text', { name: `Text ${n}` })
   }, [engine])
 
-  const aspectActive = (w: number, h: number) =>
-    Math.abs(stage.width / stage.height - w / h) < 0.001
+  const addAudioTrack = useCallback(() => {
+    const n = useTracksStore.getState().tracks.filter((t) => t.kind === 'audio').length + 1
+    engine.addTrack('audio', { name: `Audio ${n}` })
+  }, [engine])
 
-  // Aspect button: active state uses accent color — dynamic inline for the color only
-  const aspectBtnStyle = (active: boolean): React.CSSProperties =>
-    active
-      ? {
-          background: 'rgba(225, 29, 72, 0.12)',
-          border: '1px solid var(--elah-accent)',
-          color: 'var(--elah-accent-hover)',
-          boxShadow: '0 0 10px rgba(225, 29, 72, 0.35)',
-        }
-      : {}
-
-  // Play button — color switches on isPlaying
-  const playBtnStyle: React.CSSProperties = isPlaying
-    ? {
-        background: 'rgba(34, 197, 94, 0.12)',
-        border: '1px solid #22C55E',
-        color: '#22C55E',
-      }
-    : {}
+  // Ghost toolbar buttons (flat icons, matching the Figma).
+  const ghostBtn =
+    'inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
+  const ghostIcon =
+    'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
+  const disabledMod =
+    'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-ed-text-muted'
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center h-10 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
-      <div className="flex items-center gap-1.5">
+    <div className="flex items-center justify-between h-10 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
+      {/* Left — track + clip tools */}
+      <div className="flex items-center gap-0.5">
+        <div className="relative">
+          <button
+            type="button"
+            className={ghostBtn}
+            onClick={() => setAddOpen((o) => !o)}
+            title="Add a track"
+          >
+            <Plus size={14} /> Add Track <ChevronDown size={12} />
+          </button>
+          {addOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setAddOpen(false)} />
+              <div className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
+                <button
+                  type="button"
+                  onClick={() => { addAudioTrack(); setAddOpen(false) }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
+                >
+                  <Music size={14} /> Audio Track
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { addTextTrack(); setAddOpen(false) }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
+                >
+                  <TypeIcon size={14} /> Text Track
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="w-px h-[18px] bg-ed-border shrink-0 mx-1.5" />
         <button
           type="button"
-          className={cn(toolbarBtnCls, !hasSelection && 'opacity-40 cursor-not-allowed')}
+          className={cn(ghostBtn, !hasSelection && disabledMod)}
           disabled={!hasSelection}
           onClick={splitAtPlayhead}
           title="Split at playhead (S)"
         >
-          ✂ Split
+          <Scissors size={14} /> Split
         </button>
         <button
           type="button"
-          className={toolbarBtnCls}
-          onClick={addTextTrack}
-          title="Add another text track (for overlapping / stacked text)"
+          className={cn(ghostIcon, !hasSelection && disabledMod)}
+          disabled={!hasSelection}
+          onClick={handleDuplicateSelected}
+          title="Duplicate clip"
         >
-          ＋ Text Track
+          <Copy size={14} />
         </button>
-      </div>
-
-      <div className="flex items-center gap-2.5">
         <button
           type="button"
-          className={cn(toolbarBtnCls, 'min-w-9 px-3')}
-          style={playBtnStyle}
-          onClick={togglePlayPause}
-          title="Play / Pause (Space)"
+          className={cn(ghostIcon, !hasSelection && disabledMod)}
+          disabled={!hasSelection}
+          onClick={handleDeleteSelected}
+          title="Delete clip"
         >
-          {isPlaying ? '⏸' : '▶'}
+          <Trash2 size={14} />
         </button>
-        <span
-          ref={timecodeRef}
-          className="text-[11px] text-ed-text-muted font-mono min-w-[172px] tracking-[0.02em]"
-        >
-          00:00:00:00 / 00:00:00:00
-        </span>
       </div>
 
-      <div className="flex items-center gap-2 justify-end">
-        <span className="text-[11px] text-ed-text-muted">Zoom</span>
+      {/* Right — snap, zoom, fit, aspect */}
+      <div className="flex items-center gap-1.5 justify-end">
+        <button
+          type="button"
+          onClick={toggleSnap}
+          title="Snap to clips / playhead"
+          className={cn(ghostIcon, snapEnabled && 'text-ed-text bg-ed-elevated')}
+        >
+          <Magnet size={15} />
+        </button>
+        <div className="w-px h-[18px] bg-ed-border shrink-0 mx-1" />
+        <button
+          type="button"
+          className={ghostIcon}
+          title="Zoom out"
+          onClick={() => setZoom(sliderToZoom(Math.max(0, zoomToSlider(zoom) - 0.08)))}
+        >
+          <Minus size={14} />
+        </button>
         <input
           type="range"
           className="elah-range w-24"
@@ -254,47 +502,22 @@ const TimelineControls = memo(function TimelineControls({
           value={zoomToSlider(zoom)}
           onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
         />
-        <span className="text-[11px] text-ed-text-muted font-mono min-w-[56px]">
-          {zoom < 1 ? zoom.toFixed(2) : zoom.toFixed(1)} px/f
-        </span>
         <button
           type="button"
-          className={toolbarBtnCls}
+          className={ghostIcon}
+          title="Zoom in"
+          onClick={() => setZoom(sliderToZoom(Math.min(1, zoomToSlider(zoom) + 0.08)))}
+        >
+          <Plus size={14} />
+        </button>
+        <button
+          type="button"
+          className={ghostBtn}
           onClick={() => timelineRef.current?.fitToWindow()}
           title="Zoom to fit timeline"
         >
-          Fit
+          <Maximize2 size={13} /> Fit
         </button>
-
-        {/* Divider */}
-        <div className="w-px h-[18px] bg-ed-border shrink-0 mx-2" />
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className={cn(toolbarBtnCls, 'min-w-11')}
-            style={aspectBtnStyle(aspectActive(1920, 1080))}
-            onClick={() => engine.setStage(1920, 1080)}
-          >
-            16:9
-          </button>
-          <button
-            type="button"
-            className={cn(toolbarBtnCls, 'min-w-11')}
-            style={aspectBtnStyle(aspectActive(1080, 1920))}
-            onClick={() => engine.setStage(1080, 1920)}
-          >
-            9:16
-          </button>
-          <button
-            type="button"
-            className={cn(toolbarBtnCls, 'min-w-11')}
-            style={aspectBtnStyle(aspectActive(1080, 1080))}
-            onClick={() => engine.setStage(1080, 1080)}
-          >
-            1:1
-          </button>
-        </div>
       </div>
     </div>
   )
@@ -334,7 +557,7 @@ export default function ProductionEditor() {
   }, [])
 
   return (
-    <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
+    <EditorProvider fps={FPS} defaultTrackHeight={36} initialTracks={INITIAL_TRACKS}>
       <div
         className="elah-root flex flex-col h-full"
       >
@@ -348,6 +571,7 @@ export default function ProductionEditor() {
 
         <div className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-1 min-h-0">
+            <LeftRail />
             <div
               style={{
                 display: 'flex',
@@ -363,13 +587,15 @@ export default function ProductionEditor() {
               <SourcePanel style={{ flex: 1, minHeight: 0 }} />
             </div>
 
-            <div
-              className="flex-1 min-w-0 min-h-0 relative bg-ed-bg"
-            >
-              <Preview
-                demuxerFactory={demuxerFactoryRef.current}
-                style={{ width: '100%', height: '100%' }}
-              />
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col bg-black">
+              <AspectControl />
+              <div className="flex-1 min-h-0 relative py-6">
+                <Preview
+                  demuxerFactory={demuxerFactoryRef.current}
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </div>
+              <TransportBar />
             </div>
 
             <TextClipProperties />
