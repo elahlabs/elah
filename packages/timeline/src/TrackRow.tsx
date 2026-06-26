@@ -2,10 +2,33 @@ import { memo, useState, useMemo } from 'react'
 import type { Track } from '@elah/core'
 import { useTracksStore } from '@elah/core'
 import { useSelectionStore } from '@elah/core'
+import {
+  Film,
+  Music,
+  Type,
+  Eye,
+  EyeOff,
+  Lock,
+  LockOpen,
+  Volume2,
+  VolumeX,
+  Trash2,
+} from 'lucide-react'
 import { ClipBlock } from './ClipBlock'
 import { TransitionChip } from './TransitionChip'
+import { useTimeline } from './engine-context'
 import { useTimelineDrop } from './useTimelineDrop'
 import { cn } from './cn'
+
+/** Sidebar width — kept in sync with SIDEBAR_WIDTH in Timeline.tsx (ruler offset). */
+const SIDEBAR_WIDTH = 184
+
+/** Per-kind type glyph shown at the start of the track label. */
+const KIND_ICON: Record<string, typeof Film> = {
+  video: Film,
+  audio: Music,
+  text: Type,
+}
 
 // Default track-label accent (the colored left bar) per kind — the clip mid
 // ramp, applied as the label's text color so the bar can read it via
@@ -91,7 +114,49 @@ export const TrackRow = memo(function TrackRow({
   }, [clips, track.kind])
   const isActive = useSelectionStore((s) => s.activeTrackId === track.id)
   const setActiveTrack = useSelectionStore((s) => s.setActiveTrack)
+  const engine = useTimeline()
   const [laneEl, setLaneEl] = useState<HTMLDivElement | null>(null)
+
+  // Header controls toggle Track flags the resolver already honors:
+  // disabled → track skipped, muted → volume 0 (see resolveTimeline).
+  const stop = (e: React.MouseEvent) => e.stopPropagation()
+  const toggleVisible = (e: React.MouseEvent) => {
+    stop(e)
+    engine.updateTrack(track.id, { disabled: !track.disabled })
+  }
+  const toggleLocked = (e: React.MouseEvent) => {
+    stop(e)
+    engine.updateTrack(track.id, { locked: !track.locked })
+  }
+  const toggleMuted = (e: React.MouseEvent) => {
+    stop(e)
+    engine.updateTrack(track.id, { muted: !track.muted })
+  }
+  const deleteTrack = (e: React.MouseEvent) => {
+    stop(e)
+    engine.removeTrack(track.id)
+  }
+
+  // Only allow deleting a track when more than one of its kind exists — never
+  // remove the last audio/text track (video is single by model).
+  const sameKindCount = useTracksStore(
+    (s) => s.tracks.filter((t) => t.kind === track.kind).length,
+  )
+
+  const TypeIcon = KIND_ICON[track.kind] ?? Film
+  const ctrlBtn: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 18,
+    height: 18,
+    padding: 0,
+    border: 'none',
+    borderRadius: 4,
+    background: 'transparent',
+    cursor: 'pointer',
+    color: 'var(--elah-text-muted)',
+  }
 
   useTimelineDrop(track.id, laneEl)
 
@@ -127,7 +192,7 @@ export const TrackRow = memo(function TrackRow({
           position: 'sticky',
           left: 0,
           zIndex: 6,
-          width: 160,
+          width: SIDEBAR_WIDTH,
           flexShrink: 0,
           // The left bar paints from currentColor (set by kindAccentClass above).
           borderLeft: '3px solid currentColor',
@@ -137,14 +202,21 @@ export const TrackRow = memo(function TrackRow({
           borderBottomStyle: 'solid',
           display: 'flex',
           alignItems: 'center',
-          paddingLeft: 12,
+          gap: 8,
+          paddingLeft: 10,
+          paddingRight: 6,
           cursor: 'pointer',
           userSelect: 'none',
         }}
       >
+        {/* Type glyph — paints from currentColor (the track accent). */}
+        <TypeIcon size={13} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden />
+
         <span
           style={{
-            fontSize: 11,
+            flex: 1,
+            minWidth: 0,
+            fontSize: 13,
             color: isActive ? `var(--elah-text)` : `var(--elah-text-muted)`,
             fontWeight: isActive ? 600 : 500,
             overflow: 'hidden',
@@ -153,6 +225,77 @@ export const TrackRow = memo(function TrackRow({
           }}
         >
           {track.name}
+        </span>
+
+        {/* Per-track controls — visibility, mute (audio only), lock. */}
+        <span style={{ display: 'inline-flex', gap: 1, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={toggleVisible}
+            title={track.disabled ? 'Show track' : 'Hide track'}
+            aria-label={track.disabled ? 'Show track' : 'Hide track'}
+            aria-pressed={!track.disabled}
+            style={ctrlBtn}
+          >
+            {track.disabled ? (
+              <EyeOff size={13} strokeWidth={1.75} />
+            ) : (
+              <Eye size={13} strokeWidth={1.75} />
+            )}
+          </button>
+
+          {track.kind === 'audio' && (
+            <button
+              type="button"
+              onClick={toggleMuted}
+              title={track.muted ? 'Unmute track' : 'Mute track'}
+              aria-label={track.muted ? 'Unmute track' : 'Mute track'}
+              aria-pressed={track.muted}
+              style={{
+                ...ctrlBtn,
+                color: track.muted
+                  ? 'var(--elah-color-error)'
+                  : 'var(--elah-text-muted)',
+              }}
+            >
+              {track.muted ? (
+                <VolumeX size={13} strokeWidth={1.75} />
+              ) : (
+                <Volume2 size={13} strokeWidth={1.75} />
+              )}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={toggleLocked}
+            title={track.locked ? 'Unlock track' : 'Lock track'}
+            aria-label={track.locked ? 'Unlock track' : 'Lock track'}
+            aria-pressed={track.locked}
+            style={{
+              ...ctrlBtn,
+              color: track.locked ? 'var(--elah-text)' : 'var(--elah-text-muted)',
+            }}
+          >
+            {track.locked ? (
+              <Lock size={13} strokeWidth={1.75} />
+            ) : (
+              <LockOpen size={13} strokeWidth={1.75} />
+            )}
+          </button>
+
+          {/* Delete — only when more than one track of this kind exists. */}
+          {sameKindCount > 1 && (
+            <button
+              type="button"
+              onClick={deleteTrack}
+              title="Delete track"
+              aria-label="Delete track"
+              style={{ ...ctrlBtn, color: 'var(--elah-text-muted)' }}
+            >
+              <Trash2 size={13} strokeWidth={1.75} />
+            </button>
+          )}
         </span>
       </div>
 
@@ -171,6 +314,8 @@ export const TrackRow = memo(function TrackRow({
           borderBottomWidth: 1,
           borderBottomStyle: 'solid',
           overflow: 'visible',
+          // Locked lanes read as non-editable.
+          opacity: track.locked ? 0.6 : 1,
         }}
       >
         {clips.map((clip) => (

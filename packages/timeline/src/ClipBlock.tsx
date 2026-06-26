@@ -1,5 +1,6 @@
 import { memo, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Type } from 'lucide-react'
 import type { Clip } from '@elah/core'
 import { useTimeline } from './engine-context'
 import { useSelectionStore } from '@elah/core'
@@ -23,13 +24,14 @@ const WAVE_BARS = [
 
 const TRIM_HANDLE_WIDTH = 8
 
-// Default clip body background per type — static literals so Tailwind generates
-// them. Same token colors + stops as the original gradient (look unchanged).
+// Flat solid clip bodies — the design uses no gradient. Audio takes its darkest
+// token so the tinted waveform reads on top; the rest use their mid tone. Static
+// literals so Tailwind generates the utilities.
 const DEFAULT_CLIP_BG: Record<string, string> = {
-  video: 'bg-gradient-to-b from-clip-video-top via-clip-video-mid to-clip-video-bottom via-[42%]',
-  audio: 'bg-gradient-to-b from-clip-audio-top via-clip-audio-mid to-clip-audio-bottom via-[42%]',
-  text: 'bg-gradient-to-b from-clip-text-top via-clip-text-mid to-clip-text-bottom via-[42%]',
-  image: 'bg-gradient-to-b from-clip-image-top via-clip-image-mid to-clip-image-bottom via-[42%]',
+  video: 'bg-clip-video-mid',
+  audio: 'bg-clip-audio-bottom', // exact body #0c2a26
+  text: 'bg-clip-text-bottom', // exact body #7a2e10
+  image: 'bg-clip-image-mid',
 }
 
 // Default accent (left stripe + selected hairline) per type, applied as the
@@ -83,6 +85,10 @@ export const ClipBlock = memo(function ClipBlock({
   const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
   const asset = useMediaLibraryStore((s) =>
     clip.assetId ? s.assets[clip.assetId] : undefined,
+  )
+  // A locked track blocks drag/trim/delete gestures (engine enforces too).
+  const trackLocked = useTracksStore(
+    (s) => s.tracks.find((t) => t.id === clip.trackId)?.locked ?? false,
   )
 
   const blockRef = useRef<HTMLDivElement>(null)
@@ -140,6 +146,7 @@ export const ClipBlock = memo(function ClipBlock({
       if (e.button !== 0) return
       e.stopPropagation()
       selectClip(clip.id)
+      if (trackLocked) return // selectable, but not draggable
 
       const startX = e.clientX
       const originalStart = clip.startFrame
@@ -195,13 +202,14 @@ export const ClipBlock = memo(function ClipBlock({
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine, selectClip, left, snapEnabled],
+    [clip, zoom, engine, selectClip, left, snapEnabled, trackLocked],
   )
 
   const handleLeftTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       selectClip(clip.id)
+      if (trackLocked) return
 
       const startX = e.clientX
       const originalStart = clip.startFrame
@@ -252,13 +260,14 @@ export const ClipBlock = memo(function ClipBlock({
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine, selectClip],
+    [clip, zoom, engine, selectClip, trackLocked],
   )
 
   const handleRightTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       selectClip(clip.id)
+      if (trackLocked) return
 
       const startX = e.clientX
       const originalDuration = clip.durationFrames
@@ -297,16 +306,7 @@ export const ClipBlock = memo(function ClipBlock({
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine, selectClip],
-  )
-
-  const handleDelete = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      engine.removeClip(clip.id, clip.trackId)
-      clearSelection()
-    },
-    [clip.id, clip.trackId, engine, clearSelection],
+    [clip, zoom, engine, selectClip, trackLocked],
   )
 
   const handleContextMenu = useCallback(
@@ -332,7 +332,11 @@ export const ClipBlock = memo(function ClipBlock({
       ref={blockRef}
       onMouseDown={handleBodyMouseDown}
       onContextMenu={handleContextMenu}
-      className={cn('rounded-[7px]', clipAccent, clipBg, className)}
+      // Styling hooks (inert): let CSS retint per clip type / selection state —
+      // e.g. audio waveform tint and the blue selected-audio body.
+      data-clip-type={clip.type}
+      data-selected={isSelected ? 'true' : 'false'}
+      className={cn('rounded-[4px]', clipAccent, clipBg, className)}
       style={{
         position: 'absolute',
         top: 5,
@@ -342,14 +346,16 @@ export const ClipBlock = memo(function ClipBlock({
         boxSizing: 'border-box',
         // Background comes from clipBg (default gradient or the slot override).
         // Selection border vs accent border (accent paints from currentColor).
+        // Same-hue border in the clip's accent color (the Figma border tone);
+        // selection swaps to the selection-ring color.
         border: isSelected
           ? `2px solid var(--elah-selection-border)`
-          : `1px solid color-mix(in srgb, currentColor 33%, transparent)`,
+          : `1px solid currentColor`,
         // Dynamic: selection glow vs default clip shadow + inner highlight
         boxShadow: isSelected
           ? `0 0 14px var(--elah-selection-glow), inset 0 1px 0 var(--elah-effect-inner-highlight-strong)`
           : `inset 0 1px 0 var(--elah-effect-inner-highlight), var(--elah-effect-clip-shadow)`,
-        cursor: 'grab',
+        cursor: trackLocked ? 'default' : 'grab',
         overflow: 'hidden',
         userSelect: 'none',
         willChange: 'transform',
@@ -366,7 +372,7 @@ export const ClipBlock = memo(function ClipBlock({
             display: 'flex',
             overflow: 'hidden',
             pointerEvents: 'none',
-            borderRadius: 7,
+            borderRadius: 4,
           }}
         >
           {Array.from({ length: tileCount }).map((_, i) => {
@@ -477,34 +483,49 @@ export const ClipBlock = memo(function ClipBlock({
           top: 0,
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
-          cursor: 'ew-resize',
+          cursor: trackLocked ? 'default' : 'ew-resize',
           background: `linear-gradient(90deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
           zIndex: 2,
         }}
       />
 
-      {/* Clip label */}
-      <span
+      {/* Clip label — audio + text only; video/image clips show their thumbnail
+          filmstrip with no overlaid name (per design). Text leads with a T glyph. */}
+      {(clip.type === 'audio' || clip.type === 'text') && (
+        <span
         style={{
           position: 'relative',
           zIndex: 1,
-          display: 'block',
-          paddingLeft: clip.type === 'video' || clip.type === 'image' ? TRIM_HANDLE_WIDTH + 22 : TRIM_HANDLE_WIDTH + 6,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          paddingLeft: TRIM_HANDLE_WIDTH + 6,
           paddingRight: TRIM_HANDLE_WIDTH + 6,
-          paddingTop: 5,
-          fontSize: 10,
+          paddingTop: clip.type === 'audio' ? 3 : 5,
+          // Audio: a small filename caption pinned at the top (per design).
+          // Text: the larger content label with the T glyph.
+          fontSize: clip.type === 'audio' ? 9 : 11,
           color: `var(--elah-text-on-clip)`,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          fontWeight: 600,
+          fontWeight: clip.type === 'audio' ? 500 : 600,
           letterSpacing: '0.01em',
           textShadow: `var(--elah-effect-label-shadow)`,
           pointerEvents: 'none',
         }}
       >
-        {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
-      </span>
+        {clip.type === 'text' && (
+          <Type size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+        )}
+        <span
+          style={{
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
+        </span>
+        </span>
+      )}
 
       {/* Right trim handle */}
       <div
@@ -515,42 +536,11 @@ export const ClipBlock = memo(function ClipBlock({
           top: 0,
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
-          cursor: 'ew-resize',
+          cursor: trackLocked ? 'default' : 'ew-resize',
           background: `linear-gradient(270deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
           zIndex: 2,
         }}
       />
-
-      {isSelected && (
-        <button
-          type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={handleDelete}
-          title="Delete clip (Del)"
-          aria-label="Delete clip"
-          style={{
-            position: 'absolute',
-            top: 3,
-            right: TRIM_HANDLE_WIDTH + 3,
-            width: 16,
-            height: 16,
-            padding: 0,
-            lineHeight: '14px',
-            fontSize: 11,
-            color: `var(--elah-effect-delete-btn-text)`,
-            background: `var(--elah-effect-delete-btn-bg)`,
-            border: `1px solid var(--elah-effect-delete-btn-border)`,
-            borderRadius: 4,
-            cursor: 'pointer',
-            zIndex: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          ×
-        </button>
-      )}
 
       {ctxMenu && createPortal(
         <>

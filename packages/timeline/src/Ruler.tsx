@@ -1,6 +1,16 @@
 import { memo, useMemo } from 'react'
-import { framesToTimecode } from '@elah/core'
 import { cn } from './cn'
+
+/**
+ * Ruler timecode label — two-segment form matching the design (00:00, 00:30,
+ * 00:60, 00:90 … 00:330). The minutes segment stays "00" and the seconds segment
+ * is the cumulative second count, intentionally NOT rolled over to minutes (per
+ * the Figma mock).
+ */
+function formatRulerLabel(frame: number, fps: number): string {
+  const totalSeconds = Math.round(frame / fps)
+  return `00:${String(totalSeconds).padStart(2, '0')}`
+}
 
 interface RulerProps {
   fps: number
@@ -54,7 +64,7 @@ export const Ruler = memo(function Ruler({
     const result: { frame: number; label: string }[] = []
 
     for (let frame = 0; frame <= totalFrames + framesPerTick; frame += framesPerTick) {
-      result.push({ frame, label: framesToTimecode(frame, fps) })
+      result.push({ frame, label: formatRulerLabel(frame, fps) })
     }
 
     return result
@@ -93,17 +103,11 @@ export const Ruler = memo(function Ruler({
             alignItems: 'flex-start',
           }}
         >
-          <div
-            className={cn('bg-tick', tickClassName)}
-            style={{
-              width: 1,
-              height: height * 0.5,
-            }}
-          />
+          {/* Label sits above a short tick, matching the design. */}
           <span
             className={cn('text-tick-label', labelClassName)}
             style={{
-              fontSize: 9,
+              fontSize: 11,
               whiteSpace: 'nowrap',
               transform: 'translateX(3px)',
               fontFamily: 'monospace',
@@ -111,6 +115,14 @@ export const Ruler = memo(function Ruler({
           >
             {label}
           </span>
+          <div
+            className={cn('bg-tick', tickClassName)}
+            style={{
+              width: 1,
+              height: height * 0.35,
+              marginTop: 1,
+            }}
+          />
         </div>
       ))}
     </div>
