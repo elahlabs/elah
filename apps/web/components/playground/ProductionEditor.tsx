@@ -20,6 +20,8 @@ import {
   Image as ImageIcon,
   Music,
   Github,
+  Undo2,
+  Redo2,
 } from 'lucide-react'
 import { TextClipProperties } from './TextClipProperties'
 import { ExportModal } from './ExportModal'
@@ -154,21 +156,29 @@ const AppHeader = memo(function AppHeader({
       <div className="flex items-center gap-1">
         <button
           type="button"
-          className={cn(toolbarBtnCls, !canUndo && 'opacity-40 cursor-not-allowed')}
+          className={cn(
+            toolbarBtnCls,
+            'inline-flex items-center justify-center',
+            !canUndo && 'opacity-40 cursor-not-allowed',
+          )}
           disabled={!canUndo}
           onClick={() => engine.undo()}
           title="Undo (Ctrl+Z)"
         >
-          ↶
+          <Undo2 size={15} />
         </button>
         <button
           type="button"
-          className={cn(toolbarBtnCls, !canRedo && 'opacity-40 cursor-not-allowed')}
+          className={cn(
+            toolbarBtnCls,
+            'inline-flex items-center justify-center',
+            !canRedo && 'opacity-40 cursor-not-allowed',
+          )}
           disabled={!canRedo}
           onClick={() => engine.redo()}
           title="Redo (Ctrl+Y)"
         >
-          ↷
+          <Redo2 size={15} />
         </button>
       </div>
 
