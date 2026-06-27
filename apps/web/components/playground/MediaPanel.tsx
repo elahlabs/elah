@@ -21,11 +21,13 @@ import {
   Music,
   Image as ImageIcon,
   Trash2,
+  Link2,
 } from 'lucide-react'
 import {
   useMediaLibrary,
   useMediaLibraryStore,
   importFiles,
+  importUrl,
   MEDIA_DRAG_MIME,
   type MediaAsset,
   type MediaKind,
@@ -201,11 +203,31 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
   const [search, setSearch] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [showUrl, setShowUrl] = useState(false)
+  const [url, setUrl] = useState('')
+  const [urlBusy, setUrlBusy] = useState(false)
+  const [urlError, setUrlError] = useState<string | null>(null)
 
   const onPick = useCallback(async (files: FileList | File[] | null) => {
     if (!files || ('length' in files && files.length === 0)) return
     await importFiles(files)
   }, [])
+
+  const onAddUrl = useCallback(async () => {
+    const trimmed = url.trim()
+    if (!trimmed || urlBusy) return
+    setUrlBusy(true)
+    setUrlError(null)
+    try {
+      await importUrl(trimmed)
+      setUrl('')
+      setShowUrl(false)
+    } catch {
+      setUrlError('Could not import that URL.')
+    } finally {
+      setUrlBusy(false)
+    }
+  }, [url, urlBusy])
 
   const onDrop = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -305,6 +327,43 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
               Drag and drop files here
             </span>
           </button>
+
+          {/* Add from URL */}
+          <button
+            type="button"
+            onClick={() => setShowUrl((s) => !s)}
+            className="mt-2 inline-flex items-center gap-1.5 self-start text-[11px] text-ed-text-muted hover:text-ed-text transition-colors"
+          >
+            <Link2 size={12} />
+            Add from URL
+          </button>
+          {showUrl && (
+            <div className="mt-1.5 flex gap-1.5">
+              <input
+                autoFocus
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value)
+                  setUrlError(null)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && onAddUrl()}
+                placeholder="https://…/clip.mp4"
+                className="min-w-0 flex-1 rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={onAddUrl}
+                disabled={urlBusy || !url.trim()}
+                className="shrink-0 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
+                style={{ background: 'var(--elah-accent)' }}
+              >
+                {urlBusy ? '…' : 'Add'}
+              </button>
+            </div>
+          )}
+          {urlError && (
+            <span className="mt-1 text-[11px] text-ed-error">{urlError}</span>
+          )}
 
           {/* Search (toggle) */}
           {showSearch && (
