@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import {
   Plus,
   Type as TypeIcon,
@@ -10,7 +11,6 @@ import {
   Play,
   Pause,
   Square,
-  Magnet,
   Maximize2,
   Minus,
   ChevronDown,
@@ -19,14 +19,18 @@ import {
   Film,
   Image as ImageIcon,
   Music,
-  Captions,
+  Github,
 } from 'lucide-react'
 import { TextClipProperties } from './TextClipProperties'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
+import { PlaygroundTabs } from './PlaygroundTabs'
+import { MediaPanel } from './MediaPanel'
+import { siteConfig } from '@/config/site'
 import { cn } from '@/lib/utils'
 import {
-  SourcePanel,
+  // SourcePanel,  // replaced by MediaPanel (app-side revamp) — discard later
+  ElementsPanel,
   EditorProvider,
   Preview,
   Timeline,
@@ -100,18 +104,39 @@ const AppHeader = memo(function AppHeader({
         opacity: 0.6,
       }
     : {
-        background: `linear-gradient(180deg, var(--elah-accent-hover), var(--elah-accent))`,
-        border: '1px solid var(--elah-accent)',
+        // Deeper cyan than the brand accent so the white label keeps contrast.
+        background: `linear-gradient(180deg, #00a0d4, #0086b8)`,
+        border: '1px solid #0086b8',
         color: '#fff',
         boxShadow: '0 0 14px var(--elah-accent-glow)',
         cursor: 'pointer',
       }
 
   return (
-    <header className="grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
-      <div className="flex items-center gap-3.5">
-        <span className="text-[13px] font-bold text-ed-text tracking-[-0.02em]">
-          @elah/editor
+    <header className="elah-app-header grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
+      {/* Left — folded playground nav + brand + demo CTA */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/playgrounds"
+          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-mono tracking-[0.04em] text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
+        >
+          ← Playgrounds
+        </Link>
+        <div className="w-px h-4 bg-ed-border shrink-0" />
+        <span className="inline-flex items-center gap-2">
+          <span
+            className="w-[7px] h-[7px] rounded-full shrink-0"
+            style={{
+              background: 'var(--elah-accent)',
+              boxShadow: '0 0 8px var(--elah-accent-glow)',
+            }}
+          />
+          <span className="text-[13px] font-bold text-ed-text tracking-[-0.02em]">
+            elah
+          </span>
+          <span className="text-[11px] font-mono text-ed-text-muted">
+            @elah/editor
+          </span>
         </span>
         <button
           type="button"
@@ -125,7 +150,8 @@ const AppHeader = memo(function AppHeader({
         </button>
       </div>
 
-      <div className="flex gap-1">
+      {/* Center — undo / redo */}
+      <div className="flex items-center gap-1">
         <button
           type="button"
           className={cn(toolbarBtnCls, !canUndo && 'opacity-40 cursor-not-allowed')}
@@ -146,7 +172,9 @@ const AppHeader = memo(function AppHeader({
         </button>
       </div>
 
-      <div className="flex justify-end">
+      {/* Right — export + nav group (tabs kept right-aligned so they hold
+          position across Production / Timeline / Raw) */}
+      <div className="flex items-center gap-1 justify-end">
         <button
           type="button"
           className={toolbarBtnCls}
@@ -155,6 +183,17 @@ const AppHeader = memo(function AppHeader({
         >
           ⬇ Export
         </button>
+        <div className="w-px h-4 bg-ed-border shrink-0 mx-1" />
+        <PlaygroundTabs />
+        <a
+          href={siteConfig.links.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-2 py-1.5 rounded-md text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
+          title="View source on GitHub"
+        >
+          <Github size={14} />
+        </a>
       </div>
     </header>
   )
@@ -168,11 +207,15 @@ const RAIL_ITEMS = [
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'text', label: 'Text', Icon: TypeIcon },
-  { id: 'captions', label: 'Captions', Icon: Captions },
 ] as const
 
-const LeftRail = memo(function LeftRail() {
-  const [active, setActive] = useState('media')
+const LeftRail = memo(function LeftRail({
+  active,
+  onSelect,
+}: {
+  active: string
+  onSelect: (id: string) => void
+}) {
   return (
     <div className="w-[68px] shrink-0 flex flex-col items-center gap-1.5 py-3 border-r border-ed-border bg-ed-bg overflow-y-auto">
       {RAIL_ITEMS.map(({ id, label, Icon }) => {
@@ -181,7 +224,7 @@ const LeftRail = memo(function LeftRail() {
           <button
             key={id}
             type="button"
-            onClick={() => setActive(id)}
+            onClick={() => onSelect(id)}
             className="w-full flex flex-col items-center gap-1.5 py-1 cursor-pointer"
           >
             <span
@@ -362,8 +405,6 @@ const TimelineControls = memo(function TimelineControls({
   const zoom = usePlaybackStore((s) => s.zoom)
   const setZoom = usePlaybackStore((s) => s.setZoom)
   const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
-  const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
-  const toggleSnap = usePlaybackStore((s) => s.toggleSnap)
   const [addOpen, setAddOpen] = useState(false)
 
   const handleDeleteSelected = useCallback(() => {
@@ -474,17 +515,8 @@ const TimelineControls = memo(function TimelineControls({
         </button>
       </div>
 
-      {/* Right — snap, zoom, fit, aspect */}
+      {/* Right — zoom, fit, aspect */}
       <div className="flex items-center gap-1.5 justify-end">
-        <button
-          type="button"
-          onClick={toggleSnap}
-          title="Snap to clips / playhead"
-          className={cn(ghostIcon, snapEnabled && 'text-ed-text bg-ed-elevated')}
-        >
-          <Magnet size={15} />
-        </button>
-        <div className="w-px h-[18px] bg-ed-border shrink-0 mx-1" />
         <button
           type="button"
           className={ghostIcon}
@@ -528,6 +560,9 @@ export default function ProductionEditor() {
   const demuxerFactoryRef = useRef(createDefaultDemuxerFactory())
 
   const [showExportModal, setShowExportModal] = useState(false)
+  // Which left-rail source the side panel shows. 'text' surfaces the element
+  // palette (drag Text onto the timeline); everything else shows media for now.
+  const [activePanel, setActivePanel] = useState('media')
 
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
@@ -571,7 +606,7 @@ export default function ProductionEditor() {
 
         <div className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-1 min-h-0">
-            <LeftRail />
+            <LeftRail active={activePanel} onSelect={setActivePanel} />
             <div
               style={{
                 display: 'flex',
@@ -584,7 +619,13 @@ export default function ProductionEditor() {
                 overflow: 'hidden',
               }}
             >
-              <SourcePanel style={{ flex: 1, minHeight: 0 }} />
+              {/* Old SDK panel — kept commented for comparison, discard later. */}
+              {/* <SourcePanel style={{ flex: 1, minHeight: 0 }} /> */}
+              {activePanel === 'text' ? (
+                <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
+              ) : (
+                <MediaPanel style={{ flex: 1, minHeight: 0 }} />
+              )}
             </div>
 
             <div className="flex-1 min-w-0 min-h-0 flex flex-col bg-black">
@@ -606,7 +647,7 @@ export default function ProductionEditor() {
           <Timeline
             ref={timelineRef}
             fps={FPS}
-            style={{ height: 236, flexShrink: 0, minWidth: 0 }}
+            style={{ height: 186, flexShrink: 0, minWidth: 0 }}
           />
         </div>
       </div>

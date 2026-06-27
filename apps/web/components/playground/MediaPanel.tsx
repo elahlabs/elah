@@ -1,0 +1,359 @@
+'use client'
+
+/**
+ * MediaPanel — revamped source panel matching the Figma editor reference.
+ *
+ * App-side replacement for the SDK's <SourcePanel>: same MediaLibrary wiring
+ * (import + drag-to-timeline) but a new layout — Import/Record tabs, a prominent
+ * upload dropzone, All/Sort dropdowns, and a 2-column thumbnail grid.
+ *
+ * Kept separate from the published @elah/editor component so the two can be
+ * compared side by side; the old panel is commented out in ProductionEditor and
+ * will be discarded once this is approved.
+ */
+
+import { useCallback, useRef, useState, type DragEvent } from 'react'
+import {
+  UploadCloud,
+  Search,
+  ChevronDown,
+  Play,
+  Music,
+  Image as ImageIcon,
+  Trash2,
+} from 'lucide-react'
+import {
+  useMediaLibrary,
+  useMediaLibraryStore,
+  importFiles,
+  MEDIA_DRAG_MIME,
+  type MediaAsset,
+  type MediaKind,
+  type DragMediaPayload,
+} from '@elah/editor'
+import { cn } from '@/lib/utils'
+
+type KindFilter = 'all' | MediaKind
+type SortKey = 'added' | 'name' | 'duration'
+
+const KIND_OPTIONS: { value: KindFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'video', label: 'Video' },
+  { value: 'audio', label: 'Audio' },
+  { value: 'image', label: 'Image' },
+]
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'added', label: 'Recently added' },
+  { value: 'name', label: 'Name' },
+  { value: 'duration', label: 'Duration' },
+]
+
+function fmtDuration(sec: number | undefined): string {
+  if (!sec || !Number.isFinite(sec)) return ''
+  const total = Math.round(sec)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function sortAssets(list: MediaAsset[], sort: SortKey): MediaAsset[] {
+  const out = [...list]
+  out.sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name)
+    if (sort === 'duration') return (b.durationSec ?? 0) - (a.durationSec ?? 0)
+    return b.addedAt - a.addedAt
+  })
+  return out
+}
+
+/** Minimal dropdown — label ▾ with a popover list. */
+function Dropdown({
+  value,
+  options,
+  onChange,
+  align = 'left',
+}: {
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (v: string) => void
+  align?: 'left' | 'right'
+}) {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.value === value)
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1 text-[12px] text-ed-text-muted hover:text-ed-text transition-colors"
+      >
+        {current?.label}
+        <ChevronDown size={13} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div
+            className={cn(
+              'absolute z-20 mt-1 min-w-[140px] rounded-lg border border-ed-border bg-ed-elevated py-1 shadow-xl',
+              align === 'right' ? 'right-0' : 'left-0',
+            )}
+          >
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'block w-full px-3 py-1.5 text-left text-[12px] transition-colors',
+                  o.value === value
+                    ? 'text-ed-text bg-ed-bg-2'
+                    : 'text-ed-text-muted hover:text-ed-text hover:bg-ed-bg-2',
+                )}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AssetCard({ asset }: { asset: MediaAsset }) {
+  const removeAsset = useMediaLibraryStore((s) => s.removeAsset)
+  const duration = fmtDuration(asset.durationSec)
+
+  const onDragStart = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
+      e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
+      e.dataTransfer.effectAllowed = 'copy'
+    },
+    [asset.id],
+  )
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      title={asset.name}
+      className="group flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
+    >
+      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
+        {asset.thumbnailUrl ? (
+          <img
+            src={asset.thumbnailUrl}
+            alt=""
+            draggable={false}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-ed-text-muted">
+            {asset.kind === 'audio' ? (
+              <Music size={20} />
+            ) : asset.kind === 'image' ? (
+              <ImageIcon size={20} />
+            ) : (
+              <Play size={20} />
+            )}
+          </div>
+        )}
+
+        {asset.kind === 'video' && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white">
+              <Play size={13} fill="currentColor" />
+            </span>
+          </div>
+        )}
+
+        {duration && (
+          <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-mono text-white">
+            {duration}
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={() => removeAsset(asset.id)}
+          title="Remove from library"
+          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded bg-black/60 text-white/80 opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
+        >
+          <Trash2 size={11} />
+        </button>
+      </div>
+      <span className="truncate text-[11px] text-ed-text">{asset.name}</span>
+    </div>
+  )
+}
+
+export function MediaPanel({ style }: { style?: React.CSSProperties }) {
+  const { assets } = useMediaLibrary()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [kind, setKind] = useState<KindFilter>('all')
+  const [sort, setSort] = useState<SortKey>('added')
+  const [search, setSearch] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+
+  const onPick = useCallback(async (files: FileList | File[] | null) => {
+    if (!files || ('length' in files && files.length === 0)) return
+    await importFiles(files)
+  }, [])
+
+  const onDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      setDragOver(false)
+      if (e.dataTransfer.files?.length) onPick(e.dataTransfer.files)
+    },
+    [onPick],
+  )
+
+  const filtered = sortAssets(
+    assets.filter((a) => {
+      if (kind !== 'all' && a.kind !== kind) return false
+      if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false
+      return true
+    }),
+    sort,
+  )
+
+  return (
+    <div
+      className="flex h-full flex-col bg-ed-panel text-ed-text"
+      style={style}
+    >
+      {/* Header — Import section + quick actions */}
+      <div className="flex items-center gap-4 border-b border-ed-border px-3.5 pt-2.5">
+        <span className="relative pb-2 text-[13px] font-medium text-ed-text">
+          Import
+          <span
+            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
+            style={{ background: 'var(--elah-accent)' }}
+          />
+        </span>
+        <div className="ml-auto flex items-center gap-1 pb-1.5">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload media"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-ed-text-muted hover:bg-ed-elevated hover:text-ed-text transition-colors"
+          >
+            <UploadCloud size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSearch((s) => !s)}
+            title="Search media"
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+              showSearch
+                ? 'text-ed-text bg-ed-elevated'
+                : 'text-ed-text-muted hover:bg-ed-elevated hover:text-ed-text',
+            )}
+          >
+            <Search size={15} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col overflow-hidden p-3.5">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="video/*,audio/*,image/*"
+            className="hidden"
+            onChange={(e) => onPick(e.target.files)}
+          />
+
+          {/* Upload dropzone */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault()
+              setDragOver(true)
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            className={cn(
+              'flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-7 text-center transition-colors',
+              dragOver
+                ? 'border-[var(--elah-accent)] bg-ed-elevated'
+                : 'border-ed-border hover:border-ed-text-muted bg-ed-bg-2',
+            )}
+          >
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              style={{
+                background: 'var(--elah-accent-soft, rgba(0,194,255,0.12))',
+                color: 'var(--elah-accent)',
+              }}
+            >
+              <UploadCloud size={18} />
+            </span>
+            <span className="text-[13px] font-semibold text-ed-text">Upload Media</span>
+            <span className="text-[11px] text-ed-text-muted">
+              Drag and drop files here
+            </span>
+          </button>
+
+          {/* Search (toggle) */}
+          {showSearch && (
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search media…"
+              className="mt-3 w-full rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
+            />
+          )}
+
+          {/* Filter + sort row */}
+          <div className="mt-3 mb-2 flex items-center justify-between">
+            <Dropdown
+              value={kind}
+              options={KIND_OPTIONS}
+              onChange={(v) => setKind(v as KindFilter)}
+            />
+            <Dropdown
+              value={sort}
+              options={SORT_OPTIONS}
+              onChange={(v) => setSort(v as SortKey)}
+              align="right"
+            />
+          </div>
+
+          {/* Asset grid */}
+          <div className="flex-1 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-ed-text-muted">
+                <span className="text-[12px]">
+                  {assets.length === 0 ? 'No media yet' : 'No matches'}
+                </span>
+                {assets.length === 0 && (
+                  <span className="text-[11px]">Upload or drop files to begin</span>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {filtered.map((a) => (
+                  <AssetCard key={a.id} asset={a} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+  )
+}
+
+export default MediaPanel

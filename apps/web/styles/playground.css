@@ -127,6 +127,12 @@
   border: 1px solid var(--pg-border-subtle);
 }
 
+/* In the merged production header the tabs sit beside the brand, not pushed
+   to the far edge — neutralize the segmented control's auto margin. */
+.elah-app-header .pg-nav-tabs {
+  margin-left: 0;
+}
+
 .pg-nav-tab {
   position: relative;
   padding: 4px 14px;

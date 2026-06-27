@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import {
+  ChevronUp,
+  ChevronDown,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+} from 'lucide-react'
 import {
   useSelectionStore,
   useTracksStore,
@@ -149,7 +155,7 @@ function AlignBtn({
   current: string
   onClick: () => void
 }) {
-  const labels: Record<string, string> = { left: '⫷', center: '☰', right: '⫸' }
+  const Icon = value === 'left' ? AlignLeft : value === 'right' ? AlignRight : AlignCenter
   const active = current === value
   return (
     <button
@@ -157,13 +163,13 @@ function AlignBtn({
       title={`Align ${value}`}
       onClick={onClick}
       className={cn(
-        'flex-1 py-1.5 text-[13px] rounded-md cursor-pointer border transition-colors',
+        'flex-1 flex items-center justify-center py-1.5 rounded-md cursor-pointer border transition-colors',
         active
           ? 'bg-ed-accent-soft text-ed-accent-hover border-ed-accent'
           : 'bg-ed-bg text-ed-text-muted border-ed-border hover:text-ed-text',
       )}
     >
-      {labels[value]}
+      <Icon size={15} />
     </button>
   )
 }
