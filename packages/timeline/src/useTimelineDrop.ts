@@ -114,6 +114,13 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
 
     const handleDragOver = (e: DragEvent) => {
       if (!acceptsDrag(e)) return
+      // A locked track refuses new clips — show the no-drop cursor and, by not
+      // calling preventDefault, let the browser reject the drop.
+      const track = useTracksStore.getState().tracks.find((t) => t.id === trackId)
+      if (track?.locked) {
+        e.dataTransfer!.dropEffect = 'none'
+        return
+      }
       e.preventDefault()
       e.dataTransfer!.dropEffect = 'copy'
     }
@@ -261,6 +268,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
         .getState()
         .tracks.find((t) => t.id === trackId)
       if (!track) return
+      if (track.locked) return // locked tracks reject new clips
 
       if (e.dataTransfer!.types.includes(ELEMENT_DRAG_MIME)) {
         dropElement(e, track)

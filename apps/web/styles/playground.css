@@ -127,6 +127,12 @@
   border: 1px solid var(--pg-border-subtle);
 }
 
+/* In the merged production header the tabs sit beside the brand, not pushed
+   to the far edge — neutralize the segmented control's auto margin. */
+.elah-app-header .pg-nav-tabs {
+  margin-left: 0;
+}
+
 .pg-nav-tab {
   position: relative;
   padding: 4px 14px;
@@ -214,7 +220,9 @@
   appearance: none;
   height: 4px;
   border-radius: 2px;
-  background: var(--pg-bg-panel);
+  /* Lighter than the panels it sits on (was --pg-bg-panel, which matched the
+     properties-panel bg and made the track invisible). */
+  background: var(--pg-bg-highest);
   outline: none;
 }
 .elah-range::-webkit-slider-thumb {
@@ -222,16 +230,18 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--pg-accent);
+  /* Editor accent (cyan) — the zoom thumb belongs to the editor toolbar, not the
+     marketing shell, so it follows --elah-accent rather than the rose --pg-accent. */
+  background: var(--elah-accent);
   border: 2px solid var(--pg-bg-elevated);
   cursor: pointer;
-  box-shadow: 0 0 0 1px var(--pg-accent-glow);
+  box-shadow: 0 0 0 1px var(--elah-accent-glow);
 }
 .elah-range::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--pg-accent);
+  background: var(--elah-accent);
   border: 2px solid var(--pg-bg-elevated);
   cursor: pointer;
 }

@@ -204,21 +204,21 @@
   --elah-text:          #f3f4f6;
   --elah-text-muted:    #9ca3af;
 
-  /* Accent — rose-crimson */
-  --elah-accent:        #e11d48;
-  --elah-accent-hover:  #fb7185;
-  --elah-accent-dim:    #fb7185;
-  --elah-accent-glow:   rgba(225, 29, 72, 0.35);
-  --elah-accent-soft:   rgba(225, 29, 72, 0.12);
-  --elah-accent-text:   #ffffff;
+  /* Accent — cyan (Figma Export button #00c2ff; dark text on the fill) */
+  --elah-accent:        #00c2ff;
+  --elah-accent-hover:  #2bcbff;
+  --elah-accent-dim:    #7adcff;
+  --elah-accent-glow:   rgba(0, 194, 255, 0.35);
+  --elah-accent-soft:   rgba(0, 194, 255, 0.12);
+  --elah-accent-text:   #06212b;
 
   /* Semantic */
   --elah-color-error:   #f87171;
 
-  /* Timeline */
-  --elah-playhead:      #ff2d55;
-  --elah-tick-color:    #232938;
-  --elah-tick-label:    #6b7280;
+  /* Timeline (Figma: white playhead, cool-gray ticks) */
+  --elah-playhead:      #ffffff;
+  --elah-tick-color:    #394146;
+  --elah-tick-label:    #7a858b;
 
   /* Typography */
   --elah-font-ui:   var(--font-geist-sans, system-ui, sans-serif);
@@ -236,10 +236,10 @@
   --elah-tag-image-fg:  #fcd34d;
   --elah-tag-image-bg:  rgba(245, 158, 11, 0.2);
 
-  /* Element type colours */
-  --elah-tag-text-fg:     #c4b5fd;
-  --elah-tag-text-bg:     rgba(147, 51, 234, 0.25);
-  --elah-tag-text-border: rgba(147, 51, 234, 0.4);
+  /* Element type colours (Figma text clips are orange/rust) */
+  --elah-tag-text-fg:     #f0b483;
+  --elah-tag-text-bg:     rgba(173, 86, 33, 0.25);
+  --elah-tag-text-border: rgba(173, 86, 33, 0.4);
 
   /* Clip colours are editor-domain and don't vary by light/dark */
   --elah-clip-video-top:    #3b82f6;
@@ -247,15 +247,15 @@
   --elah-clip-video-bottom: #1d4ed8;
   --elah-clip-video-accent: #60a5fa;
 
-  --elah-clip-audio-top:    #22c55e;
-  --elah-clip-audio-mid:    #16a34a;
-  --elah-clip-audio-bottom: #15803d;
-  --elah-clip-audio-accent: #4ade80;
+  --elah-clip-audio-top:    #1c8160;
+  --elah-clip-audio-mid:    #115843;
+  --elah-clip-audio-bottom: #0c2a26; /* exact body */
+  --elah-clip-audio-accent: #0d4d3c; /* exact border */
 
-  --elah-clip-text-top:    #a855f7;
-  --elah-clip-text-mid:    #9333ea;
-  --elah-clip-text-bottom: #7e22ce;
-  --elah-clip-text-accent: #c084fc;
+  --elah-clip-text-top:    #ad5621;
+  --elah-clip-text-mid:    #8f3f18;
+  --elah-clip-text-bottom: #7a2e10; /* exact body */
+  --elah-clip-text-accent: #ad5621; /* exact border */
 
   --elah-clip-image-top:    #fbbf24;
   --elah-clip-image-mid:    #d97706;
@@ -265,14 +265,14 @@
   /* Timeline chrome — menus, dialogs, transitions, clip effects (cool dark). */
   --elah-text-on-clip: rgba(255, 255, 255, 0.95);
 
-  --elah-selection-border: #ff2d55;
-  --elah-selection-glow:   rgba(255, 45, 85, 0.4);
+  --elah-selection-border: #00c2ff;
+  --elah-selection-glow:   rgba(0, 194, 255, 0.4);
 
   --elah-transition-line:       rgba(107, 140, 255, 0.9);
   --elah-transition-line-hover: rgba(255, 255, 255, 0.55);
   --elah-transition-line-idle:  rgba(255, 255, 255, 0.18);
-  --elah-transition-fill:       #6b8cff;
-  --elah-transition-stroke:     #a5b4fc;
+  --elah-transition-fill:       #3c3e94;
+  --elah-transition-stroke:     #525480;
   --elah-transition-add-fill:   rgba(255, 255, 255, 0.12);
   --elah-transition-add-stroke: rgba(255, 255, 255, 0.7);
 
@@ -306,10 +306,11 @@
   --elah-danger-bg-hover: rgba(255, 107, 107, 0.12);
   --elah-danger-border:   #3f2a2a;
 
-  --elah-effect-gloss:                  rgba(255, 255, 255, 0.14);
-  --elah-effect-inner-highlight:        rgba(255, 255, 255, 0.12);
-  --elah-effect-inner-highlight-strong: rgba(255, 255, 255, 0.15);
-  --elah-effect-clip-shadow:            0 2px 6px rgba(0, 0, 0, 0.35);
+  /* Flat clip treatment to match the Figma — minimal gloss/highlight/shadow. */
+  --elah-effect-gloss:                  rgba(255, 255, 255, 0.04);
+  --elah-effect-inner-highlight:        rgba(255, 255, 255, 0.04);
+  --elah-effect-inner-highlight-strong: rgba(255, 255, 255, 0.06);
+  --elah-effect-clip-shadow:            0 1px 2px rgba(0, 0, 0, 0.25);
   --elah-effect-tile-separator:         rgba(0, 0, 0, 0.28);
   --elah-effect-waveform:               rgba(255, 255, 255, 0.85);
   --elah-effect-placeholder-bg:         rgba(0, 0, 0, 0.22);
@@ -323,14 +324,30 @@
   /* Editor overlays / toasts / preview. Stage outline follows the accent;
      selection affordances and toasts are intrinsic editor chrome (literal). */
   --elah-preview-bg:       #06070a;
-  --elah-stage-border:     rgba(225, 29, 72, 0.45);
-  --elah-stage-glow:       0 0 20px rgba(225, 29, 72, 0.08);
+  --elah-stage-border:     rgba(0, 194, 255, 0.45);
+  --elah-stage-glow:       0 0 20px rgba(0, 194, 255, 0.08);
   --elah-selection-color:  #4c9aff;
   --elah-selection-handle: #ffffff;
   --elah-danger-bg:        #3a2418;
   --elah-info-bg:          #1a2433;
   --elah-info-border:      #355070;
   --elah-info-text:        #c8d8f0;
+}
+
+/* Figma: audio clips show a tinted waveform on a dark body — teal-green at rest,
+   blue when selected/active. The selected rule overrides the audio clip vars on
+   the clip element itself, so the `from-clip-audio-*` gradient utilities repaint;
+   --elah-effect-waveform cascades to the waveform bars. Hooks: data-clip-type /
+   data-selected on the ClipBlock root. */
+.elah-root [data-clip-type='audio'] {
+  --elah-effect-waveform: #248f6c; /* exact green waveform */
+}
+.elah-root [data-clip-type='audio'][data-selected='true'] {
+  --elah-clip-audio-top:    #2b4a82;
+  --elah-clip-audio-mid:    #1d3460;
+  --elah-clip-audio-bottom: #162245; /* exact blue body */
+  --elah-clip-audio-accent: #4370b2; /* exact blue border */
+  --elah-effect-waveform:   #4370b2; /* exact blue waveform */
 }
 
 /* Syntax highlight overrides */

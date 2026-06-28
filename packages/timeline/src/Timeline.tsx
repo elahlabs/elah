@@ -33,7 +33,7 @@ export interface TimelineRef {
 }
 
 /** Width of the track-label sidebar; the clip lanes begin after it. */
-const SIDEBAR_WIDTH = 160
+const SIDEBAR_WIDTH = 184
 
 function buildPasteOptions(clip: Clip, startFrame: number): CreateClipOptions {
   const base = {
