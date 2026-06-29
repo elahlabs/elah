@@ -23,7 +23,7 @@ import {
   Undo2,
   Redo2,
 } from 'lucide-react'
-import { TextClipProperties } from './TextClipProperties'
+import { ClipProperties } from './ClipProperties'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
 import { PlaygroundTabs } from './PlaygroundTabs'
@@ -649,7 +649,7 @@ export default function ProductionEditor() {
               <TransportBar />
             </div>
 
-            <TextClipProperties />
+            <ClipProperties />
           </div>
 
           <TimelineControls timelineRef={timelineRef} />

@@ -112,7 +112,9 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       const sourceFrame = frame - clip.startFrame + clip.sourceStartFrame
       const opacity = clip.opacity ?? 1
       const baseVolume = clip.volume ?? 1
-      const volume = track.muted ? 0 : baseVolume
+      // Fold track gain into effective volume; mute zeroes both.
+      const trackGain = track.muted ? 0 : (track.volume ?? 1)
+      const volume = baseVolume * trackGain
 
       if (clip.type === 'video' && clip.src) {
         const active: ActiveVideoClip = {

@@ -26,5 +26,6 @@ export function createTrack(options: CreateTrackOptions): Track {
     disabled: false,
     muted: false,
     solo: false,
+    volume: 1,
   }
 }

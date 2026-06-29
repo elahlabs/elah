@@ -183,6 +183,13 @@ export class TimelineEngine {
     }, 'Change aspect ratio')
   }
 
+  /** Set the project-level master volume (linear, 0..2). Persisted with the project. */
+  setMasterVolume(value: number): void {
+    this.commit((draft) => {
+      draft.masterVolume = Math.max(0, Math.min(2, value))
+    }, 'Set master volume')
+  }
+
   // ---------------------------------------------------------------------------
   // Track operations
   // ---------------------------------------------------------------------------
