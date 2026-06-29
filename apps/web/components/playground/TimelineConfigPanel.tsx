@@ -1,8 +1,10 @@
 'use client'
 
-import { memo, useEffect, useState } from 'react'
+import { memo, useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import type { TimelineProps } from '@elah/editor'
 import { cn } from '@/lib/utils'
+import { TimelineThemeMode } from './TimelineThemeMode'
 
 /**
  * Live config panel for the timeline playground (playground-only UI).
@@ -20,20 +22,6 @@ import { cn } from '@/lib/utils'
  */
 
 export type ClassNamesState = NonNullable<TimelineProps['classNames']>
-
-export interface ProviderCfg {
-  defaultTrackHeight: number
-  maxHistorySize: number
-  stageWidth: number
-  stageHeight: number
-}
-
-export const DEFAULT_PROVIDER_CFG: ProviderCfg = {
-  defaultTrackHeight: 36,
-  maxHistorySize: 100,
-  stageWidth: 1920,
-  stageHeight: 1080,
-}
 
 type Swatch = 'none' | 'bg' | 'text' | 'gradient'
 
@@ -160,61 +148,37 @@ function SlotControl({
   )
 }
 
-const NumberField = memo(function NumberField({
-  label,
-  value,
-  min,
-  onChange,
-}: {
-  label: string
-  value: number
-  min?: number
-  onChange: (next: number) => void
-}) {
-  return (
-    <label className="flex items-center justify-between gap-2">
-      <span className="text-[11px] text-ed-text-muted">{label}</span>
-      <input
-        type="number"
-        min={min}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-20 px-2 py-1 bg-ed-bg border border-ed-border rounded text-[11px] font-mono text-ed-text focus:border-ed-accent focus:outline-none"
-      />
-    </label>
-  )
-})
+type Mode = 'granular' | 'theme'
+
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'granular', label: 'Granular' },
+  { id: 'theme', label: 'Theme' },
+]
 
 interface TimelineConfigPanelProps {
   classNames: ClassNamesState
   onClassNamesChange: (next: ClassNamesState) => void
-  providerCfg: ProviderCfg
-  onProviderCfgChange: (next: ProviderCfg) => void
-  providerDirty: boolean
-  onApplyProvider: () => void
+  /** Theme-mode picker state (raw colour values keyed by token id). */
+  themeValues: Record<string, string>
+  onThemeValuesChange: (next: Record<string, string>) => void
+  /** Toggle the Export Style sidebar (owned by the parent). */
+  onToggleExport: () => void
+  exportOpen: boolean
 }
 
 export const TimelineConfigPanel = memo(function TimelineConfigPanel({
   classNames,
   onClassNamesChange,
-  providerCfg,
-  onProviderCfgChange,
-  providerDirty,
-  onApplyProvider,
+  themeValues,
+  onThemeValuesChange,
+  onToggleExport,
+  exportOpen,
 }: TimelineConfigPanelProps) {
-  const [open, setOpen] = useState(true)
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const [copied, setCopied] = useState(false)
-
-  // Esc closes the panel.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  const [mode, setMode] = useState<Mode>('granular')
+  // Only the first group starts expanded; the rest collapse by default.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(GROUPS.slice(1).map((g) => [g.title, true])),
+  )
 
   const setSlot = (key: keyof ClassNamesState, next: string | undefined) => {
     const draft = { ...classNames }
@@ -223,177 +187,108 @@ export const TimelineConfigPanel = memo(function TimelineConfigPanel({
     onClassNamesChange(draft)
   }
 
-  const setCfg = (patch: Partial<ProviderCfg>) =>
-    onProviderCfgChange({ ...providerCfg, ...patch })
-
-  const activeKeys = Object.keys(classNames)
-  const classNamesDirty = activeKeys.length > 0
-
-  const copyJsx = () => {
-    const body = activeKeys
-      .map((k) => `  ${k}: '${classNames[k as keyof ClassNamesState]}',`)
-      .join('\n')
-    const snippet = `classNames={{\n${body}\n}}`
-    void navigator.clipboard?.writeText(snippet).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
+  const classNamesDirty = Object.keys(classNames).length > 0
 
   /** Active overrides within a group — drives the per-group count badge. */
   const groupCount = (group: SlotGroup) =>
     group.slots.filter((s) => classNames[s.key]).length
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-ed-panel/90 backdrop-blur border border-ed-border rounded-lg text-xs font-medium text-ed-text-muted hover:text-ed-text hover:border-ed-accent/50 shadow-lg transition-colors"
-        title="Open config panel"
-      >
-        ⚙ Config
-        {classNamesDirty && (
-          <span className="flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-ed-accent text-ed-accent-text text-[9px] font-semibold tabular-nums">
-            {activeKeys.length}
-          </span>
-        )}
-        {providerDirty && (
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="Provider changes pending" />
-        )}
-      </button>
-    )
-  }
-
   return (
-    <aside className="absolute top-3 right-3 z-30 w-[272px] max-h-[calc(100%-1.5rem)] flex flex-col bg-ed-panel/95 backdrop-blur border border-ed-border rounded-xl shadow-2xl overflow-hidden font-sans">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-ed-border shrink-0">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ed-text">
-          Config
-        </span>
+    <aside className="flex h-full w-[280px] shrink-0 flex-col bg-ed-panel border-r border-ed-border font-sans">
+      {/* Header + tabs (underline-accent, like the source panel) */}
+      <div className="flex items-center gap-4 border-b border-ed-border px-3.5 pt-2.5 shrink-0">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            onClick={() => setMode(m.id)}
+            className={cn(
+              'relative pb-2 text-[13px] font-medium transition-colors',
+              mode === m.id ? 'text-ed-text' : 'text-ed-text-muted hover:text-ed-text',
+            )}
+          >
+            {m.label}
+            {mode === m.id && (
+              <span
+                className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
+                style={{ background: 'var(--elah-accent)' }}
+              />
+            )}
+          </button>
+        ))}
+
+        {/* Export Style — toggles the code sidebar (classNames + theme.css) */}
         <button
-          onClick={() => setOpen(false)}
-          className="text-ed-text-muted hover:text-ed-text text-base leading-none px-1 cursor-pointer"
-          aria-label="Collapse config panel"
+          onClick={onToggleExport}
+          className={cn(
+            'ml-auto mb-1.5 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity hover:opacity-90',
+            exportOpen && 'ring-1 ring-inset ring-white/30',
+          )}
+          style={{ background: 'var(--elah-accent)', color: 'var(--elah-accent-text)' }}
+          title="Export style as code"
         >
-          ×
+          <Sparkles size={12} /> Export
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-5">
-        {/* ── Provider config (remount-gated) ─────────────────────────── */}
-        <section className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-ed-text-muted/70">
-              EditorProvider
-            </span>
-            {providerDirty && (
-              <span className="text-[9px] text-amber-400 uppercase tracking-wide">
-                pending
-              </span>
-            )}
-          </div>
-          <NumberField
-            label="Track height"
-            value={providerCfg.defaultTrackHeight}
-            min={16}
-            onChange={(v) => setCfg({ defaultTrackHeight: v })}
-          />
-          <NumberField
-            label="Max history"
-            value={providerCfg.maxHistorySize}
-            min={1}
-            onChange={(v) => setCfg({ maxHistorySize: v })}
-          />
-          <NumberField
-            label="Stage width"
-            value={providerCfg.stageWidth}
-            min={1}
-            onChange={(v) => setCfg({ stageWidth: v })}
-          />
-          <NumberField
-            label="Stage height"
-            value={providerCfg.stageHeight}
-            min={1}
-            onChange={(v) => setCfg({ stageHeight: v })}
-          />
-          <button
-            onClick={onApplyProvider}
-            disabled={!providerDirty}
-            className={cn(
-              'mt-1 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-colors',
-              providerDirty
-                ? 'bg-ed-accent-soft border-ed-accent text-ed-accent-hover cursor-pointer hover:bg-ed-accent/20'
-                : 'border-ed-border text-ed-text-muted/40 cursor-not-allowed',
-            )}
-          >
-            ⟳ Apply &amp; remount
-          </button>
-          <p className="text-[9px] text-ed-text-muted/70 leading-snug">
-            The provider builds its engine once on mount, so these only take
-            effect after a remount (clears clips & history).
-          </p>
-        </section>
+      {/* Body */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 flex flex-col gap-5">
+        {mode === 'theme' && (
+          <TimelineThemeMode values={themeValues} onChange={onThemeValuesChange} />
+        )}
 
-        {/* ── Timeline classNames (live) ──────────────────────────────── */}
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-ed-text-muted/70">
-              Timeline classNames · live
-            </span>
-            {classNamesDirty && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={copyJsx}
-                  className="text-[9px] text-ed-text-muted hover:text-ed-text uppercase tracking-wide cursor-pointer"
-                >
-                  {copied ? '✓ copied' : 'copy jsx'}
-                </button>
+        {mode === 'granular' && (
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-ed-text-muted/70">
+                Timeline classNames · live
+              </span>
+              {classNamesDirty && (
                 <button
                   onClick={() => onClassNamesChange({})}
                   className="text-[9px] text-ed-text-muted hover:text-ed-text uppercase tracking-wide cursor-pointer"
                 >
                   reset
                 </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {GROUPS.map((group) => {
-            const count = groupCount(group)
-            const isCollapsed = collapsed[group.title]
-            return (
-              <div key={group.title} className="flex flex-col gap-2.5">
-                <button
-                  onClick={() =>
-                    setCollapsed((c) => ({ ...c, [group.title]: !c[group.title] }))
-                  }
-                  className="flex items-center gap-1.5 text-left cursor-pointer group/header"
-                >
-                  <span className="text-ed-text-muted/50 text-[9px] w-2">
-                    {isCollapsed ? '▸' : '▾'}
-                  </span>
-                  <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ed-text-muted/50 group-hover/header:text-ed-text-muted">
-                    {group.title}
-                  </span>
-                  {count > 0 && (
-                    <span className="flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-ed-accent-soft text-ed-accent-hover text-[8px] font-semibold tabular-nums">
-                      {count}
+            {GROUPS.map((group) => {
+              const count = groupCount(group)
+              const isCollapsed = collapsed[group.title]
+              return (
+                <div key={group.title} className="flex flex-col gap-2.5">
+                  <button
+                    onClick={() =>
+                      setCollapsed((c) => ({ ...c, [group.title]: !c[group.title] }))
+                    }
+                    className="flex items-center gap-1.5 text-left cursor-pointer group/header"
+                  >
+                    <span className="text-ed-text-muted/50 text-[9px] w-2">
+                      {isCollapsed ? '▸' : '▾'}
                     </span>
-                  )}
-                </button>
-                {!isCollapsed &&
-                  group.slots.map((slot) => (
-                    <SlotControl
-                      key={slot.key}
-                      slot={slot}
-                      value={(classNames[slot.key] as string) ?? ''}
-                      onChange={(next) => setSlot(slot.key, next)}
-                    />
-                  ))}
-              </div>
-            )
-          })}
-        </section>
+                    <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ed-text-muted/50 group-hover/header:text-ed-text-muted">
+                      {group.title}
+                    </span>
+                    {count > 0 && (
+                      <span className="flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-ed-accent-soft text-ed-accent-hover text-[8px] font-semibold tabular-nums">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                  {!isCollapsed &&
+                    group.slots.map((slot) => (
+                      <SlotControl
+                        key={slot.key}
+                        slot={slot}
+                        value={(classNames[slot.key] as string) ?? ''}
+                        onChange={(next) => setSlot(slot.key, next)}
+                      />
+                    ))}
+                </div>
+              )
+            })}
+          </section>
+        )}
       </div>
     </aside>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo, useMemo, useRef, useState } from 'react'
 import {
   EditorProvider,
   Timeline,
@@ -9,15 +9,21 @@ import {
   useTimelineEngine,
   framesToTimecode,
   type InitialTrackConfig,
+  type TimelineRef,
 } from '@elah/editor'
+import { Play, Pause, Square, Undo2, Redo2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   TimelineConfigPanel,
-  DEFAULT_PROVIDER_CFG,
   type ClassNamesState,
-  type ProviderCfg,
 } from './TimelineConfigPanel'
-import { TimelineScenePanel } from './TimelineScenePanel'
+import { TimelineControls } from './TimelineControls'
+import { TimelineSceneIO } from './TimelineSceneIO'
+import { TimelineStyleExport } from './TimelineStyleExport'
+import {
+  buildThemeVars,
+  DEFAULT_THEME_VALUES,
+} from './TimelineThemeMode'
 
 const FPS = 30
 
@@ -35,6 +41,8 @@ const TimelineToolbar = memo(function TimelineToolbar() {
   const totalFrames = useTracksStore((s) => s.totalFrames)
   const tracks = useTracksStore((s) => s.tracks)
   const clips = useTracksStore((s) => s.clips)
+  const canUndo = useTracksStore((s) => s.canUndo)
+  const canRedo = useTracksStore((s) => s.canRedo)
   const setCurrentFrame = usePlaybackStore((s) => s.setCurrentFrame)
 
   const handleAddClip = (trackId: string, type: 'video' | 'audio' | 'text', duration: number = FPS * 5) => {
@@ -64,7 +72,8 @@ const TimelineToolbar = memo(function TimelineToolbar() {
     }
   }
 
-  const handleReset = () => {
+  const handleStop = () => {
+    usePlaybackStore.getState().pause()
     setCurrentFrame(0)
   }
 
@@ -81,29 +90,54 @@ const TimelineToolbar = memo(function TimelineToolbar() {
 
   // Base button classes
   const btnCls = 'px-3 py-1.5 bg-ed-elevated text-ed-text-muted border border-ed-border rounded-md cursor-pointer text-xs font-medium whitespace-nowrap font-sans'
-
-  // Dynamic play button — color switches on state, kept as inline style
-  const playBtnStyle: React.CSSProperties = isPlaying
-    ? { background: 'rgba(34, 197, 94, 0.12)', border: '1px solid #22C55E', color: '#22C55E' }
-    : { background: 'var(--elah-accent)', border: '1px solid var(--elah-accent)', color: '#fff' }
+  const ghostIcon =
+    'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-ed-bg-2 border-b border-ed-border shrink-0 overflow-x-auto">
-      <div className="flex items-center gap-2 pr-3 border-r border-ed-border">
-        <button onClick={togglePlayPause} className={btnCls} style={playBtnStyle}>
-          {isPlaying ? '⏸ Pause' : '▶ Play'}
+      {/* Transport — matches the Production editor's TransportBar. */}
+      <div className="flex items-center gap-2.5 pr-3 border-r border-ed-border">
+        <button
+          type="button"
+          onClick={togglePlayPause}
+          title="Play / Pause (Space)"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white text-black hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+        >
+          {isPlaying ? (
+            <Pause size={14} fill="currentColor" />
+          ) : (
+            <Play size={14} fill="currentColor" className="ml-0.5" />
+          )}
         </button>
 
-        <span className="text-[11px] text-ed-text-muted font-mono min-w-[90px]">
-          {framesToTimecode(currentFrame, FPS)} / {framesToTimecode(Math.max(totalFrames, 1), FPS)}
+        <button type="button" onClick={handleStop} title="Stop" className={ghostIcon}>
+          <Square size={12} fill="currentColor" />
+        </button>
+
+        <span className="font-mono text-[11px] tracking-[0.02em] tabular-nums whitespace-nowrap">
+          <span style={{ color: 'var(--elah-accent)' }}>{framesToTimecode(currentFrame, FPS)}</span>
+          <span className="text-ed-text-muted mx-1.5">|</span>
+          <span className="text-ed-text-muted">{framesToTimecode(Math.max(totalFrames, 1), FPS)}</span>
         </span>
 
-        <button onClick={() => engine.undo()} className={btnCls}>
-          ↶ Undo
+        <button
+          type="button"
+          onClick={() => engine.undo()}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+          className={cn(ghostIcon, !canUndo && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-ed-text-muted')}
+        >
+          <Undo2 size={15} />
         </button>
 
-        <button onClick={handleReset} className={btnCls}>
-          ⏮ Reset
+        <button
+          type="button"
+          onClick={() => engine.redo()}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Y)"
+          className={cn(ghostIcon, !canRedo && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-ed-text-muted')}
+        >
+          <Redo2 size={15} />
         </button>
       </div>
 
@@ -148,35 +182,43 @@ export default function TimelineEditor() {
   // Live Timeline classNames — passed straight to <Timeline>, no remount needed.
   const [classNames, setClassNames] = useState<ClassNamesState>({})
 
-  // EditorProvider config. `cfg` is the editable draft; `appliedCfg` mirrors
-  // what the currently-mounted provider was built with. They diverge while the
-  // user edits and reconverge on Apply, which bumps `remountKey` to rebuild the
-  // engine with the new values.
-  const [cfg, setCfg] = useState<ProviderCfg>(DEFAULT_PROVIDER_CFG)
-  const [appliedCfg, setAppliedCfg] = useState<ProviderCfg>(DEFAULT_PROVIDER_CFG)
-  const [remountKey, setRemountKey] = useState(0)
+  // Theme mode: raw picker values → derived `--elah-*` overrides applied inline
+  // to `.elah-root`, which win over the tokens.css defaults. Live, no remount.
+  const [themeValues, setThemeValues] = useState<Record<string, string>>(DEFAULT_THEME_VALUES)
+  const themeVars = useMemo(() => buildThemeVars(themeValues), [themeValues])
 
-  const providerDirty =
-    cfg.defaultTrackHeight !== appliedCfg.defaultTrackHeight ||
-    cfg.maxHistorySize !== appliedCfg.maxHistorySize ||
-    cfg.stageWidth !== appliedCfg.stageWidth ||
-    cfg.stageHeight !== appliedCfg.stageHeight
+  // Export Style sidebar (right of the upper region).
+  const [exportOpen, setExportOpen] = useState(false)
 
-  const applyProvider = () => {
-    setAppliedCfg(cfg)
-    setRemountKey((k) => k + 1)
+  // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
+  // clamped to [MIN, available − reserved] so the IO area above never vanishes.
+  const TIMELINE_MIN = 120
+  const [timelineHeight, setTimelineHeight] = useState(186)
+  const workspaceRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useRef<TimelineRef>(null)
+
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault()
+    const startY = e.clientY
+    const startH = timelineHeight
+    const maxH = (workspaceRef.current?.clientHeight ?? 800) - 140
+    const onMove = (ev: PointerEvent) => {
+      const next = startH + (startY - ev.clientY) // drag up → taller
+      setTimelineHeight(Math.min(Math.max(next, TIMELINE_MIN), Math.max(maxH, TIMELINE_MIN)))
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    document.body.style.userSelect = 'none'
   }
 
   return (
-    <EditorProvider
-      key={remountKey}
-      fps={FPS}
-      initialTracks={INITIAL_TRACKS}
-      defaultTrackHeight={cfg.defaultTrackHeight}
-      maxHistorySize={cfg.maxHistorySize}
-      stage={{ width: cfg.stageWidth, height: cfg.stageHeight }}
-    >
-      <div className="elah-root h-full flex flex-col">
+    <EditorProvider fps={FPS} defaultTrackHeight={36} initialTracks={INITIAL_TRACKS}>
+      <div className="elah-root h-full flex flex-col" style={themeVars as React.CSSProperties}>
         <header className="px-4 py-3 bg-ed-bg-2 border-b border-ed-border shrink-0">
           <h2 className="m-0 text-sm font-semibold text-ed-text">Timeline Only</h2>
           <p className="m-0 mt-0.5 text-xs text-ed-text-muted">
@@ -184,32 +226,59 @@ export default function TimelineEditor() {
           </p>
         </header>
 
-        <TimelineToolbar />
+        <div ref={workspaceRef} className="flex-1 min-h-0 flex flex-col">
+          {/* Upper region: config docked left, Scene I/O fills the rest. The
+              config panel stops here — the timeline below spans full width. */}
+          <div className="flex-1 min-h-0 flex relative overflow-hidden">
+            <TimelineConfigPanel
+              classNames={classNames}
+              onClassNamesChange={setClassNames}
+              themeValues={themeValues}
+              onThemeValuesChange={setThemeValues}
+              exportOpen={exportOpen}
+              onToggleExport={() => setExportOpen((o) => !o)}
+            />
+            <TimelineSceneIO />
 
-        <div className="flex-1 min-h-0 relative flex flex-col">
-          <TimelineScenePanel />
+            {/* Export Style — slides in from / out to the right. */}
+            <div
+              aria-hidden={!exportOpen}
+              className={cn(
+                'absolute top-0 right-0 h-full z-20 transition-transform duration-300 ease-out',
+                exportOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full pointer-events-none',
+              )}
+            >
+              <TimelineStyleExport
+                classNames={classNames}
+                themeValues={themeValues}
+                onClose={() => setExportOpen(false)}
+              />
+            </div>
+          </div>
 
-          <TimelineConfigPanel
-            classNames={classNames}
-            onClassNamesChange={setClassNames}
-            providerCfg={cfg}
-            onProviderCfgChange={setCfg}
-            providerDirty={providerDirty}
-            onApplyProvider={applyProvider}
-          />
+          {/* Drag handle — resize the docked timeline vertically (full width). */}
+          <div
+            onPointerDown={startResize}
+            role="separator"
+            aria-orientation="horizontal"
+            title="Drag to resize timeline"
+            className="group shrink-0 h-2 flex items-center justify-center cursor-ns-resize bg-ed-bg-2 border-t border-ed-border hover:bg-ed-accent-soft transition-colors"
+          >
+            <span className="h-0.5 w-10 rounded-full bg-ed-text-muted/40 group-hover:bg-ed-accent transition-colors" />
+          </div>
 
-          {/* Timeline docked at the bottom; the space above is left open
-              (the floating Scene / Config panels overlay it). */}
+          {/* Controls + timeline span the full width, end to end. */}
+          <TimelineToolbar />
+          <TimelineControls timelineRef={timelineRef} />
           <Timeline
+            ref={timelineRef}
             fps={FPS}
             classNames={classNames}
             style={{
-              marginTop: 'auto',
-              height: 186,
+              height: timelineHeight,
               flexShrink: 0,
               minWidth: 0,
               background: 'var(--elah-bg)',
-              borderTop: '1px solid var(--elah-border)',
             }}
           />
         </div>
