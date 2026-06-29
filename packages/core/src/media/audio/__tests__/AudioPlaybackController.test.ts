@@ -20,8 +20,9 @@ function makeFakeEngine() {
       listener = fn
       return () => { listener = null }
     },
-    // setAudioContext is called by the controller — accept it silently.
+    // setAudioContext / reanchor are called by the controller — accept silently.
     setAudioContext: vi.fn(),
+    reanchor: vi.fn(),
   }
 
   function emit(snap: Partial<PlaybackSnapshot> & { epoch: number }): void {
@@ -115,6 +116,8 @@ function makeMockAudioContext() {
     decodeAudioData: vi.fn(async () => buffer),
     resume: vi.fn(async () => {}),
     close: vi.fn(async () => {}),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   }
 
   return {
@@ -400,6 +403,58 @@ describe('AudioPlaybackController', () => {
     const running = createdNodes.filter((n) => n.stop.mock.calls.length === 0)
     expect(stopped).toHaveLength(1)
     expect(running).toHaveLength(1)
+  })
+
+  // ── AudioContext unlock ─────────────────────────────────────────────────────
+
+  it('resumes a suspended AudioContext synchronously on play — before the buffer decodes', async () => {
+    // This is the exact case the prior suite skipped: the mock context starts
+    // suspended (matching browser autoplay policy). resume() must be called
+    // BEFORE flush() (i.e. before the fetch/decodeAudioData await resolves),
+    // proving it rides the gesture task rather than the post-await path.
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    raw.state = 'suspended' as AudioContextState
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+
+    // Assert resume was called synchronously — before any microtask flush.
+    expect(raw.resume).toHaveBeenCalledTimes(1)
+
+    await flush()
+
+    // Resume should not have been called again from the post-await path (removed).
+    expect(raw.resume).toHaveBeenCalledTimes(1)
+
+    controller.destroy()
+  })
+
+  it('reanchors the engine when the statechange listener fires with running state', () => {
+    const { engine, raw: engineRaw } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    // Grab the statechange handler registered on the mock context.
+    const stateChangeCall = raw.addEventListener.mock.calls.find(
+      ([event]: [string]) => event === 'statechange',
+    )
+    expect(stateChangeCall).toBeDefined()
+    const stateChangeHandler = stateChangeCall![1] as () => void
+
+    // Simulate the context transitioning to running.
+    raw.state = 'running' as AudioContextState
+    stateChangeHandler()
+
+    expect(engineRaw.reanchor).toHaveBeenCalledTimes(1)
+
+    controller.destroy()
   })
 
   // ── Clock handoff ───────────────────────────────────────────────────────────

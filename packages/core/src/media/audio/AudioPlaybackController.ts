@@ -14,6 +14,7 @@
  */
 
 import { resolveTimeline } from '../../resolver/resolveTimeline'
+import { trace } from '../../debug/trace'
 import type { PlaybackEngine, PlaybackSnapshot } from '../../playback/PlaybackEngine'
 import type { Project } from '../../types'
 
@@ -53,6 +54,8 @@ export class AudioPlaybackController {
   private _tokenCounter = 0
   private _lastEpoch = -1
   private _unsub: (() => void) | null = null
+  private _stateChangeHandler: (() => void) | null = null
+  private _globalUnlock: (() => void) | null = null
 
   constructor(
     playback: PlaybackEngine,
@@ -75,6 +78,30 @@ export class AudioPlaybackController {
       // Unify the transport clock: PlaybackEngine will prefer ctx.currentTime
       // over performance.now() whenever the context is running.
       this._playback.setAudioContext(this._ctx)
+
+      // Re-anchor the integrator the moment the context actually starts running.
+      // Using _lastNotifiedFrame (not getFrameAt) avoids a garbage read: by the
+      // time statechange fires, ctx.state is already 'running' so now() returns
+      // the small ctx.currentTime, but anchorTime still holds the large
+      // performance.now() value — getFrameAt() would be massively negative.
+      const stateChangeHandler = () => {
+        trace('AUDIO', 'statechange', { state: this._ctx?.state })
+        if (this._ctx?.state === 'running') this._playback.reanchor()
+      }
+      this._stateChangeHandler = stateChangeHandler
+      this._ctx.addEventListener('statechange', stateChangeHandler)
+
+      // Belt-and-braces: unlock on first user interaction anywhere, so the
+      // context becomes running even if the play path hasn't been hit yet.
+      // Guarded for the node/vitest test environment where window is undefined.
+      if (typeof window !== 'undefined') {
+        const unlock = () => {
+          this._ctx?.resume().catch((e) => trace('AUDIO', 'global unlock failed', String(e)))
+        }
+        this._globalUnlock = unlock
+        window.addEventListener('pointerdown', unlock, { once: true })
+        window.addEventListener('keydown', unlock, { once: true })
+      }
     }
     this._unsub = this._playback.subscribe((snap) => this._onSnapshot(snap))
     this._onSnapshot({
@@ -93,10 +120,19 @@ export class AudioPlaybackController {
     this._stopAll()
     this._teardownAllTrackNodes()
     if (this._ctx) {
+      if (this._stateChangeHandler) {
+        this._ctx.removeEventListener('statechange', this._stateChangeHandler)
+        this._stateChangeHandler = null
+      }
       this._playback.setAudioContext(null)
       void this._ctx.close()
       this._ctx = null
       this._masterGain = null
+    }
+    if (typeof window !== 'undefined' && this._globalUnlock) {
+      window.removeEventListener('pointerdown', this._globalUnlock)
+      window.removeEventListener('keydown', this._globalUnlock)
+      this._globalUnlock = null
     }
   }
 
@@ -147,8 +183,23 @@ export class AudioPlaybackController {
     const transportChanged = snap.epoch !== this._lastEpoch
     this._lastEpoch = snap.epoch
 
+    // Resume synchronously while still in the gesture task (click → play →
+    // notify → _onSnapshot is fully synchronous). The gesture activation does
+    // NOT survive the await in _scheduleClip, so this is the only safe place.
+    if (snap.isPlaying && this._ctx && this._ctx.state === 'suspended') {
+      trace('AUDIO', 'resuming context (suspended) on play gesture', { epoch: snap.epoch })
+      this._ctx.resume().catch((e) => trace('AUDIO', 'resume failed', String(e)))
+    }
+
     const scene = resolveTimeline(snap.currentFrame, this._getProject())
     const activeClips = scene.audios
+    trace('AUDIO', 'snapshot', {
+      frame: snap.currentFrame,
+      epoch: snap.epoch,
+      isPlaying: snap.isPlaying,
+      ctxState: this._ctx?.state,
+      activeClipIds: activeClips.map((c) => c.id),
+    })
 
     // Stop nodes for clips that are no longer in the scene.
     const incomingIds = new Set(activeClips.map((c) => c.id))
@@ -190,15 +241,25 @@ export class AudioPlaybackController {
   ): Promise<void> {
     const token = ++this._tokenCounter
     this._clipTokens.set(clipId, token)
+    trace('AUDIO', 'scheduleClip start', { clipId, trackId, offsetSec })
 
     let buffer: AudioBuffer
     try {
       buffer = await this._ensureBuffer(src)
-    } catch {
+    } catch (e) {
+      trace('AUDIO', 'scheduleClip buffer error', { clipId, error: String(e) })
       return
     }
-    if (this._clipTokens.get(clipId) !== token || !this._ctx || !this._masterGain) return
+    if (this._clipTokens.get(clipId) !== token) {
+      trace('AUDIO', 'scheduleClip stale (superseded)', { clipId })
+      return
+    }
+    if (!this._ctx || !this._masterGain) {
+      trace('AUDIO', 'scheduleClip stale (destroyed)', { clipId })
+      return
+    }
 
+    trace('AUDIO', 'scheduleClip starting node', { clipId, ctxState: this._ctx.state })
     this._startClipNode(clipId, trackId, buffer, offsetSec, volume, playbackRate)
   }
 
@@ -219,10 +280,6 @@ export class AudioPlaybackController {
     if (offsetSec >= buffer.duration) return
     const offset = Math.max(0, offsetSec)
 
-    if (ctx.state === 'suspended') {
-      void ctx.resume()
-    }
-
     const trackNodes = this._ensureTrackNodes(trackId)
 
     const node = ctx.createBufferSource()
@@ -237,9 +294,10 @@ export class AudioPlaybackController {
     gain.connect(trackNodes.gain)
 
     // Schedule 20 ms ahead to land cleanly on a future audio quantum.
-    const scheduleAt = ctx.currentTime + 0.02
-    const adjustedOffset = offset + 0.02
-    node.start(scheduleAt, adjustedOffset < buffer.duration ? adjustedOffset : offset)
+    // Only push the schedule time — not the source offset — to avoid skipping
+    // the first 20 ms of audio content and introducing A/V drift.
+    trace('AUDIO', 'node.start', { clipId, trackId, scheduleAt: ctx.currentTime + 0.02, offset, ctxState: ctx.state })
+    node.start(ctx.currentTime + 0.02, offset)
 
     this._active.set(clipId, { node, gain, trackId })
   }

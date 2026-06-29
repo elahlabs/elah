@@ -87,6 +87,18 @@ export class PlaybackEngine {
     }
   }
 
+  /**
+   * Re-anchor the integrator to `_lastNotifiedFrame` under the current clock.
+   * Safe to call when the time source changes (e.g. AudioContext → running) —
+   * uses the last integer frame broadcast by the RAF loop rather than
+   * getFrameAt(), which would read a garbage value the instant ctx.currentTime
+   * takes over from performance.now().
+   */
+  reanchor(): void {
+    this.anchorFrame = this._lastNotifiedFrame
+    this.anchorTime = this.now()
+  }
+
   // ── Private clock ─────────────────────────────────────────────────────────
 
   /**
