@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import {
   EditorProvider,
   Timeline,
@@ -11,6 +11,13 @@ import {
   type InitialTrackConfig,
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
+import {
+  TimelineConfigPanel,
+  DEFAULT_PROVIDER_CFG,
+  type ClassNamesState,
+  type ProviderCfg,
+} from './TimelineConfigPanel'
+import { TimelineScenePanel } from './TimelineScenePanel'
 
 const FPS = 30
 
@@ -138,11 +145,38 @@ const TimelineToolbar = memo(function TimelineToolbar() {
 })
 
 export default function TimelineEditor() {
+  // Live Timeline classNames — passed straight to <Timeline>, no remount needed.
+  const [classNames, setClassNames] = useState<ClassNamesState>({})
+
+  // EditorProvider config. `cfg` is the editable draft; `appliedCfg` mirrors
+  // what the currently-mounted provider was built with. They diverge while the
+  // user edits and reconverge on Apply, which bumps `remountKey` to rebuild the
+  // engine with the new values.
+  const [cfg, setCfg] = useState<ProviderCfg>(DEFAULT_PROVIDER_CFG)
+  const [appliedCfg, setAppliedCfg] = useState<ProviderCfg>(DEFAULT_PROVIDER_CFG)
+  const [remountKey, setRemountKey] = useState(0)
+
+  const providerDirty =
+    cfg.defaultTrackHeight !== appliedCfg.defaultTrackHeight ||
+    cfg.maxHistorySize !== appliedCfg.maxHistorySize ||
+    cfg.stageWidth !== appliedCfg.stageWidth ||
+    cfg.stageHeight !== appliedCfg.stageHeight
+
+  const applyProvider = () => {
+    setAppliedCfg(cfg)
+    setRemountKey((k) => k + 1)
+  }
+
   return (
-    <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
-      <div
-        className="elah-root h-full flex flex-col"
-      >
+    <EditorProvider
+      key={remountKey}
+      fps={FPS}
+      initialTracks={INITIAL_TRACKS}
+      defaultTrackHeight={cfg.defaultTrackHeight}
+      maxHistorySize={cfg.maxHistorySize}
+      stage={{ width: cfg.stageWidth, height: cfg.stageHeight }}
+    >
+      <div className="elah-root h-full flex flex-col">
         <header className="px-4 py-3 bg-ed-bg-2 border-b border-ed-border shrink-0">
           <h2 className="m-0 text-sm font-semibold text-ed-text">Timeline Only</h2>
           <p className="m-0 mt-0.5 text-xs text-ed-text-muted">
@@ -152,15 +186,29 @@ export default function TimelineEditor() {
 
         <TimelineToolbar />
 
-        <Timeline
-          fps={FPS}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            background: 'var(--elah-bg)',
-            borderTop: '1px solid var(--elah-border)',
-          }}
-        />
+        <div className="flex-1 min-h-0 relative">
+          <Timeline
+            fps={FPS}
+            classNames={classNames}
+            style={{
+              height: '100%',
+              minHeight: 0,
+              background: 'var(--elah-bg)',
+              borderTop: '1px solid var(--elah-border)',
+            }}
+          />
+
+          <TimelineScenePanel />
+
+          <TimelineConfigPanel
+            classNames={classNames}
+            onClassNamesChange={setClassNames}
+            providerCfg={cfg}
+            onProviderCfgChange={setCfg}
+            providerDirty={providerDirty}
+            onApplyProvider={applyProvider}
+          />
+        </div>
       </div>
     </EditorProvider>
   )
