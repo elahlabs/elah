@@ -186,18 +186,7 @@ export default function TimelineEditor() {
 
         <TimelineToolbar />
 
-        <div className="flex-1 min-h-0 relative">
-          <Timeline
-            fps={FPS}
-            classNames={classNames}
-            style={{
-              height: '100%',
-              minHeight: 0,
-              background: 'var(--elah-bg)',
-              borderTop: '1px solid var(--elah-border)',
-            }}
-          />
-
+        <div className="flex-1 min-h-0 relative flex flex-col">
           <TimelineScenePanel />
 
           <TimelineConfigPanel
@@ -207,6 +196,21 @@ export default function TimelineEditor() {
             onProviderCfgChange={setCfg}
             providerDirty={providerDirty}
             onApplyProvider={applyProvider}
+          />
+
+          {/* Timeline docked at the bottom; the space above is left open
+              (the floating Scene / Config panels overlay it). */}
+          <Timeline
+            fps={FPS}
+            classNames={classNames}
+            style={{
+              marginTop: 'auto',
+              height: 186,
+              flexShrink: 0,
+              minWidth: 0,
+              background: 'var(--elah-bg)',
+              borderTop: '1px solid var(--elah-border)',
+            }}
           />
         </div>
       </div>
