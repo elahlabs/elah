@@ -1,19 +1,15 @@
 /**
- * AudioPlaybackController — basic single-track audio playback for v1.
+ * AudioPlaybackController — multi-track audio playback.
  *
  * Web Audio, slaved to the PlaybackEngine clock:
  *  - Decodes each audio src once (whole-file `decodeAudioData`) and caches the
  *    AudioBuffer. These buffers are exactly what a future OfflineAudioContext
- *    export path (#6) would consume, so this is forward-compatible.
+ *    export path would consume, so this is forward-compatible.
  *  - Subscribes to the PlaybackEngine. On every transport event (play / pause /
  *    seek / rate — all bump `epoch`) it re-anchors the audio to the current
- *    playhead. PlaybackEngine stays the master clock; audio chases it. For a
- *    single short clip the real-time AudioContext and the integrate clock stay
- *    close enough without continuous drift correction.
- *
- * v1 constraint: one audio track → at most one active audio clip at a time.
- * This controller does NOT render through GpuRenderer — it lives beside it on
- * the same playhead.
+ *    playhead. PlaybackEngine stays the master clock; audio chases it.
+ *  - Creates one AudioBufferSourceNode + GainNode pair per active clip, all
+ *    routed through a shared master GainNode, enabling true multi-track mixing.
  */
 
 import { resolveTimeline } from '../../resolver/resolveTimeline'
@@ -25,19 +21,25 @@ export interface AudioPlaybackControllerOptions {
   audioContextFactory?: () => AudioContext
 }
 
+interface ClipNodes {
+  node: AudioBufferSourceNode
+  gain: GainNode
+}
+
 export class AudioPlaybackController {
   private readonly _playback: PlaybackEngine
   private readonly _getProject: () => Project
   private readonly _audioContextFactory: () => AudioContext
 
   private _ctx: AudioContext | null = null
+  private _masterGain: GainNode | null = null
   private readonly _buffers = new Map<string, Promise<AudioBuffer>>()
-  private _node: AudioBufferSourceNode | null = null
-  private _gain: GainNode | null = null
-  private _activeClipId: string | null = null
+  /** One node+gain pair per active clip. */
+  private readonly _active = new Map<string, ClipNodes>()
+  /** Per-clip tokens — bumped on stop or re-schedule so stale decodes bail. */
+  private readonly _clipTokens = new Map<string, number>()
+  private _tokenCounter = 0
   private _lastEpoch = -1
-  /** Bumped on each (re)schedule so a stale async decode can't start audio late. */
-  private _scheduleToken = 0
   private _unsub: (() => void) | null = null
 
   constructor(
@@ -56,6 +58,8 @@ export class AudioPlaybackController {
     if (this._unsub) return
     if (!this._ctx) {
       this._ctx = this._audioContextFactory()
+      this._masterGain = this._ctx.createGain()
+      this._masterGain.connect(this._ctx.destination)
     }
     this._unsub = this._playback.subscribe((snap) => this._onSnapshot(snap))
     // Sync once against the current state (e.g. already playing on mount).
@@ -68,15 +72,15 @@ export class AudioPlaybackController {
     })
   }
 
-  /** Stop tracking, stop any sound, and release the AudioContext. */
+  /** Stop tracking, stop all sound, and release the AudioContext. */
   destroy(): void {
     this._unsub?.()
     this._unsub = null
-    this._stop()
-    this._activeClipId = null
+    this._stopAll()
     if (this._ctx) {
       void this._ctx.close()
       this._ctx = null
+      this._masterGain = null
     }
   }
 
@@ -89,43 +93,47 @@ export class AudioPlaybackController {
     this._lastEpoch = snap.epoch
 
     const scene = resolveTimeline(snap.currentFrame, this._getProject())
-    // One audio track in v1; the last entry = topmost by zIndex if more ever slipped in.
-    const clip =
-      scene.audios.length > 0 ? scene.audios[scene.audios.length - 1] : null
+    const activeClips = scene.audios
 
-    if (!clip) {
-      this._stop()
-      this._activeClipId = null
-      return
-    }
-
-    // Live volume tracking while a node is playing.
-    if (this._gain) {
-      this._gain.gain.value = clip.volume
+    // Stop nodes for clips that are no longer in the scene.
+    const incomingIds = new Set(activeClips.map((c) => c.id))
+    for (const id of [...this._active.keys()]) {
+      if (!incomingIds.has(id)) {
+        this._stopClip(id)
+      }
     }
 
     if (!snap.isPlaying) {
-      this._stop()
+      this._stopAll()
       return
     }
 
-    // Restart only on a real change — NOT on every integer-frame advance, or the
-    // audio would stutter as it re-seeks each frame.
-    const needRestart =
-      transportChanged || clip.id !== this._activeClipId || this._node === null
-    if (!needRestart) return
+    for (const clip of activeClips) {
+      // Live volume tracking while a node is already playing.
+      const existing = this._active.get(clip.id)
+      if (existing) {
+        existing.gain.gain.value = clip.volume
+      }
 
-    const offsetSec = clip.sourceFrame / scene.fps
-    void this._schedule(clip.id, clip.src, offsetSec, clip.volume)
+      // Restart only on a real change — NOT on every integer-frame advance, or
+      // audio would stutter as it re-seeks each frame.
+      const needRestart = transportChanged || !this._active.has(clip.id)
+      if (!needRestart) continue
+
+      const offsetSec = clip.sourceFrame / scene.fps
+      void this._scheduleClip(clip.id, clip.src, offsetSec, clip.volume)
+    }
   }
 
-  private async _schedule(
+  private async _scheduleClip(
     clipId: string,
     src: string,
     offsetSec: number,
     volume: number,
   ): Promise<void> {
-    const token = ++this._scheduleToken
+    const token = ++this._tokenCounter
+    this._clipTokens.set(clipId, token)
+
     let buffer: AudioBuffer
     try {
       buffer = await this._ensureBuffer(src)
@@ -133,17 +141,23 @@ export class AudioPlaybackController {
       return
     }
     // A newer schedule (or a stop) superseded this one while decoding.
-    if (token !== this._scheduleToken || !this._ctx) return
+    if (this._clipTokens.get(clipId) !== token || !this._ctx || !this._masterGain) return
 
-    this._startNode(buffer, offsetSec, volume)
-    this._activeClipId = clipId
+    this._startClipNode(clipId, buffer, offsetSec, volume)
   }
 
-  private _startNode(buffer: AudioBuffer, offsetSec: number, volume: number): void {
+  private _startClipNode(
+    clipId: string,
+    buffer: AudioBuffer,
+    offsetSec: number,
+    volume: number,
+  ): void {
     const ctx = this._ctx
-    if (!ctx) return
+    const masterGain = this._masterGain
+    if (!ctx || !masterGain) return
 
-    this._stop()
+    // Stop any existing node for this clip before replacing.
+    this._stopClip(clipId)
 
     // Clip already played past its end — nothing to schedule.
     if (offsetSec >= buffer.duration) return
@@ -157,26 +171,32 @@ export class AudioPlaybackController {
     node.buffer = buffer
     const gain = ctx.createGain()
     gain.gain.value = volume
-    node.connect(gain).connect(ctx.destination)
+    node.connect(gain).connect(masterGain)
     node.start(ctx.currentTime, offset)
 
-    this._node = node
-    this._gain = gain
+    this._active.set(clipId, { node, gain })
   }
 
-  private _stop(): void {
-    if (this._node) {
+  private _stopClip(clipId: string): void {
+    // Bump this clip's token so any in-flight decode bails.
+    this._clipTokens.set(clipId, ++this._tokenCounter)
+
+    const entry = this._active.get(clipId)
+    if (entry) {
       try {
-        this._node.stop()
-        this._node.disconnect()
+        entry.node.stop()
+        entry.node.disconnect()
       } catch {
         // Stopping a node that never started (or already stopped) throws — ignore.
       }
+      this._active.delete(clipId)
     }
-    this._node = null
-    this._gain = null
-    // Bump the token so any in-flight decode does not start audio after a stop.
-    this._scheduleToken++
+  }
+
+  private _stopAll(): void {
+    for (const id of [...this._active.keys()]) {
+      this._stopClip(id)
+    }
   }
 
   private _ensureBuffer(src: string): Promise<AudioBuffer> {

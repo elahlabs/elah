@@ -24,3 +24,7 @@ export type { DragElementPayload, ElementKind } from './elementDrag'
 
 // --- Styling util — merge classNames so a passed class wins over defaults ---
 export { cn } from './cn'
+
+// --- Backward-compat theme facade (@deprecated — use classNames prop or --elah-* CSS vars) ---
+export { timelineTheme } from './theme'
+export type { TimelineTheme } from './theme'

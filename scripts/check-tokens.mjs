@@ -8,7 +8,8 @@
  * This keeps the whole editor themeable from one place and vendor-overridable.
  *
  * Allowed: hex/rgb inside a var() fallback, e.g. var(--elah-x, #4c9aff).
- * Ignored: theme.ts (deprecated back-compat object that intentionally keeps hex).
+ * Allowed: hex/rgb in // line comments (explanatory docs, not live style values).
+ * Ignored: theme.ts (backward-compat CSS-var facade; not a color source).
  *
  * Run: node scripts/check-tokens.mjs   (exits non-zero on violations)
  */
@@ -21,6 +22,9 @@ const HEX = /#[0-9a-fA-F]{3,8}\b/
 // Strip var(--name) and var(--name, fallback) spans (fallbacks legitimately
 // carry a literal). Fallbacks contain no nested ')' for color values.
 const VAR = /var\(\s*--[a-z0-9-]+(?:\s*,[^)]*)?\)/g
+// Strip single-line JS comments — hex inside a // comment is documentation,
+// not a live style value, and should not count as a token violation.
+const COMMENT = /\/\/.*/
 
 function walk(dir) {
   const out = []
@@ -37,7 +41,7 @@ for (const root of ROOTS) {
   for (const file of walk(root)) {
     const lines = readFileSync(file, 'utf8').split('\n')
     lines.forEach((line, i) => {
-      const stripped = line.replace(VAR, '')
+      const stripped = line.replace(VAR, '').replace(COMMENT, '')
       if (HEX.test(stripped)) violations.push(`${file}:${i + 1}: ${line.trim()}`)
     })
   }
