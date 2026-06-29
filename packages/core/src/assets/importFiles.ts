@@ -558,7 +558,7 @@ function importSingleFile(
 }
 
 function partitionFiles(
-  files: File[],
+  files: Iterable<File>,
 ): { toImport: Array<{ file: File; kind: MediaKind }>; skipped: SkippedImport[] } {
   const storeAssets = useMediaLibraryStore.getState().assets
   const existingByKey = new Map<string, string>()
@@ -608,7 +608,7 @@ function partitionFiles(
  * thread.
  */
 export async function importFiles(
-  files: File[],
+  files: Iterable<File>,
   opts?: ImportFilesOptions,
 ): Promise<ImportFilesResult> {
   const thumbnailMaxDim = opts?.thumbnailMaxDim ?? DEFAULT_THUMBNAIL_MAX_DIM
