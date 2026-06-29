@@ -223,6 +223,37 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     await timed('mediabunny', 'audioSource.add() — encoding mixed PCM', () => addAudioMix(audioSource!, audio))
   }
 
+  // --- Per-clip sequential decoders ---
+  // Each video clip gets its own canvasesAtTimestamps() generator fed with the
+  // clip's source timestamps in monotonically increasing order (one per export
+  // frame). This lets mediabunny decode each source packet at most once and
+  // never re-seek from a keyframe — eliminating the corrupt green-band artifacts
+  // that occurred when getCanvas() was called once per frame (random-access).
+  type ClipDecoder = {
+    gen: AsyncGenerator<mb.WrappedCanvas | null>
+    clipStartFrame: number
+    clipEndFrame: number
+  }
+  const clipDecoders = new Map<string, ClipDecoder>()
+  const videoClips = allClips.filter(c => c.type === 'video' && c.src)
+  xlog('frames', `setting up ${videoClips.length} per-clip sequential decoder(s)`)
+  for (const clip of videoClips) {
+    const sink = videoSinks.get(clip.src!)
+    if (!sink) continue
+    const clipEndFrame = clip.startFrame + clip.durationFrames
+    // Pre-compute source timestamps for every export frame this clip covers.
+    // Using +0.5 midpoint matches the preview's Math.round(PTS / usPerFrame)
+    // convention and avoids off-by-one on sources with a different frame rate.
+    const sourceTimestamps = Array.from({ length: clip.durationFrames }, (_, i) =>
+      (clip.sourceStartFrame + i + 0.5) / fps,
+    )
+    clipDecoders.set(clip.id, {
+      gen: sink.canvasesAtTimestamps(sourceTimestamps),
+      clipStartFrame: clip.startFrame,
+      clipEndFrame,
+    })
+  }
+
   // --- Sequential frame render loop ---
   xlog('frames', `starting frame loop`, { totalFrames, fps })
   const loopStart = performance.now()
@@ -251,15 +282,25 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
 
     const scene = resolveTimeline(frame, project)
 
-    // Capture a snapshot of the outgoing clip on the first frame of each transition.
+    // Advance each active clip's decoder by one step and collect the resulting
+    // canvases. Every generator was seeded with exactly one timestamp per export
+    // frame in order, so each .next() call returns the canvas for this frame.
+    const clipCanvases = new Map<string, mb.WrappedCanvas | null>()
+    for (const [clipId, decoder] of clipDecoders) {
+      if (frame >= decoder.clipStartFrame && frame < decoder.clipEndFrame) {
+        const result = await decoder.gen.next()
+        clipCanvases.set(clipId, result.done ? null : result.value)
+      }
+    }
+
+    // Capture a snapshot of the outgoing clip on the first frame of each
+    // transition. The canvas is already decoded above — no extra seek needed.
     for (const tr of scene.transitions) {
       if (transitionSnapshots.has(tr.id)) continue
       const fromVideo = scene.videos.find(v => v.id === tr.fromClipId)
       const fromImage = scene.images.find(i => i.id === tr.fromClipId)
       if (fromVideo) {
-        const sink = videoSinks.get(fromVideo.src)
-        const sourceTimeSec = (fromVideo.sourceFrame + 0.5) / fps
-        const wrapped = sink ? await sink.getCanvas(sourceTimeSec) : null
+        const wrapped = clipCanvases.get(fromVideo.id) ?? null
         if (wrapped) {
           const bmp = await createImageBitmap(wrapped.canvas)
           transitionSnapshots.set(tr.id, { source: bmp, owned: true })
@@ -270,7 +311,7 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
       }
     }
 
-    await renderFrame(ctx2d, scene, videoSinks, imageBitmaps, transitionSnapshots, width, height, fps, frame)
+    await renderFrame(ctx2d, scene, clipCanvases, imageBitmaps, transitionSnapshots, width, height, frame)
     await canvasSource.add(frame / fps, 1 / fps)
 
     // Release snapshots whose transition window has closed.
@@ -315,7 +356,10 @@ async function addAudioMix(source: mb.AudioSampleSource, audio: RenderedAudio): 
   const { sampleRate, numberOfChannels, length } = audio
   const channels = audio.channels.map(b => new Float32Array(b))
   const chunkFrames = sampleRate // 1 second per chunk
+  const totalChunks = Math.ceil(length / chunkFrames)
+  xlog('audio', `encoding PCM in chunks`, { totalChunks, chunkFrames, numberOfChannels, sampleRate })
 
+  let chunkIndex = 0
   for (let start = 0; start < length; start += chunkFrames) {
     const frames = Math.min(chunkFrames, length - start)
     // f32-planar layout: channel 0's frames, then channel 1's frames, ...
@@ -330,9 +374,17 @@ async function addAudioMix(source: mb.AudioSampleSource, audio: RenderedAudio): 
       sampleRate,
       timestamp: start / sampleRate,
     })
+    const addStart = performance.now()
     await source.add(sample)
     sample.close()
+    chunkIndex++
+    xlog('audio', `chunk ${chunkIndex}/${totalChunks} encoded`, {
+      timestampSec: (start / sampleRate).toFixed(3),
+      frames,
+      ms: (performance.now() - addStart).toFixed(1),
+    })
   }
+  xlog('audio', `PCM encode complete`, { totalChunks })
 }
 
 // ---------------------------------------------------------------------------
@@ -342,12 +394,11 @@ async function addAudioMix(source: mb.AudioSampleSource, audio: RenderedAudio): 
 async function renderFrame(
   ctx: OffscreenCanvasRenderingContext2D,
   scene: ReturnType<typeof resolveTimeline>,
-  videoSinks: Map<string, mb.CanvasSink>,
+  clipCanvases: Map<string, mb.WrappedCanvas | null>,
   imageBitmaps: Map<string, ImageBitmap>,
   transitionSnapshots: Map<string, { source: CanvasImageSource & { width: number; height: number }; owned: boolean }>,
   stageW: number,
   stageH: number,
-  fps: number,
   frameIndex: number,
 ): Promise<void> {
   const isDebugFrame = frameIndex === 0
@@ -380,41 +431,21 @@ async function renderFrame(
     ctx.globalAlpha = entry.item.opacity ?? 1
 
     if (entry.kind === 'video') {
-      const sink = videoSinks.get(entry.item.src)
-      if (sink) {
-        // Seek at the frame midpoint (+0.5) so mediabunny's floor-semantics
-        // getCanvas() lands on the correct source frame even when PTS has
-        // encoder-rounding jitter or the source runs at a slightly different
-        // frame rate (e.g. 29.97 NTSC in a 30fps project). Matches preview's
-        // Math.round(PTS / usPerFrame) convention in VideoDecoderManager.
-        const sourceTimeSec = (entry.item.sourceFrame + 0.5) / fps
-        if (isDebugFrame) {
-          xlog('render:frame0', `video layer — seeking CanvasSink`, {
-            src: entry.item.src.slice(-40),
-            sourceTimeSec: sourceTimeSec.toFixed(4),
-            zIndex: entry.item.zIndex,
-            opacity: entry.item.opacity ?? 1,
-          })
-        }
-        const seekStart = isDebugFrame ? performance.now() : 0
-        let wrapped: Awaited<ReturnType<typeof sink.getCanvas>> = null
-        try {
-          wrapped = await sink.getCanvas(sourceTimeSec)
-        } catch (err) {
-          xlog('render:frame0', `video layer — getCanvas() failed (frame skipped): ${String(err)}`)
-        }
-        if (isDebugFrame) {
-          xlog('render:frame0', `video layer — getCanvas()`, {
-            gotFrame: !!wrapped,
-            ms: (performance.now() - seekStart).toFixed(1),
-            ...(wrapped ? { canvasW: wrapped.canvas.width, canvasH: wrapped.canvas.height } : {}),
-          })
-        }
-        if (wrapped) {
-          drawMedia(ctx, wrapped.canvas, entry.item.transform, stageW, stageH)
-        }
+      // Canvases are pre-decoded sequentially by clip id — no per-frame seek.
+      const wrapped = clipCanvases.get(entry.item.id) ?? null
+      if (isDebugFrame) {
+        xlog('render:frame0', `video layer — sequential canvas`, {
+          clipId: entry.item.id,
+          gotFrame: !!wrapped,
+          zIndex: entry.item.zIndex,
+          opacity: entry.item.opacity ?? 1,
+          ...(wrapped ? { canvasW: wrapped.canvas.width, canvasH: wrapped.canvas.height } : {}),
+        })
+      }
+      if (wrapped) {
+        drawMedia(ctx, wrapped.canvas, entry.item.transform, stageW, stageH)
       } else {
-        if (isDebugFrame) xlog('render:frame0', `video layer — WARNING: no CanvasSink for src "${entry.item.src.slice(-40)}"`)
+        if (isDebugFrame) xlog('render:frame0', `video layer — WARNING: no canvas for clip "${entry.item.id}"`)
       }
     } else if (entry.kind === 'image') {
       const bitmap = imageBitmaps.get(entry.item.src)
