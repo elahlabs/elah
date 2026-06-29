@@ -87,8 +87,9 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
  * Spins up ExportWorker (module worker) and resolves once the worker posts
  * the finished ArrayBuffer. Progress is forwarded via `options.onProgress`.
  *
- * The worker must be bundled as a module worker by the consuming app's bundler
- * (Vite handles the `new URL(...)` pattern automatically).
+ * The worker must be bundled as a module worker by the consuming app's bundler.
+ * The `new URL('./ExportWorker.ts', import.meta.url)` pattern is recognised by
+ * Vite, webpack 5, and Turbopack, which each bundle the worker from source.
  *
  * @example
  * ```ts
@@ -113,7 +114,7 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
   return new Promise((resolve, reject) => {
     mlog('EXPORT', 'spawning ExportWorker (module worker)')
     const worker = new Worker(
-      new URL('./ExportWorker.js', import.meta.url),
+      new URL('./ExportWorker.ts', import.meta.url),
       { type: 'module' },
     )
 

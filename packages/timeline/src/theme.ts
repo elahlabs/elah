@@ -1,175 +1,140 @@
 /**
- * Timeline design tokens — the single place to recolor the entire timeline UI.
+ * @deprecated
+ * `timelineTheme` is a backward-compat facade — its values now point at the
+ * `--elah-*` CSS variable contract rather than raw hex literals. Components
+ * no longer consume this object internally; they use Tailwind token classes
+ * and `var(--elah-*)` directly.
  *
- * Every color, border, shadow and overlay used by the timeline components is
- * defined here and nowhere else. Components import `timelineTheme` instead of
- * inlining literals, so changing the look of the whole timeline (e.g. a light
- * theme, or matching a host app's brand) means editing this one object — no
- * hunting through component files.
+ * For per-instance visual overrides use the `classNames` prop on `<Timeline>`.
+ * For global theming override the `--elah-*` custom properties on `.elah-root`.
  *
- * Grouping is by role, not by component, so a token is reused wherever the same
- * visual meaning applies (a "muted text" color is one token, not five copies).
+ * This export will be removed in a future major release.
  */
 export const timelineTheme = {
-  /** Background fills for the structural surfaces (lanes, sidebar, ruler). */
   surface: {
-    /** Outer timeline background and the default (inactive) clip lane. */
-    background: '#0A0D14',
-    /** Clip lane of the currently active track. */
-    laneActive: '#0D1017',
-    /** Track-label sidebar and ruler spacer (inactive). */
-    sidebar: '#121722',
-    /** Track-label sidebar of the active track. */
-    sidebarActive: '#171D2B',
+    background:  'var(--elah-bg-secondary)',
+    laneActive:  'var(--elah-bg-card)',
+    sidebar:     'var(--elah-bg-panel)',
+    sidebarActive: 'var(--elah-bg-elevated)',
   },
 
-  /** Hairline dividers between rows, lanes and the sidebar. */
   border: {
-    /** Stronger vertical rule (sidebar edge, ruler ticks). */
-    strong: '#232938',
-    /** Subtler horizontal rule between track rows. */
-    subtle: '#1A1F2B',
+    strong: 'var(--elah-border)',
+    subtle: 'var(--elah-border-subtle)',
   },
 
-  /** Foreground text colors, brightest → faintest. */
   text: {
-    /** Primary labels (active track, headings). */
-    primary: '#F3F4F6',
-    /** Slightly brighter body text inside menus/dialogs. */
-    bright: '#E5E7EB',
-    /** Inactive track label. */
-    secondary: '#A7AFBF',
-    /** Secondary/meta text (hints, slider labels). */
-    muted: '#9CA3AF',
-    /** Ruler labels and section captions. */
-    faint: '#6B7280',
-    /** Empty-state placeholder copy. */
-    disabled: '#555555',
-    /** Smallest helper captions (slider end labels). */
-    hint: '#4B5563',
-    /** Text rendered on top of a colored clip body. */
-    onClip: 'rgba(255,255,255,0.95)',
+    primary:   'var(--elah-text)',
+    bright:    'var(--elah-text)',
+    secondary: 'var(--elah-text-muted)',
+    muted:     'var(--elah-text-muted)',
+    faint:     'var(--elah-tick-label)',
+    disabled:  'var(--elah-text-muted)',
+    hint:      'var(--elah-text-muted)',
+    onClip:    'var(--elah-text-on-clip)',
   },
 
-  /**
-   * Per-clip-type color ramp. `top`→`mid`→`bottom` form the vertical body
-   * gradient; `accent` is the left stripe and selected-border tint.
-   */
   clip: {
-    video: { top: '#3B82F6', mid: '#2563EB', bottom: '#1D4ED8', accent: '#60A5FA' },
-    audio: { top: '#22C55E', mid: '#16A34A', bottom: '#15803D', accent: '#4ADE80' },
-    text: { top: '#A855F7', mid: '#9333EA', bottom: '#7E22CE', accent: '#C084FC' },
-    image: { top: '#FBBF24', mid: '#D97706', bottom: '#B45309', accent: '#FCD34D' },
+    video: {
+      top:    'var(--elah-clip-video-top)',
+      mid:    'var(--elah-clip-video-mid)',
+      bottom: 'var(--elah-clip-video-bottom)',
+      accent: 'var(--elah-clip-video-accent)',
+    },
+    audio: {
+      top:    'var(--elah-clip-audio-top)',
+      mid:    'var(--elah-clip-audio-mid)',
+      bottom: 'var(--elah-clip-audio-bottom)',
+      accent: 'var(--elah-clip-audio-accent)',
+    },
+    text: {
+      top:    'var(--elah-clip-text-top)',
+      mid:    'var(--elah-clip-text-mid)',
+      bottom: 'var(--elah-clip-text-bottom)',
+      accent: 'var(--elah-clip-text-accent)',
+    },
+    image: {
+      top:    'var(--elah-clip-image-top)',
+      mid:    'var(--elah-clip-image-mid)',
+      bottom: 'var(--elah-clip-image-bottom)',
+      accent: 'var(--elah-clip-image-accent)',
+    },
   },
 
-  /** Selected-clip highlight (border + outer glow). */
   selection: {
-    border: '#FF2D55',
-    glow: 'rgba(255, 45, 85, 0.4)',
+    border: 'var(--elah-selection-border)',
+    glow:   'var(--elah-selection-glow)',
   },
 
-  /** Playhead needle (line, handle, glow all share this color). */
-  playhead: '#FF2D55',
+  playhead: 'var(--elah-playhead)',
 
-  /** Ruler tick marks and timecode labels. */
   ruler: {
-    tick: '#232938',
-    label: '#6B7280',
+    tick:  'var(--elah-tick-color)',
+    label: 'var(--elah-tick-label)',
   },
 
-  /** Transition cut-line and diamond marker on track rows. */
   transition: {
-    /** Cut line when a transition exists. */
-    line: 'rgba(107, 140, 255, 0.9)',
-    /** Cut line on hover (no transition yet). */
-    lineHover: 'rgba(255,255,255,0.55)',
-    /** Cut line at rest (no transition, not hovered). */
-    lineIdle: 'rgba(255,255,255,0.18)',
-    /** Filled diamond when a transition exists. */
-    fill: '#6B8CFF',
-    stroke: '#A5B4FC',
-    /** Outline-only "add" diamond (no transition). */
-    addFill: 'rgba(255,255,255,0.12)',
-    addStroke: 'rgba(255,255,255,0.7)',
+    line:      'var(--elah-transition-line)',
+    lineHover: 'var(--elah-transition-line-hover)',
+    lineIdle:  'var(--elah-transition-line-idle)',
+    fill:      'var(--elah-transition-fill)',
+    stroke:    'var(--elah-transition-stroke)',
+    addFill:   'var(--elah-transition-add-fill)',
+    addStroke: 'var(--elah-transition-add-stroke)',
   },
 
-  /** Clip right-click context menu. */
   menu: {
-    background: '#1E2433',
-    border: '#2D3548',
-    shadow: '0 8px 24px rgba(0,0,0,0.5)',
+    background: 'var(--elah-menu-bg)',
+    border:     'var(--elah-menu-border)',
+    shadow:     'var(--elah-menu-shadow)',
   },
 
-  /** Transition picker popover. */
   popover: {
-    background: '#1A1F2B',
-    border: '#2D3548',
-    shadow: '0 8px 32px rgba(0,0,0,0.6)',
-    /** Kind-option button: idle / hover / selected backgrounds. */
-    optionBg: '#232938',
-    optionBgHover: '#2D3548',
-    optionBgActive: '#3B4A6B',
-    /** Selected option border + slider accent. */
-    accent: '#6B8CFF',
-    /** Selected option label text. */
-    accentText: '#A5B4FC',
-    /** Option icon/label when idle. */
-    icon: '#9CA3AF',
+    background:      'var(--elah-popover-bg)',
+    border:          'var(--elah-popover-border)',
+    shadow:          'var(--elah-popover-shadow)',
+    optionBg:        'var(--elah-popover-option-bg)',
+    optionBgHover:   'var(--elah-popover-option-bg-hover)',
+    optionBgActive:  'var(--elah-popover-option-bg-active)',
+    accent:          'var(--elah-popover-accent)',
+    accentText:      'var(--elah-popover-accent-text)',
+    icon:            'var(--elah-popover-icon)',
   },
 
-  /** Blocking "this video has audio" choice dialog. */
   dialog: {
-    overlay: 'rgba(5, 7, 12, 0.6)',
-    background: '#171D2B',
-    border: '#232938',
-    shadow: '0 24px 60px rgba(0,0,0,0.55)',
-    /** Secondary choice button: idle / hover bg + border. */
-    optionBg: '#1B2230',
-    optionBgHover: '#222B3C',
-    optionBorder: '#2A3142',
-    /** Primary (recommended) choice button. */
-    primaryBorder: '#2563EB',
-    primaryBg: 'rgba(37, 99, 235, 0.16)',
-    primaryBgHover: 'rgba(37, 99, 235, 0.28)',
+    overlay:          'var(--elah-dialog-overlay)',
+    background:       'var(--elah-dialog-bg)',
+    border:           'var(--elah-dialog-border)',
+    shadow:           'var(--elah-dialog-shadow)',
+    optionBg:         'var(--elah-dialog-option-bg)',
+    optionBgHover:    'var(--elah-dialog-option-bg-hover)',
+    optionBorder:     'var(--elah-dialog-option-border)',
+    primaryBorder:    'var(--elah-dialog-primary-border)',
+    primaryBg:        'var(--elah-dialog-primary-bg)',
+    primaryBgHover:   'var(--elah-dialog-primary-bg-hover)',
   },
 
-  /** Destructive actions (delete clip / remove transition). */
   danger: {
-    text: '#FF6B6B',
-    textAlt: '#F87171',
-    bgHover: 'rgba(255,107,107,0.12)',
-    border: '#3F2A2A',
+    text:     'var(--elah-danger-text)',
+    textAlt:  'var(--elah-danger-text-alt)',
+    bgHover:  'var(--elah-danger-bg-hover)',
+    border:   'var(--elah-danger-border)',
   },
 
-  /**
-   * Reusable light/dark overlays composited over colored surfaces — glosses,
-   * inset highlights, scrims and drop shadows. Kept here so the whole UI's
-   * "depth" can be tuned in one place.
-   */
   effect: {
-    /** Top gloss highlight gradient start. */
-    gloss: 'rgba(255,255,255,0.14)',
-    /** Inset top highlight on a clip body. */
-    innerHighlight: 'rgba(255,255,255,0.12)',
-    /** Inset top highlight on a selected clip body. */
-    innerHighlightStrong: 'rgba(255,255,255,0.15)',
-    /** Clip drop shadow. */
-    clipShadow: '0 2px 6px rgba(0,0,0,0.35)',
-    /** Right-edge separator between filmstrip tiles. */
-    tileSeparator: 'rgba(0,0,0,0.28)',
-    /** Audio waveform bars. */
-    waveform: 'rgba(255,255,255,0.85)',
-    /** Filmstrip placeholder box fill + border. */
-    placeholderBg: 'rgba(0,0,0,0.22)',
-    placeholderBorder: 'rgba(255,255,255,0.08)',
-    /** Trim-handle edge scrim (fades to transparent). */
-    trimScrim: 'rgba(0,0,0,0.35)',
-    /** Label drop shadow for legibility over bright clips. */
-    labelShadow: '0 1px 2px rgba(0,0,0,0.45)',
-    /** Inline delete-button chrome on a selected clip. */
-    deleteBtnBg: 'rgba(0,0,0,0.5)',
-    deleteBtnBorder: 'rgba(255,255,255,0.35)',
-    deleteBtnText: '#ffffff',
+    gloss:                  'var(--elah-effect-gloss)',
+    innerHighlight:         'var(--elah-effect-inner-highlight)',
+    innerHighlightStrong:   'var(--elah-effect-inner-highlight-strong)',
+    clipShadow:             'var(--elah-effect-clip-shadow)',
+    tileSeparator:          'var(--elah-effect-tile-separator)',
+    waveform:               'var(--elah-effect-waveform)',
+    placeholderBg:          'var(--elah-effect-placeholder-bg)',
+    placeholderBorder:      'var(--elah-effect-placeholder-border)',
+    trimScrim:              'var(--elah-effect-trim-scrim)',
+    labelShadow:            'var(--elah-effect-label-shadow)',
+    deleteBtnBg:            'var(--elah-effect-delete-btn-bg)',
+    deleteBtnBorder:        'var(--elah-effect-delete-btn-border)',
+    deleteBtnText:          'var(--elah-effect-delete-btn-text)',
   },
 } as const
 

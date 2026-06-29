@@ -183,12 +183,30 @@ export class TimelineEngine {
     }, 'Change aspect ratio')
   }
 
+  /** Set the project-level master volume (linear, 0..2). Persisted with the project. */
+  setMasterVolume(value: number): void {
+    this.commit((draft) => {
+      draft.masterVolume = Math.max(0, Math.min(2, value))
+    }, 'Set master volume')
+  }
+
   // ---------------------------------------------------------------------------
   // Track operations
   // ---------------------------------------------------------------------------
 
   /** New tracks append below existing ones (order = current count) and start with an empty clip list. */
+  /**
+   * Track model: the renderer composites a single video track, so video is
+   * capped at one — adding a video track when one already exists returns the
+   * existing track (idempotent) rather than creating a second. Audio and text
+   * may have any number of tracks.
+   */
   addTrack(kind: TrackKind, options?: Partial<CreateTrackOptions>): Track {
+    if (kind === 'video') {
+      const existingVideo = this.project.tracks.find((t) => t.kind === 'video')
+      if (existingVideo) return existingVideo
+    }
+
     const order = this.project.tracks.length
     const track = createTrack({
       kind,
@@ -242,6 +260,18 @@ export class TimelineEngine {
   // ---------------------------------------------------------------------------
 
   /** Throws if the target track is missing or the clip would overlap an existing one — validate placement first. */
+  /**
+   * A track flagged `locked` rejects edits to existing clips — remove, move,
+   * trim, split — enforced here on the single mutation funnel so every caller
+   * (drag handles, keyboard, undo/redo callers) honors it uniformly. Inserting
+   * NEW clips (drop / paste) is gated at the UI layer, leaving programmatic
+   * `addClip` (demo setup, scripts) unrestricted. Visibility (`disabled`) and
+   * `muted` are honored separately by the resolver.
+   */
+  isTrackLocked(trackId: string): boolean {
+    return this.project.tracks.find((t) => t.id === trackId)?.locked ?? false
+  }
+
   addClip(options: CreateClipOptions): Clip {
     const clip = createClip(options)
 
@@ -256,6 +286,7 @@ export class TimelineEngine {
 
   /** Transitions referencing the removed clip are pruned in the same undo entry. */
   removeClip(clipId: string, trackId: string): void {
+    if (this.isTrackLocked(trackId)) return
     this.commit(
       (draft) => removeClip(draft, clipId, trackId),
       `Remove clip`,
@@ -347,6 +378,9 @@ export class TimelineEngine {
     toTrackId: string,
     startFrame: number,
   ): void {
+    // A locked source or destination track rejects the move.
+    if (this.isTrackLocked(fromTrackId) || this.isTrackLocked(toTrackId)) return
+
     const fromClips = this.project.clips[fromTrackId]
     if (!fromClips) return
 
@@ -398,6 +432,7 @@ export class TimelineEngine {
     startFrame: number,
     durationFrames: number,
   ): void {
+    if (this.isTrackLocked(trackId)) return
     // Read from the current project snapshot so we can validate before committing.
     const trackClips = this.project.clips[trackId]
     const existing = trackClips?.find((c) => c.id === clipId)
@@ -444,6 +479,8 @@ export class TimelineEngine {
     trackId: string,
     atFrame: number,
   ): [string, string] | null {
+    if (this.isTrackLocked(trackId)) return null
+
     let result: [string, string] | null = null
 
     this.commit((draft) => {
@@ -468,6 +505,8 @@ export class TimelineEngine {
     trackId: string,
     startFrame: number,
   ): string | null {
+    if (this.isTrackLocked(trackId)) return null
+
     let newId: string | null = null
 
     this.commit((draft) => {

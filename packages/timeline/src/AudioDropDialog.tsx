@@ -1,5 +1,4 @@
 import { useAudioDropDialogStore, type AudioDropChoice } from './audioDropDialog.store'
-import { timelineTheme } from './theme'
 
 interface ChoiceDef {
   choice: AudioDropChoice
@@ -44,7 +43,7 @@ export function AudioDropDialog() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: timelineTheme.dialog.overlay,
+        background: `var(--elah-dialog-overlay)`,
         backdropFilter: 'blur(2px)',
         fontFamily: 'sans-serif',
       }}
@@ -53,10 +52,10 @@ export function AudioDropDialog() {
         style={{
           width: 380,
           maxWidth: '90vw',
-          background: timelineTheme.dialog.background,
-          border: `1px solid ${timelineTheme.dialog.border}`,
+          background: `var(--elah-dialog-bg)`,
+          border: `1px solid var(--elah-dialog-border)`,
           borderRadius: 12,
-          boxShadow: timelineTheme.dialog.shadow,
+          boxShadow: `var(--elah-dialog-shadow)`,
           padding: 22,
         }}
       >
@@ -65,7 +64,7 @@ export function AudioDropDialog() {
             margin: 0,
             fontSize: 15,
             fontWeight: 700,
-            color: timelineTheme.text.primary,
+            color: `var(--elah-text)`,
             letterSpacing: '-0.01em',
           }}
         >
@@ -76,11 +75,11 @@ export function AudioDropDialog() {
             margin: '6px 0 18px',
             fontSize: 12,
             lineHeight: 1.5,
-            color: timelineTheme.text.muted,
+            color: `var(--elah-text-muted)`,
           }}
         >
           How should{' '}
-          <span style={{ color: timelineTheme.text.bright, fontWeight: 600 }}>{assetName}</span>{' '}
+          <span style={{ color: `var(--elah-text)`, fontWeight: 600 }}>{assetName}</span>{' '}
           be added to the timeline?
         </p>
 
@@ -101,25 +100,27 @@ export function AudioDropDialog() {
                 cursor: 'pointer',
                 borderRadius: 8,
                 border: primary
-                  ? `1px solid ${timelineTheme.dialog.primaryBorder}`
-                  : `1px solid ${timelineTheme.dialog.optionBorder}`,
-                background: primary ? timelineTheme.dialog.primaryBg : timelineTheme.dialog.optionBg,
-                color: timelineTheme.text.primary,
+                  ? `1px solid var(--elah-dialog-primary-border)`
+                  : `1px solid var(--elah-dialog-option-border)`,
+                background: primary
+                  ? `var(--elah-dialog-primary-bg)`
+                  : `var(--elah-dialog-option-bg)`,
+                color: `var(--elah-text)`,
                 transition: 'background 0.12s, border-color 0.12s',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = primary
-                  ? timelineTheme.dialog.primaryBgHover
-                  : timelineTheme.dialog.optionBgHover
+                  ? 'var(--elah-dialog-primary-bg-hover)'
+                  : 'var(--elah-dialog-option-bg-hover)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = primary
-                  ? timelineTheme.dialog.primaryBg
-                  : timelineTheme.dialog.optionBg
+                  ? 'var(--elah-dialog-primary-bg)'
+                  : 'var(--elah-dialog-option-bg)'
               }}
             >
               <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
-              <span style={{ fontSize: 11, color: timelineTheme.text.muted }}>{hint}</span>
+              <span style={{ fontSize: 11, color: `var(--elah-text-muted)` }}>{hint}</span>
             </button>
           ))}
         </div>

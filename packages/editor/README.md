@@ -36,6 +36,25 @@ function App() {
 
 ---
 
+## Styling
+
+Import the compiled stylesheets once. They are plain CSS — your app does **not**
+need Tailwind, and no utility class names leak into your global scope (preflight
+is disabled, so nothing resets your elements):
+
+```ts
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles.css'
+import '@elah/editor/styles/tokens.css' // --elah-* dark defaults (standalone)
+```
+
+When embedding inside an app that already defines `.elah-root` (mapping `--elah-*`
+onto its own design system), skip `tokens.css`. Re-theme or white-label by
+overriding `--elah-*` variables in your own `.elah-root` scope — see
+[design-tokens.md](https://github.com/elahlabs/elah/blob/main/docs/design-tokens.md).
+
+---
+
 ## With preview and asset panel
 
 ```tsx
@@ -67,8 +86,9 @@ import { importFiles, useMediaLibrary } from '@elah/editor'
 
 await importFiles(Array.from(fileList))
 
-// Subscribe in React
-const assets = useMediaLibrary(s => s.assets)
+// Subscribe in React — useMediaLibrary() takes no arguments and returns
+// { assets, getAsset, removeAsset, updateAsset } with assets in insertion order.
+const { assets } = useMediaLibrary()
 ```
 
 ---
@@ -100,7 +120,7 @@ Runs in a web worker. Reuses `resolveTimeline` + the GPU renderer's placement ma
 | `Ctrl/Cmd + C` | Copy |
 | `Ctrl/Cmd + V` | Paste at playhead |
 | `Ctrl/Cmd + Z` | Undo |
-| `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + Shift + Z` / `Ctrl/Cmd + Y` | Redo |
 | `Ctrl/Cmd + scroll` | Zoom |
 | `← / →` | Step one frame |
 

@@ -1,5 +1,6 @@
 import { memo, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Type } from 'lucide-react'
 import type { Clip } from '@elah/core'
 import { useTimeline } from './engine-context'
 import { useSelectionStore } from '@elah/core'
@@ -12,9 +13,8 @@ import {
 } from '@elah/core'
 import { useTracksStore } from '@elah/core'
 import { useMediaLibraryStore } from '@elah/core'
-import { timelineTheme } from './theme'
-
-const CLIP_STYLES = timelineTheme.clip
+import { cn } from './cn'
+import { normBg } from './clipSlot'
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
@@ -24,13 +24,60 @@ const WAVE_BARS = [
 
 const TRIM_HANDLE_WIDTH = 8
 
+// Flat solid clip bodies — the design uses no gradient. Audio takes its darkest
+// token so the tinted waveform reads on top; the rest use their mid tone. Static
+// literals so Tailwind generates the utilities.
+const DEFAULT_CLIP_BG: Record<string, string> = {
+  video: 'bg-clip-video-mid',
+  audio: 'bg-clip-audio-bottom', // exact body #0c2a26
+  text: 'bg-clip-text-bottom', // exact body #7a2e10
+  image: 'bg-clip-image-mid',
+}
+
+// Default accent (left stripe + selected hairline) per type, applied as the
+// element's text color so the stripe/border can read it via currentColor.
+const DEFAULT_CLIP_ACCENT: Record<string, string> = {
+  video: 'text-clip-video-accent',
+  audio: 'text-clip-audio-accent',
+  text: 'text-clip-text-accent',
+  image: 'text-clip-image-accent',
+}
+
 interface ClipBlockProps {
   clip: Clip
   zoom: number
   trackHeight: number
+  /** Override class for the clip body (merged so it wins over defaults). */
+  className?: string
+  /**
+   * Per-clip-type body background (gradient 'from-teal-400 to-teal-600' or solid
+   * 'bg-teal-500') and accent ('text-*' for stripe + selected hairline). Only the
+   * pair matching the clip's own type is applied. Omit to keep the default.
+   */
+  clipVideo?: string
+  clipAudio?: string
+  clipText?: string
+  clipImage?: string
+  clipVideoAccent?: string
+  clipAudioAccent?: string
+  clipTextAccent?: string
+  clipImageAccent?: string
 }
 
-export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: ClipBlockProps) {
+export const ClipBlock = memo(function ClipBlock({
+  clip,
+  zoom,
+  trackHeight,
+  className,
+  clipVideo,
+  clipAudio,
+  clipText,
+  clipImage,
+  clipVideoAccent,
+  clipAudioAccent,
+  clipTextAccent,
+  clipImageAccent,
+}: ClipBlockProps) {
   const engine = useTimeline()
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
   const selectClip = useSelectionStore((s) => s.selectClip)
@@ -38,6 +85,10 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
   const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
   const asset = useMediaLibraryStore((s) =>
     clip.assetId ? s.assets[clip.assetId] : undefined,
+  )
+  // A locked track blocks drag/trim/delete gestures (engine enforces too).
+  const trackLocked = useTracksStore(
+    (s) => s.tracks.find((t) => t.id === clip.trackId)?.locked ?? false,
   )
 
   const blockRef = useRef<HTMLDivElement>(null)
@@ -47,7 +98,29 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
   const left = clip.startFrame * zoom
   const width = Math.max(clip.durationFrames * zoom, 4)
   const blockHeight = trackHeight - 10
-  const palette = CLIP_STYLES[clip.type] ?? CLIP_STYLES.video
+
+  // Pick the slot for this clip's own type (explicit — no dynamic key access).
+  // Body + accent slots for this clip's own type (explicit — no dynamic keys).
+  const bodySlot =
+    clip.type === 'video'
+      ? clipVideo
+      : clip.type === 'audio'
+        ? clipAudio
+        : clip.type === 'text'
+          ? clipText
+          : clipImage
+  const accentSlot =
+    clip.type === 'video'
+      ? clipVideoAccent
+      : clip.type === 'audio'
+        ? clipAudioAccent
+        : clip.type === 'text'
+          ? clipTextAccent
+          : clipImageAccent
+  // Body bg: slot replaces the default gradient. Accent: slot text-* class, else
+  // the default token class (both feed currentColor for the stripe/border).
+  const clipBg = normBg(bodySlot) ?? DEFAULT_CLIP_BG[clip.type]
+  const clipAccent = accentSlot ?? DEFAULT_CLIP_ACCENT[clip.type]
 
   // Filmstrip tiles for video/image — decorative; tiles repeat/reduce with zoom.
   const stripFrames =
@@ -73,6 +146,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
       if (e.button !== 0) return
       e.stopPropagation()
       selectClip(clip.id)
+      if (trackLocked) return // selectable, but not draggable
 
       const startX = e.clientX
       const originalStart = clip.startFrame
@@ -128,13 +202,14 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine, selectClip, left, snapEnabled],
+    [clip, zoom, engine, selectClip, left, snapEnabled, trackLocked],
   )
 
   const handleLeftTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       selectClip(clip.id)
+      if (trackLocked) return
 
       const startX = e.clientX
       const originalStart = clip.startFrame
@@ -185,13 +260,14 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine, selectClip],
+    [clip, zoom, engine, selectClip, trackLocked],
   )
 
   const handleRightTrimMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       selectClip(clip.id)
+      if (trackLocked) return
 
       const startX = e.clientX
       const originalDuration = clip.durationFrames
@@ -230,16 +306,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
       window.addEventListener('mousemove', handleMove)
       window.addEventListener('mouseup', handleUp)
     },
-    [clip, zoom, engine, selectClip],
-  )
-
-  const handleDelete = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      engine.removeClip(clip.id, clip.trackId)
-      clearSelection()
-    },
-    [clip.id, clip.trackId, engine, clearSelection],
+    [clip, zoom, engine, selectClip, trackLocked],
   )
 
   const handleContextMenu = useCallback(
@@ -265,22 +332,30 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
       ref={blockRef}
       onMouseDown={handleBodyMouseDown}
       onContextMenu={handleContextMenu}
+      // Styling hooks (inert): let CSS retint per clip type / selection state —
+      // e.g. audio waveform tint and the blue selected-audio body.
+      data-clip-type={clip.type}
+      data-selected={isSelected ? 'true' : 'false'}
+      className={cn('rounded-[4px]', clipAccent, clipBg, className)}
       style={{
         position: 'absolute',
         top: 5,
         left,
         width,
         height: blockHeight,
-        borderRadius: 7,
         boxSizing: 'border-box',
-        background: `linear-gradient(180deg, ${palette.top} 0%, ${palette.mid} 42%, ${palette.bottom} 100%)`,
+        // Background comes from clipBg (default gradient or the slot override).
+        // Selection border vs accent border (accent paints from currentColor).
+        // Same-hue border in the clip's accent color (the Figma border tone);
+        // selection swaps to the selection-ring color.
         border: isSelected
-          ? `2px solid ${timelineTheme.selection.border}`
-          : `1px solid ${palette.accent}55`,
+          ? `2px solid var(--elah-selection-border)`
+          : `1px solid currentColor`,
+        // Dynamic: selection glow vs default clip shadow + inner highlight
         boxShadow: isSelected
-          ? `0 0 14px ${timelineTheme.selection.glow}, inset 0 1px 0 ${timelineTheme.effect.innerHighlightStrong}`
-          : `inset 0 1px 0 ${timelineTheme.effect.innerHighlight}, ${timelineTheme.effect.clipShadow}`,
-        cursor: 'grab',
+          ? `0 0 14px var(--elah-selection-glow), inset 0 1px 0 var(--elah-effect-inner-highlight-strong)`
+          : `inset 0 1px 0 var(--elah-effect-inner-highlight), var(--elah-effect-clip-shadow)`,
+        cursor: trackLocked ? 'default' : 'grab',
         overflow: 'hidden',
         userSelect: 'none',
         willChange: 'transform',
@@ -297,7 +372,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
             display: 'flex',
             overflow: 'hidden',
             pointerEvents: 'none',
-            borderRadius: 7,
+            borderRadius: 4,
           }}
         >
           {Array.from({ length: tileCount }).map((_, i) => {
@@ -315,7 +390,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                   backgroundImage: `url(${stripFrames[frameIdx]})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  boxShadow: `inset -1px 0 0 ${timelineTheme.effect.tileSeparator}`,
+                  boxShadow: `inset -1px 0 0 var(--elah-effect-tile-separator)`,
                 }}
               />
             )
@@ -323,7 +398,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
         </div>
       )}
 
-      {/* Left accent stripe */}
+      {/* Left accent stripe — paints from currentColor (the clip's accent). */}
       <div
         style={{
           position: 'absolute',
@@ -331,7 +406,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
           top: 0,
           bottom: 0,
           width: 3,
-          background: palette.accent,
+          background: 'currentColor',
           opacity: 0.85,
           pointerEvents: 'none',
         }}
@@ -342,7 +417,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
         style={{
           position: 'absolute',
           inset: '0 0 55%',
-          background: `linear-gradient(180deg, ${timelineTheme.effect.gloss} 0%, transparent 100%)`,
+          background: `linear-gradient(180deg, var(--elah-effect-gloss) 0%, transparent 100%)`,
           pointerEvents: 'none',
         }}
       />
@@ -372,7 +447,7 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                 maxWidth: 3,
                 // Floor keeps quiet passages visible as a thin line.
                 height: `${Math.max(6, h * 100)}%`,
-                background: timelineTheme.effect.waveform,
+                background: `var(--elah-effect-waveform)`,
                 borderRadius: 1,
               }}
             />
@@ -392,8 +467,8 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
               bottom: 4,
               width: 14,
               borderRadius: 3,
-              background: timelineTheme.effect.placeholderBg,
-              border: `1px solid ${timelineTheme.effect.placeholderBorder}`,
+              background: `var(--elah-effect-placeholder-bg)`,
+              border: `1px solid var(--elah-effect-placeholder-border)`,
               pointerEvents: 'none',
             }}
           />
@@ -408,34 +483,49 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
           top: 0,
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
-          cursor: 'ew-resize',
-          background: `linear-gradient(90deg, ${timelineTheme.effect.trimScrim} 0%, transparent 100%)`,
+          cursor: trackLocked ? 'default' : 'ew-resize',
+          background: `linear-gradient(90deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
           zIndex: 2,
         }}
       />
 
-      {/* Clip label */}
-      <span
+      {/* Clip label — audio + text only; video/image clips show their thumbnail
+          filmstrip with no overlaid name (per design). Text leads with a T glyph. */}
+      {(clip.type === 'audio' || clip.type === 'text') && (
+        <span
         style={{
           position: 'relative',
           zIndex: 1,
-          display: 'block',
-          paddingLeft: clip.type === 'video' || clip.type === 'image' ? TRIM_HANDLE_WIDTH + 22 : TRIM_HANDLE_WIDTH + 6,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          paddingLeft: TRIM_HANDLE_WIDTH + 6,
           paddingRight: TRIM_HANDLE_WIDTH + 6,
-          paddingTop: 5,
-          fontSize: 10,
-          color: timelineTheme.text.onClip,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          fontWeight: 600,
+          paddingTop: clip.type === 'audio' ? 3 : 5,
+          // Audio: a small filename caption pinned at the top (per design).
+          // Text: the larger content label with the T glyph.
+          fontSize: clip.type === 'audio' ? 9 : 11,
+          color: `var(--elah-text-on-clip)`,
+          fontWeight: clip.type === 'audio' ? 500 : 600,
           letterSpacing: '0.01em',
-          textShadow: timelineTheme.effect.labelShadow,
+          textShadow: `var(--elah-effect-label-shadow)`,
           pointerEvents: 'none',
         }}
       >
-        {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
-      </span>
+        {clip.type === 'text' && (
+          <Type size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+        )}
+        <span
+          style={{
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
+        </span>
+        </span>
+      )}
 
       {/* Right trim handle */}
       <div
@@ -446,42 +536,11 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
           top: 0,
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
-          cursor: 'ew-resize',
-          background: `linear-gradient(270deg, ${timelineTheme.effect.trimScrim} 0%, transparent 100%)`,
+          cursor: trackLocked ? 'default' : 'ew-resize',
+          background: `linear-gradient(270deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
           zIndex: 2,
         }}
       />
-
-      {isSelected && (
-        <button
-          type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={handleDelete}
-          title="Delete clip (Del)"
-          aria-label="Delete clip"
-          style={{
-            position: 'absolute',
-            top: 3,
-            right: TRIM_HANDLE_WIDTH + 3,
-            width: 16,
-            height: 16,
-            padding: 0,
-            lineHeight: '14px',
-            fontSize: 11,
-            color: timelineTheme.effect.deleteBtnText,
-            background: timelineTheme.effect.deleteBtnBg,
-            border: `1px solid ${timelineTheme.effect.deleteBtnBorder}`,
-            borderRadius: 4,
-            cursor: 'pointer',
-            zIndex: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          ×
-        </button>
-      )}
 
       {ctxMenu && createPortal(
         <>
@@ -495,12 +554,12 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
               top: ctxMenu.y,
               left: ctxMenu.x,
               zIndex: 9999,
-              background: timelineTheme.menu.background,
-              border: `1px solid ${timelineTheme.menu.border}`,
+              background: `var(--elah-menu-bg)`,
+              border: `1px solid var(--elah-menu-border)`,
               borderRadius: 6,
               padding: '4px 0',
               minWidth: 140,
-              boxShadow: timelineTheme.menu.shadow,
+              boxShadow: `var(--elah-menu-shadow)`,
               fontFamily: 'sans-serif',
             }}
           >
@@ -515,13 +574,13 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
                 textAlign: 'left',
                 background: 'none',
                 border: 'none',
-                color: timelineTheme.danger.text,
+                color: `var(--elah-danger-text)`,
                 fontSize: 13,
                 cursor: 'pointer',
                 letterSpacing: '0.01em',
               }}
               onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = timelineTheme.danger.bgHover
+                ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--elah-danger-bg-hover)'
               }}
               onMouseLeave={(e) => {
                 ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
@@ -536,5 +595,3 @@ export const ClipBlock = memo(function ClipBlock({ clip, zoom, trackHeight }: Cl
     </div>
   )
 })
-
-

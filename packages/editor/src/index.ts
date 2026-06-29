@@ -57,7 +57,7 @@ export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFramePr
 export { AudioPlaybackController } from '@elah/core'
 export type { AudioPlaybackControllerOptions } from '@elah/core'
 
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles } from '@elah/core'
+export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles, importUrl } from '@elah/core'
 export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from '@elah/core'
 
 export { useTracksStore } from '@elah/core'
@@ -107,7 +107,7 @@ export { ElementsPanel } from './editor/ElementsPanel'
 export type { ElementsPanelProps } from './editor/ElementsPanel'
 
 export { SourcePanel } from './editor/SourcePanel'
-export type { SourcePanelProps } from './editor/SourcePanel'
+export type { SourcePanelProps, SourcePanelClassNames } from './editor/SourcePanel'
 
 export { Preview } from './editor/Preview'
 export type { PreviewProps, PreviewHandle } from './editor/Preview'

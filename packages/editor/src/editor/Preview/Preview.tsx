@@ -10,6 +10,7 @@ import { resolveTimeline } from '@elah/core'
 import { useTimelineEngine, usePlaybackEngine } from '@elah/core'
 import type { DemuxerFactory } from '@elah/core'
 import { AudioPlaybackController } from '@elah/core'
+import { cn } from '@elah/timeline'
 import { TextOverlay } from './TextOverlay'
 import { MediaTransformOverlay } from './MediaTransformOverlay'
 import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
@@ -153,14 +154,8 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
   return (
     <div
       ref={containerRef}
-      className={className}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        background: '#06070A',
-        ...style,
-      }}
+      className={cn('relative w-full h-full bg-[var(--elah-preview-bg,#06070A)]', className)}
+      style={style}
     >
       {/* Project-frame outline, drawn at the same letterbox fit the renderer
           uses so the active aspect ratio is always visible against the bars. */}
@@ -179,5 +174,3 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     </div>
   )
 })
-
-

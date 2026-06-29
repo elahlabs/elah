@@ -18,12 +18,14 @@ Decode lives in [`../../media/video/`](../../media/video/) — this folder is co
 ```
 gpu/
 ├── README.md                ← you are here
+├── IMPLEMENTATION_NOTES.md  ← deeper rationale / gotchas
 ├── GpuRenderer.ts           ← Renderer impl (mount/resize/render/dispose/setDebug)
 ├── RenderGraph.ts           ← Scene diffing + layer dispatch
 ├── WebGLContext.ts          ← canvas + GL context lifecycle
 ├── ShaderProgram.ts         ← compile/link/uniform helper
 ├── TexturePool.ts           ← LRU texture allocator
 ├── VideoTexture.ts          ← per-clip texture handle
+├── viewport.ts              ← computeContainViewport (contain-fit math)
 ├── types.ts                 ← Viewport, RendererOptions, SceneDiff
 ├── shaders/
 │   ├── quad.vert.ts         ← textured quad vertex shader
@@ -31,13 +33,20 @@ gpu/
 ├── layers/
 │   ├── types.ts             ← Layer<TItem> + LayerContext interfaces
 │   ├── VideoLayer.ts        ← ActiveVideoClip → texture → draw
-│   └── TestLayer.ts         ← solid-colour quads (debug renderer only)
+│   ├── ImageLayer.ts        ← ActiveImageClip → ImageBitmap → texture → draw
+│   ├── TextLayer.ts         ← ActiveTextClip → computeTextLayout → rasterize → draw
+│   ├── FrameProbeLayer.ts   ← synthetic "frame N" stand-in for VideoLayer (probeLayer debug)
+│   ├── TestLayer.ts         ← solid-colour quads (debug renderer only)
+│   ├── drawRect.ts          ← resolveDrawRect / transformFromContainRect placement helpers
+│   ├── objectFit.ts         ← contain/cover fit math shared with export
+│   └── textLayout.ts        ← computeTextLayout + SIDE_MARGIN
 ├── debug/
 │   ├── GpuRendererDebugPanel.ts ← production renderer DOM overlay
 │   ├── DebugGpuRenderer.ts      ← isolated debug pipeline using TestLayer
 │   ├── DebugOverlay.ts          ← FPS + bounding boxes for scenarios
 │   ├── GpuDebugCounters.ts      ← metric counters (cache hits, latency, …)
 │   ├── GpuDebugGlobal.ts        ← optional `window.__GPU_DEBUG__`
+│   ├── RecordingGl.ts           ← GL call recorder for golden-trace tests
 │   ├── playground.ts            ← `loadDebugScenario()` manual harness
 │   ├── scenarios.ts             ← validation scenarios A–E
 │   └── types.ts
@@ -71,7 +80,7 @@ Import rules are enforced by [`core/media/__tests__/ImportBoundary.test.ts`](../
 
 ## `GpuRenderer.ts`
 
-Implements `Renderer`. Owns `WebGLContext`, `TexturePool`, `RenderGraph`, and a single `VideoLayer` registered against `scene.videos`.
+Implements `Renderer`. Owns `WebGLContext`, `TexturePool`, `RenderGraph`, and three registered layers: a `VideoLayer` against `scene.videos` (swapped for `FrameProbeLayer` when `probeLayer` is set), an `ImageLayer` against `scene.images`, and a `TextLayer` against `scene.texts`.
 
 ```ts
 const renderer = new GpuRenderer({ maxTextures: 16, clearColor: [0, 0, 0, 1] })
@@ -86,7 +95,12 @@ renderer.dispose()
 
 - `maxTextures?: number` — pool cap (default 16).
 - `clearColor?: [r, g, b, a]` — default opaque black.
-- `providerFactory?: (src) => VideoFrameProvider` — inject test/custom providers.
+- `providerFactory?: (src) => VideoFrameProvider` — override the provider factory entirely (tests / custom decode). When set, `demuxerFactory` / `decoderFactory` / `maxOutstandingDecodes` are ignored.
+- `demuxerFactory?: DemuxerFactory` — enables the real WebCodecs decode pipeline; absent → `SyntheticVideoFrameProvider`.
+- `decoderFactory?: VideoDecoderFactory` — decoder override (tests), forwarded to `VideoDecoderManager`.
+- `maxOutstandingDecodes?: number` — back-pressure cap on in-flight decodes per provider (default 4).
+- `preserveDrawingBuffer?: boolean` — retain the drawing buffer so `gl.readPixels()` works after a tick yields (dev tools / golden-pixel tests / recording). One extra buffer copy per frame; leave `false` for production. Default false.
+- `probeLayer?: boolean` — replace `VideoLayer` with `FrameProbeLayer` (synthetic colour + "frame N") to isolate the clock/draw path from decode. Default false.
 
 **Lifecycle:**
 
@@ -172,7 +186,7 @@ All optional, importable without affecting the production pipeline.
 | `playground.ts` | `loadDebugScenario(container, 'A'..'E')` mounts the debug renderer + overlay. |
 | `scenarios.ts` | Validation scenarios A–E: overlap, transform, opacity, full-stage. |
 
-`apps/playground/src/GpuPreview.tsx` is the production wiring example — RAF loop, `playback.getFrameAt()`, `resolveTimeline()`, and `renderer.render(scene)`.
+The `@elah/editor` package's `Preview/Preview.tsx` is the production wiring example — RAF loop, `playback.getFrameAt()`, `resolveTimeline()`, and `renderer.render(scene)`.
 
 ---
 

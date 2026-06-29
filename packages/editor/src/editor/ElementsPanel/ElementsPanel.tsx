@@ -1,5 +1,5 @@
 import { useCallback, type CSSProperties, type DragEvent } from 'react'
-import { ELEMENT_DRAG_MIME, type DragElementPayload, type ElementKind } from '@elah/timeline'
+import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind } from '@elah/timeline'
 
 export interface ElementsPanelProps {
   style?: CSSProperties
@@ -41,80 +41,32 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
 
   return (
     <div
-      className={className}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'transparent',
-        ...style,
-      }}
+      className={cn('flex flex-col bg-transparent', className)}
+      style={style}
     >
-      <div
-        style={{
-          padding: '10px 12px',
-          borderBottom: '1px solid var(--elah-border)',
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: 'var(--elah-text-muted)',
-            letterSpacing: '0.08em',
-          }}
-        >
+      <div className="px-3 py-[10px] border-b border-ed-border shrink-0">
+        <span className="text-[10px] font-bold text-ed-text-muted tracking-[0.08em]">
           ELEMENTS
         </span>
       </div>
 
       {/* 2-column palette grid — grouping-ready, matches Media grid rhythm */}
-      <div
-        style={{
-          padding: 10,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 6,
-        }}
-      >
+      <div className="p-[10px] grid grid-cols-2 gap-[6px]">
         {TILES.map(({ element, label, icon, iconStyle }) => (
           <div
             key={element}
             draggable
-            className="elah-element-card"
+            className="elah-element-card flex flex-col items-center justify-center gap-[6px] px-2 py-3 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms] min-h-[72px]"
             onDragStart={makeDragStart(element)}
             title={`Drag onto the ${label} track`}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              padding: '12px 8px',
-              borderRadius: 'var(--elah-radius-md)',
-              cursor: 'grab',
-              userSelect: 'none',
-              background: 'var(--elah-bg-card)',
-              border: '1px solid var(--elah-border)',
-              transition: 'background 0.15s, border-color 0.15s',
-              minHeight: 72,
-            }}
           >
             <span
-              style={{
-                width: 32,
-                height: 32,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 'var(--elah-radius-sm)',
-                ...iconStyle,
-              }}
+              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-sm"
+              style={iconStyle}
             >
               {icon}
             </span>
-            <span style={{ fontSize: 11, color: 'var(--elah-text)', fontWeight: 500 }}>{label}</span>
+            <span className="text-[11px] text-ed-text font-medium">{label}</span>
           </div>
         ))}
       </div>

@@ -1,5 +1,8 @@
-import type { CSSProperties } from 'react'
-
+/**
+ * Legacy playground color palette — kept for reference only.
+ * All consumers have been migrated to Tailwind design-token classes.
+ * Do not add new CSSProperties exports here; use token classes instead.
+ */
 export const theme = {
   bgPrimary: '#06070A',
   bgSecondary: '#0D1017',
@@ -25,29 +28,3 @@ export const theme = {
   fontSans: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   fontMono: 'ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace',
 } as const
-
-export const btnBase: CSSProperties = {
-  padding: '6px 12px',
-  background: theme.bgElevated,
-  color: theme.textSecondary,
-  border: `1px solid ${theme.border}`,
-  borderRadius: 6,
-  fontSize: 12,
-  cursor: 'pointer',
-  fontFamily: theme.fontSans,
-  transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-}
-
-export const btnDisabled = (disabled: boolean): CSSProperties =>
-  disabled
-    ? { ...btnBase, background: theme.bgPanel, color: theme.textMuted, cursor: 'not-allowed', opacity: 0.6 }
-    : btnBase
-
-export const sectionLabel: CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase' as const,
-  color: theme.textMuted,
-  fontFamily: theme.fontSans,
-}

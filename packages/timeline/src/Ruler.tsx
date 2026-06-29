@@ -1,16 +1,29 @@
 import { memo, useMemo } from 'react'
-import { framesToTimecode } from '@elah/core'
-import { timelineTheme } from './theme'
+import { cn } from './cn'
+
+/**
+ * Ruler timecode label — two-segment form matching the design (00:00, 00:30,
+ * 00:60, 00:90 … 00:330). The minutes segment stays "00" and the seconds segment
+ * is the cumulative second count, intentionally NOT rolled over to minutes (per
+ * the Figma mock).
+ */
+function formatRulerLabel(frame: number, fps: number): string {
+  const totalSeconds = Math.round(frame / fps)
+  return `00:${String(totalSeconds).padStart(2, '0')}`
+}
 
 interface RulerProps {
   fps: number
   totalFrames: number
   zoom: number
   height?: number
-  color?: string
-  tickColor?: string
-  labelColor?: string
   onSeek?: (frame: number) => void
+  /** Override class for the ruler root (background). */
+  className?: string
+  /** Override class for each tick mark. */
+  tickClassName?: string
+  /** Override class for each timecode label. */
+  labelClassName?: string
 }
 
 /**
@@ -22,10 +35,13 @@ export const Ruler = memo(function Ruler({
   totalFrames,
   zoom,
   height = 24,
-  color = timelineTheme.surface.sidebar,
-  tickColor = timelineTheme.ruler.tick,
-  labelColor = timelineTheme.ruler.label,
   onSeek,
+  // Colors come from default token classes (bg-ed-panel / bg-tick /
+  // text-tick-label). Override per-instance via these slots, or globally via the
+  // --elah-* tokens. cn() ensures a passed class wins over the default.
+  className,
+  tickClassName,
+  labelClassName,
 }: RulerProps) {
   // Content-driven width; CSS minWidth: '100%' ensures it fills the container on
   // first load when the content is narrower than the visible area.
@@ -48,7 +64,7 @@ export const Ruler = memo(function Ruler({
     const result: { frame: number; label: string }[] = []
 
     for (let frame = 0; frame <= totalFrames + framesPerTick; frame += framesPerTick) {
-      result.push({ frame, label: framesToTimecode(frame, fps) })
+      result.push({ frame, label: formatRulerLabel(frame, fps) })
     }
 
     return result
@@ -63,12 +79,12 @@ export const Ruler = memo(function Ruler({
 
   return (
     <div
+      className={cn('bg-ed-panel', className)}
       style={{
         position: 'relative',
         width: contentWidth,
         minWidth: '100%',
         height,
-        background: color,
         flexShrink: 0,
         cursor: onSeek ? 'pointer' : 'default',
         userSelect: 'none',
@@ -87,17 +103,11 @@ export const Ruler = memo(function Ruler({
             alignItems: 'flex-start',
           }}
         >
-          <div
-            style={{
-              width: 1,
-              height: height * 0.5,
-              background: tickColor,
-            }}
-          />
+          {/* Label sits above a short tick, matching the design. */}
           <span
+            className={cn('text-tick-label', labelClassName)}
             style={{
-              fontSize: 9,
-              color: labelColor,
+              fontSize: 11,
               whiteSpace: 'nowrap',
               transform: 'translateX(3px)',
               fontFamily: 'monospace',
@@ -105,10 +115,16 @@ export const Ruler = memo(function Ruler({
           >
             {label}
           </span>
+          <div
+            className={cn('bg-tick', tickClassName)}
+            style={{
+              width: 1,
+              height: height * 0.35,
+              marginTop: 1,
+            }}
+          />
         </div>
       ))}
     </div>
   )
 })
-
-

@@ -3,7 +3,6 @@ import type { Clip, Transition as TransitionData, TransitionKind } from '@elah/c
 import { useTimeline } from './engine-context'
 import { useTransitionsStore } from '@elah/core'
 import { TransitionPicker } from './TransitionPicker'
-import { timelineTheme } from './theme'
 
 interface TransitionChipProps {
   fromClip: Clip
@@ -36,11 +35,12 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
   const cutX = toClip.startFrame * zoom
   const hasTransition = Boolean(transition)
 
+  // Dynamic: line color depends on state — use var() inline since it's conditional
   const lineColor = hasTransition
-    ? timelineTheme.transition.line
+    ? `var(--elah-transition-line)`
     : hovered
-      ? timelineTheme.transition.lineHover
-      : timelineTheme.transition.lineIdle
+      ? `var(--elah-transition-line-hover)`
+      : `var(--elah-transition-line-idle)`
 
   const handleAdd = useCallback(
     (kind: TransitionKind, durationFrames: number, offsetFrames: number) => {
@@ -128,8 +128,8 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
               <rect
                 x={2} y={2} width={12} height={12} rx={2}
                 transform="rotate(45 8 8)"
-                fill={timelineTheme.transition.fill}
-                stroke={timelineTheme.transition.stroke}
+                fill={`var(--elah-transition-fill)`}
+                stroke={`var(--elah-transition-stroke)`}
                 strokeWidth={1}
               />
             </svg>
@@ -138,12 +138,12 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
               <rect
                 x={3} y={3} width={10} height={10} rx={1.5}
                 transform="rotate(45 8 8)"
-                fill={timelineTheme.transition.addFill}
-                stroke={timelineTheme.transition.addStroke}
+                fill={`var(--elah-transition-add-fill)`}
+                stroke={`var(--elah-transition-add-stroke)`}
                 strokeWidth={1.5}
               />
-              <line x1="8" y1="5" x2="8" y2="11" stroke={timelineTheme.transition.addStroke} strokeWidth={1.2} />
-              <line x1="5" y1="8" x2="11" y2="8" stroke={timelineTheme.transition.addStroke} strokeWidth={1.2} />
+              <line x1="8" y1="5" x2="8" y2="11" stroke={`var(--elah-transition-add-stroke)`} strokeWidth={1.2} />
+              <line x1="5" y1="8" x2="11" y2="8" stroke={`var(--elah-transition-add-stroke)`} strokeWidth={1.2} />
             </svg>
           )}
         </div>
@@ -165,5 +165,3 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
     </>
   )
 })
-
-

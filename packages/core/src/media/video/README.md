@@ -81,8 +81,8 @@ otherwise (jsdom / tests)            → MockVideoFrameProvider
 - **WebCodecs** (`VideoDecoder`, `EncodedVideoChunk`) and `createImageBitmap` —
   browser-native; jsdom falls back to stubs in tests.
 - **mediabunny** — only via an injected `DemuxerFactory`; this folder never
-  statically imports it. The app/playground wires it
-  (`apps/playground/src/createPlaygroundDemuxerFactory.ts`).
+  statically imports it. The web app wires it via `createDefaultDemuxerFactory()`
+  (`apps/web/components/playground/ProductionEditor.tsx`).
 
 ## Current limitations
 
@@ -90,8 +90,9 @@ otherwise (jsdom / tests)            → MockVideoFrameProvider
   keyframe (forward-only lookahead). See [`CURRENT_LIMITATIONS.md`](../../../../../../CURRENT_LIMITATIONS.md).
 - **One decoder per `src`** — simultaneous different frames from the same file
   (e.g. a same-source transition) aren't handled yet.
-- **fps mismatch workaround** — `getCurrent(N, maxLookback=2)` bridges index gaps
-  when video fps ≠ project fps. See [`docs/known-bugs.md` KB-001](../../../../../../docs/known-bugs.md).
+- **fps mismatch workaround** — `getCurrent(N)` falls back to a `FrameCache.get(N, maxLookback=2)`
+  lookup, returning the nearest earlier cached frame to bridge index gaps when
+  video fps ≠ project fps. See [`docs/known-bugs.md` KB-001](../../../../../../docs/known-bugs.md).
 
 ## Future direction
 
@@ -104,8 +105,8 @@ under it.
 
 `__tests__/` — provider behaviour, decoder state machine, cache eviction/ownership,
 demuxer adapter, and stress suites (`PlaybackStress`, `RapidSeekStress`,
-`BackwardSeekStability`, `StuckDecodeRecovery`, …). Run from `packages/editor`:
+`BackwardSeekStability`, `StuckDecodeRecovery`, …). Run from `packages/core`:
 
 ```bash
-npm test -- --run media/video/__tests__/StreamingFrameProducer.test.ts
+npm --workspace @elah/core run test -- --run media/video/__tests__/StreamingFrameProducer.test.ts
 ```
