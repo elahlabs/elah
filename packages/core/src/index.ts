@@ -76,6 +76,14 @@ export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFramePr
 export { AudioPlaybackController } from './media/audio/AudioPlaybackController'
 export type { AudioPlaybackControllerOptions } from './media/audio/AudioPlaybackController'
 
+// --- Audio mixer hooks ---
+export { useAudioMixer } from './media/audio/useAudioMixer'
+export type { AudioMixerApi } from './media/audio/useAudioMixer'
+export { useTrackLevels } from './media/audio/useTrackLevels'
+export type { TrackLevel } from './media/audio/useTrackLevels'
+export { useMasterVolume } from './media/audio/useMasterVolume'
+export type { MasterVolumeApi } from './media/audio/useMasterVolume'
+
 // --- Assets / Media Library ---
 export {
   useMediaLibrary,

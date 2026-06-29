@@ -4,7 +4,7 @@ The playback subsystem owns **time** for the editor. It answers one question for
 
 > _"What frame are we on right now?"_
 
-Everything else — the playhead needle, the timeline ruler, future renderers, audio, one-shot effects — is a consumer of the answer this module produces.
+Everything else — the playhead needle, the timeline ruler, renderers, audio, one-shot effects — is a consumer of the answer this module produces.
 
 ---
 
@@ -13,9 +13,9 @@ Everything else — the playhead needle, the timeline ruler, future renderers, a
 | File | Purpose |
 | --- | --- |
 | [`PlaybackEngine.ts`](./PlaybackEngine.ts) | The clock. Framework-agnostic. No React, no Zustand. |
-| [`PlaybackEngine.test.ts`](./PlaybackEngine.test.ts) | Unit tests, including the acceptance scenarios for the anchor-and-integrate refactor. |
+| [`PlaybackEngine.test.ts`](./PlaybackEngine.test.ts) | Unit tests, including clock-switching and anchor-and-integrate scenarios. |
 
-The engine is wired to React state by [`editor/EditorProvider.tsx`](../../editor/EditorProvider.tsx) and consumed by [`timeline/Playhead.tsx`](../../timeline/Playhead.tsx) via the `usePlaybackStore` mirror.
+The engine is wired to React state by [`editor/EditorProvider.tsx`](../../editor/EditorProvider.tsx) and consumed by timeline components via the `usePlaybackStore` mirror.
 
 ---
 
@@ -35,16 +35,42 @@ frame(t) = anchorFrame + (t - anchorTime) * fps * rate     (while playing)
 frame(t) = anchorFrame                                      (while paused)
 ```
 
-This means time is a **pure function of two scalars + `now()`**. There is no internal frame counter that ticks forward and accumulates drift — the rAF loop only _samples_ this function and decides whether to notify subscribers.
+This means time is a **pure function of two scalars + `now()`**. The rAF loop only _samples_ this function and decides whether to notify subscribers.
 
-Every transport event (`play`, `pause`, `seek`, `setPlaybackRate`, `setLoop`, end-of-timeline) **re-anchors atomically**: `anchorFrame` and `anchorTime` are updated together so the integration restarts from a known point. Doing one without the other would produce a visible jump.
+Every transport event (`play`, `pause`, `seek`, `setPlaybackRate`, `setLoop`, end-of-timeline) **re-anchors atomically**: `anchorFrame` and `anchorTime` are updated together so the integration restarts from a known point.
 
-### Why this matters
+---
 
-1. **Sub-frame precision** — `getFrameAt()` returns a float. A future renderer doing drift correction against `<video>.currentTime` needs that resolution; integer frames would throw it away.
-2. **Repeatable one-shot effects** — `seek(N)` after already being on frame `N` still bumps `epoch` and notifies. Loop-to-start, text-animation re-triggers, audio cues all rely on this.
-3. **Audio-ready** — the engine reads time through a private `now()` seam. When `AudioContext` lands, the seam swaps to `ctx.currentTime` and no caller changes.
-4. **Background-tab safe** — the `visibilitychange` handler freezes the integrated position on hide and re-anchors time on show, so a 30-second blur never advances the playhead.
+## Transport clock — audio-as-ground-truth
+
+`PlaybackEngine` selects its time source via a private `now()` method:
+
+1. **Test override** (`config.now`) — deterministic, injected in tests.
+2. **AudioContext clock** — when `setAudioContext(ctx)` is called with a running context, `now()` returns `ctx.currentTime` (hardware audio clock in seconds). This is the production path during audio playback.
+3. **`performance.now()` fallback** — used before audio starts or while the context is `suspended`.
+
+```ts
+// PlaybackEngine.ts — simplified
+private now(): number {
+  if (this._nowOverride) return this._nowOverride()
+  const ctx = this._audioCtx
+  if (ctx && ctx.state === 'running') return ctx.currentTime
+  return performance.now() / 1000
+}
+```
+
+`AudioPlaybackController` calls `playback.setAudioContext(ctx)` immediately after creating its `AudioContext`, and `setAudioContext(null)` on `destroy()`. Because both the video frame and the audio output derive from the same hardware oscillator (`ctx.currentTime`), A/V drift is eliminated by construction.
+
+### `setAudioContext(ctx)`
+
+```ts
+engine.setAudioContext(ctx: AudioContext | null): void
+```
+
+- Attaches (or detaches) an `AudioContext` as the time source.
+- If playing, re-anchors immediately so the clock swap is seamless.
+- The `state === 'running'` guard means the engine transparently uses `performance.now()` until the first user gesture resumes the context.
+- Consumers do not need to call this — `AudioPlaybackController` manages the handoff.
 
 ---
 
@@ -61,12 +87,13 @@ new PlaybackEngine({ fps, getTotalFrames, now? })
 | `seek(frame)` | `(n: number) => void` | Jump to integer `frame`. **No same-frame early return** — always bumps `epoch`. |
 | `setPlaybackRate(rate)` | `(r: number) => void` | Change rate without jumping the current frame. Bumps `epoch`. |
 | `setLoop(loop)` | `(b: boolean) => void` | Toggle wrap-at-end behavior. Bumps `epoch`. |
+| `setAudioContext(ctx)` | `(ctx: AudioContext \| null) => void` | Attach/detach audio clock. Re-anchors if playing. |
 | `getFrameAt(t?)` | `(t?: number) => number` | **Float** frame at time `t` (defaults to `now()`). The renderer reads this. |
 | `currentFrame` | `number` (getter) | `Math.floor(getFrameAt())` — for the store and UI. |
 | `currentTime` | `number` (getter) | `currentFrame / fps`, in seconds. |
 | `isPlaying`, `playbackRate`, `loop` | getters | Current state. |
-| `subscribe(fn)` | `(fn) => () => void` | Frame-accurate channel. Fires on every transport event and on every integer-frame advance during playback. |
-| `subscribeTimeupdate(fn)` | `(fn) => () => void` | Throttled (~100 ms) channel. For UI labels that show "00:01.23" — they don't need 60 Hz. |
+| `subscribe(fn)` | `(fn) => () => void` | Frame-accurate channel. Fires on transport events and integer-frame advances. |
+| `subscribeTimeupdate(fn)` | `(fn) => () => void` | Throttled (~100 ms) channel. For timecode labels. |
 | `destroy()` | `() => void` | Cancels rAF, removes the `visibilitychange` listener, clears subscribers. **Always call on unmount.** |
 
 ### The snapshot
@@ -81,13 +108,11 @@ interface PlaybackSnapshot {
 }
 ```
 
-`epoch` is the discriminator subscribers use to detect _"this is a new arrival at this frame, not a continuation"_. Two consecutive `seek(10)` calls produce two notifications with two different `epoch` values, even though `currentFrame` did not change.
+`epoch` is the discriminator subscribers use to detect _"this is a new arrival at this frame, not a continuation"_.
 
 ---
 
 ## Subscription model
-
-Two channels exist because two different consumer profiles do:
 
 ```
             ┌──────────────────────────────┐
@@ -98,84 +123,30 @@ Two channels exist because two different consumer profiles do:
             ▼                              ▼
    subscribe() — frame-accurate    subscribeTimeupdate() — ~10 Hz
    • Playhead needle               • Clock-label components
-   • Renderers (future)            • Status strings
+   • AudioPlaybackController       • Status strings
    • Effect firing
 ```
-
-`subscribe()` fires:
-
-- on every transport event (`play`/`pause`/`seek`/`setPlaybackRate`/`setLoop`/loop-wrap/end-of-timeline),
-- on every **integer-frame advance** during playback (not every rAF — a 60 Hz display sampling a 30 fps timeline only notifies 30 times/s).
-
-`subscribeTimeupdate()` is rate-limited to one notification per ~100 ms, sharing the same snapshot as `subscribe()`.
-
----
-
-## Time source — the `now()` seam
-
-```ts
-private now: () => number   // returns seconds
-```
-
-By default, `performance.now() / 1000`. The constructor accepts an override:
-
-```ts
-new PlaybackEngine({ fps, getTotalFrames, now: () => myClock })
-```
-
-This is used by tests to drive time deterministically, and is the hook where `AudioContext.currentTime` will plug in once audio lands.
-
----
-
-## Lifecycle
-
-The engine is constructed once per editor session by [`EditorProvider.tsx`](../../editor/EditorProvider.tsx) and torn down via `destroy()` on unmount. The provider also wires the two-way bridge between the engine and `usePlaybackStore`:
-
-- **Engine → store**: `subscribe()` mirrors `currentFrame` and `isPlaying` into Zustand, guarded so a rAF tick on the same integer frame does not bump the store epoch.
-- **Store → engine**: external `play`/`pause`/`seek`/`setPlaybackRate`/`setLoop` calls coming from UI components flow through the store; the provider's store-subscriber translates them back into engine commands.
-
-This bidirectional wiring is intentional. Direct subscribers (renderers, the playhead) bypass React's coalescing for frame accuracy; UI components that only need to re-render on state changes ride the store.
 
 ---
 
 ## Background-tab policy
 
-When `document.hidden` becomes `true` while playing:
-
-- `anchorFrame` is set to the current integrated position,
-- `anchorTime` is set to `now()`,
-- `getFrameAt()` returns the frozen `anchorFrame` for the duration of the hide.
-
-When `document.hidden` becomes `false`:
-
-- `anchorTime` is reset to `now()` — integration resumes from the frozen frame with no catch-up.
-
-This produces the same user-visible behavior as the old "clamp elapsed to 0.25s" hack: a tab switched away for 30 seconds returns to exactly where it left off, not 30 seconds further along.
-
----
-
-## Out of scope (intentionally)
-
-- **Rendering.** This module produces time; it does not paint pixels.
-- **Audio.** No `AudioContext` wiring yet — only the `now()` seam that prepares for it.
-- **Sync / drift correction.** A renderer that drives `<video>.currentTime` will own its own sync thresholds.
-- **Reverse playback, variable per-clip fps, buffering.** Not modeled.
-
-See [`ARCHITECTURE.md` § 3](../../../../../ARCHITECTURE.md#3-time-frames-and-the-playback-clock) for the long-form design rationale (anchor-and-integrate, the echo guard, the `AudioContext` clock-anchoring deferral).
+When `document.hidden` becomes `true` while playing, `anchorFrame` is frozen at the current position. On `false`, `anchorTime` is reset to `now()` — integration resumes from the frozen frame with no catch-up.
 
 ---
 
 ## Testing
 
 ```bash
-npm --workspace @elah/editor run test
+npm --workspace @elah/core run test
 ```
 
-Tests inject a deterministic `now` and stub `requestAnimationFrame`, so the suite runs in Node with no real timers. See [`PlaybackEngine.test.ts`](./PlaybackEngine.test.ts) — it covers:
+Tests inject a deterministic `now` and stub `requestAnimationFrame`, so the suite runs in Node with no real timers. Covered scenarios:
 
 - Float resolution from `getFrameAt()` during playback.
 - Same-frame `seek()` producing distinct epochs.
-- Long-blur simulation (advance fake `now` by 30 s while `document.hidden`) — no playhead jump.
+- Long-blur simulation — no playhead jump.
 - Mid-playback rate change preserves the current frame.
+- `setAudioContext()` clock switching: attach/detach, re-anchor during playback, suspended-context fallback.
 - Throttling on `subscribeTimeupdate()`.
-- Listener isolation (one throwing listener does not stall the others).
+- Listener isolation (one throwing listener does not stall others).
