@@ -5,8 +5,9 @@ clips, the ruler, and the playhead, and that turn user gestures into engine
 mutations. It is a *consumer* of `core/` — it owns no project state and no
 playback clock.
 
-> Layering rule: `timeline/` may import from `core/`, **not** from `editor/`.
-> See [`../core/Architecture.md`](../core/Architecture.md).
+> Layering rule: `@elah/timeline` may import from `@elah/core`, **not** from
+> `@elah/editor`. See the `@elah/editor` package's
+> [`core/Architecture.md`](../../../editor/src/core/Architecture.md).
 
 ---
 
@@ -27,6 +28,7 @@ playback clock.
 | `TrackRow` | One track lane; hosts its clips and the per-lane drop target. |
 | `ClipBlock` | A single clip; drag to move, edge-drag to trim, select. |
 | `Playhead` | The playhead needle; positioned from `usePlaybackStore.currentFrame`. |
+| `TransitionChip` / `TransitionPicker` | Render and edit transitions between clips (rendered by `TrackRow`). |
 
 ## Public API (re-exported from `@elah/editor`)
 
@@ -40,8 +42,11 @@ import {
 } from '@elah/editor'
 ```
 
-- `Timeline` works standalone (`fps` prop) or inside `<EditorProvider>` (shares
-  the provider's engines). `ref.current.engine` exposes the `TimelineEngine`.
+- `Timeline` must run inside an `EditorContext` provider — either `<EditorProvider>`
+  from `@elah/editor`, or a bare `EditorContext.Provider` from `@elah/core` supplying
+  `{ engine, playback }`. `useEditor()` throws otherwise. The `fps` prop only sets
+  the ruler/scale; the engine and clock always come from context. `ref.current.engine`
+  and `ref.current.playback` expose them.
 - `useTracks()` / `usePlayback()` / `useSelection()` are the granular React hooks
   over the `core/stores/` mirrors — prefer them over raw store access.
 
@@ -82,5 +87,6 @@ Live drag uses `engine.previewClip()` (no history) during the gesture and
 
 ## Future direction
 
-Clip thumbnails + waveforms, multi-select gestures, and transition handles on
-clip edges (once the transition system lands).
+Clip thumbnails + waveforms and multi-select gestures. (Transitions have landed —
+they render as `TransitionChip`s between adjacent clips, edited via
+`TransitionPicker`.)

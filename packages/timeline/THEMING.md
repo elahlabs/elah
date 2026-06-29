@@ -48,7 +48,8 @@ import '@elah/editor/styles/tokens.css' // baseline defaults
 import './your-theme.css'               // your overrides
 
 <div className="elah-root">
-  <Timeline engine={engine} />
+  {/* Timeline reads engine + playback from EditorContext — see the README quick start */}
+  <Timeline />
 </div>
 ```
 
@@ -62,7 +63,6 @@ Pass a `classNames` map to override one specific `<Timeline>` without affecting 
 
 ```tsx
 <Timeline
-  engine={engine}
   classNames={{
     // structural slots
     root:       'rounded-xl border border-zinc-800',

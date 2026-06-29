@@ -1,17 +1,39 @@
 # OPTIMIZATION.md — layer playbook + consistency audit
 
-A **triage and study workbench** for the GPU renderer. Use this when video does not play, when you want to test one layer in isolation, or when you need to understand how `core/renderer` fits the rest of `@elah/editor`.
+A **triage and study workbench** for the GPU renderer. Use this when video does not play, when you want to test one layer in isolation, or when you need to understand how the renderer fits the rest of `@elah/editor`.
 
-**Canonical companions (do not duplicate here):**
+> ⚠️ **Out of date — predates the PR-02 push-based rewrite and the package split.**
+> This playbook was written against the original **pull-based** decode pipeline.
+> Two things have since changed and the per-layer drill-downs below have **not**
+> all been rewritten:
+>
+> 1. **Pull → push.** The production provider is now
+>    `StreamingFrameProducer` (push-based: `setPlayhead(n)` + sync `getCurrent(n)`),
+>    not `DecoderBackedVideoFrameProvider` (deprecated). There is no
+>    `requestFrame` / `prefetch` / `manager.seek()` and **no per-frame
+>    `decoder.flush()`** — the decoder stays warm via `feed()`/`onFrame()` and
+>    only flushes once in `drain()`. The cache holds **`ImageBitmap` copies**
+>    (copy-and-close in `onFrame`), so `VideoTexture.upload` **borrows and never
+>    closes** — the old `frame.clone()`-before-upload step is gone.
+> 2. **Package split + relocation.** The renderer and decode pipeline live in the
+>    **`@elah/core`** package now. Decode/cache code is under
+>    `packages/core/src/media/video/` (not `gpu/`), and compositing under
+>    `packages/core/src/renderer/gpu/`.
+>
+> For the current model see the canonical companions below. Treat §3/§8/§9 here
+> as historical context for the pre-PR-02 pipeline.
+
+**Canonical companions (current source of truth — all in `@elah/core`):**
 
 | Doc | Role |
 |-----|------|
-| [`architecture.md`](./architecture.md) | Diagrams and contracts |
-| [`EVOLUTION.md`](./EVOLUTION.md) | History and reasoning |
-| [`README.md`](./README.md) | Public API and wiring |
-| [`AI-Rules.md`](./AI-Rules.md) | Invariants agents must preserve |
-| [`gpu/IMPLEMENTATION_NOTES.md`](./gpu/IMPLEMENTATION_NOTES.md) | Why decisions were made |
-| [`gpu/README.md`](./gpu/README.md) | GPU module map |
+| [`renderer/architecture.md`](../../../../core/src/renderer/architecture.md) | Diagrams and contracts (push-based) |
+| [`renderer/EVOLUTION.md`](../../../../core/src/renderer/EVOLUTION.md) | History and reasoning |
+| [`renderer/README.md`](../../../../core/src/renderer/README.md) | Public API and wiring |
+| [`renderer/AI-Rules.md`](../../../../core/src/renderer/AI-Rules.md) | Invariants agents must preserve |
+| [`renderer/gpu/IMPLEMENTATION_NOTES.md`](../../../../core/src/renderer/gpu/IMPLEMENTATION_NOTES.md) | Why decisions were made |
+| [`renderer/gpu/README.md`](../../../../core/src/renderer/gpu/README.md) | GPU module map |
+| [`media/video/README.md`](../../../../core/src/media/video/README.md) | Decode pipeline contract |
 
 ---
 
@@ -38,21 +60,23 @@ Real playback is **async decode feeding a synchronous render tick**. When anythi
 
 These compose; fixing only one often leaves the symptom:
 
-| # | Bug | Status | Where |
-|---|-----|--------|-------|
-| 1 | **FrameCache evicted the seek anchor** — lowest-key eviction removed backward-seek targets while prefetch siblings filled the cache | **Fixed** — pivot-relative `_evictFurthest()` | [`gpu/FrameCache.ts`](./gpu/FrameCache.ts) |
-| 2 | **No seek on discontinuity** — stale in-flight decodes could land after a scrub | **Fixed** — `requestFrame` calls `manager.seek()` on `\|Δframe\| > 1` | [`gpu/DecoderBackedVideoFrameProvider.ts`](./gpu/DecoderBackedVideoFrameProvider.ts) |
-| 3 | **Per-frame `decoder.flush()`** — after flush, WebCodecs needs a keyframe again; every tick re-decodes the whole GOP | **Open** | [`gpu/VideoDecoderManager.ts`](./gpu/VideoDecoderManager.ts) `_decodeFrame` |
+> The three bugs below were the original (pull-based) symptom family. All three
+> are resolved in the current push-based pipeline; the file/method names reflect
+> the **old** code and are kept for historical traceability.
+
+| # | Bug | Status | Where (then → now) |
+|---|-----|--------|--------------------|
+| 1 | **FrameCache evicted the seek anchor** — lowest-key eviction removed backward-seek targets while prefetch siblings filled the cache | **Fixed** — pivot-relative `_evictFurthest()` | `FrameCache.ts` (now `packages/core/src/media/video/FrameCache.ts`) |
+| 2 | **No seek on discontinuity** — stale in-flight decodes could land after a scrub | **Fixed** — push-based `setPlayhead` now triggers `manager.reset(keyframeUs)` on `\|Δframe\| > 1` (was `requestFrame` → `manager.seek()`) | `StreamingFrameProducer.ts` (was `DecoderBackedVideoFrameProvider.ts`) |
+| 3 | **Per-frame `decoder.flush()`** — after flush, WebCodecs needs a keyframe again; every tick re-decodes the whole GOP | **Fixed by PR-02** — `feed()` never flushes mid-stream; the decoder stays warm across contiguous ranges; `flush()` runs once in `drain()` | `VideoDecoderManager.ts` |
 
 ### Other fixes already landed
 
 | Fix | Why it mattered |
 |-----|-----------------|
-| `frame.clone()` before `VideoTexture.upload()` | Upload closed the cache's borrowed frame; subsequent ticks hit closed `VideoFrame` → black canvas |
-| `decodeTimeoutMs` watchdog (default 2000 ms) | Stuck `requestFrame` promises wedged all 4 `_pending` slots → eternal cache miss |
-| Discontinuity reorder (seek before back-pressure guard) | Full `_pending` blocked seek recovery |
+| **Copy-and-close** (`createImageBitmap` + `frame.close()` in `onFrame`) | Replaced the old `frame.clone()`-before-upload hack. The cache now owns `ImageBitmap` copies and is the **sole closer**; `VideoTexture.upload` borrows and never closes. Holding raw `VideoFrame`s used to drain the decoder's ~16-slot pool → freeze. |
+| Stall watchdog (progress-based reset) | A decoder that goes silent while fed ahead of the playhead triggers one reset (replaced the old per-request `decodeTimeoutMs` slot timeout). |
 | `UNPACK_FLIP_Y_WEBGL` in `_initGLState` | Upside-down video; easy to misread as "wrong frame" |
-| `_resolveFrame` closes frame when no waiters | Post-cancel decode completion leaked `VideoFrame` |
 
 ### Decision tree — "is it working?"
 
@@ -531,21 +555,22 @@ No `@elah/editor/runtime` or `@elah/editor/testing` package yet — SDK extracti
 
 ```mermaid
 flowchart LR
-  decOut[VideoDecoder.output] -->|transfer| mgr[VideoDecoderManager]
-  mgr -->|resolve| put[FrameCache.put]
+  decOut[VideoDecoder.output] -->|VideoFrame| onf[onFrame]
+  onf -->|createImageBitmap| copy[ImageBitmap copy]
+  onf -->|frame.close now| done0[VideoFrame closed in onFrame]
+  copy -->|cache.put| put[FrameCache SOLE OWNER]
   put -->|borrow get| vl[VideoLayer.getCurrent]
-  vl -->|clone| upload[VideoTexture.upload]
-  upload -->|close clone| done1[frame closed]
-  put -->|evict dispose| done2[frame closed]
+  vl -->|borrow, never close| upload[VideoTexture.upload]
+  put -->|evict dispose| done2[ImageBitmap closed]
 ```
 
 | Handoff | Who closes |
 |---------|------------|
-| Decode → cache.put | Cache owns |
+| Decode → `onFrame` | `onFrame` closes the raw `VideoFrame` immediately after copying it |
+| `onFrame` → cache.put (`ImageBitmap`) | Cache owns the copy |
 | getCurrent → VideoLayer | Nobody (borrowed) |
-| clone → upload | VideoTexture closes **clone** only |
-| Cache evict / dispose | Cache closes stored frame |
-| Cancel, no waiters | Manager `_resolveFrame` closes |
+| VideoLayer → VideoTexture.upload | Nobody — `upload` borrows and never closes |
+| Cache evict / dispose | Cache closes the stored `ImageBitmap` |
 
 ### 5.4 Scene immutability
 
@@ -703,4 +728,8 @@ When you change a layer's contract, update **§3 for that layer** in the same PR
 
 ---
 
-*Last aligned with codebase: 2026-05-24. Renderer test count: 28+ vitest suites under [`gpu/__tests__/`](./gpu/__tests__).*
+*Originally aligned 2026-05-24 (pull-based pipeline). Top banner, §1, and §5.3
+updated for the PR-02 push-based pipeline and the package split; the §3 per-layer
+drill-downs still describe the older pull-based internals (see banner). Renderer
+and decode suites now live under `packages/core/src/renderer/gpu/__tests__/` and
+`packages/core/src/media/video/__tests__/`.*

@@ -86,8 +86,9 @@ import { importFiles, useMediaLibrary } from '@elah/editor'
 
 await importFiles(Array.from(fileList))
 
-// Subscribe in React
-const assets = useMediaLibrary(s => s.assets)
+// Subscribe in React — useMediaLibrary() takes no arguments and returns
+// { assets, getAsset, removeAsset, updateAsset } with assets in insertion order.
+const { assets } = useMediaLibrary()
 ```
 
 ---
@@ -119,7 +120,7 @@ Runs in a web worker. Reuses `resolveTimeline` + the GPU renderer's placement ma
 | `Ctrl/Cmd + C` | Copy |
 | `Ctrl/Cmd + V` | Paste at playhead |
 | `Ctrl/Cmd + Z` | Undo |
-| `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + Shift + Z` / `Ctrl/Cmd + Y` | Redo |
 | `Ctrl/Cmd + scroll` | Zoom |
 | `← / →` | Step one frame |
 

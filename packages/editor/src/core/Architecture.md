@@ -1,32 +1,35 @@
-# `core/` Architecture Reference
+# `@elah/core` Architecture Reference
 
 > **Purpose of this document:** A self-contained cold-start reference for any
-> implementation agent working on `@elah/editor`. Load this file and you will
-> not need to re-explore `packages/editor/src/core/` from scratch.
+> implementation agent working on the engine layer. Load this file and you will
+> not need to re-explore `packages/core/src/` from scratch.
 >
-> **Scope:** the shipped engine — `core/` plus the GPU renderer, decode pipeline,
-> audio, and export that now sit beside it.
+> **Scope:** the shipped engine — the `@elah/core` package plus the GPU renderer,
+> decode pipeline, audio, and export that sit beside it.
+>
+> **Note:** the codebase is split into three published packages. The `core/X`
+> paths below are shorthand for `packages/core/src/X` (the `@elah/core` package).
 
 ---
 
-## 1. Position in the three-layer architecture
+## 1. Position in the three-package architecture
 
 ```
-packages/editor/src/
-  core/       ← THIS DOCUMENT — runtime; React-agnostic where possible
-  timeline/   ← timeline UI surface; may import from core/, not editor/
-  editor/     ← composition: EditorProvider, hooks, Preview, AssetPanel
+packages/
+  core/       (@elah/core)     ← THIS DOCUMENT — runtime; framework-agnostic
+  timeline/   (@elah/timeline) ← timeline UI surface; imports @elah/core
+  editor/     (@elah/editor)   ← composition: EditorProvider, hooks, Preview, AssetPanel
 ```
 
-**Dependency rule (enforced by convention + future lint):**
+**Dependency rule (enforced by the package graph):**
 
 ```
-core  ←  timeline  ←  editor
+@elah/core  ←  @elah/timeline  ←  @elah/editor
 ```
 
-- `core/` may **not** import from `timeline/` or `editor/`.
-- `timeline/` may **not** import from `editor/`.
-- `editor/` may import from both.
+- `@elah/core` may **not** import from `@elah/timeline` or `@elah/editor`.
+- `@elah/timeline` may **not** import from `@elah/editor`.
+- `@elah/editor` may import from both (and re-exports them).
 
 ---
 
@@ -42,7 +45,7 @@ core  ←  timeline  ←  editor
 | `core/media/` | Frame/sample producers. `media/video/` = WebCodecs decode (`StreamingFrameProducer`, `FrameCache`, mediabunny demuxer); `media/audio/` = `AudioPlaybackController`. | `createVideoFrameProvider`, `StreamingFrameProducer`, `AudioPlaybackController` |
 | `core/export/` | `exportVideo()` + `ExportWorker` — OffscreenCanvas frame render → mediabunny MP4 mux. | `exportVideo` |
 | `core/debug/` | Channel-based `trace()` frame-lifecycle logging (`window.__trace`). | `trace`, `traceEnabled` |
-| `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore` |
+| `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore`, `useTransitionsStore` |
 | `core/assets/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
 | `core/elements/` | Clip factory functions. Pure constructors, no side-effects. | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip` |
 | `core/track/` | Track factory. | `createTrack` |
@@ -191,6 +194,8 @@ The engine is a typed event emitter. Listeners registered with `.on(event, handl
 | `'clip:removed'` | `{ clipId, trackId }` | After `removeClip()` |
 | `'clip:updated'` | `Clip` | After `updateClip()`, `moveClip()`, `trimClip()` |
 | `'clip:split'` | `{ leftId, rightId, trackId }` | After `splitClip()` |
+| `'transition:added'` | `Transition` | After `addTransition()` |
+| `'transition:removed'` | `string` (transitionId) | After `removeTransition()` |
 | `'history:change'` | `{ canUndo, canRedo }` | After any mutation or undo/redo |
 
 `<Timeline>` subscribes to `'change'` and calls `useTracksStore.sync()`. That is the only bridge between the engine and React stores.
@@ -239,13 +244,13 @@ Knowing what is absent is as important as knowing what is present:
 
 | Concern | Lives in |
 |---------|----------|
-| `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `timeline/` |
-| `useTimeline`, `useTracks`, `usePlayback`, `useSelection` hooks (public API) | `timeline/hooks/` |
-| `useTimelineDrop` drop handler | `timeline/` |
-| `<EditorProvider>` | `editor/` |
-| `useResolvedScene` | `editor/` |
-| `<Preview>` component (mounts the renderer + RAF) | `editor/` |
-| `<AssetPanel>` component | `editor/` |
+| `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `@elah/timeline` |
+| `useTracks`, `usePlayback`, `useSelection` hooks (public API) | `@elah/timeline` (`src/hooks/`) |
+| `useTimeline`, `useTimelineDrop` drop handler | `@elah/timeline` (`src/`) |
+| `<EditorProvider>` | `@elah/editor` (`src/editor/`) |
+| `useResolvedScene` | `@elah/editor` (`src/editor/`) |
+| `<Preview>` component (mounts the renderer + RAF) | `@elah/editor` (`src/editor/Preview/`) |
+| `<AssetPanel>`, `<ElementsPanel>`, `<SourcePanel>` components | `@elah/editor` (`src/editor/`) |
 
 ---
 
