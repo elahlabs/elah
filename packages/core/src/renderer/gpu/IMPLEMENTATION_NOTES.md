@@ -44,9 +44,11 @@ suite touches the render path. Not planned before Phase 4 (export).
    (I3) only works when `render()` is a pure, synchronous function of the scene.
    If `render()` were async, two concurrent calls could race.
 
-Async work (decode, upload scheduling) happens out-of-band via
-`provider.requestFrame()`, which is fire-and-forget. Render always draws the
-last successfully uploaded texture; cache misses are silent.
+Async work (decode, upload scheduling) happens out-of-band: `VideoLayer.draw`
+calls `provider.setPlayhead(n)` (fire-and-forget, push-based) and then the
+synchronous `provider.getCurrent(n)`. Render always draws the last successfully
+uploaded texture; cache misses are silent. (The earlier pull-based
+`requestFrame(n)` API was removed in PR-02.)
 
 ---
 
@@ -59,40 +61,46 @@ The browser `VideoDecoder` API is inherently async:
 - `VideoFrame` delivery via `output` callback is asynchronous.
 
 Coupling any of this to `render()` would require `await` inside the render path,
-violating I1. Instead, `DecoderBackedVideoFrameProvider`:
+violating I1. Instead, the production `StreamingFrameProducer` (push-based):
 
-1. Accepts `requestFrame(n)` synchronously (fire-and-forget).
-2. Runs the async decode pipeline.
-3. Deposits the decoded `VideoFrame` into `FrameCache` when ready.
-4. On the next render tick, `getCurrent(n)` returns the cached frame (or `null`
-   on a first-frame cache miss, which draws the last texture — no flicker).
+1. Accepts `setPlayhead(n)` synchronously (fire-and-forget) — this drives forward
+   decode internally; there are no per-frame pull requests.
+2. Runs the async decode pipeline (`VideoDecoderManager.feed/onFrame`), copying
+   each decoded `VideoFrame` to an `ImageBitmap` and closing the original at once.
+3. Deposits the `ImageBitmap` into `FrameCache` when ready.
+4. On a later render tick, the synchronous `getCurrent(n)` returns the cached
+   frame (or `null` on a cache miss, which draws the last texture — no flicker).
 
 This is the same model used in production video editors (Freecut, CapCut web):
 decode runs ahead of playback on a separate async chain; the render thread
-consumes from the cache.
+consumes from the cache. (`DecoderBackedVideoFrameProvider`, the original
+pull-based provider, is deprecated and no longer returned by the factory.)
 
 ---
 
-## Why audio is intentionally not implemented yet
+## How audio is wired (shipped)
 
-Audio requires:
+Audio is implemented by [`AudioPlaybackController`](../../../media/audio/AudioPlaybackController.ts)
+(see [`media/audio/README.md`](../../../media/audio/README.md)). The three
+problems it had to solve, and how:
 
-1. **A separate clock authority** — `AudioContext.currentTime` is the only
-   reliable high-resolution timer that stays synchronised with hardware audio
-   output. `performance.now()` drifts relative to audio by 1–5 ms per minute.
-   When audio ships, `PlaybackEngine.getFrameAt()` must be disciplined to
-   `AudioContext.currentTime`.
+1. **A single clock authority** — `AudioContext.currentTime` is the only reliable
+   high-resolution timer that stays synchronised with hardware audio output;
+   `performance.now()` drifts by 1–5 ms/min relative to it. So `start()` calls
+   `playback.setAudioContext(ctx)`, after which `PlaybackEngine.now()` returns
+   `ctx.currentTime` while the context is running. Both the video frame and the
+   audio buffer position then derive from one oscillator — A/V sync by
+   construction, with a `performance.now()` fallback before the first gesture.
 
-2. **An audio scheduler** — WebAudio `AudioBufferSourceNode` scheduling must be
-   done 50–100 ms ahead of playback to prevent glitches. This is a non-trivial
-   scheduler separate from the RAF loop.
+2. **An audio scheduler** — `AudioBufferSourceNode`s are started a short
+   look-ahead (`ctx.currentTime + 0.02`) ahead of playback, with the source
+   offset adjusted, so starts land on a future audio quantum. Re-scheduling is
+   keyed off the transport `epoch` (seek / rate change bumps it).
 
-3. **Codec decode** — audio decode also uses WebCodecs (`AudioDecoder`), but
-   the scheduler and buffering model is very different from video (no visual
-   texture cache; PCM blocks instead of `VideoFrame` objects).
-
-Shipping audio before the clock is disciplined to `AudioContext.currentTime`
-would cause audible video/audio drift. This is Phase 2.
+3. **Decode** — clips are decoded with the Web Audio `decodeAudioData` path and
+   composited through a per-clip → per-track (gain + analyser) → master gain
+   graph, with click-free 10 ms gain ramps. Export reuses the same mix offline
+   (`OfflineAudioContext`) on the main thread.
 
 ---
 
@@ -114,8 +122,8 @@ would cause audible video/audio drift. This is Phase 2.
    `blobResolver` (the parameter already exists) to give mediabunny direct
    access to the file without copying. Deferred to Phase 2.
 
-4. **No multi-track audio** — audio clips appear on the timeline but produce no
-   sound. Audio decode is Phase 2.
+4. **(Resolved) multi-track audio** — multi-track audio now plays through
+   `AudioPlaybackController`; this is no longer a limitation.
 
 5. **Object URL lifetime** — object URLs are created when a file is imported and
    are never revoked (the tab holds the blob URL until page close). A production

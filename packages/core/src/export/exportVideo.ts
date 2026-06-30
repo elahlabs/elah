@@ -14,6 +14,15 @@ function mlog(channel: TraceChannel, msg: string) {
 }
 
 /**
+ * Re-entrancy guard. An export worker opens one GPU-backed VideoDecoder /
+ * CanvasSink per unique video source; running several exports at once stacks
+ * those decoders and exhausts the GPU (VideoDecoder allocation failures, lost
+ * WebGL context). Only one export is allowed in flight at a time — concurrent
+ * callers are rejected rather than spawning another worker.
+ */
+let exportInFlight = false
+
+/**
  * Render the project's full audio mix on the main thread.
  *
  * This must happen here (not in the ExportWorker) because the Web Audio API —
@@ -54,8 +63,11 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
   mlog('EXPORT_AUDIO', `mixing ${audioClips.length} audio clip(s) — ${totalSec.toFixed(2)}s @ ${sampleRate}Hz`)
   const ctx = new OAC(2, Math.ceil(sampleRate * totalSec), sampleRate)
 
-  for (const clip of audioClips) {
+  for (let i = 0; i < audioClips.length; i++) {
+    const clip = audioClips[i]
     try {
+      mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] fetching+decoding "${clip.src?.slice(-40)}"`)
+      const fetchStart = performance.now()
       const buf = await fetch(clip.src!).then(r => r.arrayBuffer())
       const decoded = await ctx.decodeAudioData(buf)
       const node = ctx.createBufferSource()
@@ -64,11 +76,20 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
       gain.gain.value = clip.volume ?? 1
       node.connect(gain).connect(ctx.destination)
       node.start(clip.startFrame / fps, clip.sourceStartFrame / fps, clip.durationFrames / fps)
+      mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] scheduled — ` +
+        `startSec=${(clip.startFrame / fps).toFixed(3)} ` +
+        `offsetSec=${(clip.sourceStartFrame / fps).toFixed(3)} ` +
+        `durSec=${(clip.durationFrames / fps).toFixed(3)} ` +
+        `vol=${clip.volume ?? 1} ` +
+        `decodedSec=${decoded.duration.toFixed(3)} ` +
+        `ms=${(performance.now() - fetchStart).toFixed(1)}`)
     } catch (err) {
+      mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] skipped — decode error: ${String(err)}`)
       console.warn(`[export:main] audio clip "${clip.src?.slice(-40)}" skipped — decode error: ${String(err)}`)
     }
   }
 
+  mlog('EXPORT_AUDIO', 'startRendering() — mixing offline graph')
   const mixed = await ctx.startRendering()
   const numberOfChannels = mixed.numberOfChannels
   const length = mixed.length
@@ -87,8 +108,9 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
  * Spins up ExportWorker (module worker) and resolves once the worker posts
  * the finished ArrayBuffer. Progress is forwarded via `options.onProgress`.
  *
- * The worker must be bundled as a module worker by the consuming app's bundler
- * (Vite handles the `new URL(...)` pattern automatically).
+ * The worker must be bundled as a module worker by the consuming app's bundler.
+ * The `new URL('./ExportWorker.ts', import.meta.url)` pattern is recognised by
+ * Vite, webpack 5, and Turbopack, which each bundle the worker from source.
  *
  * @example
  * ```ts
@@ -101,6 +123,19 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
  * ```
  */
 export async function exportVideo(project: Project, options: ExportOptions = {}): Promise<Blob> {
+  if (exportInFlight) {
+    mlog('EXPORT', 'rejected — an export is already in flight (GPU guard)')
+    throw new Error('An export is already in progress. Wait for it to finish before starting another.')
+  }
+  exportInFlight = true
+  try {
+    return await runExportVideo(project, options)
+  } finally {
+    exportInFlight = false
+  }
+}
+
+async function runExportVideo(project: Project, options: ExportOptions): Promise<Blob> {
   const t0 = performance.now()
   const totalClips = Object.values(project.clips).flat().length
   mlog('EXPORT', `exportVideo() called — stage=${project.stage.width}x${project.stage.height} fps=${project.fps} clips=${totalClips}`)
@@ -113,7 +148,7 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
   return new Promise((resolve, reject) => {
     mlog('EXPORT', 'spawning ExportWorker (module worker)')
     const worker = new Worker(
-      new URL('./ExportWorker.js', import.meta.url),
+      new URL('./ExportWorker.ts', import.meta.url),
       { type: 'module' },
     )
 

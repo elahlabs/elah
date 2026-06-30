@@ -25,8 +25,8 @@ placement helpers, and muxes the result with mediabunny.
 ## Public API
 
 ```ts
-import { exportVideo } from '@elah/editor'
-import type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from '@elah/editor'
+import { exportVideo } from '@elah/core'
+import type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from '@elah/core'
 
 const blob = await exportVideo(project, {
   videoCodec: 'avc',        // 'avc' | 'vp9' | 'vp8'   (default 'avc')
@@ -71,8 +71,9 @@ message protocol, and the rationale.
 ## Dependencies
 
 - **mediabunny** — used *inside the worker only* (`CanvasSink`, `CanvasSource`,
-  `Mp4Output`, `AudioSampleSource`). The editor's public entry never statically
-  imports it; the worker is a separate module graph the bundler code-splits.
+  `Mp4Output`, `AudioSampleSource`). The package's public entry never statically
+  imports it; the worker is a separate module graph the bundler code-splits, and
+  `lazyExport` defers even `exportVideo` itself behind a dynamic import.
 - **Browser APIs** — `OffscreenCanvas` (worker render target), `OfflineAudioContext`
   (main-thread mix), `createImageBitmap`.
 - **`resolveTimeline`** + **`renderer/gpu/layers/drawRect.ts`** &

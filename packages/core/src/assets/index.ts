@@ -21,7 +21,7 @@ export interface UseMediaLibraryApi {
   getAsset: (id: string) => MediaAsset | undefined
   removeAsset: (id: string) => void
   updateAsset: (id: string, patch: Partial<MediaAsset>) => void
-  importFiles: (files: File[]) => Promise<ImportFilesResult>
+  importFiles: (files: Iterable<File>) => Promise<ImportFilesResult>
   importUrl: (url: string, opts?: ImportUrlOptions) => Promise<MediaAsset>
   importBlob: (blob: Blob, opts?: ImportBlobOptions) => Promise<MediaAsset>
 }

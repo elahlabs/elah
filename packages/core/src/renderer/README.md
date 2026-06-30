@@ -53,10 +53,10 @@ Any future implementation shares the same `Renderer` interface and consumes the
 same `Scene`. Swapping one in requires no changes to `PlaybackEngine`,
 `resolveTimeline`, or any React component.
 
-`GpuRenderer` is exported from the package root as `@elah/editor`:
+`GpuRenderer` is exported from the package root (`@elah/core`):
 
 ```ts
-import { GpuRenderer, resolveTimeline } from '@elah/editor'
+import { GpuRenderer, resolveTimeline } from '@elah/core'
 
 const renderer = new GpuRenderer({ maxTextures: 16 })
 renderer.mount(containerEl)
@@ -76,7 +76,7 @@ the mediabunny library:
 
 ```ts
 import * as mediabunny from 'mediabunny'
-import { GpuRenderer, resolveTimeline, createMediabunnyBackend } from '@elah/editor'
+import { GpuRenderer, resolveTimeline, createMediabunnyBackend } from '@elah/core'
 
 const renderer = new GpuRenderer({
   maxTextures: 16,
@@ -92,17 +92,19 @@ renderer.mount(containerEl)
 renderer.render(resolveTimeline(currentFrame, project))
 ```
 
-`mediabunny` is NOT a required dependency of `@elah/editor`. The package stays
-lean; callers opt in. Omitting the `demuxerFactory` falls back to
+`mediabunny` is statically imported only by the export worker and the demuxer's
+lazy path — the renderer never imports it directly; callers inject it through
+`demuxerFactory`. Omitting the `demuxerFactory` falls back to
 `SyntheticVideoFrameProvider` (visual development mode — no media files required).
 
-For the playground, the wiring is in `apps/playground/src/createPlaygroundDemuxerFactory.ts`.
+The web app wires it via `createDefaultDemuxerFactory()` in
+`apps/web/components/playground/ProductionEditor.tsx`.
 
 For tests or custom backends, inject any `DemuxerFactory`:
 
 ```ts
-import { GpuRenderer } from '@elah/editor'
-import type { DemuxerBackend, DemuxerFactory } from '@elah/editor'
+import { GpuRenderer } from '@elah/core'
+import type { DemuxerBackend, DemuxerFactory } from '@elah/core'
 
 const myBackend: DemuxerBackend = {
   async open(src) { /* ... */ },
@@ -122,4 +124,4 @@ const renderer = new GpuRenderer({ demuxerFactory: () => myBackend })
 1. Create a sub-folder (e.g. `dom/`).
 2. Export a class that `implements Renderer` from `core/renderer/types.ts`.
 3. The class may import from `core/resolver/scene.ts` and `core/types` only — no engine, no React.
-4. Wire it up in a React shell (the only place that knows about both a renderer and a playback engine). The playground's `GpuPreview.tsx` is a working example: it owns the RAF loop, resolves the scene each tick, and calls `renderer.render(scene)`.
+4. Wire it up in a React shell (the only place that knows about both a renderer and a playback engine). The `@elah/editor` package's `Preview/Preview.tsx` is a working example: it owns the RAF loop, resolves the scene each tick, and calls `renderer.render(scene)`.

@@ -19,13 +19,14 @@ import {
   Redo2,
   Code2,
 } from 'lucide-react'
-import { TextClipProperties } from './TextClipProperties'
+import { ClipProperties } from './ClipProperties'
 import { TimelineControls } from './TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
 import { PlaygroundTabs } from './PlaygroundTabs'
 import { MediaPanel } from './MediaPanel'
+import { TracePanel } from './TracePanel'
 import { siteConfig } from '@/config/site'
 import { cn } from '@/lib/utils'
 import {
@@ -72,6 +73,7 @@ const AppHeader = memo(function AppHeader({
   codeOpen: boolean
   timelineRef: React.RefObject<TimelineRef | null>
 }) {
+  const [showTrace, setShowTrace] = useState(false)
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
@@ -198,6 +200,27 @@ const AppHeader = memo(function AppHeader({
         >
           ⬇ Export
         </button>
+        <div className="relative">
+          <button
+            type="button"
+            className={cn(
+              toolbarBtnCls,
+              showTrace && 'bg-ed-elevated text-ed-text',
+            )}
+            onClick={() => setShowTrace((v) => !v)}
+            title="Toggle trace channel controls"
+          >
+            Trace
+          </button>
+          {showTrace && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowTrace(false)} />
+              <div className="relative z-50">
+                <TracePanel onClose={() => setShowTrace(false)} />
+              </div>
+            </>
+          )}
+        </div>
         <div className="w-px h-4 bg-ed-border shrink-0 mx-1" />
         <PlaygroundTabs />
         <a
@@ -502,7 +525,7 @@ export default function ProductionEditor() {
               <TransportBar />
             </div>
 
-            <TextClipProperties />
+            <ClipProperties />
           </div>
 
           <TimelineControls timelineRef={timelineRef} />

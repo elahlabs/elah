@@ -108,6 +108,8 @@ export interface Track {
   disabled: boolean
   muted: boolean
   solo: boolean
+  /** Linear gain multiplier for the track, 0..2. Default 1 (unity). */
+  volume?: number
 }
 
 /**
@@ -126,6 +128,8 @@ export interface Project {
   clips: Record<string, Clip[]>
   transitions: Transition[]
   version: number
+  /** Linear master gain for all audio output, 0..2. Default 1 (unity). */
+  masterVolume?: number
 }
 
 /** A track to create up-front when the engine is constructed. */

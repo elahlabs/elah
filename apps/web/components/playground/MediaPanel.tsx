@@ -230,7 +230,7 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
   }, [url, urlBusy])
 
   const onDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLButtonElement>) => {
       e.preventDefault()
       setDragOver(false)
       if (e.dataTransfer.files?.length) onPick(e.dataTransfer.files)

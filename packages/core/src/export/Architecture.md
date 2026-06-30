@@ -92,13 +92,14 @@ Message protocol (internal, not public API — see `export/types.ts`):
 
 | Direction | Message | Payload |
 |---|---|---|
-| main → worker | `start` | `project`, `options` (no `onProgress`), `audio`, enabled trace channels |
+| main → worker | `start` | `project`, `options` (with `onProgress`/`signal` stripped), `audio`, enabled trace channels |
 | worker → main | `progress` | `frame`, `totalFrames` |
 | worker → main | `done` | `buffer: ArrayBuffer` (transferred) |
 | worker → main | `error` | `message: string` |
 
-`onProgress` is stripped before posting (functions aren't structured-cloneable);
-progress is reconstructed on the main thread from `progress` messages. Trace
+`onProgress` and `signal` are stripped before posting (neither is
+structured-cloneable); progress is reconstructed on the main thread from
+`progress` messages, and an aborted `signal` terminates the worker directly. Trace
 channels are forwarded because the worker has no `window`/`localStorage` to read
 `__trace` from — `exportVideo` snapshots `getEnabledChannels()` and the worker
 seeds them via `enableChannels()`.
@@ -162,7 +163,9 @@ per unique image `src`.
 - Optional WebGL `OffscreenCanvas` export path to share GPU effects with preview.
 - Distributed export: partition frames across N workers, concatenate encoded
   chunks — the deterministic contract already permits it.
-- Cancellation: cooperative cancel between frames with clean resource teardown.
+- Cancellation: an `AbortSignal` (`options.signal`) already aborts an export by
+  terminating the worker and rejecting the promise; the remaining work is
+  cooperative cancel *between frames* with clean in-worker resource teardown.
 
 > Tracing: enable `EXPORT`, `EXPORT_ASSETS`, `EXPORT_AUDIO`, `EXPORT_MUX`,
 > `EXPORT_FRAMES` via `__trace.on(...)` in the console before exporting. The main

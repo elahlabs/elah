@@ -414,9 +414,10 @@ sequenceDiagram
     CMB-->>VDM: backend opened
 ```
 
-Default `blobResolver` is `fetch(src).blob()`. Override it in the playground
-factory (`createPlaygroundDemuxerFactory`) to skip the fetch round-trip for
-freshly-imported local files by passing the `File` object directly.
+Default `blobResolver` is `fetch(src).blob()`. Override it in a custom
+`DemuxerFactory` (the web app uses `createDefaultDemuxerFactory()`) to skip the
+fetch round-trip for freshly-imported local files by passing the `File` object
+directly.
 
 ### 6.3 Playback lifecycle (import → pixels)
 

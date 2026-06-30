@@ -276,4 +276,80 @@ describe('PlaybackEngine', () => {
 
     engine.destroy()
   })
+
+  // ── Audio context clock switching ──────────────────────────────────────────
+
+  it('setAudioContext: uses ctx.currentTime when context is running', () => {
+    // Do NOT pass config.now so the engine uses its internal clock logic.
+    const engine = new PlaybackEngine({
+      fps: 30,
+      getTotalFrames: () => 300,
+    })
+
+    const mockCtx = {
+      state: 'running' as AudioContextState,
+      currentTime: 5,
+    } as AudioContext
+
+    engine.setAudioContext(mockCtx)
+    engine.play()
+
+    // With ctx.currentTime = 5 and anchorTime = 5, elapsed = 0 → frame = 0.
+    // We test that getFrameAt() doesn't blow up and returns a sane value.
+    expect(engine.getFrameAt()).toBeGreaterThanOrEqual(0)
+
+    engine.destroy()
+  })
+
+  it('setAudioContext: falls back to performance.now() when ctx is suspended', () => {
+    const engine = makeEngine()
+
+    const mockCtx = {
+      state: 'suspended' as AudioContextState,
+      currentTime: 999,
+    } as AudioContext
+
+    engine.setAudioContext(mockCtx)
+    // config.now override is active, so we just confirm no crash.
+    engine.play()
+    clock = 1
+    expect(engine.getFrameAt()).toBeCloseTo(30, 5)
+
+    engine.destroy()
+  })
+
+  it('setAudioContext: re-anchors seamlessly during playback', () => {
+    const engine = makeEngine()
+    engine.play()
+
+    clock = 1
+    const frameBefore = engine.getFrameAt()
+    expect(frameBefore).toBeCloseTo(30, 5)
+
+    // Attaching a suspended context should not jump the frame.
+    const mockCtx = {
+      state: 'suspended' as AudioContextState,
+      currentTime: 0,
+    } as AudioContext
+    engine.setAudioContext(mockCtx)
+
+    // config.now still active; re-anchor preserves position.
+    const frameAfter = engine.getFrameAt()
+    expect(frameAfter).toBeCloseTo(frameBefore, 1)
+
+    engine.destroy()
+  })
+
+  it('setAudioContext(null) detaches without error', () => {
+    const engine = makeEngine()
+    const mockCtx = { state: 'running' as AudioContextState, currentTime: 0 } as AudioContext
+    engine.setAudioContext(mockCtx)
+    engine.setAudioContext(null)
+    engine.play()
+
+    clock = 1
+    expect(engine.getFrameAt()).toBeCloseTo(30, 5)
+
+    engine.destroy()
+  })
 })

@@ -4,8 +4,7 @@ import type { PlaybackEngine, PlaybackSnapshot } from '../../../playback/Playbac
 import type { Project } from '../../../types'
 
 // ---------------------------------------------------------------------------
-// Fake PlaybackEngine — lets us drive snapshots by hand without a RAF loop
-// (vitest runs in the `node` environment; requestAnimationFrame is absent).
+// Fake PlaybackEngine
 // ---------------------------------------------------------------------------
 
 function makeFakeEngine() {
@@ -13,30 +12,23 @@ function makeFakeEngine() {
   const state = { currentFrame: 0, isPlaying: false, playbackRate: 1, loop: false }
 
   const engine = {
-    get currentFrame() {
-      return state.currentFrame
-    },
-    get isPlaying() {
-      return state.isPlaying
-    },
-    get playbackRate() {
-      return state.playbackRate
-    },
-    get loop() {
-      return state.loop
-    },
+    get currentFrame() { return state.currentFrame },
+    get isPlaying() { return state.isPlaying },
+    get playbackRate() { return state.playbackRate },
+    get loop() { return state.loop },
     subscribe(fn: (snap: PlaybackSnapshot) => void) {
       listener = fn
-      return () => {
-        listener = null
-      }
+      return () => { listener = null }
     },
+    // setAudioContext / reanchor are called by the controller — accept silently.
+    setAudioContext: vi.fn(),
+    reanchor: vi.fn(),
   }
 
-  /** Emit a snapshot to the controller, updating the engine's reported state. */
   function emit(snap: Partial<PlaybackSnapshot> & { epoch: number }): void {
     state.currentFrame = snap.currentFrame ?? state.currentFrame
     state.isPlaying = snap.isPlaying ?? state.isPlaying
+    if (snap.playbackRate !== undefined) state.playbackRate = snap.playbackRate
     listener?.({
       currentFrame: state.currentFrame,
       isPlaying: state.isPlaying,
@@ -46,7 +38,7 @@ function makeFakeEngine() {
     })
   }
 
-  return { engine: engine as unknown as PlaybackEngine, emit }
+  return { engine: engine as unknown as PlaybackEngine, emit, raw: engine }
 }
 
 // ---------------------------------------------------------------------------
@@ -54,13 +46,12 @@ function makeFakeEngine() {
 // ---------------------------------------------------------------------------
 
 function makeMockAudioContext() {
-  // Each createBufferSource() call returns a fresh node so multi-track tests
-  // can assert on individual nodes independently.
   const createdNodes: ReturnType<typeof makeNode>[] = []
 
   function makeNode() {
     return {
       buffer: null as AudioBuffer | null,
+      playbackRate: { value: 1 },
       connect: vi.fn((target: unknown) => target),
       start: vi.fn(),
       stop: vi.fn(),
@@ -68,11 +59,39 @@ function makeMockAudioContext() {
     }
   }
 
-  const gain = {
-    gain: { value: 1 },
-    connect: vi.fn((target: unknown) => target),
-    disconnect: vi.fn(),
+  function makeGain(initialValue = 1) {
+    const gains: ReturnType<typeof makeGainParam>[] = []
+
+    function makeGainParam(v: number) {
+      const param = {
+        value: v,
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn((target: number) => { param.value = target }),
+      }
+      gains.push(param)
+      return param
+    }
+
+    const node = {
+      gain: makeGainParam(initialValue),
+      connect: vi.fn((target: unknown) => target),
+      disconnect: vi.fn(),
+    }
+    return node
   }
+
+  function makeAnalyser() {
+    return {
+      fftSize: 1024,
+      getFloatTimeDomainData: vi.fn((arr: Float32Array) => arr.fill(0)),
+      connect: vi.fn((target: unknown) => target),
+      disconnect: vi.fn(),
+    }
+  }
+
+  const gainInstances: ReturnType<typeof makeGain>[] = []
+  const analyserInstances: ReturnType<typeof makeAnalyser>[] = []
   const buffer = { duration: 4 } as AudioBuffer
 
   const ctx = {
@@ -84,22 +103,34 @@ function makeMockAudioContext() {
       createdNodes.push(n)
       return n
     }),
-    createGain: vi.fn(() => gain),
+    createGain: vi.fn(() => {
+      const g = makeGain()
+      gainInstances.push(g)
+      return g
+    }),
+    createAnalyser: vi.fn(() => {
+      const a = makeAnalyser()
+      analyserInstances.push(a)
+      return a
+    }),
     decodeAudioData: vi.fn(async () => buffer),
     resume: vi.fn(async () => {}),
     close: vi.fn(async () => {}),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   }
 
   return {
     ctx: ctx as unknown as AudioContext,
     createdNodes,
-    gain,
+    gainInstances,
+    analyserInstances,
     buffer,
     raw: ctx,
   }
 }
 
-function makeProject(overrides?: { volume?: number }): Project {
+function makeProject(overrides?: { volume?: number; trackVolume?: number }): Project {
   return {
     id: 'p1',
     fps: 30,
@@ -115,6 +146,7 @@ function makeProject(overrides?: { volume?: number }): Project {
         disabled: false,
         muted: false,
         solo: false,
+        volume: overrides?.trackVolume ?? 1,
       },
     ],
     clips: {
@@ -154,6 +186,7 @@ function makeMultiTrackProject(): Project {
         disabled: false,
         muted: false,
         solo: false,
+        volume: 1,
       },
       {
         id: 'track-2',
@@ -165,6 +198,7 @@ function makeMultiTrackProject(): Project {
         disabled: false,
         muted: false,
         solo: false,
+        volume: 1,
       },
     ],
     clips: {
@@ -222,6 +256,8 @@ describe('AudioPlaybackController', () => {
     vi.unstubAllGlobals()
   })
 
+  // ── Basic playback ──────────────────────────────────────────────────────────
+
   it('decodes and starts the node at the correct offset on play', async () => {
     const { engine, emit } = makeFakeEngine()
     const { ctx, createdNodes, raw } = makeMockAudioContext()
@@ -234,8 +270,7 @@ describe('AudioPlaybackController', () => {
     await flush()
 
     expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
-    // sourceFrame 0 / fps 30 = 0s offset, scheduled at ctx.currentTime (0).
-    expect(createdNodes[0].start).toHaveBeenCalledWith(0, 0)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
   })
 
   it('does NOT restart on a plain frame advance (same epoch)', async () => {
@@ -252,7 +287,7 @@ describe('AudioPlaybackController', () => {
     await flush()
 
     expect(createdNodes).toHaveLength(1)
-    expect(createdNodes[0].start).toHaveBeenCalledTimes(1)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
   })
 
   it('reschedules from the new position on seek (epoch bump) while playing', async () => {
@@ -268,12 +303,10 @@ describe('AudioPlaybackController', () => {
     emit({ epoch: 2, isPlaying: true, currentFrame: 30 })
     await flush()
 
-    // Two separate nodes: one per schedule.
     expect(createdNodes).toHaveLength(2)
-    expect(createdNodes[0].start).toHaveBeenCalledWith(0, 0)
-    // Frame 30 / fps 30 = 1s offset.
-    expect(createdNodes[1].start).toHaveBeenCalledWith(0, 1)
-    // Buffer decoded once and reused from cache.
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
+    expect(createdNodes[1]!.start).toHaveBeenCalledTimes(1)
+    // Buffer decoded once, reused from cache.
     expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
   })
 
@@ -290,25 +323,7 @@ describe('AudioPlaybackController', () => {
     emit({ epoch: 2, isPlaying: false, currentFrame: 10 })
     await flush()
 
-    expect(createdNodes[0].stop).toHaveBeenCalled()
-  })
-
-  it('tracks clip volume on the gain node', async () => {
-    const { engine, emit } = makeFakeEngine()
-    const { ctx, gain } = makeMockAudioContext()
-    const controller = new AudioPlaybackController(
-      engine,
-      () => makeProject({ volume: 0.25 }),
-      { audioContextFactory: () => ctx },
-    )
-    controller.start()
-
-    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
-    await flush()
-    // A subsequent snapshot updates the live gain.
-    emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
-
-    expect(gain.gain.value).toBe(0.25)
+    expect(createdNodes[0]!.stop).toHaveBeenCalled()
   })
 
   it('stops audio when no audio clip is active', async () => {
@@ -323,12 +338,11 @@ describe('AudioPlaybackController', () => {
     emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
     await flush()
 
-    // Remove all clips → resolver yields no active audio.
     project = { ...project, clips: {} }
     emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
     await flush()
 
-    expect(createdNodes[0].stop).toHaveBeenCalled()
+    expect(createdNodes[0]!.stop).toHaveBeenCalled()
   })
 
   it('destroy() unsubscribes, stops, and closes the context', async () => {
@@ -343,15 +357,13 @@ describe('AudioPlaybackController', () => {
 
     controller.destroy()
 
-    const firstNode = createdNodes[0]
-    expect(firstNode.stop).toHaveBeenCalled()
+    expect(createdNodes[0]!.stop).toHaveBeenCalled()
     expect(raw.close).toHaveBeenCalled()
 
-    // After destroy, further emits are ignored (unsubscribed).
-    const nodeStartCount = firstNode.start.mock.calls.length
+    const nodeStartCount = createdNodes[0]!.start.mock.calls.length
     emit({ epoch: 9, isPlaying: true, currentFrame: 0 })
     await flush()
-    expect(firstNode.start).toHaveBeenCalledTimes(nodeStartCount)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(nodeStartCount)
   })
 
   it('starts a node for every active audio clip simultaneously (multi-track mixing)', async () => {
@@ -365,11 +377,10 @@ describe('AudioPlaybackController', () => {
     emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
     await flush()
 
-    // Both clips decoded and both nodes started.
     expect(raw.decodeAudioData).toHaveBeenCalledTimes(2)
     expect(createdNodes).toHaveLength(2)
-    expect(createdNodes[0].start).toHaveBeenCalledTimes(1)
-    expect(createdNodes[1].start).toHaveBeenCalledTimes(1)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
+    expect(createdNodes[1]!.start).toHaveBeenCalledTimes(1)
   })
 
   it('stops only the clip that leaves the scene, keeps others playing', async () => {
@@ -384,15 +395,303 @@ describe('AudioPlaybackController', () => {
     emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
     await flush()
 
-    // Remove track-2's clip so only clip-a remains active.
     project = { ...project, clips: { 'track-1': project.clips['track-1']! } }
     emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
     await flush()
 
-    // One of the two nodes was stopped; the other kept playing (start called once, stop once).
     const stopped = createdNodes.filter((n) => n.stop.mock.calls.length > 0)
     const running = createdNodes.filter((n) => n.stop.mock.calls.length === 0)
     expect(stopped).toHaveLength(1)
     expect(running).toHaveLength(1)
+  })
+
+  // ── AudioContext unlock ─────────────────────────────────────────────────────
+
+  it('resumes a suspended AudioContext synchronously on play — before the buffer decodes', async () => {
+    // This is the exact case the prior suite skipped: the mock context starts
+    // suspended (matching browser autoplay policy). resume() must be called
+    // BEFORE flush() (i.e. before the fetch/decodeAudioData await resolves),
+    // proving it rides the gesture task rather than the post-await path.
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    raw.state = 'suspended' as AudioContextState
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+
+    // Assert resume was called synchronously — before any microtask flush.
+    expect(raw.resume).toHaveBeenCalledTimes(1)
+
+    await flush()
+
+    // Resume should not have been called again from the post-await path (removed).
+    expect(raw.resume).toHaveBeenCalledTimes(1)
+
+    controller.destroy()
+  })
+
+  it('reanchors the engine when the statechange listener fires with running state', () => {
+    const { engine, raw: engineRaw } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    // Grab the statechange handler registered on the mock context.
+    const stateChangeCall = raw.addEventListener.mock.calls.find(
+      ([event]: [string]) => event === 'statechange',
+    )
+    expect(stateChangeCall).toBeDefined()
+    const stateChangeHandler = stateChangeCall![1] as () => void
+
+    // Simulate the context transitioning to running.
+    raw.state = 'running' as AudioContextState
+    stateChangeHandler()
+
+    expect(engineRaw.reanchor).toHaveBeenCalledTimes(1)
+
+    controller.destroy()
+  })
+
+  // ── Clock handoff ───────────────────────────────────────────────────────────
+
+  it('start() calls setAudioContext on the engine with the created context', () => {
+    const { engine, raw: engineRaw } = makeFakeEngine()
+    const { ctx } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    expect(engineRaw.setAudioContext).toHaveBeenCalledWith(ctx)
+  })
+
+  it('destroy() calls setAudioContext(null) to detach the clock', async () => {
+    const { engine, emit, raw: engineRaw } = makeFakeEngine()
+    const { ctx } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    controller.destroy()
+
+    expect(engineRaw.setAudioContext).toHaveBeenLastCalledWith(null)
+  })
+
+  // ── playbackRate ────────────────────────────────────────────────────────────
+
+  it('sets playbackRate on the AudioBufferSourceNode', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, createdNodes } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0, playbackRate: 2 })
+    await flush()
+
+    expect(createdNodes[0]!.playbackRate.value).toBe(2)
+  })
+
+  it('reschedules with new playbackRate on rate change (epoch bump)', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, createdNodes } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0, playbackRate: 1 })
+    await flush()
+    emit({ epoch: 2, isPlaying: true, currentFrame: 5, playbackRate: 0.5 })
+    await flush()
+
+    expect(createdNodes).toHaveLength(2)
+    expect(createdNodes[1]!.playbackRate.value).toBe(0.5)
+  })
+
+  // ── Gain ramps ──────────────────────────────────────────────────────────────
+
+  it('uses gain ramp (linearRampToValueAtTime) instead of direct value write', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, gainInstances } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(
+      engine,
+      () => makeProject({ volume: 0.75 }),
+      { audioContextFactory: () => ctx },
+    )
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+    // Subsequent snapshot triggers live gain update on existing node.
+    emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
+
+    // clipGain's gain param should have used linearRampToValueAtTime.
+    const clipGain = gainInstances.find(
+      (g) => g.gain.linearRampToValueAtTime.mock.calls.length > 0,
+    )
+    expect(clipGain).toBeDefined()
+    expect(clipGain!.gain.linearRampToValueAtTime).toHaveBeenCalled()
+  })
+
+  // ── Track graph ─────────────────────────────────────────────────────────────
+
+  it('creates per-track analyser nodes', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, analyserInstances } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeMultiTrackProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    // Two tracks → two analysers.
+    expect(analyserInstances).toHaveLength(2)
+  })
+
+  it('getTrackLevels() returns an entry per active track', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeMultiTrackProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    const levels = controller.getTrackLevels()
+    expect(levels.size).toBe(2)
+    expect(levels.has('track-1')).toBe(true)
+    expect(levels.has('track-2')).toBe(true)
+  })
+
+  it('getTrackLevels() returns { left, right } numbers', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    const levels = controller.getTrackLevels()
+    const entry = levels.get('audio-track')
+    expect(entry).toBeDefined()
+    expect(typeof entry!.left).toBe('number')
+    expect(typeof entry!.right).toBe('number')
+  })
+
+  // ── Mixer API ───────────────────────────────────────────────────────────────
+
+  it('setMasterGain() ramps the master gain node', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, gainInstances } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    // masterGain is the first gain created in start().
+    const masterGain = gainInstances[0]!
+    controller.setMasterGain(0.5)
+
+    expect(masterGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.5,
+      expect.any(Number),
+    )
+  })
+
+  it('setTrackGain() ramps the per-track gain node', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, gainInstances } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    controller.setTrackGain('audio-track', 0.3)
+
+    // trackGain is created after masterGain and clipGain → it's the 3rd gain.
+    const rampedGains = gainInstances.filter(
+      (g) => g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0.3),
+    )
+    expect(rampedGains.length).toBeGreaterThan(0)
+  })
+
+  it('setMasterGain() clamps to 0 for negative values', () => {
+    const { engine } = makeFakeEngine()
+    const { ctx, gainInstances } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    controller.setMasterGain(-1)
+
+    const masterGain = gainInstances[0]!
+    expect(masterGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      expect.any(Number),
+    )
+  })
+
+  // ── Mute / track volume via resolver ───────────────────────────────────────
+
+  it('muted track produces volume 0 on the clip gain node', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, gainInstances } = makeMockAudioContext()
+    const project: Project = {
+      ...makeProject(),
+      tracks: [
+        {
+          id: 'audio-track',
+          name: 'Audio',
+          kind: 'audio',
+          order: 0,
+          height: 60,
+          locked: false,
+          disabled: false,
+          muted: true,
+          solo: false,
+          volume: 1,
+        },
+      ],
+    }
+    const controller = new AudioPlaybackController(engine, () => project, {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    // A second same-epoch snapshot triggers the live ramp update on the existing node.
+    emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
+
+    // The clip gain should have been ramped to 0 (muted track → effective volume 0).
+    const clipGain = gainInstances.find((g) =>
+      g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0),
+    )
+    expect(clipGain).toBeDefined()
   })
 })

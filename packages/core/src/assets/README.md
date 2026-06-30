@@ -1,6 +1,6 @@
-# `core/media`
+# `core/assets`
 
-The media subsystem owns the editor's **source asset registry**. It answers one question for every other system in the codebase:
+The assets subsystem owns the editor's **source asset registry**. It answers one question for every other system in the codebase:
 
 > _"What source files are available, and what metadata do they carry?"_
 
@@ -18,7 +18,7 @@ Clips on the timeline reference assets by `id` rather than duplicating URLs and 
 | [`importFiles.test.ts`](./importFiles.test.ts) | Unit tests for import, probe, and thumbnail helpers |
 | [`index.ts`](./index.ts) | Public exports and `useMediaLibrary()` hook |
 
-UI integration lives in [`editor/AssetPanel/AssetPanel.tsx`](../../editor/AssetPanel/AssetPanel.tsx). Timeline drop handling consumes `MEDIA_DRAG_MIME` via [`timeline/useTimelineDrop.ts`](../../timeline/useTimelineDrop.ts).
+UI integration lives in the `@elah/editor` package's [`AssetPanel.tsx`](../../../../editor/src/editor/AssetPanel/AssetPanel.tsx). Timeline drop handling consumes `MEDIA_DRAG_MIME` via the `@elah/timeline` package's [`useTimelineDrop.ts`](../../../../timeline/src/useTimelineDrop.ts).
 
 ---
 
@@ -52,7 +52,12 @@ Multiple clips can share one asset. The asset owns duration, dimensions, and thu
 
 ## Import flow
 
-`importFiles(files, opts?)` is the single entry point for adding local files:
+`importFiles(files, opts?)` is the entry point for adding local `File` objects. Two
+sibling entry points cover the other sources, sharing the same registration and
+dedupe-by-`src` logic: `importUrl(url, opts?)` registers a remote/object URL (kind
+inferred from the extension or a `HEAD` request), and `importBlob(blob, opts?)`
+registers an in-memory `Blob`. Both resolve to a single `MediaAsset`. The local-file
+flow is:
 
 ```
 File[]
@@ -179,14 +184,14 @@ Thumbnail generation is best-effort: the asset is usable immediately after metad
 - **Content hashing** — dedupe uses name + size + lastModified, not file bytes.
 - **Worker/off-thread thumbnails** — all probing and thumbnail work runs on the main thread.
 
-See [`Architecture.md`](../Architecture.md) §8 for how this module fits the wider editor layout.
+See the `@elah/editor` package's [`Architecture.md`](../../../../editor/src/core/Architecture.md) for how this module fits the wider editor layout.
 
 ---
 
 ## Testing
 
 ```bash
-npm --workspace @elah/editor run test -- importFiles
+npm --workspace @elah/core run test -- importFiles
 ```
 
 Tests stub `document.createElement`, `URL.createObjectURL`, and canvas APIs so the suite runs in Node. Coverage includes:

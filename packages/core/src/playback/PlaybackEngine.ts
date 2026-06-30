@@ -43,7 +43,8 @@ export class PlaybackEngine {
 
   private readonly fps: number
   private readonly getTotalFrames: () => number
-  private readonly now: () => number
+  private readonly _nowOverride: (() => number) | undefined
+  private _audioCtx: AudioContext | null = null
 
   private rafId: number | null = null
   private listeners = new Set<PlaybackListener>()
@@ -66,17 +67,50 @@ export class PlaybackEngine {
   constructor(config: PlaybackEngineConfig) {
     this.fps = config.fps
     this.getTotalFrames = config.getTotalFrames
-    this.now =
-      config.now ??
-      (() => {
-        // TODO(when audio lands): if an AudioContext is attached and state === 'running',
-        // return ctx.currentTime. Until then, performance.now()/1000 is the single source.
-        return performance.now() / 1000
-      })
+    this._nowOverride = config.now
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.onVisibility)
     }
+  }
+
+  /**
+   * Attach an AudioContext so the engine uses ctx.currentTime as the transport
+   * clock instead of performance.now(). Call with null to detach (e.g. on destroy).
+   * Re-anchors immediately so the swap is seamless during playback.
+   */
+  setAudioContext(ctx: AudioContext | null): void {
+    this._audioCtx = ctx
+    if (this._playing) {
+      this.anchorFrame = this.getFrameAt()
+      this.anchorTime = this.now()
+    }
+  }
+
+  /**
+   * Re-anchor the integrator to `_lastNotifiedFrame` under the current clock.
+   * Safe to call when the time source changes (e.g. AudioContext → running) —
+   * uses the last integer frame broadcast by the RAF loop rather than
+   * getFrameAt(), which would read a garbage value the instant ctx.currentTime
+   * takes over from performance.now().
+   */
+  reanchor(): void {
+    this.anchorFrame = this._lastNotifiedFrame
+    this.anchorTime = this.now()
+  }
+
+  // ── Private clock ─────────────────────────────────────────────────────────
+
+  /**
+   * Returns the current time in seconds. Prefers ctx.currentTime (hardware
+   * audio clock) over performance.now() to eliminate A/V drift. Falls back to
+   * performance.now() before audio is attached or while ctx is suspended.
+   */
+  private now(): number {
+    if (this._nowOverride) return this._nowOverride()
+    const ctx = this._audioCtx
+    if (ctx && ctx.state === 'running') return ctx.currentTime
+    return performance.now() / 1000
   }
 
   // ── Getters ──────────────────────────────────────────────────────────────

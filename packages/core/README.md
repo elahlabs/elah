@@ -16,7 +16,7 @@ Used internally by `@elah/timeline` and `@elah/editor`, but can be consumed dire
 npm install @elah/core
 ```
 
-**Bundle size:** ~41 KiB gzipped (218 KiB raw, `tsc` ESM output). Runtime deps: `immer` (~9 KiB gz) + `zustand` (<1 KiB gz). No WASM, no bundled media toolchain.
+**Bundle size:** ~41 KiB gzipped (218 KiB raw, `tsc` ESM output). Core runtime deps: `immer` (~9 KiB gz) + `zustand` (<1 KiB gz). The media toolchain (`mediabunny`) is lazy-imported by the export pipeline and demuxer, so it stays out of the main bundle until you actually decode or export — see [`lazyExport`](./src/export/lazyExport.ts).
 
 ---
 
@@ -40,25 +40,30 @@ npm install @elah/core
 ## Quick start
 
 ```ts
-import { TimelineEngine, PlaybackEngine, createVideoClip } from '@elah/core'
+import { TimelineEngine, PlaybackEngine, resolveTimeline } from '@elah/core'
 
 const engine = new TimelineEngine({ fps: 30, stage: { width: 1920, height: 1080 } })
-const playback = new PlaybackEngine(engine)
+const playback = new PlaybackEngine({ fps: 30, getTotalFrames: () => engine.getTotalFrames() })
 
-// Add a video clip
-engine.addClip('track-1', createVideoClip({ src: 'video.mp4', startFrame: 0, durationFrames: 90 }))
+// Add a track, then a clip onto it. addClip takes a single typed
+// options object (a discriminated union keyed on `type`) and returns the Clip.
+const track = engine.addTrack('video')
+engine.addClip({ trackId: track.id, type: 'video', src: 'video.mp4', startFrame: 0, durationFrames: 90 })
 
-// Resolve the scene at a given frame
-import { resolveTimeline } from '@elah/core'
-const scene = resolveTimeline(engine.getProject(), { currentFrame: 15 })
+// Resolve the scene at frame 15 — pure (frame, project) → Scene.
+const scene = resolveTimeline(15, engine.getProject())
 ```
 
 ---
 
 ## Clip factories
 
+Standalone builders that return a fully-normalized `Clip` object (rounded frames, default volume/opacity, generated id) without an engine — useful for headless pipelines that feed `resolveTimeline` directly. When you have an engine, prefer `engine.addClip(options)` instead, which builds the clip and records an undo entry.
+
 ```ts
 import { createVideoClip, createAudioClip, createTextClip, createImageClip } from '@elah/core'
+
+const clip = createVideoClip({ trackId: 'v1', src: 'video.mp4', startFrame: 0, durationFrames: 90 })
 ```
 
 ---
