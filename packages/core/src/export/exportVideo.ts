@@ -1,7 +1,7 @@
 import type { Project } from '../types'
 import { getTotalFrames } from '../utils/frames'
 import { trace, traceEnabled, getEnabledChannels, type TraceChannel } from '../debug/trace'
-import type { ExportOptions, ExportProgress, RenderedAudio, WorkerOutMessage } from './types'
+import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
 
 /**
  * Main-thread trace helper. Mirrors the Worker's `xlog`, routing through the

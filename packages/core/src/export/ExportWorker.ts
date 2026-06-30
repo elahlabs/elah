@@ -68,7 +68,7 @@ function fmtBytes(n: number): string {
 import { resolveTimeline } from '../resolver/resolveTimeline'
 import { getTotalFrames } from '../utils/frames'
 import type { Project } from '../types'
-import type { ActiveVideoClip, ActiveImageClip, ActiveTextClip } from '../resolver/scene'
+import type { ActiveVideoClip, ActiveImageClip, ActiveTextClip, ActiveShapeClip, ActiveFreehandClip } from '../resolver/scene'
 import { resolveDrawRect } from '../renderer/gpu/layers/drawRect'
 import { computeTextLayout } from '../renderer/gpu/layers/textLayout'
 import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
@@ -408,6 +408,8 @@ async function renderFrame(
       videos: scene.videos.length,
       images: scene.images.length,
       texts: scene.texts.length,
+      shapes: scene.shapes.length,
+      freehand: scene.freehand.length,
     })
   }
 
@@ -419,11 +421,15 @@ async function renderFrame(
     | { kind: 'video'; item: ActiveVideoClip }
     | { kind: 'image'; item: ActiveImageClip }
     | { kind: 'text'; item: ActiveTextClip }
+    | { kind: 'shape'; item: ActiveShapeClip }
+    | { kind: 'freehand'; item: ActiveFreehandClip }
 
   const items: AnyItem[] = [
     ...scene.videos.map(item => ({ kind: 'video' as const, item })),
     ...scene.images.map(item => ({ kind: 'image' as const, item })),
     ...scene.texts.map(item => ({ kind: 'text' as const, item })),
+    ...scene.shapes.map(item => ({ kind: 'shape' as const, item })),
+    ...scene.freehand.map(item => ({ kind: 'freehand' as const, item })),
   ].sort((a, b) => a.item.zIndex - b.item.zIndex)
 
   for (const entry of items) {
@@ -460,6 +466,19 @@ async function renderFrame(
       if (bitmap) {
         drawMedia(ctx, bitmap, entry.item.transform, stageW, stageH)
       }
+    } else if (entry.kind === 'shape') {
+      if (isDebugFrame) {
+        xlog('render:frame0', `shape layer`, {
+          shapeKind: entry.item.shapeKind,
+          zIndex: entry.item.zIndex,
+        })
+      }
+      drawShape(ctx, entry.item, stageW, stageH)
+    } else if (entry.kind === 'freehand') {
+      if (isDebugFrame) {
+        xlog('render:frame0', `freehand layer`, { zIndex: entry.item.zIndex })
+      }
+      drawFreehand(ctx, entry.item, stageW, stageH)
     } else {
       if (isDebugFrame) {
         xlog('render:frame0', `text layer`, {
@@ -546,5 +565,60 @@ function drawText(
 
   for (let i = 0; i < layout.lines.length; i++) {
     ctx.fillText(layout.lines[i], layout.anchorX, layout.firstLineY + i * layout.lineAdvance)
+  }
+}
+
+function drawShape(
+  ctx: OffscreenCanvasRenderingContext2D,
+  clip: ActiveShapeClip,
+  stageW: number,
+  stageH: number,
+): void {
+  const cx = (clip.transform?.x ?? 0.5) * stageW
+  const cy = (clip.transform?.y ?? 0.5) * stageH
+  const shortSide = Math.min(stageW, stageH)
+  const half = (clip.transform?.scale ?? 0.5) * shortSide * 0.5
+
+  ctx.fillStyle = clip.shapeFill
+  ctx.strokeStyle = clip.shapeStroke
+  ctx.lineWidth = clip.shapeStrokeWidth
+
+  if (clip.shapeKind === 'rect') {
+    ctx.beginPath()
+    ctx.rect(cx - half, cy - half, half * 2, half * 2)
+    ctx.fill()
+    if (clip.shapeStrokeWidth > 0) ctx.stroke()
+  } else if (clip.shapeKind === 'circle') {
+    ctx.beginPath()
+    ctx.arc(cx, cy, half, 0, Math.PI * 2)
+    ctx.fill()
+    if (clip.shapeStrokeWidth > 0) ctx.stroke()
+  } else if (clip.shapeKind === 'triangle') {
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - half)
+    ctx.lineTo(cx + half, cy + half)
+    ctx.lineTo(cx - half, cy + half)
+    ctx.closePath()
+    ctx.fill()
+    if (clip.shapeStrokeWidth > 0) ctx.stroke()
+  }
+}
+
+function drawFreehand(
+  ctx: OffscreenCanvasRenderingContext2D,
+  clip: ActiveFreehandClip,
+  _stageW: number,
+  _stageH: number,
+): void {
+  if (!clip.pathData) return
+  ctx.strokeStyle = clip.strokeColor
+  ctx.lineWidth = clip.strokeWidth
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  try {
+    const path = new Path2D(clip.pathData)
+    ctx.stroke(path)
+  } catch {
+    // Invalid pathData — skip silently.
   }
 }

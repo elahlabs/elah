@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.elah-root {
+  --elah-bg:            #06070a;
+  --elah-bg-secondary:  #0a0d14;
+  --elah-bg-panel:      #121722;
+  --elah-bg-card:       #0d1017;
+  --elah-bg-elevated:   #171d2b;
+  --elah-bg-highest:    #1e2433;
+
+  --elah-border:        #232938;
+  --elah-border-subtle: #1a1f2b;
+  --elah-outline:       #2d3548;
+
+  --elah-text:          #f3f4f6;
+  --elah-text-muted:    #9ca3af;
+
+  --elah-accent:        #00c2ff;
+  --elah-accent-hover:  #2bcbff;
+  --elah-accent-dim:    #7adcff;
+  --elah-accent-glow:   rgba(0, 194, 255, 0.35);
+  --elah-accent-soft:   rgba(0, 194, 255, 0.12);
+  --elah-accent-text:   #06212b;
+
+  --elah-color-error:   #f87171;
+
+  --elah-playhead:      #ffffff;
+  --elah-tick-color:    #394146;
+  --elah-tick-label:    #7a858b;
+
+  --elah-font-ui:   system-ui, sans-serif;
+  --elah-font-mono: ui-monospace, monospace;
+
+  --elah-radius-sm: 6px;
+  --elah-radius-md: 8px;
+
+  --elah-tag-video-fg:  #93c5fd;
+  --elah-tag-video-bg:  rgba(37, 99, 235, 0.2);
+  --elah-tag-audio-fg:  #86efac;
+  --elah-tag-audio-bg:  rgba(22, 163, 74, 0.2);
+  --elah-tag-image-fg:  #fcd34d;
+  --elah-tag-image-bg:  rgba(245, 158, 11, 0.2);
+
+  --elah-tag-text-fg:     #f0b483;
+  --elah-tag-text-bg:     rgba(173, 86, 33, 0.25);
+  --elah-tag-text-border: rgba(173, 86, 33, 0.4);
+
+  --elah-clip-video-top:    #3b82f6;
+  --elah-clip-video-mid:    #2563eb;
+  --elah-clip-video-bottom: #1d4ed8;
+  --elah-clip-video-accent: #60a5fa;
+
+  --elah-clip-audio-top:    #1c8160;
+  --elah-clip-audio-mid:    #115843;
+  --elah-clip-audio-bottom: #0c2a26;
+  --elah-clip-audio-accent: #0d4d3c;
+
+  --elah-clip-text-top:    #ad5621;
+  --elah-clip-text-mid:    #8f3f18;
+  --elah-clip-text-bottom: #7a2e10;
+  --elah-clip-text-accent: #ad5621;
+
+  --elah-clip-image-top:    #fbbf24;
+  --elah-clip-image-mid:    #d97706;
+  --elah-clip-image-bottom: #b45309;
+  --elah-clip-image-accent: #fcd34d;
+
+  --elah-clip-shape-top:    #818cf8;
+  --elah-clip-shape-mid:    #6366f1;
+  --elah-clip-shape-bottom: #4f46e5;
+  --elah-clip-shape-accent: #a5b4fc;
+
+  --elah-clip-freehand-top:    #34d399;
+  --elah-clip-freehand-mid:    #10b981;
+  --elah-clip-freehand-bottom: #059669;
+  --elah-clip-freehand-accent: #6ee7b7;
+
+  --elah-text-on-clip:      rgba(255, 255, 255, 0.95);
+  --elah-selection-border:  #00c2ff;
+  --elah-selection-glow:    rgba(0, 194, 255, 0.4);
+  --elah-menu-shadow:       0 8px 24px rgba(0, 0, 0, 0.6);
+
+  font-family: var(--elah-font-ui);
+  color: var(--elah-text);
+  background: var(--elah-bg);
+}
+
+/* Range input styling shared with @elah/editor */
+.elah-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--elah-bg-elevated);
+  border-radius: 2px;
+  outline: none;
+}
+
+.elah-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--elah-accent);
+  cursor: pointer;
+}
+
+.elah-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--elah-accent);
+  cursor: pointer;
+  border: none;
+}

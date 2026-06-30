@@ -7,8 +7,10 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
+    "dev:demo": "npm run dev --workspace=apps/demo",
     "build:packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor",
     "build": "npm run build --workspace=apps/web",
+    "build:demo": "npm run build --workspace=apps/demo",
     "typecheck": "tsc --noEmit",
     "lint:tokens": "node scripts/check-tokens.mjs",
     "test": "npm run test --workspace=packages/core --workspace=packages/timeline"

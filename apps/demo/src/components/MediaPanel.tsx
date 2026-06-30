@@ -1,0 +1,441 @@
+import { useCallback, useRef, useState, type DragEvent } from 'react'
+import {
+  UploadCloud,
+  Search,
+  ChevronDown,
+  Play,
+  Music,
+  Image as ImageIcon,
+  Trash2,
+  Link2,
+} from 'lucide-react'
+import {
+  useMediaLibrary,
+  useMediaLibraryStore,
+  importFiles,
+  importUrl,
+  MEDIA_DRAG_MIME,
+  type MediaAsset,
+  type MediaKind,
+  type DragMediaPayload,
+} from '@elah/editor'
+import { cn } from '../utils'
+
+export type PanelMode = 'media' | 'stock' | 'photos' | 'audio'
+
+type SortKey = 'added' | 'name' | 'duration'
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'added', label: 'Recently added' },
+  { value: 'name', label: 'Name' },
+  { value: 'duration', label: 'Duration' },
+]
+
+function fmtDuration(sec: number | undefined): string {
+  if (!sec || !Number.isFinite(sec)) return ''
+  const total = Math.round(sec)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function sortAssets(list: MediaAsset[], sort: SortKey): MediaAsset[] {
+  const out = [...list]
+  out.sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name)
+    if (sort === 'duration') return (b.durationSec ?? 0) - (a.durationSec ?? 0)
+    return b.addedAt - a.addedAt
+  })
+  return out
+}
+
+function Dropdown({
+  value,
+  options,
+  onChange,
+  align = 'left',
+}: {
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (v: string) => void
+  align?: 'left' | 'right'
+}) {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.value === value)
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1 text-[12px] text-ed-text-muted hover:text-ed-text transition-colors"
+      >
+        {current?.label}
+        <ChevronDown size={13} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div
+            className={cn(
+              'absolute z-20 mt-1 min-w-[140px] rounded-lg border border-ed-border bg-ed-elevated py-1 shadow-xl',
+              align === 'right' ? 'right-0' : 'left-0',
+            )}
+          >
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'block w-full px-3 py-1.5 text-left text-[12px] transition-colors',
+                  o.value === value
+                    ? 'text-ed-text bg-ed-bg-2'
+                    : 'text-ed-text-muted hover:text-ed-text hover:bg-ed-bg-2',
+                )}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AssetCard({ asset }: { asset: MediaAsset }) {
+  const removeAsset = useMediaLibraryStore((s) => s.removeAsset)
+  const duration = fmtDuration(asset.durationSec)
+
+  const onDragStart = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
+      e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
+      e.dataTransfer.effectAllowed = 'copy'
+    },
+    [asset.id],
+  )
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      title={asset.name}
+      className="group flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
+    >
+      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
+        {asset.thumbnailUrl ? (
+          <img
+            src={asset.thumbnailUrl}
+            alt=""
+            draggable={false}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-ed-text-muted">
+            {asset.kind === 'audio' ? (
+              <Music size={20} />
+            ) : asset.kind === 'image' ? (
+              <ImageIcon size={20} />
+            ) : (
+              <Play size={20} />
+            )}
+          </div>
+        )}
+
+        {asset.kind === 'video' && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white">
+              <Play size={13} fill="currentColor" />
+            </span>
+          </div>
+        )}
+
+        {duration && (
+          <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-mono text-white">
+            {duration}
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={() => removeAsset(asset.id)}
+          title="Remove from library"
+          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded bg-black/60 text-white/80 opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
+        >
+          <Trash2 size={11} />
+        </button>
+      </div>
+      <span className="truncate text-[11px] text-ed-text">{asset.name}</span>
+    </div>
+  )
+}
+
+const PANEL_CONFIG: Record<
+  PanelMode,
+  {
+    accept: string
+    hasUrlImport: boolean
+    expectedKind: MediaKind | null
+    emptyLabel: string
+    emptyHint: string
+  }
+> = {
+  media: {
+    accept: 'video/*,audio/*,image/*',
+    hasUrlImport: false,
+    expectedKind: null,
+    emptyLabel: 'No uploads yet',
+    emptyHint: 'Drag files or click Upload',
+  },
+  stock: {
+    accept: 'video/*',
+    hasUrlImport: true,
+    expectedKind: 'video',
+    emptyLabel: 'No video clips yet',
+    emptyHint: 'Upload or add a video URL',
+  },
+  photos: {
+    accept: 'image/*',
+    hasUrlImport: false,
+    expectedKind: 'image',
+    emptyLabel: 'No images yet',
+    emptyHint: 'Upload image files',
+  },
+  audio: {
+    accept: 'audio/*',
+    hasUrlImport: true,
+    expectedKind: 'audio',
+    emptyLabel: 'No audio yet',
+    emptyHint: 'Upload or add an audio URL',
+  },
+}
+
+const PANEL_LABEL: Record<MediaKind, string> = {
+  video: 'Stock',
+  audio: 'Audio',
+  image: 'Photos',
+}
+
+function filterByMode(asset: MediaAsset, mode: PanelMode): boolean {
+  if (mode === 'media') return asset.src.startsWith('blob:')
+  if (mode === 'stock') return asset.kind === 'video'
+  if (mode === 'photos') return asset.kind === 'image'
+  if (mode === 'audio') return asset.kind === 'audio'
+  return true
+}
+
+export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSProperties; mode?: PanelMode }) {
+  const { assets } = useMediaLibrary()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [sort, setSort] = useState<SortKey>('added')
+  const [search, setSearch] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [showUrl, setShowUrl] = useState(false)
+  const [url, setUrl] = useState('')
+  const [urlBusy, setUrlBusy] = useState(false)
+  const [urlError, setUrlError] = useState<string | null>(null)
+  const [urlFallback, setUrlFallback] = useState<string | null>(null)
+
+  const cfg = PANEL_CONFIG[mode]
+
+  const onPick = useCallback(async (files: FileList | File[] | null) => {
+    if (!files || ('length' in files && files.length === 0)) return
+    await importFiles(files)
+  }, [])
+
+  const onAddUrl = useCallback(async () => {
+    const trimmed = url.trim()
+    if (!trimmed || urlBusy) return
+    setUrlBusy(true)
+    setUrlError(null)
+    setUrlFallback(null)
+    try {
+      const result = await importUrl(trimmed)
+      setUrl('')
+      setShowUrl(false)
+      if (cfg.expectedKind && result.kind !== cfg.expectedKind) {
+        setUrlFallback(`Imported as ${result.kind} — find it in the ${PANEL_LABEL[result.kind]} panel.`)
+      }
+    } catch {
+      setUrlError('Could not import that URL.')
+    } finally {
+      setUrlBusy(false)
+    }
+  }, [url, urlBusy, cfg.expectedKind])
+
+  const onDrop = useCallback(
+    (e: DragEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      setDragOver(false)
+      if (e.dataTransfer.files?.length) onPick(e.dataTransfer.files)
+    },
+    [onPick],
+  )
+
+  const filtered = sortAssets(
+    assets.filter((a) => {
+      if (!filterByMode(a, mode)) return false
+      if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false
+      return true
+    }),
+    sort,
+  )
+
+  return (
+    <div className="flex h-full flex-col bg-ed-panel text-ed-text" style={style}>
+      <div className="flex items-center gap-4 border-b border-ed-border px-3.5 pt-2.5">
+        <span className="relative pb-2 text-[13px] font-medium text-ed-text">
+          Import
+          <span
+            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
+            style={{ background: 'var(--elah-accent)' }}
+          />
+        </span>
+        <div className="ml-auto flex items-center gap-1 pb-1.5">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload media"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-ed-text-muted hover:bg-ed-elevated hover:text-ed-text transition-colors"
+          >
+            <UploadCloud size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSearch((s) => !s)}
+            title="Search media"
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+              showSearch
+                ? 'text-ed-text bg-ed-elevated'
+                : 'text-ed-text-muted hover:bg-ed-elevated hover:text-ed-text',
+            )}
+          >
+            <Search size={15} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col overflow-hidden p-3.5">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={cfg.accept}
+          className="hidden"
+          onChange={(e) => onPick(e.target.files)}
+        />
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className={cn(
+            'flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-7 text-center transition-colors',
+            dragOver
+              ? 'border-[var(--elah-accent)] bg-ed-elevated'
+              : 'border-ed-border hover:border-ed-text-muted bg-ed-bg-2',
+          )}
+        >
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            style={{
+              background: 'var(--elah-accent-soft, rgba(0,194,255,0.12))',
+              color: 'var(--elah-accent)',
+            }}
+          >
+            <UploadCloud size={18} />
+          </span>
+          <span className="text-[13px] font-semibold text-ed-text">Upload Media</span>
+          <span className="text-[11px] text-ed-text-muted">Drag and drop files here</span>
+        </button>
+
+        {cfg.hasUrlImport && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setShowUrl((s) => !s)
+                setUrlFallback(null)
+              }}
+              className="mt-2 inline-flex items-center gap-1.5 self-start text-[11px] text-ed-text-muted hover:text-ed-text transition-colors"
+            >
+              <Link2 size={12} />
+              Add from URL
+            </button>
+            {showUrl && (
+              <div className="mt-1.5 flex gap-1.5">
+                <input
+                  autoFocus
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value)
+                    setUrlError(null)
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && onAddUrl()}
+                  placeholder="https://…/clip.mp4"
+                  className="min-w-0 flex-1 rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={onAddUrl}
+                  disabled={urlBusy || !url.trim()}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
+                  style={{ background: 'var(--elah-accent)' }}
+                >
+                  {urlBusy ? '…' : 'Add'}
+                </button>
+              </div>
+            )}
+            {urlError && <span className="mt-1 text-[11px] text-ed-error">{urlError}</span>}
+            {urlFallback && <span className="mt-1 text-[11px] text-ed-text-muted">{urlFallback}</span>}
+          </>
+        )}
+
+        {showSearch && (
+          <input
+            autoFocus
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search media…"
+            className="mt-3 w-full rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
+          />
+        )}
+
+        <div className="mt-3 mb-2 flex items-center justify-end">
+          <Dropdown
+            value={sort}
+            options={SORT_OPTIONS}
+            onChange={(v) => setSort(v as SortKey)}
+            align="right"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-ed-text-muted">
+              <span className="text-[12px]">{search ? 'No matches' : cfg.emptyLabel}</span>
+              {!search && <span className="text-[11px]">{cfg.emptyHint}</span>}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {filtered.map((a) => (
+                <AssetCard key={a.id} asset={a} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
