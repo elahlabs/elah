@@ -438,16 +438,16 @@ export class TimelineEngine {
     const existing = trackClips?.find((c) => c.id === clipId)
     if (!existing) return
 
-    const isText = existing.type === 'text'
+    const isUnlimited = existing.type === 'text' || existing.type === 'shape' || existing.type === 'freehand'
 
-    const maxDuration = isText ? Infinity : existing.sourceDurationFrames
+    const maxDuration = isUnlimited ? Infinity : existing.sourceDurationFrames
     const clampedDuration = Math.min(maxDuration, Math.max(1, toFrame(durationFrames)))
 
     // For media clips, the left edge can't extend further left than the source
     // has available frames (i.e., existing.sourceStartFrame frames to the left).
-    // Text clips have no source constraint and are always allowed to grow left.
+    // Generated clips (text, shape, freehand) have no source constraint and are always allowed to grow left.
     const rawStart = Math.max(0, toFrame(startFrame))
-    const minAllowedStart = isText
+    const minAllowedStart = isUnlimited
       ? 0
       : Math.max(0, existing.startFrame - existing.sourceStartFrame)
     const newStart = Math.max(minAllowedStart, rawStart)
@@ -458,8 +458,8 @@ export class TimelineEngine {
 
     // startDelta > 0 → left-edge trim (start moved right); < 0 → left edge moved left
     const startDelta = newStart - existing.startFrame
-    // Text clips have no real source media, skip the source window adjustment.
-    const sourceStartFrame = isText
+    // Generated clips have no real source media, skip the source window adjustment.
+    const sourceStartFrame = isUnlimited
       ? existing.sourceStartFrame
       : Math.max(0, existing.sourceStartFrame + startDelta)
 
