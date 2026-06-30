@@ -465,9 +465,10 @@ export default function ProductionEditor() {
             onExport={handleExportStart}
           />
         )}
+        <ProductionCodePanel open={showCode} onClose={() => setShowCode(false)} />
 
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex flex-1 min-h-0 relative overflow-hidden">
+          <div className="flex flex-1 min-h-0">
             <LeftRail active={activePanel} onSelect={setActivePanel} />
             <div
               style={{
@@ -502,17 +503,6 @@ export default function ProductionEditor() {
             </div>
 
             <TextClipProperties />
-
-            {/* Render Code — slides in from / out to the right (above timeline). */}
-            <div
-              aria-hidden={!showCode}
-              className={cn(
-                'absolute top-0 right-0 h-full z-20 transition-transform duration-300 ease-out',
-                showCode ? 'translate-x-0 shadow-2xl' : 'translate-x-full pointer-events-none',
-              )}
-            >
-              <ProductionCodePanel onClose={() => setShowCode(false)} />
-            </div>
           </div>
 
           <TimelineControls timelineRef={timelineRef} />

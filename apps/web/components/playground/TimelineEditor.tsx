@@ -96,6 +96,11 @@ const TimelineToolbar = memo(function TimelineToolbar() {
     }, 'Clear all clips')
   }
 
+  // Resolve a track by kind, not array index — extra tracks added via the
+  // controls bar shift indices, and the engine won't reject a mismatched type.
+  const trackOf = (kind: 'video' | 'audio' | 'text') =>
+    tracks.find((t) => t.kind === kind)
+
   // Base button classes
   const btnCls = 'px-3 py-1.5 bg-ed-elevated text-ed-text-muted border border-ed-border rounded-md cursor-pointer text-xs font-medium whitespace-nowrap font-sans'
   const ghostIcon =
@@ -152,21 +157,30 @@ const TimelineToolbar = memo(function TimelineToolbar() {
       <div className="flex items-center gap-2 pr-3 border-r border-ed-border">
         <span className="text-[11px] text-ed-text-muted font-semibold font-sans tracking-[0.06em] uppercase">Add:</span>
         <button
-          onClick={() => tracks[0] && handleAddClip(tracks[0].id, 'video', FPS * 3)}
+          onClick={() => {
+            const t = trackOf('video')
+            if (t) handleAddClip(t.id, 'video', FPS * 3)
+          }}
           className={cn(btnCls, 'bg-clip-video-mid/15 border-clip-video-mid text-clip-video-mid')}
           title="Add 3-second video clip"
         >
           + Video
         </button>
         <button
-          onClick={() => tracks[1] && handleAddClip(tracks[1].id, 'audio', FPS * 5)}
+          onClick={() => {
+            const t = trackOf('audio')
+            if (t) handleAddClip(t.id, 'audio', FPS * 5)
+          }}
           className={cn(btnCls, 'bg-clip-audio-mid/15 border-clip-audio-mid text-clip-audio-mid')}
           title="Add 5-second audio clip"
         >
           + Audio
         </button>
         <button
-          onClick={() => tracks[2] && handleAddClip(tracks[2].id, 'text', FPS * 2)}
+          onClick={() => {
+            const t = trackOf('text')
+            if (t) handleAddClip(t.id, 'text', FPS * 2)
+          }}
           className={cn(btnCls, 'bg-clip-text-mid/15 border-clip-text-mid text-clip-text-mid')}
           title="Add 2-second text clip"
         >
@@ -200,8 +214,12 @@ export default function TimelineEditor() {
   const [exportOpen, setExportOpen] = useState(false)
   const [exportView, setExportView] = useState<'classNames' | 'theme'>('theme')
 
-  const toggleExport = (view: 'classNames' | 'theme') => {
-    if (!exportOpen) setExportView(view)
+  const toggleExport = () => {
+    // Open to Theme CSS if the theme was edited, otherwise the Code view.
+    if (!exportOpen) {
+      const themeDirty = Object.keys(buildThemeVars(themeValues)).length > 0
+      setExportView(themeDirty ? 'theme' : 'classNames')
+    }
     setExportOpen((o) => !o)
   }
 
@@ -244,7 +262,7 @@ export default function TimelineEditor() {
         <div ref={workspaceRef} className="flex-1 min-h-0 flex flex-col">
           {/* Upper region: config docked left, Scene I/O fills the rest. The
               config panel stops here — the timeline below spans full width. */}
-          <div className="flex-1 min-h-0 flex relative overflow-hidden">
+          <div className="flex-1 min-h-0 flex">
             <TimelineConfigPanel
               classNames={classNames}
               onClassNamesChange={setClassNames}
@@ -254,23 +272,6 @@ export default function TimelineEditor() {
               onToggleExport={toggleExport}
             />
             <TimelineSceneIO />
-
-            {/* Export Style — slides in from / out to the right. */}
-            <div
-              aria-hidden={!exportOpen}
-              className={cn(
-                'absolute top-0 right-0 h-full z-20 transition-transform duration-300 ease-out',
-                exportOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full pointer-events-none',
-              )}
-            >
-              <TimelineStyleExport
-                classNames={classNames}
-                themeValues={themeValues}
-                view={exportView}
-                onViewChange={setExportView}
-                onClose={() => setExportOpen(false)}
-              />
-            </div>
           </div>
 
           {/* Drag handle — resize the docked timeline vertically (full width). */}
@@ -279,9 +280,9 @@ export default function TimelineEditor() {
             role="separator"
             aria-orientation="horizontal"
             title="Drag to resize timeline"
-            className="group shrink-0 h-2 flex items-center justify-center cursor-ns-resize bg-ed-bg-2 border-t border-ed-border hover:bg-ed-accent-soft transition-colors"
+            className="group shrink-0 h-3 flex items-center justify-center cursor-ns-resize bg-ed-elevated border-t border-ed-border hover:bg-ed-accent-soft transition-colors"
           >
-            <span className="h-0.5 w-10 rounded-full bg-ed-text-muted/40 group-hover:bg-ed-accent transition-colors" />
+            <span className="h-1 w-12 rounded-full bg-ed-text-muted/70 group-hover:bg-ed-accent transition-colors" />
           </div>
 
           {/* Controls + timeline span the full width, end to end. */}
@@ -299,6 +300,16 @@ export default function TimelineEditor() {
             }}
           />
         </div>
+
+        {/* Export Style — full-screen drawer with overlay. */}
+        <TimelineStyleExport
+          classNames={classNames}
+          themeValues={themeValues}
+          open={exportOpen}
+          view={exportView}
+          onViewChange={setExportView}
+          onClose={() => setExportOpen(false)}
+        />
       </div>
     </EditorProvider>
   )

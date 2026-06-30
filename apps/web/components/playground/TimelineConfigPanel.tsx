@@ -161,8 +161,8 @@ interface TimelineConfigPanelProps {
   /** Theme-mode picker state (raw colour values keyed by token id). */
   themeValues: Record<string, string>
   onThemeValuesChange: (next: Record<string, string>) => void
-  /** Toggle the Export Style sidebar (owned by the parent); opens to `view`. */
-  onToggleExport: (view: 'classNames' | 'theme') => void
+  /** Toggle the Export Style sidebar (owned by the parent). */
+  onToggleExport: () => void
   exportOpen: boolean
 }
 
@@ -218,7 +218,7 @@ export const TimelineConfigPanel = memo(function TimelineConfigPanel({
 
         {/* Export Style — toggles the code sidebar (classNames + theme.css) */}
         <button
-          onClick={() => onToggleExport(mode === 'theme' ? 'theme' : 'classNames')}
+          onClick={onToggleExport}
           className={cn(
             'ml-auto mb-1.5 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity hover:opacity-90',
             exportOpen && 'ring-1 ring-inset ring-white/30',

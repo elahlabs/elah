@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { CodeBlock } from './CodeBlock'
+import { cn } from '@/lib/utils'
 
 /**
  * "Render Code" drawer for the production editor — a docked right sidebar
@@ -50,37 +51,61 @@ export function ProductionEditor() {
   )
 }`
 
-export function ProductionCodePanel({ onClose }: { onClose: () => void }) {
+export function ProductionCodePanel({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   useEffect(() => {
+    if (!open) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [open, onClose])
 
   return (
-    <aside className="flex h-full w-[400px] shrink-0 flex-col bg-ed-panel border-l border-ed-border font-sans">
-      <div className="flex items-center justify-between border-b border-ed-border px-4 py-2.5 shrink-0">
-        <span className="text-[13px] font-bold tracking-[-0.01em] text-ed-text">
-          Render Code
-        </span>
-        <button
-          onClick={onClose}
-          title="Close"
-          className="cursor-pointer border-none bg-transparent p-0.5 text-lg leading-none text-ed-text-muted hover:text-ed-text"
-        >
-          ×
-        </button>
-      </div>
+    <div className={cn('fixed inset-0 z-[9999] font-sans', !open && 'pointer-events-none')}>
+      {/* Overlay backdrop */}
+      <div
+        onClick={onClose}
+        className={cn(
+          'absolute inset-0 bg-black/60 backdrop-blur-[1px] transition-opacity duration-300',
+          open ? 'opacity-100' : 'opacity-0',
+        )}
+      />
 
-      <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto px-4 py-3">
-        <p className="text-[10px] leading-snug text-ed-text-muted/70">
-          Compose the editor with the <code>@elah/editor</code> SDK — provider,
-          panels, preview, and the timeline.
-        </p>
-        <CodeBlock label="ProductionEditor.tsx" code={RENDER_CODE} />
-      </div>
-    </aside>
+      {/* Full-height drawer sliding from the right */}
+      <aside
+        className={cn(
+          'absolute top-0 right-0 h-full w-[440px] max-w-[calc(100vw-32px)] flex flex-col bg-ed-panel border-l border-ed-border shadow-2xl transition-transform duration-300 ease-out',
+          open ? 'translate-x-0' : 'translate-x-full',
+        )}
+      >
+        <div className="flex items-center justify-between border-b border-ed-border px-4 py-2.5 shrink-0">
+          <span className="text-[13px] font-bold tracking-[-0.01em] text-ed-text">
+            Render Code
+          </span>
+          <button
+            onClick={onClose}
+            title="Close"
+            className="cursor-pointer border-none bg-transparent p-0.5 text-lg leading-none text-ed-text-muted hover:text-ed-text"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto px-4 py-3">
+          <p className="text-[10px] leading-snug text-ed-text-muted/70">
+            Compose the editor with the <code>@elah/editor</code> SDK — provider,
+            panels, preview, and the timeline.
+          </p>
+          <CodeBlock label="ProductionEditor.tsx" code={RENDER_CODE} />
+        </div>
+      </aside>
+    </div>
   )
 }
