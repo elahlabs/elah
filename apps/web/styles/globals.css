@@ -100,6 +100,16 @@
   .dark ::selection {
     background-color: rgba(168, 29, 41, 0.3);
   }
+
+  /* Editor surface uses its own accent for selection, not the site's brand red. */
+  .elah-root ::selection {
+    background-color: var(--elah-accent-glow);
+    color: var(--elah-text);
+  }
+  .elah-root ::-moz-selection {
+    background-color: var(--elah-accent-glow);
+    color: var(--elah-text);
+  }
 }
 
 @layer components {
