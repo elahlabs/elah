@@ -271,11 +271,16 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
           name: `${shapeKind.charAt(0).toUpperCase() + shapeKind.slice(1)} ${n}`,
           startFrame,
           durationFrames,
+          // Explicit transform matches ShapeLayer's render defaults (centre,
+          // half the short side) so the canvas, the selection overlay, and the
+          // Transform properties panel all agree from the first frame.
+          transform: { x: 0.5, y: 0.5, scale: 0.5, rotation: 0, anchor: { x: 0.5, y: 0.5 } },
           shape: {
             shapeKind,
-            shapeFill: '#4f9cf9',
-            shapeStroke: 'transparent',
-            shapeStrokeWidth: 0,
+            // Hollow by default: only a border is drawn, no fill.
+            shapeFill: 'transparent',
+            shapeStroke: '#4f9cf9',
+            shapeStrokeWidth: 4,
           },
         })
         return

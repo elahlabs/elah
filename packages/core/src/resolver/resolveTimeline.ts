@@ -195,17 +195,29 @@ export function resolveTimeline(frame: number, project: Project): Scene {
         }
         scene.images.push(active)
       } else if (clip.type === 'shape' && clip.shapeKind) {
+        let resolvedOpacity = opacity
+        const sanim = clip.shapeAnimation
+        if (sanim) {
+          const d = Math.max(1, sanim.durationFrames)
+          const localFrame = frame - clip.startFrame
+          if (sanim.in === 'fade') {
+            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, localFrame / d))
+          }
+          if (sanim.out === 'fade') {
+            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, (clip.durationFrames - localFrame) / d))
+          }
+        }
         const active: ActiveShapeClip = {
           type: 'shape',
           id: clip.id,
           trackId: clip.trackId,
           name: clip.name,
           shapeKind: clip.shapeKind,
-          shapeFill: clip.shapeFill ?? '#4f9cf9',
-          shapeStroke: clip.shapeStroke ?? 'transparent',
-          shapeStrokeWidth: clip.shapeStrokeWidth ?? 0,
+          shapeFill: clip.shapeFill ?? 'transparent',
+          shapeStroke: clip.shapeStroke ?? '#ffffff',
+          shapeStrokeWidth: clip.shapeStrokeWidth ?? 2,
           sourceFrame,
-          opacity,
+          opacity: resolvedOpacity,
           zIndex,
           ...(clip.transform ? { transform: clip.transform } : {}),
         }

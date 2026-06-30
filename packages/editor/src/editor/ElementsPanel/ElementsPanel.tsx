@@ -15,19 +15,19 @@ interface PaletteTile {
 }
 
 const ShapeRect = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="currentColor">
+  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
     <rect x="3" y="5" width="18" height="14" rx="2" />
   </svg>
 )
 
 const ShapeCircle = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="currentColor">
+  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="9" />
   </svg>
 )
 
 const ShapeTriangle = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="currentColor">
+  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
     <polygon points="12,3 22,21 2,21" />
   </svg>
 )
@@ -84,16 +84,6 @@ const TILES: PaletteTile[] = [
       background: 'var(--elah-tag-shape-bg)',
       border: '1px solid var(--elah-tag-shape-border)',
       color: 'var(--elah-tag-shape-fg)',
-    },
-  },
-  {
-    element: 'freehand',
-    label: 'Freehand',
-    icon: <FreehandIcon />,
-    iconStyle: {
-      background: 'var(--elah-tag-freehand-bg)',
-      border: '1px solid var(--elah-tag-freehand-border)',
-      color: 'var(--elah-tag-freehand-fg)',
     },
   },
 ]

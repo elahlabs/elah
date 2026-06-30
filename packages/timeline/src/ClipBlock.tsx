@@ -214,7 +214,7 @@ export const ClipBlock = memo(function ClipBlock({
       const originalStart = clip.startFrame
       const originalDuration = clip.durationFrames
       const anchorEnd = originalStart + originalDuration
-      const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
+      const maxDuration = clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand' ? Infinity : clip.sourceDurationFrames
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcLeftTrim = (clientX: number) => {
@@ -270,7 +270,7 @@ export const ClipBlock = memo(function ClipBlock({
 
       const startX = e.clientX
       const originalDuration = clip.durationFrames
-      const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
+      const maxDuration = clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand' ? Infinity : clip.sourceDurationFrames
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcRightTrim = (clientX: number) => {

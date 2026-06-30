@@ -114,6 +114,8 @@ export interface Clip {
   transform?: Transform
   /** Entry/exit animation for text clips */
   textAnimation?: TextAnimation
+  /** Entry/exit animation for shape clips */
+  shapeAnimation?: TextAnimation
 }
 
 /** A track lane that holds clips */

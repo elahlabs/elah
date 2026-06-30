@@ -4,6 +4,7 @@ import { useSelectionStore, useTracksStore, type Clip } from '@elah/editor'
 import { cn } from '@/lib/utils'
 import { PANEL, PanelHeader } from './propertiesShared'
 import { TextClipProperties } from './TextClipProperties'
+import { ShapeClipProperties } from './ShapeClipProperties'
 import { VideoClipProperties } from './VideoClipProperties'
 import { AudioClipProperties } from './AudioClipProperties'
 
@@ -35,6 +36,7 @@ export function ClipProperties() {
   }
 
   if (clip.type === 'text') return <TextClipProperties />
+  if (clip.type === 'shape') return <ShapeClipProperties />
   if (clip.type === 'video' || clip.type === 'image') return <VideoClipProperties clip={clip} />
   if (clip.type === 'audio') return <AudioClipProperties clip={clip} />
 
