@@ -1,4 +1,4 @@
-import type { Clip, ClipType, Transform } from '../types'
+import type { Clip, ClipType, ShapeVariant, Transform } from '../types'
 import { generateId } from '../utils/id'
 import { toFrame } from '../utils/frames'
 
@@ -50,6 +50,31 @@ interface CreateTextOptions extends BaseCreateOptions {
   text: TextClipMetadata
 }
 
+/** Style metadata for a shape clip. */
+export interface ShapeClipMetadata {
+  shapeKind: ShapeVariant
+  shapeFill?: string
+  shapeStroke?: string
+  shapeStrokeWidth?: number
+}
+
+interface CreateShapeOptions extends BaseCreateOptions {
+  type: 'shape'
+  shape: ShapeClipMetadata
+}
+
+/** Style metadata for a freehand clip. */
+export interface FreehandClipMetadata {
+  pathData?: string
+  strokeColor?: string
+  strokeWidth?: number
+}
+
+interface CreateFreehandOptions extends BaseCreateOptions {
+  type: 'freehand'
+  freehand?: FreehandClipMetadata
+}
+
 /**
  * Discriminated union of clip creation options.
  * TypeScript narrows the correct shape based on `type`, so callers get
@@ -60,6 +85,8 @@ export type CreateClipOptions =
   | CreateAudioOptions
   | CreateImageOptions
   | CreateTextOptions
+  | CreateShapeOptions
+  | CreateFreehandOptions
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -100,6 +127,29 @@ export function createClip(options: CreateClipOptions): Clip {
       ...(text.fontFamily !== undefined ? { fontFamily: text.fontFamily } : {}),
       ...(text.fontWeight !== undefined ? { fontWeight: text.fontWeight } : {}),
       ...(text.textAlign !== undefined ? { textAlign: text.textAlign } : {}),
+    }
+  }
+
+  if (options.type === 'shape') {
+    const { shape } = options
+    return {
+      ...base,
+      type: 'shape',
+      shapeKind: shape.shapeKind,
+      ...(shape.shapeFill !== undefined ? { shapeFill: shape.shapeFill } : {}),
+      ...(shape.shapeStroke !== undefined ? { shapeStroke: shape.shapeStroke } : {}),
+      ...(shape.shapeStrokeWidth !== undefined ? { shapeStrokeWidth: shape.shapeStrokeWidth } : {}),
+    }
+  }
+
+  if (options.type === 'freehand') {
+    const freehand = options.freehand ?? {}
+    return {
+      ...base,
+      type: 'freehand',
+      ...(freehand.pathData !== undefined ? { pathData: freehand.pathData } : {}),
+      ...(freehand.strokeColor !== undefined ? { strokeColor: freehand.strokeColor } : {}),
+      ...(freehand.strokeWidth !== undefined ? { strokeWidth: freehand.strokeWidth } : {}),
     }
   }
 

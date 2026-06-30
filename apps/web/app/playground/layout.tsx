@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import '@elah/timeline/styles.css'
 import '@elah/editor/styles.css'
 import '@/styles/playground.css'
-import { PlaygroundNav } from '@/components/playground/PlaygroundNav'
+import { PlaygroundNav } from '@/components/playground/shared/PlaygroundNav'
 
 export const metadata: Metadata = {
   title: {

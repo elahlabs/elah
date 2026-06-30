@@ -3,16 +3,11 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  Plus,
   Type as TypeIcon,
-  Scissors,
-  Trash2,
-  Copy,
   Play,
   Pause,
   Square,
   Maximize2,
-  Minus,
   ChevronDown,
   RectangleHorizontal,
   UploadCloud,
@@ -22,12 +17,15 @@ import {
   Github,
   Undo2,
   Redo2,
+  Code2,
 } from 'lucide-react'
-import { ClipProperties } from './ClipProperties'
+import { ClipProperties } from './properties/ClipProperties'
+import { TimelineControls } from '../shared/TimelineControls'
+import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
-import { PlaygroundTabs } from './PlaygroundTabs'
-import { MediaPanel } from './MediaPanel'
+import { PlaygroundTabs } from '../shared/PlaygroundTabs'
+import { MediaPanel, type PanelMode } from './MediaPanel'
 import { TracePanel } from './TracePanel'
 import { siteConfig } from '@/config/site'
 import { cn } from '@/lib/utils'
@@ -40,9 +38,7 @@ import {
   createDefaultDemuxerFactory,
   useTracksStore,
   usePlaybackStore,
-  useSelectionStore,
   useTimelineEngine,
-  splitClipAtPlayhead,
   framesToTimecode,
   type InitialTrackConfig,
   type TimelineRef,
@@ -53,21 +49,14 @@ import {
 const FPS = 30
 
 // Minimal default — one of each. The model allows a single video track but any
-// number of audio / text tracks; more are added from the toolbar at runtime.
+// number of audio / elements tracks; more are added from the toolbar at runtime.
 // Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
 // per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
   { kind: 'video', name: 'Video' },
   { kind: 'audio', name: 'Audio' },
 ]
-
-const ZOOM_MIN = 0.02
-const ZOOM_MAX = 50
-const zoomToSlider = (z: number) =>
-  (Math.log(z) - Math.log(ZOOM_MIN)) / (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN))
-const sliderToZoom = (s: number) =>
-  Math.exp(Math.log(ZOOM_MIN) + s * (Math.log(ZOOM_MAX) - Math.log(ZOOM_MIN)))
 
 // Base Tailwind classes for toolbar buttons
 const toolbarBtnCls =
@@ -75,9 +64,13 @@ const toolbarBtnCls =
 
 const AppHeader = memo(function AppHeader({
   onExport,
+  onToggleCode,
+  codeOpen,
   timelineRef,
 }: {
   onExport: () => void
+  onToggleCode: () => void
+  codeOpen: boolean
   timelineRef: React.RefObject<TimelineRef | null>
 }) {
   const [showTrace, setShowTrace] = useState(false)
@@ -189,6 +182,18 @@ const AppHeader = memo(function AppHeader({
       <div className="flex items-center gap-1 justify-end">
         <button
           type="button"
+          className={cn(
+            toolbarBtnCls,
+            'inline-flex items-center gap-1.5',
+            codeOpen && 'text-ed-text border-ed-accent/60',
+          )}
+          onClick={onToggleCode}
+          title="Show render code"
+        >
+          <Code2 size={14} /> Code
+        </button>
+        <button
+          type="button"
           className={toolbarBtnCls}
           onClick={onExport}
           title="Export to MP4"
@@ -239,7 +244,7 @@ const RAIL_ITEMS = [
   { id: 'stock', label: 'Stock', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
   { id: 'audio', label: 'Audio', Icon: Music },
-  { id: 'text', label: 'Text', Icon: TypeIcon },
+  { id: 'elements', label: 'Elements', Icon: TypeIcon },
 ] as const
 
 const LeftRail = memo(function LeftRail({
@@ -429,172 +434,12 @@ const TransportBar = memo(function TransportBar() {
   )
 })
 
-const TimelineControls = memo(function TimelineControls({
-  timelineRef,
-}: {
-  timelineRef: React.RefObject<TimelineRef | null>
-}) {
-  const engine = useTimelineEngine()
-  const zoom = usePlaybackStore((s) => s.zoom)
-  const setZoom = usePlaybackStore((s) => s.setZoom)
-  const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
-  const [addOpen, setAddOpen] = useState(false)
-
-  const handleDeleteSelected = useCallback(() => {
-    const ids = useSelectionStore.getState().selectedClipIds
-    if (ids.size !== 1) return
-    const id = [...ids][0]
-    const found = engine.findClip(id)
-    if (!found) return
-    engine.removeClip(id, found.clip.trackId)
-    useSelectionStore.getState().clearSelection()
-  }, [engine])
-
-  const handleDuplicateSelected = useCallback(() => {
-    const ids = useSelectionStore.getState().selectedClipIds
-    if (ids.size !== 1) return
-    const id = [...ids][0]
-    const found = engine.findClip(id)
-    if (!found) return
-    const c = found.clip
-    engine.cloneClip(id, c.trackId, c.startFrame + c.durationFrames)
-  }, [engine])
-
-  const splitAtPlayhead = useCallback(() => {
-    const result = splitClipAtPlayhead(engine)
-    if (!result.ok) console.warn('[playground] split failed:', result.reason)
-  }, [engine])
-
-  const addTextTrack = useCallback(() => {
-    const n = useTracksStore.getState().tracks.filter((t) => t.kind === 'text').length + 1
-    engine.addTrack('text', { name: `Text ${n}` })
-  }, [engine])
-
-  const addAudioTrack = useCallback(() => {
-    const n = useTracksStore.getState().tracks.filter((t) => t.kind === 'audio').length + 1
-    engine.addTrack('audio', { name: `Audio ${n}` })
-  }, [engine])
-
-  // Ghost toolbar buttons (flat icons, matching the Figma).
-  const ghostBtn =
-    'inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
-  const ghostIcon =
-    'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
-  const disabledMod =
-    'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-ed-text-muted'
-
-  return (
-    <div className="flex items-center justify-between h-10 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
-      {/* Left — track + clip tools */}
-      <div className="flex items-center gap-0.5">
-        <div className="relative">
-          <button
-            type="button"
-            className={ghostBtn}
-            onClick={() => setAddOpen((o) => !o)}
-            title="Add a track"
-          >
-            <Plus size={14} /> Add Track <ChevronDown size={12} />
-          </button>
-          {addOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setAddOpen(false)} />
-              <div className="absolute left-0 top-full mt-1 z-50 min-w-[150px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
-                <button
-                  type="button"
-                  onClick={() => { addAudioTrack(); setAddOpen(false) }}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
-                >
-                  <Music size={14} /> Audio Track
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { addTextTrack(); setAddOpen(false) }}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
-                >
-                  <TypeIcon size={14} /> Text Track
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-        <div className="w-px h-[18px] bg-ed-border shrink-0 mx-1.5" />
-        <button
-          type="button"
-          className={cn(ghostBtn, !hasSelection && disabledMod)}
-          disabled={!hasSelection}
-          onClick={splitAtPlayhead}
-          title="Split at playhead (S)"
-        >
-          <Scissors size={14} /> Split
-        </button>
-        <button
-          type="button"
-          className={cn(ghostIcon, !hasSelection && disabledMod)}
-          disabled={!hasSelection}
-          onClick={handleDuplicateSelected}
-          title="Duplicate clip"
-        >
-          <Copy size={14} />
-        </button>
-        <button
-          type="button"
-          className={cn(ghostIcon, !hasSelection && disabledMod)}
-          disabled={!hasSelection}
-          onClick={handleDeleteSelected}
-          title="Delete clip"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
-
-      {/* Right — zoom, fit, aspect */}
-      <div className="flex items-center gap-1.5 justify-end">
-        <button
-          type="button"
-          className={ghostIcon}
-          title="Zoom out"
-          onClick={() => setZoom(sliderToZoom(Math.max(0, zoomToSlider(zoom) - 0.08)))}
-        >
-          <Minus size={14} />
-        </button>
-        <input
-          type="range"
-          className="elah-range w-24"
-          min={0}
-          max={1}
-          step={0.001}
-          value={zoomToSlider(zoom)}
-          onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
-        />
-        <button
-          type="button"
-          className={ghostIcon}
-          title="Zoom in"
-          onClick={() => setZoom(sliderToZoom(Math.min(1, zoomToSlider(zoom) + 0.08)))}
-        >
-          <Plus size={14} />
-        </button>
-        <button
-          type="button"
-          className={ghostBtn}
-          onClick={() => timelineRef.current?.fitToWindow()}
-          title="Zoom to fit timeline"
-        >
-          <Maximize2 size={13} /> Fit
-        </button>
-      </div>
-    </div>
-  )
-})
-
 export default function ProductionEditor() {
   const timelineRef = useRef<TimelineRef>(null)
   const demuxerFactoryRef = useRef(createDefaultDemuxerFactory())
 
   const [showExportModal, setShowExportModal] = useState(false)
-  // Which left-rail source the side panel shows. 'text' surfaces the element
-  // palette (drag Text onto the timeline); everything else shows media for now.
+  const [showCode, setShowCode] = useState(false)
   const [activePanel, setActivePanel] = useState('media')
 
   const handleExportStart = useCallback(async (opts: {
@@ -629,13 +474,19 @@ export default function ProductionEditor() {
       <div
         className="elah-root flex flex-col h-full"
       >
-        <AppHeader onExport={() => setShowExportModal(true)} timelineRef={timelineRef} />
+        <AppHeader
+          onExport={() => setShowExportModal(true)}
+          onToggleCode={() => setShowCode((o) => !o)}
+          codeOpen={showCode}
+          timelineRef={timelineRef}
+        />
         {showExportModal && (
           <ExportModal
             onClose={() => setShowExportModal(false)}
             onExport={handleExportStart}
           />
         )}
+        <ProductionCodePanel open={showCode} onClose={() => setShowCode(false)} />
 
         <div className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-1 min-h-0">
@@ -654,10 +505,10 @@ export default function ProductionEditor() {
             >
               {/* Old SDK panel — kept commented for comparison, discard later. */}
               {/* <SourcePanel style={{ flex: 1, minHeight: 0 }} /> */}
-              {activePanel === 'text' ? (
+              {activePanel === 'elements' ? (
                 <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
               ) : (
-                <MediaPanel style={{ flex: 1, minHeight: 0 }} />
+                <MediaPanel mode={activePanel as PanelMode} style={{ flex: 1, minHeight: 0 }} />
               )}
             </div>
 

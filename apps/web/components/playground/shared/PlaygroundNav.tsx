@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Github } from 'lucide-react'
-import { PlaygroundTabs } from '@/components/playground/PlaygroundTabs'
+import { PlaygroundTabs } from './PlaygroundTabs'
 import { siteConfig } from '@/config/site'
 
 // The production editor folds this navigation into its own single header

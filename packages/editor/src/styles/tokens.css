@@ -75,6 +75,18 @@
   --elah-clip-image-bottom: #b45309;
   --elah-clip-image-accent: #fcd34d;
 
+  /* ── Clip colours — shape (indigo) ───────────────────────────────────── */
+  --elah-clip-shape-top:    #818cf8;
+  --elah-clip-shape-mid:    #6366f1;
+  --elah-clip-shape-bottom: #4f46e5;
+  --elah-clip-shape-accent: #a5b4fc;
+
+  /* ── Clip colours — freehand (teal-green) ────────────────────────────── */
+  --elah-clip-freehand-top:    #34d399;
+  --elah-clip-freehand-mid:    #10b981;
+  --elah-clip-freehand-bottom: #059669;
+  --elah-clip-freehand-accent: #6ee7b7;
+
   /* ── Kind tag colours — panel chips (dark defaults) ──────────────────── */
   --elah-tag-video-fg:  #93c5fd;
   --elah-tag-video-bg:  rgba(37, 99, 235, 0.2);
@@ -83,10 +95,18 @@
   --elah-tag-image-fg:  #fcd34d;
   --elah-tag-image-bg:  rgba(245, 158, 11, 0.2);
 
-  /* ── Element type colours — palette tiles (orange text clips) ─────────── */
-  --elah-tag-text-fg:     #f0b483;
-  --elah-tag-text-bg:     rgba(173, 86, 33, 0.25);
-  --elah-tag-text-border: rgba(173, 86, 33, 0.4);
+  /* ── Element type colours — palette tiles ────────────────────────────── */
+  --elah-tag-text-fg:         #f0b483;
+  --elah-tag-text-bg:         rgba(173, 86, 33, 0.25);
+  --elah-tag-text-border:     rgba(173, 86, 33, 0.4);
+
+  --elah-tag-shape-fg:        #a5b4fc;
+  --elah-tag-shape-bg:        rgba(99, 102, 241, 0.2);
+  --elah-tag-shape-border:    rgba(99, 102, 241, 0.4);
+
+  --elah-tag-freehand-fg:     #6ee7b7;
+  --elah-tag-freehand-bg:     rgba(16, 185, 129, 0.18);
+  --elah-tag-freehand-border: rgba(16, 185, 129, 0.38);
 
   /* ── Typography ───────────────────────────────────────────────────────── */
   --elah-font-ui:   system-ui, -apple-system, 'Segoe UI', sans-serif;

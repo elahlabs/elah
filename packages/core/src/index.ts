@@ -14,6 +14,7 @@ export type {
   TextAnimation,
   TextAnimationKind,
   ClipType,
+  ShapeVariant,
   TrackKind,
   FrameCount,
   TimelineConfig,
@@ -41,6 +42,8 @@ export type {
   ActiveAudioClip,
   ActiveTextClip,
   ActiveImageClip,
+  ActiveShapeClip,
+  ActiveFreehandClip,
   ActiveClipBase,
 } from './resolver/scene'
 
@@ -116,11 +119,15 @@ export type { SelectionState, SelectionActions } from './stores/selection.store'
 export { useTransitionsStore } from './stores/transitions.store'
 
 // --- Clip factories ---
-export type { CreateClipOptions } from './elements/base'
+export type { CreateClipOptions, ShapeClipMetadata, FreehandClipMetadata } from './elements/base'
 export { createVideoClip } from './elements/video'
 export { createAudioClip } from './elements/audio'
 export { createTextClip } from './elements/text'
 export { createImageClip } from './elements/image'
+export { createShapeClip } from './elements/shape'
+export type { CreateShapeClipOptions } from './elements/shape'
+export { createFreehandClip } from './elements/freehand'
+export type { CreateFreehandClipOptions } from './elements/freehand'
 
 // --- Actions ---
 export { splitClipAtPlayhead } from './actions/splitClipAtPlayhead'

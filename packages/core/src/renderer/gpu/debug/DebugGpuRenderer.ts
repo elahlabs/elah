@@ -37,6 +37,8 @@ function createStubScene(stage: { width: number; height: number }): Scene {
     audios: [],
     texts: [],
     images: [],
+    shapes: [],
+    freehand: [],
     transitions: [],
   }
 }

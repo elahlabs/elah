@@ -85,7 +85,7 @@ export default function TimelineOnly() {
       initialTracks={[
         { kind: 'video', name: 'Video' },
         { kind: 'audio', name: 'Audio' },
-        { kind: 'text', name: 'Text' },
+        { kind: 'elements', name: 'Elements' },
       ]}
     >
       <Controls />
@@ -205,7 +205,7 @@ const FPS = 30
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
   { kind: 'audio', name: 'Audio' },
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
 ]
 
 const demuxerFactory = createDefaultDemuxerFactory()
@@ -355,7 +355,7 @@ export function AddClipButton() {
   }
 
   const addTextClip = () => {
-    const textTrack = tracks.find((t) => t.kind === 'text')
+    const textTrack = tracks.find((t) => t.kind === 'elements')
     if (!textTrack) return
 
     engine.addClip({

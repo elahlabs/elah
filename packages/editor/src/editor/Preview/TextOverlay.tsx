@@ -268,7 +268,7 @@ export function TextOverlay() {
       // something is active) opt back into pointer events.
       // zIndex keeps the overlay above the imperatively-appended WebGL canvas
       // regardless of DOM insertion order.
-      className="absolute inset-0 z-[3] pointer-events-none overflow-hidden"
+      className="absolute inset-0 z-[4] pointer-events-none overflow-hidden"
     >
       {!isPlaying && (ownsSelection || editingId) && (
         <div

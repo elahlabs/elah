@@ -28,7 +28,7 @@ const FPS = 30
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
   { kind: 'audio', name: 'Audio' },
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
 ]
 
 const ZOOM_MIN = 0.02

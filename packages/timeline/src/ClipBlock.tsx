@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Type } from 'lucide-react'
+import { Type, Square, Circle, Triangle, Pencil } from 'lucide-react'
 import type { Clip } from '@elah/core'
 import { useTimeline } from './engine-context'
 import { useSelectionStore } from '@elah/core'
@@ -29,18 +29,21 @@ const TRIM_HANDLE_WIDTH = 8
 // literals so Tailwind generates the utilities.
 const DEFAULT_CLIP_BG: Record<string, string> = {
   video: 'bg-clip-video-mid',
-  audio: 'bg-clip-audio-bottom', // exact body #0c2a26
-  text: 'bg-clip-text-bottom', // exact body #7a2e10
+  audio: 'bg-clip-audio-bottom',
+  text: 'bg-clip-text-bottom',
   image: 'bg-clip-image-mid',
+  shape: 'bg-clip-shape-bottom',
+  freehand: 'bg-clip-freehand-bottom',
 }
 
-// Default accent (left stripe + selected hairline) per type, applied as the
-// element's text color so the stripe/border can read it via currentColor.
+// Default accent (left stripe + selected hairline) per type.
 const DEFAULT_CLIP_ACCENT: Record<string, string> = {
   video: 'text-clip-video-accent',
   audio: 'text-clip-audio-accent',
   text: 'text-clip-text-accent',
   image: 'text-clip-image-accent',
+  shape: 'text-clip-shape-accent',
+  freehand: 'text-clip-freehand-accent',
 }
 
 interface ClipBlockProps {
@@ -102,21 +105,17 @@ export const ClipBlock = memo(function ClipBlock({
   // Pick the slot for this clip's own type (explicit — no dynamic key access).
   // Body + accent slots for this clip's own type (explicit — no dynamic keys).
   const bodySlot =
-    clip.type === 'video'
-      ? clipVideo
-      : clip.type === 'audio'
-        ? clipAudio
-        : clip.type === 'text'
-          ? clipText
-          : clipImage
+    clip.type === 'video' ? clipVideo
+    : clip.type === 'audio' ? clipAudio
+    : clip.type === 'text' ? clipText
+    : clip.type === 'image' ? clipImage
+    : undefined
   const accentSlot =
-    clip.type === 'video'
-      ? clipVideoAccent
-      : clip.type === 'audio'
-        ? clipAudioAccent
-        : clip.type === 'text'
-          ? clipTextAccent
-          : clipImageAccent
+    clip.type === 'video' ? clipVideoAccent
+    : clip.type === 'audio' ? clipAudioAccent
+    : clip.type === 'text' ? clipTextAccent
+    : clip.type === 'image' ? clipImageAccent
+    : undefined
   // Body bg: slot replaces the default gradient. Accent: slot text-* class, else
   // the default token class (both feed currentColor for the stripe/border).
   const clipBg = normBg(bodySlot) ?? DEFAULT_CLIP_BG[clip.type]
@@ -215,7 +214,7 @@ export const ClipBlock = memo(function ClipBlock({
       const originalStart = clip.startFrame
       const originalDuration = clip.durationFrames
       const anchorEnd = originalStart + originalDuration
-      const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
+      const maxDuration = clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand' ? Infinity : clip.sourceDurationFrames
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcLeftTrim = (clientX: number) => {
@@ -271,7 +270,7 @@ export const ClipBlock = memo(function ClipBlock({
 
       const startX = e.clientX
       const originalDuration = clip.durationFrames
-      const maxDuration = clip.type === 'text' ? Infinity : clip.sourceDurationFrames
+      const maxDuration = clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand' ? Infinity : clip.sourceDurationFrames
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcRightTrim = (clientX: number) => {
@@ -489,41 +488,51 @@ export const ClipBlock = memo(function ClipBlock({
         }}
       />
 
-      {/* Clip label — audio + text only; video/image clips show their thumbnail
-          filmstrip with no overlaid name (per design). Text leads with a T glyph. */}
-      {(clip.type === 'audio' || clip.type === 'text') && (
-        <span
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          paddingLeft: TRIM_HANDLE_WIDTH + 6,
-          paddingRight: TRIM_HANDLE_WIDTH + 6,
-          paddingTop: clip.type === 'audio' ? 3 : 5,
-          // Audio: a small filename caption pinned at the top (per design).
-          // Text: the larger content label with the T glyph.
-          fontSize: clip.type === 'audio' ? 9 : 11,
-          color: `var(--elah-text-on-clip)`,
-          fontWeight: clip.type === 'audio' ? 500 : 600,
-          letterSpacing: '0.01em',
-          textShadow: `var(--elah-effect-label-shadow)`,
-          pointerEvents: 'none',
-        }}
-      >
-        {clip.type === 'text' && (
-          <Type size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
-        )}
+      {/* Clip label — audio, text, shape, freehand show a name + glyph.
+          Video/image clips show their thumbnail filmstrip instead. */}
+      {(clip.type === 'audio' || clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand') && (
         <span
           style={{
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            paddingLeft: TRIM_HANDLE_WIDTH + 6,
+            paddingRight: TRIM_HANDLE_WIDTH + 6,
+            paddingTop: clip.type === 'audio' ? 3 : 5,
+            fontSize: clip.type === 'audio' ? 9 : 11,
+            color: `var(--elah-text-on-clip)`,
+            fontWeight: clip.type === 'audio' ? 500 : 600,
+            letterSpacing: '0.01em',
+            textShadow: `var(--elah-effect-label-shadow)`,
+            pointerEvents: 'none',
           }}
         >
-          {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
-        </span>
+          {clip.type === 'text' && (
+            <Type size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'shape' && clip.shapeKind === 'rect' && (
+            <Square size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'shape' && clip.shapeKind === 'circle' && (
+            <Circle size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'shape' && clip.shapeKind === 'triangle' && (
+            <Triangle size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'freehand' && (
+            <Pencil size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          <span
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
+          </span>
         </span>
       )}
 

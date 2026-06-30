@@ -234,30 +234,72 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): void
         return
       }
 
-      // Only text elements exist today, and they only belong on text tracks.
-      if (payload.element !== 'text' || track.kind !== 'text') return
+      // All synthetic elements live on 'elements' tracks.
+      if (track.kind !== 'elements') return
 
       const fps = engine.getProject().fps
       const existing = useTracksStore.getState().clips[trackId] ?? []
       const n = existing.length + 1
-      const textDuration = Math.max(1, fps * DEFAULT_TEXT_DURATION_SEC)
-      const { startFrame: textStart, durationFrames: textDurationResolved } =
-        resolveDropPosition(existing, startFrameAt(e.clientX), textDuration)
-      engine.addClip({
-        trackId,
-        type: 'text',
-        name: `Text ${n}`,
-        startFrame: textStart,
-        durationFrames: textDurationResolved,
-        text: {
-          content: `Text ${n}`,
-          fontSize: 200,
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-          fontWeight: 'normal',
-          textAlign: 'center',
-        },
-      })
+      const elemDuration = Math.max(1, fps * DEFAULT_TEXT_DURATION_SEC)
+      const { startFrame, durationFrames } =
+        resolveDropPosition(existing, startFrameAt(e.clientX), elemDuration)
+
+      if (payload.element === 'text') {
+        engine.addClip({
+          trackId,
+          type: 'text',
+          name: `Text ${n}`,
+          startFrame,
+          durationFrames,
+          text: {
+            content: `Text ${n}`,
+            fontSize: 200,
+            color: '#ffffff',
+            fontFamily: 'sans-serif',
+            fontWeight: 'normal',
+            textAlign: 'center',
+          },
+        })
+        return
+      }
+
+      if (payload.element === 'shape') {
+        const shapeKind = payload.shapeVariant ?? 'rect'
+        engine.addClip({
+          trackId,
+          type: 'shape',
+          name: `${shapeKind.charAt(0).toUpperCase() + shapeKind.slice(1)} ${n}`,
+          startFrame,
+          durationFrames,
+          // Explicit transform matches ShapeLayer's render defaults (centre,
+          // half the short side) so the canvas, the selection overlay, and the
+          // Transform properties panel all agree from the first frame.
+          transform: { x: 0.5, y: 0.5, scale: 0.5, rotation: 0, anchor: { x: 0.5, y: 0.5 } },
+          shape: {
+            shapeKind,
+            // Hollow by default: only a border is drawn, no fill.
+            shapeFill: 'transparent',
+            shapeStroke: '#4f9cf9',
+            shapeStrokeWidth: 4,
+          },
+        })
+        return
+      }
+
+      if (payload.element === 'freehand') {
+        engine.addClip({
+          trackId,
+          type: 'freehand',
+          name: `Drawing ${n}`,
+          startFrame,
+          durationFrames,
+          freehand: {
+            pathData: '',
+            strokeColor: '#ffffff',
+            strokeWidth: 4,
+          },
+        })
+      }
     }
 
     const handleDrop = (e: DragEvent) => {

@@ -100,6 +100,16 @@
   .dark ::selection {
     background-color: rgba(168, 29, 41, 0.3);
   }
+
+  /* Editor surface uses its own accent for selection, not the site's brand red. */
+  .elah-root ::selection {
+    background-color: var(--elah-accent-glow);
+    color: var(--elah-text);
+  }
+  .elah-root ::-moz-selection {
+    background-color: var(--elah-accent-glow);
+    color: var(--elah-text);
+  }
 }
 
 @layer components {
@@ -261,6 +271,16 @@
   --elah-clip-image-mid:    #d97706;
   --elah-clip-image-bottom: #b45309;
   --elah-clip-image-accent: #fcd34d;
+
+  --elah-clip-shape-top:    #818cf8;
+  --elah-clip-shape-mid:    #6366f1;
+  --elah-clip-shape-bottom: #4f46e5;
+  --elah-clip-shape-accent: #a5b4fc;
+
+  --elah-clip-freehand-top:    #34d399;
+  --elah-clip-freehand-mid:    #10b981;
+  --elah-clip-freehand-bottom: #059669;
+  --elah-clip-freehand-accent: #6ee7b7;
 
   /* Timeline chrome — menus, dialogs, transitions, clip effects (cool dark). */
   --elah-text-on-clip: rgba(255, 255, 255, 0.95);
