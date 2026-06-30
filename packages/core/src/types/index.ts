@@ -38,9 +38,12 @@ export interface Transform {
   anchor: { x: number; y: number }
 }
 
-export type ClipType = 'video' | 'audio' | 'text' | 'image'
+export type ClipType = 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
 
-export type TrackKind = 'video' | 'audio' | 'text'
+/** Variant of the 'shape' clip — determines which SVG primitive is rendered. */
+export type ShapeVariant = 'rect' | 'circle' | 'triangle'
+
+export type TrackKind = 'video' | 'audio' | 'elements'
 
 /**
  * A single clip placed on the timeline.
@@ -84,6 +87,24 @@ export interface Clip {
   fontFamily?: string
   fontWeight?: 'normal' | 'bold'
   textAlign?: 'left' | 'center' | 'right'
+
+  // --- Shape style (shape clips only) ---
+  /** Which SVG primitive to render */
+  shapeKind?: ShapeVariant
+  /** CSS color string for the shape fill */
+  shapeFill?: string
+  /** CSS color string for the shape stroke */
+  shapeStroke?: string
+  /** Stroke width in stage-space pixels */
+  shapeStrokeWidth?: number
+
+  // --- Freehand style (freehand clips only) ---
+  /** SVG path data string (the 'd' attribute value) */
+  pathData?: string
+  /** CSS color string for the stroke */
+  strokeColor?: string
+  /** Stroke width in stage-space pixels */
+  strokeWidth?: number
 
   volume?: number   // 0 – 1
   opacity?: number  // 0 – 1

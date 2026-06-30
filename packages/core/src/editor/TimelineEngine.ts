@@ -198,8 +198,8 @@ export class TimelineEngine {
   /**
    * Track model: the renderer composites a single video track, so video is
    * capped at one — adding a video track when one already exists returns the
-   * existing track (idempotent) rather than creating a second. Audio and text
-   * may have any number of tracks.
+   * existing track (idempotent) rather than creating a second. Audio and elements
+   * tracks may have any number of lanes.
    */
   addTrack(kind: TrackKind, options?: Partial<CreateTrackOptions>): Track {
     if (kind === 'video') {

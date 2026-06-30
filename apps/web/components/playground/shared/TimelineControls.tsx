@@ -72,8 +72,8 @@ export const TimelineControls = memo(function TimelineControls({
   }, [engine])
 
   const addTextTrack = useCallback(() => {
-    const n = useTracksStore.getState().tracks.filter((t) => t.kind === 'text').length + 1
-    engine.addTrack('text', { name: `Text ${n}` })
+    const n = useTracksStore.getState().tracks.filter((t) => t.kind === 'elements').length + 1
+    engine.addTrack('elements', { name: `Elements ${n}` })
   }, [engine])
 
   const addAudioTrack = useCallback(() => {

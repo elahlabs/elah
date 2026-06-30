@@ -30,7 +30,7 @@ const FPS = 30
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
   { kind: 'audio', name: 'Audio' },
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
 ]
 
 const TimelineToolbar = memo(function TimelineToolbar() {
@@ -98,7 +98,7 @@ const TimelineToolbar = memo(function TimelineToolbar() {
 
   // Resolve a track by kind, not array index — extra tracks added via the
   // controls bar shift indices, and the engine won't reject a mismatched type.
-  const trackOf = (kind: 'video' | 'audio' | 'text') =>
+  const trackOf = (kind: 'video' | 'audio' | 'elements') =>
     tracks.find((t) => t.kind === kind)
 
   // Base button classes
@@ -178,7 +178,7 @@ const TimelineToolbar = memo(function TimelineToolbar() {
         </button>
         <button
           onClick={() => {
-            const t = trackOf('text')
+            const t = trackOf('elements')
             if (t) handleAddClip(t.id, 'text', FPS * 2)
           }}
           className={cn(btnCls, 'bg-clip-text-mid/15 border-clip-text-mid text-clip-text-mid')}

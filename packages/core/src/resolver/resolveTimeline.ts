@@ -5,6 +5,8 @@ import type {
   ActiveAudioClip,
   ActiveTextClip,
   ActiveImageClip,
+  ActiveShapeClip,
+  ActiveFreehandClip,
 } from './scene'
 
 function applyEasing(t: number, easing: TransitionEasing = 'linear'): number {
@@ -69,16 +71,18 @@ export function resolveTimeline(frame: number, project: Project): Scene {
     audios: [],
     texts: [],
     images: [],
+    shapes: [],
+    freehand: [],
     transitions: [],
   }
 
   // --- Solo pre-pass ---------------------------------------------------------
   // If any track of a given kind is solo'd, only that track (or those tracks)
   // will contribute clips. Image clips live on video tracks and share solo rules.
-  const hasSolo = { video: false, audio: false, text: false }
+  const hasSolo = { video: false, audio: false, elements: false }
   for (const t of project.tracks) {
     if (t.solo) {
-      if (t.kind === 'video' || t.kind === 'audio' || t.kind === 'text') {
+      if (t.kind === 'video' || t.kind === 'audio' || t.kind === 'elements') {
         hasSolo[t.kind] = true
       }
     }
@@ -96,12 +100,12 @@ export function resolveTimeline(frame: number, project: Project): Scene {
 
     // Solo exclusion: skip this track if another track of the same kind is
     // solo'd and this one isn't.
-    if (hasSolo[track.kind as 'video' | 'audio' | 'text'] && !track.solo) continue
+    if (hasSolo[track.kind as 'video' | 'audio' | 'elements'] && !track.solo) continue
 
     const clips = project.clips[track.id]
     if (!clips || clips.length === 0) continue
 
-    const zIndex = track.kind === 'text' ? 1000000 : (maxOrder - track.order) * 1000
+    const zIndex = track.kind === 'elements' ? 1000000 : (maxOrder - track.order) * 1000
 
     for (const clip of clips) {
       if (clip.disabled) continue
@@ -190,6 +194,37 @@ export function resolveTimeline(frame: number, project: Project): Scene {
           ...(clip.transform ? { transform: clip.transform } : {}),
         }
         scene.images.push(active)
+      } else if (clip.type === 'shape' && clip.shapeKind) {
+        const active: ActiveShapeClip = {
+          type: 'shape',
+          id: clip.id,
+          trackId: clip.trackId,
+          name: clip.name,
+          shapeKind: clip.shapeKind,
+          shapeFill: clip.shapeFill ?? '#4f9cf9',
+          shapeStroke: clip.shapeStroke ?? 'transparent',
+          shapeStrokeWidth: clip.shapeStrokeWidth ?? 0,
+          sourceFrame,
+          opacity,
+          zIndex,
+          ...(clip.transform ? { transform: clip.transform } : {}),
+        }
+        scene.shapes.push(active)
+      } else if (clip.type === 'freehand') {
+        const active: ActiveFreehandClip = {
+          type: 'freehand',
+          id: clip.id,
+          trackId: clip.trackId,
+          name: clip.name,
+          pathData: clip.pathData ?? '',
+          strokeColor: clip.strokeColor ?? '#ffffff',
+          strokeWidth: clip.strokeWidth ?? 4,
+          sourceFrame,
+          opacity,
+          zIndex,
+          ...(clip.transform ? { transform: clip.transform } : {}),
+        }
+        scene.freehand.push(active)
       }
     }
   }

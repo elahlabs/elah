@@ -191,6 +191,18 @@ const TIMELINE_THEME_CSS = `.elah-root {
   --elah-clip-image-bottom: #b45309;
   --elah-clip-image-accent: #fcd34d;
 
+  /* ── Clip colours — shape (indigo) ───────────────────────────────────── */
+  --elah-clip-shape-top:    #818cf8;
+  --elah-clip-shape-mid:    #6366f1;
+  --elah-clip-shape-bottom: #4f46e5;
+  --elah-clip-shape-accent: #a5b4fc;
+
+  /* ── Clip colours — freehand (teal-green) ────────────────────────────── */
+  --elah-clip-freehand-top:    #34d399;
+  --elah-clip-freehand-mid:    #10b981;
+  --elah-clip-freehand-bottom: #059669;
+  --elah-clip-freehand-accent: #6ee7b7;
+
   /* ── Typography ───────────────────────────────────────────────────────── */
   --elah-font-ui:   system-ui, -apple-system, 'Segoe UI', sans-serif;
   --elah-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;

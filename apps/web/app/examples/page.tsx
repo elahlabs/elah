@@ -47,7 +47,7 @@ import {
 const TRACKS = [
   { kind: 'video' as const, name: 'Video / Image' },
   { kind: 'audio' as const, name: 'Audio' },
-  { kind: 'text' as const, name: 'Text' },
+  { kind: 'elements' as const, name: 'Elements' },
 ]
 
 function Transport({ fps }: { fps: number }) {

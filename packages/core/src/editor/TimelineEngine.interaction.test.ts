@@ -14,7 +14,7 @@ describe('TimelineEngine — interactive gestures', () => {
 
   beforeEach(() => {
     engine = new TimelineEngine({ fps: 30 })
-    const track = engine.addTrack('text')
+    const track = engine.addTrack('elements')
     trackId = track.id
     clipId = engine.addClip({
       trackId,

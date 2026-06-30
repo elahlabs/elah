@@ -309,7 +309,7 @@ interface Project {
 
 interface Track {
   id: string
-  kind: 'video' | 'audio' | 'text'
+  kind: 'video' | 'audio' | 'elements'
   name: string
   muted: boolean
   solo: boolean

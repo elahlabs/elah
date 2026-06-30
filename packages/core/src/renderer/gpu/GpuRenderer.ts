@@ -22,6 +22,8 @@ import { VideoLayer } from './layers/VideoLayer'
 import { FrameProbeLayer } from './layers/FrameProbeLayer'
 import { TextLayer } from './layers/TextLayer'
 import { ImageLayer } from './layers/ImageLayer'
+import { ShapeLayer } from './layers/ShapeLayer'
+import { FreehandLayer } from './layers/FreehandLayer'
 import type { Layer, LayerContext } from './layers/types'
 import { RenderGraph } from './RenderGraph'
 import { TexturePool } from './TexturePool'
@@ -38,6 +40,8 @@ export class GpuRenderer implements Renderer {
   private _videoLayer: VideoLayer | null = null
   private _textLayer: TextLayer | null = null
   private _imageLayer: ImageLayer | null = null
+  private _shapeLayer: ShapeLayer | null = null
+  private _freehandLayer: FreehandLayer | null = null
   private _debugPanel: GpuRendererDebugPanel | null = null
 
   private _container: HTMLElement | null = null
@@ -130,6 +134,22 @@ export class GpuRenderer implements Renderer {
     this._renderGraph.registerLayer(
       this._textLayer,
       (scene) => scene.texts,
+      (item) => item.id,
+      (item) => item.zIndex,
+    )
+
+    this._shapeLayer = new ShapeLayer()
+    this._renderGraph.registerLayer(
+      this._shapeLayer,
+      (scene) => scene.shapes,
+      (item) => item.id,
+      (item) => item.zIndex,
+    )
+
+    this._freehandLayer = new FreehandLayer()
+    this._renderGraph.registerLayer(
+      this._freehandLayer,
+      (scene) => scene.freehand,
       (item) => item.id,
       (item) => item.zIndex,
     )
@@ -314,6 +334,8 @@ export class GpuRenderer implements Renderer {
     this._videoLayer?.notifyContextLost()
     this._textLayer?.notifyContextLost()
     this._imageLayer?.notifyContextLost()
+    this._shapeLayer?.notifyContextLost()
+    this._freehandLayer?.notifyContextLost()
     this._renderGraph?.notifyContextLost()
   }
 

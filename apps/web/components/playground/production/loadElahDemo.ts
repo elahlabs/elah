@@ -115,9 +115,9 @@ export async function loadElahDemo({ engine, timelineRef }: LoadElahDemoDeps): P
   const project = engine.getProject()
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
   const audioTrack = project.tracks.find((t) => t.kind === 'audio')
-  const textTrack = project.tracks.find((t) => t.kind === 'text')
+  const textTrack = project.tracks.find((t) => t.kind === 'elements')
   if (!videoTrack || !audioTrack || !textTrack) {
-    throw new Error('Expected video, audio, and text tracks on the project')
+    throw new Error('Expected video, audio, and elements tracks on the project')
   }
 
   engine.batch(() => {
