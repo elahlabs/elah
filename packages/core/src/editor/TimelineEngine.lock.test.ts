@@ -14,7 +14,7 @@ describe('TimelineEngine — locked track guards', () => {
 
   beforeEach(() => {
     engine = new TimelineEngine({ fps: 30 })
-    trackId = engine.addTrack('text').id
+    trackId = engine.addTrack('elements').id
     clipId = engine.addClip({
       trackId,
       type: 'text',
@@ -54,7 +54,7 @@ describe('TimelineEngine — locked track guards', () => {
   })
 
   it('moving a clip INTO a locked track is rejected', () => {
-    const free = engine.addTrack('text').id
+    const free = engine.addTrack('elements').id
     const movable = engine.addClip({
       trackId: free,
       type: 'text',

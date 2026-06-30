@@ -49,11 +49,11 @@ import {
 const FPS = 30
 
 // Minimal default — one of each. The model allows a single video track but any
-// number of audio / text tracks; more are added from the toolbar at runtime.
+// number of audio / elements tracks; more are added from the toolbar at runtime.
 // Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
 // per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
   { kind: 'video', name: 'Video' },
   { kind: 'audio', name: 'Audio' },
 ]

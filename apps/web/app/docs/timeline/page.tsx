@@ -49,7 +49,7 @@ import {
 const TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
   { kind: 'audio', name: 'Audio' },
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
 ]
 
 export default function TimelineOnlyDemo() {
@@ -81,7 +81,7 @@ export default function TimelineOnlyDemo() {
             filename="types.ts (data model)"
             code={`interface Track {
   id: string
-  kind: 'video' | 'audio' | 'text'
+  kind: 'video' | 'audio' | 'elements'
   name: string
   muted: boolean
   solo: boolean

@@ -1,4 +1,4 @@
-import type { Transform, TransitionKind, TransitionDirection } from '../types'
+import type { ShapeVariant, Transform, TransitionKind, TransitionDirection } from '../types'
 
 /**
  * Scene — the output type of resolveTimeline().
@@ -70,6 +70,21 @@ export interface ActiveImageClip extends ActiveClipBase {
   src: string
 }
 
+export interface ActiveShapeClip extends ActiveClipBase {
+  type: 'shape'
+  shapeKind: ShapeVariant
+  shapeFill: string
+  shapeStroke: string
+  shapeStrokeWidth: number
+}
+
+export interface ActiveFreehandClip extends ActiveClipBase {
+  type: 'freehand'
+  pathData: string
+  strokeColor: string
+  strokeWidth: number
+}
+
 /**
  * A transition that is active at the current frame, ready for renderers.
  *
@@ -119,6 +134,8 @@ export interface Scene {
   audios: ActiveAudioClip[]
   texts: ActiveTextClip[]
   images: ActiveImageClip[]
+  shapes: ActiveShapeClip[]
+  freehand: ActiveFreehandClip[]
   /** Transitions active at this frame. Consumed by TransitionOverlay (preview) and the export snapshot pass. */
   transitions: ActiveTransition[]
 }

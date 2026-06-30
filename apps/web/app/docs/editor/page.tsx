@@ -43,7 +43,7 @@ export default function EditorPage() {
 const tracks: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
   { kind: 'audio', name: 'Audio' },
-  { kind: 'text', name: 'Text' },
+  { kind: 'elements', name: 'Elements' },
 ]
 
 function App() {

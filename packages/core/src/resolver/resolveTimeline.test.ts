@@ -217,7 +217,7 @@ describe('resolveTimeline', () => {
   })
 
   it('activates text clips and defaults missing content to empty string', () => {
-    const track = makeTrack({ id: 'tt', kind: 'text' })
+    const track = makeTrack({ id: 'tt', kind: 'elements' })
     const clipWithContent = makeClip({
       id: 'c-text',
       trackId: 'tt',
@@ -237,7 +237,7 @@ describe('resolveTimeline', () => {
   })
 
   it('passes text style fields through to the active text clip', () => {
-    const track = makeTrack({ id: 'tt', kind: 'text' })
+    const track = makeTrack({ id: 'tt', kind: 'elements' })
     const styled = makeClip({
       id: 'c-styled',
       trackId: 'tt',

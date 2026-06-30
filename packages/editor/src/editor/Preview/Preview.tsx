@@ -12,6 +12,7 @@ import type { DemuxerFactory } from '@elah/core'
 import { AudioPlaybackController } from '@elah/core'
 import { cn } from '@elah/timeline'
 import { TextOverlay } from './TextOverlay'
+import { ShapeOverlay } from './ShapeOverlay'
 import { MediaTransformOverlay } from './MediaTransformOverlay'
 import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
 import { StageBorder } from './StageBorder'
@@ -166,10 +167,13 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       <TransitionOverlay ref={transitionOverlayRef} />
 
       {/* Interactive transform layer for video/image clips (zIndex 2). Below
-          TextOverlay so text editing wins when they overlap. */}
+          ShapeOverlay/TextOverlay so synthetic elements win when they overlap. */}
       <MediaTransformOverlay />
 
-      {/* Interactive text editing layer, painted above the WebGL canvas (zIndex 3). */}
+      {/* Interactive transform layer for shape clips (zIndex 3). */}
+      <ShapeOverlay />
+
+      {/* Interactive text editing layer, painted above the WebGL canvas (zIndex 4). */}
       <TextOverlay />
     </div>
   )

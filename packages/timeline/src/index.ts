@@ -20,7 +20,7 @@ export { useTimelineDrop } from './useTimelineDrop'
 
 // --- Element drag infrastructure (public API) ---
 export { ELEMENT_DRAG_MIME } from './elementDrag'
-export type { DragElementPayload, ElementKind } from './elementDrag'
+export type { DragElementPayload, ElementKind, ShapeVariant } from './elementDrag'
 
 // --- Styling util — merge classNames so a passed class wins over defaults ---
 export { cn } from './cn'

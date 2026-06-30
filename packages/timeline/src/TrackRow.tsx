@@ -27,7 +27,7 @@ const SIDEBAR_WIDTH = 184
 const KIND_ICON: Record<string, typeof Film> = {
   video: Film,
   audio: Music,
-  text: Type,
+  elements: Type,
 }
 
 // Default track-label accent (the colored left bar) per kind — the clip mid
@@ -36,7 +36,7 @@ const KIND_ICON: Record<string, typeof Film> = {
 const KIND_ACCENT: Record<string, string> = {
   video: 'text-clip-video-mid',
   audio: 'text-clip-audio-mid',
-  text: 'text-clip-text-mid',
+  elements: 'text-clip-text-mid',
 }
 
 interface TrackRowProps {
@@ -100,7 +100,7 @@ export const TrackRow = memo(function TrackRow({
   // The ≤2 tolerance handles 1-frame rounding artefacts from snap/trim operations.
   // Only video/image tracks carry visual transitions; audio/text tracks skip.
   const adjacentPairs = useMemo(() => {
-    if (track.kind === 'audio' || track.kind === 'text') return []
+    if (track.kind === 'audio' || track.kind === 'elements') return []
     const pairs: Array<{ from: (typeof clips)[0]; to: (typeof clips)[0] }> = []
     for (let i = 0; i < clips.length - 1; i++) {
       const a = clips[i]

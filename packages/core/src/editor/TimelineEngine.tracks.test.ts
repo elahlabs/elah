@@ -30,9 +30,9 @@ describe('TimelineEngine — track model (single video, multi audio/text)', () =
     expect(countKind('audio')).toBe(3)
   })
 
-  it('allows multiple text tracks', () => {
-    engine.addTrack('text')
-    engine.addTrack('text')
-    expect(countKind('text')).toBe(2)
+  it('allows multiple elements tracks', () => {
+    engine.addTrack('elements')
+    engine.addTrack('elements')
+    expect(countKind('elements')).toBe(2)
   })
 })
