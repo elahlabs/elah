@@ -35,15 +35,9 @@ import {
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
 
-type KindFilter = 'all' | MediaKind
-type SortKey = 'added' | 'name' | 'duration'
+export type PanelMode = 'media' | 'stock' | 'photos' | 'audio'
 
-const KIND_OPTIONS: { value: KindFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'video', label: 'Video' },
-  { value: 'audio', label: 'Audio' },
-  { value: 'image', label: 'Image' },
-]
+type SortKey = 'added' | 'name' | 'duration'
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'added', label: 'Recently added' },
@@ -195,10 +189,63 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
   )
 }
 
-export function MediaPanel({ style }: { style?: React.CSSProperties }) {
+const PANEL_CONFIG: Record<
+  PanelMode,
+  {
+    accept: string
+    hasUrlImport: boolean
+    expectedKind: MediaKind | null
+    emptyLabel: string
+    emptyHint: string
+  }
+> = {
+  media: {
+    accept: 'video/*,audio/*,image/*',
+    hasUrlImport: false,
+    expectedKind: null,
+    emptyLabel: 'No uploads yet',
+    emptyHint: 'Drag files or click Upload',
+  },
+  stock: {
+    accept: 'video/*',
+    hasUrlImport: true,
+    expectedKind: 'video',
+    emptyLabel: 'No video clips yet',
+    emptyHint: 'Upload or add a video URL',
+  },
+  photos: {
+    accept: 'image/*',
+    hasUrlImport: false,
+    expectedKind: 'image',
+    emptyLabel: 'No images yet',
+    emptyHint: 'Upload image files',
+  },
+  audio: {
+    accept: 'audio/*',
+    hasUrlImport: true,
+    expectedKind: 'audio',
+    emptyLabel: 'No audio yet',
+    emptyHint: 'Upload or add an audio URL',
+  },
+}
+
+const PANEL_LABEL: Record<MediaKind, string> = {
+  video: 'Stock',
+  audio: 'Audio',
+  image: 'Photos',
+}
+
+function filterByMode(asset: MediaAsset, mode: PanelMode): boolean {
+  if (mode === 'media') return asset.src.startsWith('blob:')
+  if (mode === 'stock') return asset.kind === 'video'
+  if (mode === 'photos') return asset.kind === 'image'
+  if (mode === 'audio') return asset.kind === 'audio'
+  return true
+}
+
+export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSProperties; mode?: PanelMode }) {
   const { assets } = useMediaLibrary()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [kind, setKind] = useState<KindFilter>('all')
   const [sort, setSort] = useState<SortKey>('added')
   const [search, setSearch] = useState('')
   const [showSearch, setShowSearch] = useState(false)
@@ -207,6 +254,9 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
   const [url, setUrl] = useState('')
   const [urlBusy, setUrlBusy] = useState(false)
   const [urlError, setUrlError] = useState<string | null>(null)
+  const [urlFallback, setUrlFallback] = useState<string | null>(null)
+
+  const cfg = PANEL_CONFIG[mode]
 
   const onPick = useCallback(async (files: FileList | File[] | null) => {
     if (!files || ('length' in files && files.length === 0)) return
@@ -218,16 +268,20 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
     if (!trimmed || urlBusy) return
     setUrlBusy(true)
     setUrlError(null)
+    setUrlFallback(null)
     try {
-      await importUrl(trimmed)
+      const result = await importUrl(trimmed)
       setUrl('')
       setShowUrl(false)
+      if (cfg.expectedKind && result.kind !== cfg.expectedKind) {
+        setUrlFallback(`Imported as ${result.kind} — find it in the ${PANEL_LABEL[result.kind]} panel.`)
+      }
     } catch {
       setUrlError('Could not import that URL.')
     } finally {
       setUrlBusy(false)
     }
-  }, [url, urlBusy])
+  }, [url, urlBusy, cfg.expectedKind])
 
   const onDrop = useCallback(
     (e: DragEvent<HTMLButtonElement>) => {
@@ -240,7 +294,7 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
 
   const filtered = sortAssets(
     assets.filter((a) => {
-      if (kind !== 'all' && a.kind !== kind) return false
+      if (!filterByMode(a, mode)) return false
       if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false
       return true
     }),
@@ -291,7 +345,7 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
             ref={fileInputRef}
             type="file"
             multiple
-            accept="video/*,audio/*,image/*"
+            accept={cfg.accept}
             className="hidden"
             onChange={(e) => onPick(e.target.files)}
           />
@@ -328,41 +382,51 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
             </span>
           </button>
 
-          {/* Add from URL */}
-          <button
-            type="button"
-            onClick={() => setShowUrl((s) => !s)}
-            className="mt-2 inline-flex items-center gap-1.5 self-start text-[11px] text-ed-text-muted hover:text-ed-text transition-colors"
-          >
-            <Link2 size={12} />
-            Add from URL
-          </button>
-          {showUrl && (
-            <div className="mt-1.5 flex gap-1.5">
-              <input
-                autoFocus
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value)
-                  setUrlError(null)
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && onAddUrl()}
-                placeholder="https://…/clip.mp4"
-                className="min-w-0 flex-1 rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
-              />
+          {/* Add from URL — only for panels that support it */}
+          {cfg.hasUrlImport && (
+            <>
               <button
                 type="button"
-                onClick={onAddUrl}
-                disabled={urlBusy || !url.trim()}
-                className="shrink-0 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
-                style={{ background: 'var(--elah-accent)' }}
+                onClick={() => {
+                  setShowUrl((s) => !s)
+                  setUrlFallback(null)
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 self-start text-[11px] text-ed-text-muted hover:text-ed-text transition-colors"
               >
-                {urlBusy ? '…' : 'Add'}
+                <Link2 size={12} />
+                Add from URL
               </button>
-            </div>
-          )}
-          {urlError && (
-            <span className="mt-1 text-[11px] text-ed-error">{urlError}</span>
+              {showUrl && (
+                <div className="mt-1.5 flex gap-1.5">
+                  <input
+                    autoFocus
+                    value={url}
+                    onChange={(e) => {
+                      setUrl(e.target.value)
+                      setUrlError(null)
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && onAddUrl()}
+                    placeholder="https://…/clip.mp4"
+                    className="min-w-0 flex-1 rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={onAddUrl}
+                    disabled={urlBusy || !url.trim()}
+                    className="shrink-0 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
+                    style={{ background: 'var(--elah-accent)' }}
+                  >
+                    {urlBusy ? '…' : 'Add'}
+                  </button>
+                </div>
+              )}
+              {urlError && (
+                <span className="mt-1 text-[11px] text-ed-error">{urlError}</span>
+              )}
+              {urlFallback && (
+                <span className="mt-1 text-[11px] text-ed-text-muted">{urlFallback}</span>
+              )}
+            </>
           )}
 
           {/* Search (toggle) */}
@@ -376,13 +440,8 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
             />
           )}
 
-          {/* Filter + sort row */}
-          <div className="mt-3 mb-2 flex items-center justify-between">
-            <Dropdown
-              value={kind}
-              options={KIND_OPTIONS}
-              onChange={(v) => setKind(v as KindFilter)}
-            />
+          {/* Sort row */}
+          <div className="mt-3 mb-2 flex items-center justify-end">
             <Dropdown
               value={sort}
               options={SORT_OPTIONS}
@@ -396,10 +455,10 @@ export function MediaPanel({ style }: { style?: React.CSSProperties }) {
             {filtered.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-ed-text-muted">
                 <span className="text-[12px]">
-                  {assets.length === 0 ? 'No media yet' : 'No matches'}
+                  {search ? 'No matches' : cfg.emptyLabel}
                 </span>
-                {assets.length === 0 && (
-                  <span className="text-[11px]">Upload or drop files to begin</span>
+                {!search && (
+                  <span className="text-[11px]">{cfg.emptyHint}</span>
                 )}
               </div>
             ) : (

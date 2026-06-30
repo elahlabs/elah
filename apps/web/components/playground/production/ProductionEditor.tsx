@@ -25,7 +25,7 @@ import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
-import { MediaPanel } from './MediaPanel'
+import { MediaPanel, type PanelMode } from './MediaPanel'
 import { TracePanel } from './TracePanel'
 import { siteConfig } from '@/config/site'
 import { cn } from '@/lib/utils'
@@ -244,7 +244,7 @@ const RAIL_ITEMS = [
   { id: 'stock', label: 'Stock', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
   { id: 'audio', label: 'Audio', Icon: Music },
-  { id: 'text', label: 'Text', Icon: TypeIcon },
+  { id: 'elements', label: 'Elements', Icon: TypeIcon },
 ] as const
 
 const LeftRail = memo(function LeftRail({
@@ -440,8 +440,6 @@ export default function ProductionEditor() {
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  // Which left-rail source the side panel shows. 'text' surfaces the element
-  // palette (drag Text onto the timeline); everything else shows media for now.
   const [activePanel, setActivePanel] = useState('media')
 
   const handleExportStart = useCallback(async (opts: {
@@ -507,10 +505,10 @@ export default function ProductionEditor() {
             >
               {/* Old SDK panel — kept commented for comparison, discard later. */}
               {/* <SourcePanel style={{ flex: 1, minHeight: 0 }} /> */}
-              {activePanel === 'text' ? (
+              {activePanel === 'elements' ? (
                 <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
               ) : (
-                <MediaPanel style={{ flex: 1, minHeight: 0 }} />
+                <MediaPanel mode={activePanel as PanelMode} style={{ flex: 1, minHeight: 0 }} />
               )}
             </div>
 
