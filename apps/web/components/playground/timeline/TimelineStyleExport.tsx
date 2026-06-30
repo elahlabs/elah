@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import type { TimelineProps } from '@elah/editor'
 import { cn } from '@/lib/utils'
-import { CodeBlock } from './CodeBlock'
+import { CodeBlock } from '../shared/CodeBlock'
 import { buildThemeVars, buildThemeCss, THEME_RENDER_CODE } from './TimelineThemeMode'
 
 /**

@@ -17,7 +17,7 @@ import {
   TimelineConfigPanel,
   type ClassNamesState,
 } from './TimelineConfigPanel'
-import { TimelineControls } from './TimelineControls'
+import { TimelineControls } from '../shared/TimelineControls'
 import { TimelineSceneIO } from './TimelineSceneIO'
 import { TimelineStyleExport } from './TimelineStyleExport'
 import {

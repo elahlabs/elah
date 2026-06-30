@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 
 const TimelineEditor = dynamic(
-  () => import('@/components/playground/TimelineEditor'),
+  () => import('@/components/playground/timeline/TimelineEditor'),
   { ssr: false },
 )
 

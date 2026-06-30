@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { CodeBlock } from './CodeBlock'
+import { CodeBlock } from '../shared/CodeBlock'
 import { cn } from '@/lib/utils'
 
 /**

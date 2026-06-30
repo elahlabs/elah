@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 
 const RawEditor = dynamic(
-  () => import('@/components/playground/RawEditor'),
+  () => import('@/components/playground/raw/RawEditor'),
   { ssr: false },
 )
 

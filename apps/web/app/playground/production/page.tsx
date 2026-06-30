@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 
 const ProductionEditor = dynamic(
-  () => import('@/components/playground/ProductionEditor'),
+  () => import('@/components/playground/production/ProductionEditor'),
   { ssr: false },
 )
 

@@ -19,12 +19,12 @@ import {
   Redo2,
   Code2,
 } from 'lucide-react'
-import { ClipProperties } from './ClipProperties'
-import { TimelineControls } from './TimelineControls'
+import { ClipProperties } from './properties/ClipProperties'
+import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
-import { PlaygroundTabs } from './PlaygroundTabs'
+import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel } from './MediaPanel'
 import { TracePanel } from './TracePanel'
 import { siteConfig } from '@/config/site'
