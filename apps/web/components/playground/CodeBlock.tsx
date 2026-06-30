@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { Check, Copy } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 /** Small read-only code surface with a copy button. Playground-only. */
 export function CodeBlock({ label, code }: { label?: string; code: string }) {
@@ -25,9 +27,16 @@ export function CodeBlock({ label, code }: { label?: string; code: string }) {
         )}
         <button
           onClick={copy}
-          className="text-[9px] text-ed-text-muted hover:text-ed-text uppercase tracking-wide cursor-pointer"
+          title={copied ? 'Copied' : 'Copy'}
+          aria-label={copied ? 'Copied' : 'Copy'}
+          className={cn(
+            'inline-flex h-6 w-6 items-center justify-center rounded transition-colors cursor-pointer',
+            copied
+              ? 'text-emerald-400'
+              : 'text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated',
+          )}
         >
-          {copied ? '✓ copied' : 'copy'}
+          {copied ? <Check size={13} /> : <Copy size={13} />}
         </button>
       </div>
       <pre className="text-[10px] font-mono leading-relaxed text-ed-text whitespace-pre overflow-auto rounded-md border border-ed-border bg-ed-bg p-2">

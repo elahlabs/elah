@@ -151,8 +151,8 @@ function SlotControl({
 type Mode = 'granular' | 'theme'
 
 const MODES: { id: Mode; label: string }[] = [
-  { id: 'granular', label: 'Granular' },
   { id: 'theme', label: 'Theme' },
+  { id: 'granular', label: 'Granular' },
 ]
 
 interface TimelineConfigPanelProps {
@@ -161,8 +161,8 @@ interface TimelineConfigPanelProps {
   /** Theme-mode picker state (raw colour values keyed by token id). */
   themeValues: Record<string, string>
   onThemeValuesChange: (next: Record<string, string>) => void
-  /** Toggle the Export Style sidebar (owned by the parent). */
-  onToggleExport: () => void
+  /** Toggle the Export Style sidebar (owned by the parent); opens to `view`. */
+  onToggleExport: (view: 'classNames' | 'theme') => void
   exportOpen: boolean
 }
 
@@ -174,7 +174,7 @@ export const TimelineConfigPanel = memo(function TimelineConfigPanel({
   onToggleExport,
   exportOpen,
 }: TimelineConfigPanelProps) {
-  const [mode, setMode] = useState<Mode>('granular')
+  const [mode, setMode] = useState<Mode>('theme')
   // Only the first group starts expanded; the rest collapse by default.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.slice(1).map((g) => [g.title, true])),
@@ -218,7 +218,7 @@ export const TimelineConfigPanel = memo(function TimelineConfigPanel({
 
         {/* Export Style — toggles the code sidebar (classNames + theme.css) */}
         <button
-          onClick={onToggleExport}
+          onClick={() => onToggleExport(mode === 'theme' ? 'theme' : 'classNames')}
           className={cn(
             'ml-auto mb-1.5 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-opacity hover:opacity-90',
             exportOpen && 'ring-1 ring-inset ring-white/30',

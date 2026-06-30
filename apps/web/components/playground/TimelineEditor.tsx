@@ -46,12 +46,20 @@ const TimelineToolbar = memo(function TimelineToolbar() {
   const setCurrentFrame = usePlaybackStore((s) => s.setCurrentFrame)
 
   const handleAddClip = (trackId: string, type: 'video' | 'audio' | 'text', duration: number = FPS * 5) => {
-    const clipCount = (clips[trackId] ?? []).length
+    const trackClips = clips[trackId] ?? []
+    const clipCount = trackClips.length
+    // Append after the last clip (or at the playhead, whichever is later) so
+    // repeated adds never overlap — the engine throws on overlapping clips.
+    const lastEnd = trackClips.reduce(
+      (max, c) => Math.max(max, c.startFrame + c.durationFrames),
+      0,
+    )
+    const startFrame = Math.max(currentFrame, lastEnd)
     if (type === 'text') {
       engine.addClip({
         trackId,
         type: 'text',
-        startFrame: currentFrame,
+        startFrame,
         durationFrames: duration,
         name: `Text Clip ${clipCount + 1}`,
         text: {
@@ -65,7 +73,7 @@ const TimelineToolbar = memo(function TimelineToolbar() {
         trackId,
         type,
         src: `demo-${type}-${clipCount + 1}`,
-        startFrame: currentFrame,
+        startFrame,
         durationFrames: duration,
         name: `${type.charAt(0).toUpperCase()}${type.slice(1)} Clip ${clipCount + 1}`,
       })
@@ -187,8 +195,15 @@ export default function TimelineEditor() {
   const [themeValues, setThemeValues] = useState<Record<string, string>>(DEFAULT_THEME_VALUES)
   const themeVars = useMemo(() => buildThemeVars(themeValues), [themeValues])
 
-  // Export Style sidebar (right of the upper region).
+  // Export Style sidebar (right of the upper region). Opens to whichever code
+  // matches the active config tab; the drawer's toggle can still switch it.
   const [exportOpen, setExportOpen] = useState(false)
+  const [exportView, setExportView] = useState<'classNames' | 'theme'>('theme')
+
+  const toggleExport = (view: 'classNames' | 'theme') => {
+    if (!exportOpen) setExportView(view)
+    setExportOpen((o) => !o)
+  }
 
   // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
   // clamped to [MIN, available − reserved] so the IO area above never vanishes.
@@ -236,7 +251,7 @@ export default function TimelineEditor() {
               themeValues={themeValues}
               onThemeValuesChange={setThemeValues}
               exportOpen={exportOpen}
-              onToggleExport={() => setExportOpen((o) => !o)}
+              onToggleExport={toggleExport}
             />
             <TimelineSceneIO />
 
@@ -251,6 +266,8 @@ export default function TimelineEditor() {
               <TimelineStyleExport
                 classNames={classNames}
                 themeValues={themeValues}
+                view={exportView}
+                onViewChange={setExportView}
                 onClose={() => setExportOpen(false)}
               />
             </div>

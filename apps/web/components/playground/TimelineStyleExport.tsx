@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import type { TimelineProps } from '@elah/editor'
 import { cn } from '@/lib/utils'
 import { CodeBlock } from './CodeBlock'
@@ -37,15 +37,18 @@ interface TimelineStyleExportProps {
   classNames: ClassNamesState
   themeValues: Record<string, string>
   onClose: () => void
+  /** Which path's code is shown — controlled so it can follow the active tab. */
+  view: 'classNames' | 'theme'
+  onViewChange: (next: 'classNames' | 'theme') => void
 }
 
 export function TimelineStyleExport({
   classNames,
   themeValues,
   onClose,
+  view,
+  onViewChange,
 }: TimelineStyleExportProps) {
-  const [view, setView] = useState<'classNames' | 'theme'>('classNames')
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -54,7 +57,6 @@ export function TimelineStyleExport({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const classNamesDirty = Object.keys(classNames).length > 0
   const themeVars = buildThemeVars(themeValues)
   const themeDirty = Object.keys(themeVars).length > 0
 
@@ -79,7 +81,7 @@ export function TimelineStyleExport({
         {(['classNames', 'theme'] as const).map((v) => (
           <button
             key={v}
-            onClick={() => setView(v)}
+            onClick={() => onViewChange(v)}
             className={cn(
               'flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
               view === v
@@ -100,14 +102,7 @@ export function TimelineStyleExport({
         </p>
 
         {view === 'classNames' ? (
-          classNamesDirty ? (
-            <CodeBlock label="Component" code={buildGranularCode(classNames)} />
-          ) : (
-            <p className="rounded-md border border-dashed border-ed-border bg-ed-bg px-3 py-4 text-center text-[11px] leading-snug text-ed-text-muted">
-              Change something in the <span className="text-ed-text">Granular</span>{' '}
-              tab to generate the classNames code.
-            </p>
-          )
+          <CodeBlock label="Component" code={buildGranularCode(classNames)} />
         ) : themeDirty ? (
           <>
             <CodeBlock label="timeline-theme.css · full" code={buildThemeCss(themeVars)} />

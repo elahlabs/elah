@@ -17,9 +17,11 @@ import {
   Github,
   Undo2,
   Redo2,
+  Code2,
 } from 'lucide-react'
 import { TextClipProperties } from './TextClipProperties'
 import { TimelineControls } from './TimelineControls'
+import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { loadElahDemo } from './loadElahDemo'
 import { PlaygroundTabs } from './PlaygroundTabs'
@@ -61,9 +63,13 @@ const toolbarBtnCls =
 
 const AppHeader = memo(function AppHeader({
   onExport,
+  onToggleCode,
+  codeOpen,
   timelineRef,
 }: {
   onExport: () => void
+  onToggleCode: () => void
+  codeOpen: boolean
   timelineRef: React.RefObject<TimelineRef | null>
 }) {
   const canUndo = useTracksStore((s) => s.canUndo)
@@ -172,6 +178,18 @@ const AppHeader = memo(function AppHeader({
       {/* Right — export + nav group (tabs kept right-aligned so they hold
           position across Production / Timeline / Raw) */}
       <div className="flex items-center gap-1 justify-end">
+        <button
+          type="button"
+          className={cn(
+            toolbarBtnCls,
+            'inline-flex items-center gap-1.5',
+            codeOpen && 'text-ed-text border-ed-accent/60',
+          )}
+          onClick={onToggleCode}
+          title="Show render code"
+        >
+          <Code2 size={14} /> Code
+        </button>
         <button
           type="button"
           className={toolbarBtnCls}
@@ -398,6 +416,7 @@ export default function ProductionEditor() {
   const demuxerFactoryRef = useRef(createDefaultDemuxerFactory())
 
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showCode, setShowCode] = useState(false)
   // Which left-rail source the side panel shows. 'text' surfaces the element
   // palette (drag Text onto the timeline); everything else shows media for now.
   const [activePanel, setActivePanel] = useState('media')
@@ -434,7 +453,12 @@ export default function ProductionEditor() {
       <div
         className="elah-root flex flex-col h-full"
       >
-        <AppHeader onExport={() => setShowExportModal(true)} timelineRef={timelineRef} />
+        <AppHeader
+          onExport={() => setShowExportModal(true)}
+          onToggleCode={() => setShowCode((o) => !o)}
+          codeOpen={showCode}
+          timelineRef={timelineRef}
+        />
         {showExportModal && (
           <ExportModal
             onClose={() => setShowExportModal(false)}
@@ -443,7 +467,7 @@ export default function ProductionEditor() {
         )}
 
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex flex-1 min-h-0">
+          <div className="flex flex-1 min-h-0 relative overflow-hidden">
             <LeftRail active={activePanel} onSelect={setActivePanel} />
             <div
               style={{
@@ -478,6 +502,17 @@ export default function ProductionEditor() {
             </div>
 
             <TextClipProperties />
+
+            {/* Render Code — slides in from / out to the right (above timeline). */}
+            <div
+              aria-hidden={!showCode}
+              className={cn(
+                'absolute top-0 right-0 h-full z-20 transition-transform duration-300 ease-out',
+                showCode ? 'translate-x-0 shadow-2xl' : 'translate-x-full pointer-events-none',
+              )}
+            >
+              <ProductionCodePanel onClose={() => setShowCode(false)} />
+            </div>
           </div>
 
           <TimelineControls timelineRef={timelineRef} />
