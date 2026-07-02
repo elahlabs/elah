@@ -34,6 +34,7 @@ import {
   type DragMediaPayload,
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
+import { PexelsResults } from './PexelsResults'
 
 export type PanelMode = 'media' | 'stock' | 'photos' | 'audio'
 
@@ -440,20 +441,31 @@ export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSPropert
             />
           )}
 
-          {/* Sort row */}
-          <div className="mt-3 mb-2 flex items-center justify-end">
-            <Dropdown
-              value={sort}
-              options={SORT_OPTIONS}
-              onChange={(v) => setSort(v as SortKey)}
-              align="right"
-            />
-          </div>
+          <div className="mt-3 flex-1 overflow-y-auto">
+            {/* Pexels stock search — Stock (videos) and Photos panels only. */}
+            {(mode === 'stock' || mode === 'photos') && (
+              <>
+                <PexelsResults kind={mode === 'stock' ? 'videos' : 'photos'} />
+                <div className="my-3.5 border-t border-ed-border" />
+                <span className="mb-2 block text-[11px] font-medium text-ed-text-muted">
+                  Your uploads
+                </span>
+              </>
+            )}
 
-          {/* Asset grid */}
-          <div className="flex-1 overflow-y-auto">
+            {/* Sort row */}
+            <div className="mb-2 flex items-center justify-end">
+              <Dropdown
+                value={sort}
+                options={SORT_OPTIONS}
+                onChange={(v) => setSort(v as SortKey)}
+                align="right"
+              />
+            </div>
+
+            {/* Asset grid */}
             {filtered.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-ed-text-muted">
+              <div className="flex flex-col items-center justify-center gap-1 py-6 text-center text-ed-text-muted">
                 <span className="text-[12px]">
                   {search ? 'No matches' : cfg.emptyLabel}
                 </span>
