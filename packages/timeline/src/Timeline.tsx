@@ -163,6 +163,58 @@ export const Timeline = memo(
       return () => el.removeEventListener('wheel', handleWheel)
     }, [setZoom])
 
+    // Pinch → timeline zoom, anchored at the finger midpoint so the frame
+    // under the pinch stays put. preventDefault stops the browser from
+    // zooming the page instead; single-finger pan keeps native scrolling.
+    useEffect(() => {
+      const el = scrollRef.current
+      if (!el) return
+
+      let pinching = false
+      let startDist = 0
+      let startZoom = 1
+
+      const dist = (t: TouchList) =>
+        Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+
+      const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length !== 2) return
+        pinching = true
+        startDist = dist(e.touches)
+        startZoom = usePlaybackStore.getState().zoom
+        e.preventDefault()
+      }
+
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!pinching || e.touches.length !== 2 || startDist === 0) return
+        e.preventDefault()
+        const rect = el.getBoundingClientRect()
+        // Lane x of the pinch midpoint (content coords minus the sticky sidebar).
+        const midX =
+          (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left - sidebarWidth
+        const prevZoom = usePlaybackStore.getState().zoom
+        const anchorFrame = (el.scrollLeft + midX) / prevZoom
+        usePlaybackStore.getState().setZoom((startZoom * dist(e.touches)) / startDist)
+        const nextZoom = usePlaybackStore.getState().zoom // store-clamped
+        el.scrollLeft = anchorFrame * nextZoom - midX
+      }
+
+      const handleTouchEnd = (e: TouchEvent) => {
+        if (e.touches.length < 2) pinching = false
+      }
+
+      el.addEventListener('touchstart', handleTouchStart, { passive: false })
+      el.addEventListener('touchmove', handleTouchMove, { passive: false })
+      el.addEventListener('touchend', handleTouchEnd)
+      el.addEventListener('touchcancel', handleTouchEnd)
+      return () => {
+        el.removeEventListener('touchstart', handleTouchStart)
+        el.removeEventListener('touchmove', handleTouchMove)
+        el.removeEventListener('touchend', handleTouchEnd)
+        el.removeEventListener('touchcancel', handleTouchEnd)
+      }
+    }, [sidebarWidth])
+
     // Keyboard shortcuts: Space = play/pause, Ctrl+Z/Y = undo/redo
     useEffect(() => {
       const handleKey = (e: KeyboardEvent) => {
@@ -330,6 +382,9 @@ export const Timeline = memo(
             overflow: 'auto',
             position: 'relative',
             minHeight: 0,
+            // pan only — two-finger pinch belongs to the zoom handler above,
+            // and must never trigger the browser's page zoom.
+            touchAction: 'pan-x pan-y',
           }}
         >
           {tracks.map((track) => (
