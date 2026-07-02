@@ -9,7 +9,7 @@ import { GpuRenderer } from '@elah/core'
 import { resolveTimeline } from '@elah/core'
 import { useTimelineEngine, usePlaybackEngine } from '@elah/core'
 import type { DemuxerFactory } from '@elah/core'
-import { AudioPlaybackController, useMediaLibraryStore } from '@elah/core'
+import { AudioPlaybackController, useMediaLibraryStore, preloadProjectImages, warmImageSrc } from '@elah/core'
 import type { AudioResolver } from '@elah/core'
 import { cn } from '@elah/timeline'
 import { TextOverlay } from './TextOverlay'
@@ -133,29 +133,34 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       : null
     audio?.start()
 
-    // Warm the decode cache for remote audio (e.g. Freesound previews) as soon
-    // as clips land on the timeline, instead of waiting for first play.
+    // Warm the decode cache for remote audio (e.g. Freesound previews) and
+    // images (e.g. Pexels/Pixabay) as soon as clips land on the timeline,
+    // instead of waiting for first play/paint.
     let warmAudio: (() => void) | null = null
-    let unsubMediaLibrary: (() => void) | null = null
+    const warmImages = () => preloadProjectImages(engine.getProject())
+    warmImages()
+    engine.on('change', warmImages)
+
     if (audio) {
       warmAudio = () => audio.preloadProjectAudio()
       warmAudio()
       engine.on('change', warmAudio)
-
-      // Also warm as soon as an audio asset is *registered* (e.g. clicked into
-      // the library from a stock panel), not only once it lands on the timeline
-      // as a clip — otherwise the first play after drag-drop still races a cold
-      // decode of an asset that could have been warming for minutes already.
-      const warmedAssetIds = new Set<string>()
-      unsubMediaLibrary = useMediaLibraryStore.subscribe((state) => {
-        for (const id of state.order) {
-          if (warmedAssetIds.has(id)) continue
-          warmedAssetIds.add(id)
-          const asset = state.assets[id]
-          if (asset?.kind === 'audio') audio.warmAudioSrc(asset.src)
-        }
-      })
     }
+
+    // Also warm as soon as an asset is *registered* (e.g. clicked into the
+    // library from a stock panel), not only once it lands on the timeline as a
+    // clip — otherwise the first play/paint after drag-drop still races a cold
+    // fetch+decode of an asset that could have been warming for minutes already.
+    const warmedAssetIds = new Set<string>()
+    const unsubMediaLibrary = useMediaLibraryStore.subscribe((state) => {
+      for (const id of state.order) {
+        if (warmedAssetIds.has(id)) continue
+        warmedAssetIds.add(id)
+        const asset = state.assets[id]
+        if (asset?.kind === 'audio') audio?.warmAudioSrc(asset.src)
+        else if (asset?.kind === 'image') warmImageSrc(asset.src)
+      }
+    })
 
     let rafId = 0
     const tick = () => {
@@ -174,7 +179,8 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       cancelAnimationFrame(rafId)
       observer.disconnect()
       if (warmAudio) engine.off('change', warmAudio)
-      unsubMediaLibrary?.()
+      engine.off('change', warmImages)
+      unsubMediaLibrary()
       audio?.destroy()
       renderer.dispose()
       rendererRef.current = null

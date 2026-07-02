@@ -45,6 +45,20 @@ const STAGE_CHANNEL: Record<string, TraceChannel> = {
   'render:frame0': 'EXPORT_FRAMES',
 }
 
+/**
+ * Fetches `src` and returns its bytes, throwing a clear error for a non-2xx
+ * response instead of letting the caller try to decode an HTML error page as
+ * media — e.g. an expired/malformed image URL fails with a cryptic
+ * `EncodingError: Decoding error` from `createImageBitmap` otherwise.
+ */
+async function fetchAssetBlob(src: string, kind: string): Promise<Blob> {
+  const res = await fetch(src)
+  if (!res.ok) {
+    throw new Error(`ExportWorker: failed to fetch ${kind} "${src}" (${res.status} ${res.statusText})`)
+  }
+  return res.blob()
+}
+
 function xlog(stage: string, msg: string, extra?: Record<string, unknown>) {
   const channel = STAGE_CHANNEL[stage] ?? 'EXPORT'
   if (!traceEnabled(channel)) return
@@ -147,7 +161,7 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     const src = videoSrcs[i]
     xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetching "${src.slice(-40)}"`)
     const fetchStart = performance.now()
-    const blob = await fetch(src).then(r => r.blob())
+    const blob = await fetchAssetBlob(src, 'video')
     xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetched`, { size: fmtBytes(blob.size), ms: (performance.now() - fetchStart).toFixed(1) })
     const input = new mb.Input({ formats: mb.ALL_FORMATS, source: new mb.BlobSource(blob) })
     const track = await input.getPrimaryVideoTrack()
@@ -167,8 +181,10 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     const src = imageSrcs[i]
     xlog('assets:image', `[${i + 1}/${imageSrcs.length}] fetching "${src.slice(-40)}"`)
     const fetchStart = performance.now()
-    const blob = await fetch(src).then(r => r.blob())
-    const bitmap = await createImageBitmap(blob)
+    const blob = await fetchAssetBlob(src, 'image')
+    const bitmap = await createImageBitmap(blob).catch((e) => {
+      throw new Error(`ExportWorker: failed to decode image "${src}" (${blob.type || 'unknown type'}, ${fmtBytes(blob.size)}): ${e instanceof Error ? e.message : e}`)
+    })
     imageBitmaps.set(src, bitmap)
     xlog('assets:image', `[${i + 1}/${imageSrcs.length}] ready`, {
       size: fmtBytes(blob.size),

@@ -89,6 +89,10 @@ export type { TrackLevel } from './media/audio/useTrackLevels'
 export { useMasterVolume } from './media/audio/useMasterVolume'
 export type { MasterVolumeApi } from './media/audio/useMasterVolume'
 
+// --- Image decode cache (warming) ---
+export { warmImageSrc, preloadProjectImages } from './renderer/gpu/layers/imageCache'
+export type { ImageLoader, LoadedImage } from './renderer/gpu/layers/imageCache'
+
 // --- Assets / Media Library ---
 export {
   useMediaLibrary,

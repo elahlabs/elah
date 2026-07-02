@@ -16,6 +16,10 @@
  * the first tick after it resolves. The Preview RAF re-renders every frame, so a
  * late-loading image appears within one frame with no extra invalidation.
  *
+ * The actual fetch+decode goes through imageCache's shared, src-keyed cache, so
+ * a clip whose src was already warmed (see `warmImageSrc`/`preloadProjectImages`)
+ * or is shared with another clip picks up the same in-flight/resolved promise.
+ *
  * Imports ONLY from scene.ts, core/types (via drawRect), and browser APIs.
  */
 
@@ -24,39 +28,10 @@ import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
 import { buildDrawTransformMatrix } from './drawRect'
+import { loadCachedImage, type ImageLoader, type LoadedImage } from './imageCache'
 import type { Layer, LayerContext } from './types'
 
-/** A decoded image ready for upload, plus its intrinsic size for the contain fit. */
-export interface LoadedImage {
-  source: TexImageSource
-  width: number
-  height: number
-}
-
-/** Loads an image src into an uploadable source. Injectable so tests skip the DOM. */
-export type ImageLoader = (src: string) => Promise<LoadedImage>
-
-/** Default loader: an <img> element, mirroring probeImage/makeImageThumbnail. */
-const defaultImageLoader: ImageLoader = (src) =>
-  new Promise<LoadedImage>((resolve, reject) => {
-    const img = document.createElement('img')
-    // Required for texImage2D to read pixels from a cross-origin source (e.g.
-    // Pexels) without tainting the canvas. The <img> tags used for plain
-    // display (timeline thumbnails) don't need this since they never read
-    // pixel data back.
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      img.onload = null
-      img.onerror = null
-      resolve({ source: img, width: img.naturalWidth, height: img.naturalHeight })
-    }
-    img.onerror = () => {
-      img.onload = null
-      img.onerror = null
-      reject(new Error(`ImageLayer: failed to load image "${src}"`))
-    }
-    img.src = src
-  })
+export type { ImageLoader, LoadedImage } from './imageCache'
 
 /** Per-clip resources: GL texture + the loaded image (null until it resolves). */
 interface ItemResources {
@@ -71,10 +46,10 @@ export class ImageLayer implements Layer<ActiveImageClip> {
   private _vao: WebGLVertexArrayObject | null = null
   private _gl: WebGL2RenderingContext | null = null
   private readonly _resources = new Map<string, ItemResources>()
-  private readonly _loadImage: ImageLoader
+  private readonly _loadImage: ImageLoader | undefined
 
   constructor(loadImage?: ImageLoader) {
-    this._loadImage = loadImage ?? defaultImageLoader
+    this._loadImage = loadImage
   }
 
   acquire(item: ActiveImageClip, ctx: LayerContext): void {
@@ -99,7 +74,7 @@ export class ImageLayer implements Layer<ActiveImageClip> {
 
     // Kick the load off out-of-band. draw() picks the result up on a later tick.
     // Guard against the clip being released (or re-acquired) before it resolves.
-    void this._loadImage(item.src)
+    void loadCachedImage(item.src, this._loadImage)
       .then((image) => {
         if (this._resources.get(item.id) === res) {
           res.image = image
