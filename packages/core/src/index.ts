@@ -53,7 +53,7 @@ export { GpuRenderer } from './renderer/gpu/GpuRenderer'
 export type { RendererOptions } from './renderer/gpu/types'
 
 // --- Renderer internals (used by overlays + placement helpers) ---
-export { resolveDrawRect, transformFromContainRect } from './renderer/gpu/layers/drawRect'
+export { resolveDrawRect, transformFromContainRect, transformFromCoverRect } from './renderer/gpu/layers/drawRect'
 export { computeContainViewport } from './renderer/gpu/viewport'
 export { computeTextLayout, SIDE_MARGIN } from './renderer/gpu/layers/textLayout'
 export type { TextLayout } from './renderer/gpu/layers/textLayout'

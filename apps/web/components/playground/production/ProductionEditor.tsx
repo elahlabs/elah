@@ -151,7 +151,7 @@ const AppHeader = memo(function AppHeader({
           style={pexelsBtnStyle}
           disabled={loadingPexels}
           onClick={handleRandomPexels}
-          title="Load a random topic from Pexels: images, videos, fades, and text overlays across 4 lanes"
+          title="Load a random topic from Pexels: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
         >
           {loadingPexels ? 'Loading…' : '✦ Random Load from Pexels'}
         </button>

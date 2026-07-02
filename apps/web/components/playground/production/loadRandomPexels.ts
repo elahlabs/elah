@@ -4,10 +4,9 @@
  * Picks a random topic from `PEXELS_TOPICS`, pulls a handful of images/videos
  * from our `/api/pexels/*` proxy for that topic's tags, and composes a
  * portrait (9:16) timeline: alternating video/image clips with fade
- * transitions on the video lane, topic-relevant captions spread across all 4
- * elements (text) lanes, and topic-relevant audio spread across up to 2 audio
- * lanes (one main track at full volume, one secondary track at a lower
- * volume), each looped to cover the full edit.
+ * transitions on the video lane, and topic-relevant captions spread across
+ * all 4 elements (text) lanes. Audio is not auto-populated — users add audio
+ * manually from the audio panel.
  */
 import {
   type TimelineEngine,
@@ -16,12 +15,11 @@ import {
   type MediaAsset,
   usePlaybackStore,
   secondsToFrames,
+  transformFromCoverRect,
 } from '@elah/editor'
 import type { RefObject } from 'react'
 import { importPexelsPhoto, importPexelsVideo } from '@/lib/pexels/importPexelsAsset'
 import type { PexelsPhoto, PexelsVideo } from '@/lib/pexels/types'
-import { importFreesoundSound } from '@/lib/freesound/importFreesoundAsset'
-import type { FreesoundSound, FreesoundSearchResponse } from '@/lib/freesound/types'
 
 /** Portrait 9:16 stage, matching the cinematic demo. */
 const STAGE = { width: 1080, height: 1920 }
@@ -37,14 +35,11 @@ const CLIP_SECONDS = 4
 
 /**
  * A topic pairs Pexels search tags for video/image lookups with caption copy
- * for the 4 text lanes and Freesound search tags for the (up to 2) audio
- * lanes (index 0 → main music bed, 1 → secondary ambience/texture). Extra
- * tags beyond the audio lane count are unused pool entries.
+ * for the 4 text lanes.
  */
 interface PexelsTopic {
   videotags: string[]
   imagetags: string[]
-  audiotags: string[]
   captions: string[]
 }
 
@@ -52,109 +47,91 @@ const PEXELS_TOPICS: Record<string, PexelsTopic> = {
   ocean: {
     videotags: ['ocean waves', 'underwater', 'scuba diving', 'surfing'],
     imagetags: ['ocean', 'coral reef', 'beach sunset', 'sea turtle'],
-    audiotags: ['cinematic ambient calm', 'ocean waves ambience', 'seagulls beach'],
     captions: ['Dive into the deep.', 'WAVES OF WONDER', 'OCEAN', 'Explore below the surface.', '— BLUE PLANET —', 'SALT AIR'],
   },
   mountains: {
     videotags: ['mountain hiking', 'alps drone', 'snow peak', 'rock climbing'],
     imagetags: ['mountain range', 'summit', 'alpine lake', 'hiking trail'],
-    audiotags: ['epic cinematic inspiring', 'wind mountain ambience', 'footsteps snow'],
     captions: ['Chase the summit.', 'HIGH ALTITUDE', 'PEAKS', 'Where the air runs thin.', '— ABOVE THE CLOUDS —', 'TRAILHEAD'],
   },
   'city-life': {
     videotags: ['city timelapse', 'street traffic', 'downtown night', 'subway'],
     imagetags: ['city skyline', 'urban street', 'neon lights', 'crosswalk'],
-    audiotags: ['urban electronic beat', 'city traffic ambience', 'car horn street'],
     captions: ['The city never sleeps.', 'URBAN PULSE', 'DOWNTOWN', 'Every street has a story.', '— METROPOLIS —', 'RUSH HOUR'],
   },
   forest: {
     videotags: ['forest walk', 'rainforest', 'misty woods', 'waterfall'],
     imagetags: ['forest path', 'sunlight through trees', 'moss', 'redwood'],
-    audiotags: ['calm acoustic ambient', 'forest birds ambience', 'twigs footsteps'],
     captions: ['Lose yourself in green.', 'DEEP WOODS', 'CANOPY', 'Quiet lives here.', '— OLD GROWTH —', 'UNDERGROWTH'],
   },
   space: {
     videotags: ['galaxy timelapse', 'rocket launch', 'nebula', 'stars night sky'],
     imagetags: ['starry sky', 'milky way', 'planet', 'astronaut'],
-    audiotags: ['space ambient drone', 'sci-fi atmosphere', 'rocket launch rumble'],
     captions: ['Look up.', 'DEEP SPACE', 'COSMOS', 'We are made of stardust.', '— BEYOND EARTH —', 'ORBIT'],
   },
   desert: {
     videotags: ['desert dunes', 'sandstorm', 'desert road', 'camel caravan'],
     imagetags: ['sand dunes', 'desert sunset', 'cactus', 'oasis'],
-    audiotags: ['middle eastern ambient', 'desert wind ambience', 'sand footsteps'],
     captions: ['Silence, for miles.', 'DUNE FIELDS', 'DESERT', 'The heat writes its own rules.', '— OPEN HORIZON —', 'MIRAGE'],
   },
   wildlife: {
     videotags: ['wild animals', 'lion pride', 'birds flying', 'safari'],
     imagetags: ['wildlife portrait', 'elephant herd', 'eagle', 'zebra'],
-    audiotags: ['tribal cinematic drums', 'savanna ambience', 'bird call wild'],
     captions: ['Nature, unscripted.', 'WILD AT HEART', 'SAFARI', 'Every species has a role.', '— THE WILD —', 'INSTINCT'],
   },
   food: {
     videotags: ['cooking food', 'chef kitchen', 'street food', 'coffee pour'],
     imagetags: ['gourmet dish', 'fresh ingredients', 'bakery', 'coffee cup'],
-    audiotags: ['upbeat acoustic light', 'kitchen ambience', 'sizzling pan'],
     captions: ['Made from scratch.', 'FARM TO TABLE', 'FLAVOR', 'Good food, slow down.', '— THE KITCHEN —', 'FRESH DAILY'],
   },
   fitness: {
     videotags: ['gym workout', 'running training', 'yoga flow', 'boxing'],
     imagetags: ['weightlifting', 'yoga pose', 'running shoes', 'stretching'],
-    audiotags: ['energetic sports beat', 'gym ambience', 'heartbeat pulse'],
     captions: ['Show up anyway.', 'TRAIN HARD', 'DISCIPLINE', 'Strength is built, not born.', '— NO SHORTCUTS —', 'REPS'],
   },
   technology: {
     videotags: ['coding programmer', 'data center', 'robotics', 'circuit board'],
     imagetags: ['laptop code', 'server room', 'microchip', 'workspace desk'],
-    audiotags: ['tech corporate synth', 'server room hum', 'keyboard typing'],
     captions: ['Built for what\'s next.', 'THE FUTURE, NOW', 'TECH', 'Every line of code counts.', '— SYSTEM ONLINE —', 'v1.0'],
   },
   travel: {
     videotags: ['travel vlog', 'airport departure', 'road trip', 'backpacking'],
     imagetags: ['passport map', 'suitcase', 'airplane window', 'scenic overlook'],
-    audiotags: ['upbeat travel ukulele', 'airport ambience', 'car engine road'],
     captions: ['Somewhere, else.', 'WANDERLUST', 'TRAVEL', 'Collect moments, not things.', '— NEXT STOP —', 'ONE WAY'],
   },
   business: {
     videotags: ['office meeting', 'startup team', 'handshake deal', 'presentation'],
     imagetags: ['office workspace', 'business meeting', 'skyscraper', 'whiteboard'],
-    audiotags: ['corporate upbeat motivational', 'office ambience', 'notification chime'],
     captions: ['Ideas into motion.', 'GROWTH MINDSET', 'BUSINESS', 'Built by the team, for the team.', '— NEXT QUARTER —', 'LAUNCH'],
   },
   music: {
     videotags: ['concert crowd', 'musician playing', 'dj set', 'vinyl record'],
     imagetags: ['guitar closeup', 'concert lights', 'headphones', 'studio mixer'],
-    audiotags: ['live concert energy', 'crowd cheering ambience', 'vinyl crackle'],
     captions: ['Feel the drop.', 'LIVE SOUND', 'MUSIC', 'Every beat tells a story.', '— ON STAGE —', 'ENCORE'],
   },
   fashion: {
     videotags: ['fashion runway', 'street style', 'fashion shoot', 'designer studio'],
     imagetags: ['fashion model', 'clothing rack', 'sneakers', 'runway show'],
-    audiotags: ['fashion runway electronic', 'studio ambience', 'camera shutter'],
     captions: ['Wear it your way.', 'NEW COLLECTION', 'STYLE', 'Fashion is a language.', '— RUNWAY —', 'SS26'],
   },
   autumn: {
     videotags: ['autumn leaves', 'fall forest', 'windy trees', 'harvest field'],
     imagetags: ['fall foliage', 'pumpkin patch', 'autumn park', 'maple leaf'],
-    audiotags: ['warm acoustic folk', 'autumn wind leaves', 'leaves crunch footsteps'],
     captions: ['Everything changes color.', 'FALL SEASON', 'AUTUMN', 'The quiet turn of the year.', '— HARVEST —', 'COZY'],
   },
   'winter-sports': {
     videotags: ['snowboarding', 'ski slope', 'ice skating', 'snowfall'],
     imagetags: ['ski resort', 'snowy mountain', 'ice rink', 'snowboard'],
-    audiotags: ['winter sports energetic', 'wind snow ambience', 'snow crunch skis'],
     captions: ['Chase the powder.', 'WINTER SEASON', 'SNOW', 'Cold air, clear mind.', '— FRESH TRACKS —', 'SUB-ZERO'],
   },
   'coffee-culture': {
     videotags: ['coffee shop', 'barista pour', 'espresso machine', 'roasting beans'],
     imagetags: ['latte art', 'coffee beans', 'cafe interior', 'coffee cup steam'],
-    audiotags: ['jazz cafe lounge', 'coffee shop ambience', 'espresso machine steam'],
     captions: ['One cup at a time.', 'THIRD WAVE', 'COFFEE', 'Slow mornings, strong brew.', '— ROASTED FRESH —', 'ESPRESSO'],
   },
   'startup-hustle': {
     videotags: ['startup office', 'coding team', 'brainstorm session', 'pitch meeting'],
     imagetags: ['whiteboard sketch', 'open workspace', 'laptop coffee', 'sticky notes'],
-    audiotags: ['fast paced electronic drive', 'open office ambience', 'keyboard clicks fast'],
     captions: ['Ship it anyway.', 'MOVE FAST', 'STARTUP', 'Built at 2am, shipped at 9.', '— DAY ONE —', 'ITERATE'],
   },
 }
@@ -230,18 +207,6 @@ async function fetchRandomImage(topic: PexelsTopic): Promise<PexelsPhoto | undef
   return pickRandom(results)
 }
 
-/** Relative loudness per audio lane: main track full volume, secondary lower. */
-const AUDIO_LANE_VOLUME = [1, 0.5]
-
-async function fetchRandomFreesound(query: string): Promise<FreesoundSound | undefined> {
-  const page = 1 + Math.floor(Math.random() * 3)
-  const url = `/api/freesound?query=${encodeURIComponent(query)}&page=${page}&per_page=15`
-  const res = await fetch(url)
-  if (!res.ok) return undefined
-  const data: FreesoundSearchResponse = await res.json()
-  return pickRandom(data.results ?? [])
-}
-
 export interface LoadRandomPexelsDeps {
   engine: TimelineEngine
   timelineRef: RefObject<TimelineRef | null>
@@ -249,9 +214,9 @@ export interface LoadRandomPexelsDeps {
 
 /**
  * Build a random-topic Pexels project: fetches alternating video/image clips
- * for a random topic, lays them on the video lane with fade transitions,
- * spreads that topic's captions across all 4 elements (text) lanes, and fills
- * all audio lanes with topic-relevant Freesound audio looped to the edit length.
+ * for a random topic, lays them on the video lane with fade transitions, and
+ * spreads that topic's captions across all 4 elements (text) lanes. Audio is
+ * left for the user to add manually from the audio panel.
  */
 export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexelsDeps): Promise<string> {
   const [topicName, topic] = pickTopic()
@@ -277,21 +242,9 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
   const project = engine.getProject()
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
   const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
-  const audioTracks = project.tracks.filter((t) => t.kind === 'audio')
   if (!videoTrack || elementsTracks.length === 0) {
     throw new Error('Expected a video track and at least one elements track on the project')
   }
-
-  // Fetch one sound per audio lane (music bed, ambience, texture/sfx) up front —
-  // network calls can't happen inside the synchronous engine.batch() below.
-  // Lanes are independent, so fetch them concurrently rather than serially.
-  const audioFetched = await Promise.all(
-    audioTracks.map(async (_track, i) => {
-      const tag = topic.audiotags[i % topic.audiotags.length]
-      const sound = tag ? await fetchRandomFreesound(tag) : undefined
-      return sound ? importFreesoundSound(sound) : undefined
-    }),
-  )
 
   engine.batch(() => {
     engine.setStage(STAGE.width, STAGE.height)
@@ -304,6 +257,10 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
       const sourceFrames =
         item.asset.durationSec > 0 ? Math.max(1, secondsToFrames(item.asset.durationSec, fps)) : desiredFrames
       const duration = Math.min(desiredFrames, sourceFrames)
+      const transform =
+        item.asset.width && item.asset.height
+          ? transformFromCoverRect(item.asset.width, item.asset.height, STAGE.width, STAGE.height)
+          : undefined
       const clip = engine.addClip({
         trackId: videoTrack.id,
         type: item.kind,
@@ -312,6 +269,7 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
         durationFrames: duration,
         src: item.asset.src,
         assetId: item.asset.id,
+        transform,
       })
       videoClipIds.push(clip.id)
       placedClips.push([cursor, duration])
@@ -329,34 +287,6 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
         easing: 'ease-out',
       })
     }
-
-    // --- AUDIO LANES: topic-relevant sound looped to cover the whole edit ---
-    const totalFrames = cursor
-    audioTracks.forEach((track, i) => {
-      const asset = audioFetched[i]
-      if (!asset) return
-      const sourceFrames =
-        asset.durationSec > 0 ? Math.max(1, secondsToFrames(asset.durationSec, fps)) : totalFrames
-      const volume = AUDIO_LANE_VOLUME[i % AUDIO_LANE_VOLUME.length]
-      let audioCursor = 0
-      let loopIndex = 0
-      while (audioCursor < totalFrames) {
-        const duration = Math.min(sourceFrames, totalFrames - audioCursor)
-        if (duration <= 0) break
-        engine.addClip({
-          trackId: track.id,
-          type: 'audio',
-          name: loopIndex === 0 ? asset.name : `${asset.name} (loop ${loopIndex + 1})`,
-          startFrame: audioCursor,
-          durationFrames: duration,
-          src: asset.src,
-          assetId: asset.id,
-          volume,
-        })
-        audioCursor += duration
-        loopIndex += 1
-      }
-    })
 
     // --- TEXT LANES: topic captions spread across all elements tracks -------
     const addText = (content: string, clip: [number, number], place: Place, trackId: string, fontSize: number) => {

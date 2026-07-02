@@ -75,6 +75,7 @@ export type { ActionResult, ActionFailureReason } from '@elah/core'
 
 export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames } from '@elah/core'
 export { generateId } from '@elah/core'
+export { transformFromCoverRect } from '@elah/core'
 
 export { exportVideo } from '@elah/core'
 export { lazyExportVideo } from '@elah/core'
