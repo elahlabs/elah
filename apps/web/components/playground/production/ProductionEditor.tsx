@@ -48,14 +48,21 @@ import {
 
 const FPS = 30
 
-// Minimal default — one of each. The model allows a single video track but any
-// number of audio / elements tracks; more are added from the toolbar at runtime.
+// Default lanes. The model allows a single video track but any number of audio
+// / elements tracks, so we seed extra text + audio lanes up front: four elements
+// tracks (text overlays) on top, one video, then three audio lanes. The demo
+// loader fills the elements lanes; the audio lanes start empty.
 // Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
 // per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'elements', name: 'Elements' },
+  { kind: 'elements', name: 'Elements 2' },
+  { kind: 'elements', name: 'Elements 3' },
+  { kind: 'elements', name: 'Elements 4' },
   { kind: 'video', name: 'Video' },
   { kind: 'audio', name: 'Audio' },
+  { kind: 'audio', name: 'Audio 2' },
+  { kind: 'audio', name: 'Audio 3' },
 ]
 
 // Base Tailwind classes for toolbar buttons
@@ -442,6 +449,32 @@ export default function ProductionEditor() {
   const [showCode, setShowCode] = useState(false)
   const [activePanel, setActivePanel] = useState('media')
 
+  // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
+  // clamped to [MIN, available − reserved] so the editor's top section (panels,
+  // preview, transport) never collapses.
+  const TIMELINE_MIN = 120
+  const [timelineHeight, setTimelineHeight] = useState(186)
+  const workspaceRef = useRef<HTMLDivElement>(null)
+
+  const startResize = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    const startY = e.clientY
+    const startH = timelineHeight
+    const maxH = (workspaceRef.current?.clientHeight ?? 800) - 140
+    const onMove = (ev: PointerEvent) => {
+      const next = startH + (startY - ev.clientY) // drag up → taller
+      setTimelineHeight(Math.min(Math.max(next, TIMELINE_MIN), Math.max(maxH, TIMELINE_MIN)))
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    document.body.style.userSelect = 'none'
+  }, [timelineHeight])
+
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
     videoCodec: ExportVideoCodec
@@ -488,7 +521,7 @@ export default function ProductionEditor() {
         )}
         <ProductionCodePanel open={showCode} onClose={() => setShowCode(false)} />
 
-        <div className="flex flex-col flex-1 min-h-0">
+        <div ref={workspaceRef} className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-1 min-h-0">
             <LeftRail active={activePanel} onSelect={setActivePanel} />
             <div
@@ -526,12 +559,24 @@ export default function ProductionEditor() {
             <ClipProperties />
           </div>
 
+          {/* Drag handle — resize the timeline vertically; the top section
+              (panels, preview, transport) flexes to fill the remaining space. */}
+          <div
+            onPointerDown={startResize}
+            role="separator"
+            aria-orientation="horizontal"
+            title="Drag to resize timeline"
+            className="group shrink-0 h-3 flex items-center justify-center cursor-ns-resize bg-ed-elevated border-t border-ed-border hover:bg-ed-highest transition-colors"
+          >
+            <span className="h-1 w-12 rounded-full bg-ed-text-muted group-hover:bg-ed-accent transition-colors" />
+          </div>
+
           <TimelineControls timelineRef={timelineRef} />
 
           <Timeline
             ref={timelineRef}
             fps={FPS}
-            style={{ height: 186, flexShrink: 0, minWidth: 0 }}
+            style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
           />
         </div>
       </div>

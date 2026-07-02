@@ -102,6 +102,8 @@ function makeScene(videos: ActiveVideoClip[], frame = 0): Scene {
     audios: [],
     texts: [],
     images: [],
+    shapes: [],
+    freehand: [],
     transitions: [],
   }
 }

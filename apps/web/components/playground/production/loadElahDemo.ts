@@ -39,10 +39,22 @@ const ALL_FILES = [LOGO, AUDIO, ...SCENES]
 /** Premium muted-white text; the fade animation modulates down from here. */
 const TEXT_OPACITY = 0.88
 
-type Place = 'center' | 'bottom-center' | 'bottom-left' | 'bottom-right'
+type Place =
+  | 'center'
+  | 'top-center'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-center'
+  | 'bottom-left'
+  | 'bottom-right'
 
 const PLACEMENT: Record<Place, { x: number; y: number; align: 'left' | 'center' | 'right' }> = {
   center: { x: 0.5, y: 0.5, align: 'center' },
+  // Top row — reserved for the extra text lanes so they never overlap the
+  // primary lower-third / centered overlays below.
+  'top-center': { x: 0.5, y: 0.16, align: 'center' },
+  'top-left': { x: 0.24, y: 0.16, align: 'left' },
+  'top-right': { x: 0.76, y: 0.16, align: 'right' },
   'bottom-center': { x: 0.5, y: 0.84, align: 'center' },
   'bottom-left': { x: 0.24, y: 0.82, align: 'left' },
   'bottom-right': { x: 0.76, y: 0.82, align: 'right' },
@@ -115,7 +127,10 @@ export async function loadElahDemo({ engine, timelineRef }: LoadElahDemoDeps): P
   const project = engine.getProject()
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
   const audioTrack = project.tracks.find((t) => t.kind === 'audio')
-  const textTrack = project.tracks.find((t) => t.kind === 'elements')
+  const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
+  const textTrack = elementsTracks[0]
+  // Extra text lanes (Elements 2/3/4) beyond the primary one, if present.
+  const extraTextTracks = elementsTracks.slice(1)
   if (!videoTrack || !audioTrack || !textTrack) {
     throw new Error('Expected video, audio, and elements tracks on the project')
   }
@@ -188,10 +203,11 @@ export async function loadElahDemo({ engine, timelineRef }: LoadElahDemoDeps): P
         fade?: number
         pad?: number
         yOffset?: number
+        trackId?: string
       } = { fontSize: 84 },
     ) => {
       const [clipStart, clipDuration] = clip
-      const trackId = textTrack.id
+      const trackId = opts.trackId ?? textTrack.id
       const pad = opts.pad ?? Math.round(fps * 0.3)
       const fade = opts.fade ?? fadeFrames
       const start = clipStart + pad
@@ -236,6 +252,26 @@ export async function loadElahDemo({ engine, timelineRef }: LoadElahDemoDeps): P
       // Sit just below the centered logo rather than over it.
       yOffset: 0.10,
     })
+
+    // --- EXTRA TEXT LANES: top-region captions -----------------------------
+    // Each additional elements lane carries a themed set of small captions
+    // pinned to the top row, so they read as kickers/tags above the primary
+    // overlays and never collide with them (which all sit center/lower-third).
+    const [laneKicker, laneTags, laneSpecs] = extraTextTracks
+    if (laneKicker) {
+      addText('ELAH', scenes[0], 'top-center', { fontSize: 40, trackId: laneKicker.id })
+      addText('THE EDITOR', scenes[2], 'top-center', { fontSize: 40, trackId: laneKicker.id })
+      addText('— 2026 —', scenes[4], 'top-center', { fontSize: 36, trackId: laneKicker.id })
+    }
+    if (laneTags) {
+      addText('OPEN SOURCE', scenes[1], 'top-left', { fontSize: 34, trackId: laneTags.id })
+      addText('MIT LICENSED', scenes[3], 'top-left', { fontSize: 34, trackId: laneTags.id })
+    }
+    if (laneSpecs) {
+      addText('9:16 · 30 FPS', scenes[0], 'top-right', { fontSize: 32, trackId: laneSpecs.id })
+      addText('WEBCODECS', scenes[2], 'top-right', { fontSize: 32, trackId: laneSpecs.id })
+      addText('GPU ACCELERATED', scenes[4], 'top-right', { fontSize: 30, trackId: laneSpecs.id })
+    }
   }, 'Load Elah demo project')
 
   // --- Post-load: clean playback state ------------------------------------
