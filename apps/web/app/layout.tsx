@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import '@/styles/globals.css'
 import { siteConfig } from '@/config/site'
@@ -41,6 +41,14 @@ export const metadata: Metadata = {
   },
   // Favicon + touch icon are provided by app/icon.png and app/apple-icon.png
   // (Next.js file-based metadata), so no manual `icons` entry is needed.
+}
+
+// viewport-fit=cover lets the editor's mobile bottom bar pad itself with
+// env(safe-area-inset-bottom) instead of floating above the home indicator.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 // Runs synchronously before first paint to avoid flash of wrong theme.

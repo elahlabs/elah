@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { cn } from './cn'
 
 /**
@@ -70,12 +70,54 @@ export const Ruler = memo(function Ruler({
     return result
   }, [fps, totalFrames, zoom])
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!onSeek) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    onSeek(Math.max(0, Math.round(x / zoom)))
-  }
+  const activeGestureCleanup = useRef<(() => void) | null>(null)
+
+  const clearActiveGesture = useCallback(() => {
+    activeGestureCleanup.current?.()
+    activeGestureCleanup.current = null
+  }, [])
+
+  useEffect(() => clearActiveGesture, [clearActiveGesture])
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0 || !onSeek) return
+      clearActiveGesture()
+
+      const rulerEl = e.currentTarget
+      const seekFromClientX = (clientX: number) => {
+        const rect = rulerEl.getBoundingClientRect()
+        const x = clientX - rect.left
+        onSeek(Math.max(0, Math.round(x / zoom)))
+      }
+
+      seekFromClientX(e.clientX)
+
+      const handleMove = (moveEvent: PointerEvent) => {
+        seekFromClientX(moveEvent.clientX)
+      }
+
+      const removeWindowListeners = () => {
+        window.removeEventListener('pointermove', handleMove)
+        window.removeEventListener('pointerup', handleUp)
+        window.removeEventListener('pointercancel', handleCancel)
+      }
+
+      const finish = () => {
+        removeWindowListeners()
+        activeGestureCleanup.current = null
+      }
+
+      const handleUp = () => finish()
+      const handleCancel = () => finish()
+
+      activeGestureCleanup.current = handleCancel
+      window.addEventListener('pointermove', handleMove)
+      window.addEventListener('pointerup', handleUp)
+      window.addEventListener('pointercancel', handleCancel)
+    },
+    [onSeek, zoom, clearActiveGesture],
+  )
 
   return (
     <div
@@ -87,9 +129,10 @@ export const Ruler = memo(function Ruler({
         height,
         flexShrink: 0,
         cursor: onSeek ? 'pointer' : 'default',
+        touchAction: 'none',
         userSelect: 'none',
       }}
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
     >
       {ticks.map(({ frame, label }) => (
         <div

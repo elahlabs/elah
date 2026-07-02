@@ -21,10 +21,17 @@ import {
   type DragMediaPayload,
 } from '@elah/core'
 import { cn } from '@elah/timeline'
+import {
+  isActivationKey,
+  useAssetActivation,
+  type AssetActivationHandler,
+} from '../activation'
 
 export interface AssetPanelProps {
   style?: CSSProperties
   className?: string
+  activateOnTap?: boolean
+  onAssetActivate?: AssetActivationHandler
 }
 
 const KIND_ICONS: Record<MediaKind, string> = {
@@ -86,7 +93,15 @@ function buildImportToast(skipped: SkippedImport[]): ImportToast | null {
   }
 }
 
-function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id: string) => void }) {
+function AssetThumbnail({
+  asset,
+  onDelete,
+  onActivate,
+}: {
+  asset: MediaAsset
+  onDelete: (id: string) => void
+  onActivate?: (asset: MediaAsset) => void
+}) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   const onDragStart = useCallback(
@@ -111,6 +126,15 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
     onDelete(asset.id)
     setCtxMenu(null)
   }, [asset.id, onDelete])
+  const handleActivate = useCallback(() => onActivate?.(asset), [asset, onActivate])
+  const handleActivateKey = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!onActivate || !isActivationKey(e.key)) return
+      e.preventDefault()
+      onActivate(asset)
+    },
+    [asset, onActivate],
+  )
 
   const tag = KIND_TOKEN[asset.kind]
 
@@ -118,8 +142,12 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
     <>
       <div
         draggable
+        role={onActivate ? 'button' : undefined}
+        tabIndex={onActivate ? 0 : undefined}
         className="elah-media-card flex items-center gap-[10px] px-[10px] py-2 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms]"
         onDragStart={onDragStart}
+        onClick={onActivate ? handleActivate : undefined}
+        onKeyDown={onActivate ? handleActivateKey : undefined}
         onContextMenu={handleContextMenu}
         title={asset.name}
       >
@@ -208,7 +236,12 @@ function AssetThumbnail({ asset, onDelete }: { asset: MediaAsset; onDelete: (id:
  *
  * Must be rendered inside `<EditorProvider>`.
  */
-export function AssetPanel({ style, className }: AssetPanelProps) {
+export function AssetPanel({
+  style,
+  className,
+  activateOnTap,
+  onAssetActivate,
+}: AssetPanelProps) {
   const { assets } = useMediaLibrary()
   const removeAsset = useMediaLibraryStore((s) => s.removeAsset)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -217,10 +250,22 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
   const [toast, setToast] = useState<ImportToast | null>(null)
   const [urlInputOpen, setUrlInputOpen] = useState(false)
   const [urlValue, setUrlValue] = useState('')
+  const activationEnabled = activateOnTap === true || Boolean(onAssetActivate)
+  const activateAsset = useAssetActivation({
+    activateOnTap,
+    onAssetActivate,
+    setToast,
+  })
 
   const handleDeleteAsset = useCallback((id: string) => {
     removeAsset(id)
   }, [removeAsset])
+  const handleAssetActivate = useCallback(
+    (asset: MediaAsset) => {
+      void activateAsset({ kind: 'media-asset', asset })
+    },
+    [activateAsset],
+  )
 
   useEffect(() => {
     if (!toast) return
@@ -447,7 +492,12 @@ export function AssetPanel({ style, className }: AssetPanelProps) {
         ) : (
           <div className="flex flex-col gap-[6px]">
             {assets.map((asset) => (
-              <AssetThumbnail key={asset.id} asset={asset} onDelete={handleDeleteAsset} />
+              <AssetThumbnail
+                key={asset.id}
+                asset={asset}
+                onDelete={handleDeleteAsset}
+                onActivate={activationEnabled ? handleAssetActivate : undefined}
+              />
             ))}
           </div>
         )}

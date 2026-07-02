@@ -1,9 +1,17 @@
-import { useCallback, type CSSProperties, type DragEvent } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties, type DragEvent } from 'react'
 import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind, type ShapeVariant } from '@elah/timeline'
+import {
+  isActivationKey,
+  useAssetActivation,
+  type ActivationToast,
+  type AssetActivationHandler,
+} from '../activation'
 
 export interface ElementsPanelProps {
   style?: CSSProperties
   className?: string
+  activateOnTap?: boolean
+  onAssetActivate?: AssetActivationHandler
 }
 
 interface PaletteTile {
@@ -88,7 +96,28 @@ const TILES: PaletteTile[] = [
   },
 ]
 
-export function ElementsPanel({ style, className }: ElementsPanelProps) {
+const TOAST_DISMISS_MS = 3000
+
+export function ElementsPanel({
+  style,
+  className,
+  activateOnTap,
+  onAssetActivate,
+}: ElementsPanelProps) {
+  const [toast, setToast] = useState<ActivationToast | null>(null)
+  const activationEnabled = activateOnTap === true || Boolean(onAssetActivate)
+  const activateAsset = useAssetActivation({
+    activateOnTap,
+    onAssetActivate,
+    setToast,
+  })
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = globalThis.setTimeout(() => setToast(null), TOAST_DISMISS_MS)
+    return () => globalThis.clearTimeout(timer)
+  }, [toast])
+
   const makeDragStart = useCallback(
     (element: ElementKind, shapeVariant?: ShapeVariant) => (e: DragEvent<HTMLDivElement>) => {
       const payload: DragElementPayload = { kind: 'element', element, shapeVariant }
@@ -96,6 +125,12 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
       e.dataTransfer.effectAllowed = 'copy'
     },
     [],
+  )
+  const handleElementActivate = useCallback(
+    (element: ElementKind, shapeVariant: ShapeVariant | undefined, label: string) => {
+      void activateAsset({ kind: 'element', element, shapeVariant, label })
+    },
+    [activateAsset],
   )
 
   return (
@@ -109,14 +144,40 @@ export function ElementsPanel({ style, className }: ElementsPanelProps) {
         </span>
       </div>
 
+      {toast && (
+        <div
+          role="status"
+          className="mx-[10px] mt-[10px] rounded-sm px-[10px] py-2 text-[10px] font-mono leading-[1.4]"
+          style={{
+            color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
+            background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+            border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* 2-column palette grid — grouping-ready, matches Media grid rhythm */}
       <div className="p-[10px] grid grid-cols-2 gap-[6px]">
         {TILES.map(({ element, shapeVariant, label, icon, iconStyle }) => (
           <div
             key={shapeVariant ? `${element}-${shapeVariant}` : element}
             draggable
+            role={activationEnabled ? 'button' : undefined}
+            tabIndex={activationEnabled ? 0 : undefined}
             className="elah-element-card flex flex-col items-center justify-center gap-[6px] px-2 py-3 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms] min-h-[72px]"
             onDragStart={makeDragStart(element, shapeVariant)}
+            onClick={activationEnabled ? () => handleElementActivate(element, shapeVariant, label) : undefined}
+            onKeyDown={
+              activationEnabled
+                ? (e) => {
+                    if (!isActivationKey(e.key)) return
+                    e.preventDefault()
+                    handleElementActivate(element, shapeVariant, label)
+                  }
+                : undefined
+            }
             title={`Drag ${label} onto the elements track`}
           >
             <span

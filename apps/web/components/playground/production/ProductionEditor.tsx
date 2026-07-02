@@ -17,6 +17,10 @@ import {
   Undo2,
   Redo2,
   Code2,
+  Minimize2,
+  MoreVertical,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react'
 import { ClipProperties } from './properties/ClipProperties'
 import { TimelineControls } from '../shared/TimelineControls'
@@ -38,6 +42,7 @@ import {
   createDefaultDemuxerFactory,
   useTracksStore,
   usePlaybackStore,
+  useSelectionStore,
   useTimelineEngine,
   framesToTimecode,
   type InitialTrackConfig,
@@ -47,6 +52,98 @@ import {
 } from '@elah/editor'
 
 const FPS = 30
+
+/** Tailwind `md` breakpoint, kept as JS state because the mobile layout needs
+ * different component *props* (Timeline sidebar, panel placement), not just CSS. */
+const MOBILE_QUERY = '(max-width: 767px)'
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY)
+    setIsMobile(mq.matches)
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return isMobile
+}
+
+/** Bottom drawer for the mobile layout — renders the same panels the desktop
+ * columns use, so behavior stays identical across breakpoints. */
+function MobileSheet({
+  title,
+  onClose,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
+      <div
+        className="fixed inset-x-0 bottom-0 z-[70] flex flex-col rounded-t-xl border-t border-ed-border bg-ed-bg-2 max-h-[68vh] pb-[env(safe-area-inset-bottom)]"
+        role="dialog"
+        aria-label={title}
+      >
+        <div className="flex items-center justify-between px-4 pt-2 pb-1 shrink-0">
+          <span className="w-8" aria-hidden />
+          <span className="h-1 w-9 rounded-full bg-ed-border" aria-hidden />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={`Close ${title}`}
+            className="inline-flex items-center justify-center w-8 h-8 rounded text-ed-text-muted hover:text-ed-text"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">{children}</div>
+      </div>
+    </>
+  )
+}
+
+type MobileSheetKind = (typeof RAIL_ITEMS)[number]['id'] | 'properties' | null
+
+/** Floating fullscreen toggle on the preview (Figma's mobile design puts it
+ * inside the player, bottom-right). Fullscreens the preview container — the
+ * renderer's ResizeObserver picks up the new size automatically. */
+function PreviewFullscreenButton({
+  targetRef,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const [active, setActive] = useState(false)
+
+  useEffect(() => {
+    const onChange = () => setActive(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  const toggle = useCallback(() => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+    } else {
+      void targetRef.current?.requestFullscreen?.()
+    }
+  }, [targetRef])
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={active ? 'Exit fullscreen' : 'Fullscreen'}
+      title={active ? 'Exit fullscreen' : 'Fullscreen'}
+      className="absolute bottom-3 right-3 z-20 flex items-center justify-center w-10 h-10 rounded-full bg-black/60 text-white border border-white/10 backdrop-blur-sm cursor-pointer"
+    >
+      {active ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+    </button>
+  )
+}
 
 // Default lanes. The model allows a single video track but any number of audio
 // / elements tracks, so we seed extra text + audio lanes up front: four elements
@@ -85,9 +182,14 @@ const AppHeader = memo(function AppHeader({
   setLoadingPixabay: (loading: boolean) => void
 }) {
   const [showTrace, setShowTrace] = useState(false)
+  const [showOverflow, setShowOverflow] = useState(false)
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
+  // Conditional rendering, not responsive classes: the published packages ship
+  // their own Tailwind utilities (.hidden/.inline-flex), and stylesheet load
+  // order lets those beat the app's md: variants either way.
+  const isMobile = useIsMobile()
 
   const handleRandomPixabay = useCallback(async () => {
     setLoadingPixabay(true)
@@ -130,86 +232,99 @@ const AppHeader = memo(function AppHeader({
         >
           ← Playgrounds
         </Link>
-        <div className="w-px h-4 bg-ed-border shrink-0" />
-        <span className="inline-flex items-center gap-2">
-          <span
-            className="w-[7px] h-[7px] rounded-full shrink-0"
-            style={{
-              background: 'var(--elah-accent)',
-              boxShadow: '0 0 8px var(--elah-accent-glow)',
-            }}
-          />
-          <span className="text-[13px] font-bold text-ed-text tracking-[-0.02em]">
-            elah
-          </span>
-          <span className="text-[11px] font-mono text-ed-text-muted">
-            @elah/editor
-          </span>
-        </span>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
-          style={pixabayBtnStyle}
-          disabled={loadingPixabay}
-          onClick={handleRandomPixabay}
-          title="Load a random topic from Pixabay: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
-        >
-          {loadingPixabay ? (
-            'Loading…'
-          ) : (
-            <>
-              ✦ Random Load from
-              <PixabayLogo size={12} className="text-white" />
-            </>
-          )}
-        </button>
+        {!isMobile && (
+          <>
+            <div className="w-px h-4 bg-ed-border shrink-0" />
+            <span className="inline-flex items-center gap-2">
+              <span
+                className="w-[7px] h-[7px] rounded-full shrink-0"
+                style={{
+                  background: 'var(--elah-accent)',
+                  boxShadow: '0 0 8px var(--elah-accent-glow)',
+                }}
+              />
+              <span className="text-[13px] font-bold text-ed-text tracking-[-0.02em]">
+                elah
+              </span>
+              <span className="text-[11px] font-mono text-ed-text-muted">
+                @elah/editor
+              </span>
+            </span>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
+              style={pixabayBtnStyle}
+              disabled={loadingPixabay}
+              onClick={handleRandomPixabay}
+              title="Load a random topic from Pixabay: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
+            >
+              {loadingPixabay ? (
+                'Loading…'
+              ) : (
+                <>
+                  ✦ Random Load from
+                  <PixabayLogo size={12} className="text-white" />
+                </>
+              )}
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Center — undo / redo */}
+      {/* Center — desktop: undo/redo; mobile: the aspect dropdown pill (Figma).
+          Mobile undo/redo live in the transport row instead. */}
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className={cn(
-            toolbarBtnCls,
-            'inline-flex items-center justify-center',
-            !canUndo && 'opacity-40 cursor-not-allowed',
-          )}
-          disabled={!canUndo}
-          onClick={() => engine.undo()}
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo2 size={15} />
-        </button>
-        <button
-          type="button"
-          className={cn(
-            toolbarBtnCls,
-            'inline-flex items-center justify-center',
-            !canRedo && 'opacity-40 cursor-not-allowed',
-          )}
-          disabled={!canRedo}
-          onClick={() => engine.redo()}
-          title="Redo (Ctrl+Y)"
-        >
-          <Redo2 size={15} />
-        </button>
+        {isMobile ? (
+          <MobileAspectSelect />
+        ) : (
+          <>
+            <button
+              type="button"
+              className={cn(
+                toolbarBtnCls,
+                'inline-flex items-center justify-center',
+                !canUndo && 'opacity-40 cursor-not-allowed',
+              )}
+              disabled={!canUndo}
+              onClick={() => engine.undo()}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 size={15} />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                toolbarBtnCls,
+                'inline-flex items-center justify-center',
+                !canRedo && 'opacity-40 cursor-not-allowed',
+              )}
+              disabled={!canRedo}
+              onClick={() => engine.redo()}
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo2 size={15} />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Right — export + nav group (tabs kept right-aligned so they hold
           position across Production / Timeline / Raw) */}
       <div className="flex items-center gap-1 justify-end">
-        <button
-          type="button"
-          className={cn(
-            toolbarBtnCls,
-            'inline-flex items-center gap-1.5',
-            codeOpen && 'text-ed-text border-ed-accent/60',
-          )}
-          onClick={onToggleCode}
-          title="Show render code"
-        >
-          <Code2 size={14} /> Code
-        </button>
+        {!isMobile && (
+          <button
+            type="button"
+            className={cn(
+              toolbarBtnCls,
+              'inline-flex items-center gap-1.5',
+              codeOpen && 'text-ed-text border-ed-accent/60',
+            )}
+            onClick={onToggleCode}
+            title="Show render code"
+          >
+            <Code2 size={14} /> Code
+          </button>
+        )}
         <button
           type="button"
           className={toolbarBtnCls}
@@ -218,38 +333,86 @@ const AppHeader = memo(function AppHeader({
         >
           ⬇ Export
         </button>
+        {!isMobile && (
+          <>
+            <div className="relative">
+              <button
+                type="button"
+                className={cn(
+                  toolbarBtnCls,
+                  showTrace && 'bg-ed-elevated text-ed-text',
+                )}
+                onClick={() => setShowTrace((v) => !v)}
+                title="Toggle trace channel controls"
+              >
+                Trace
+              </button>
+              {showTrace && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowTrace(false)} />
+                  <div className="relative z-50">
+                    <TracePanel onClose={() => setShowTrace(false)} />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="w-px h-4 bg-ed-border shrink-0 mx-1" />
+            <PlaygroundTabs />
+            <a
+              href={siteConfig.links.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-2 py-1.5 rounded-md text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
+              title="View source on GitHub"
+            >
+              <Github size={14} />
+            </a>
+          </>
+        )}
+        {/* Mobile overflow — desktop-only header actions folded into one menu. */}
+        {isMobile && (
         <div className="relative">
           <button
             type="button"
-            className={cn(
-              toolbarBtnCls,
-              showTrace && 'bg-ed-elevated text-ed-text',
-            )}
-            onClick={() => setShowTrace((v) => !v)}
-            title="Toggle trace channel controls"
+            className={cn(toolbarBtnCls, 'inline-flex items-center justify-center')}
+            onClick={() => setShowOverflow((v) => !v)}
+            title="More actions"
+            aria-label="More actions"
           >
-            Trace
+            <MoreVertical size={15} />
           </button>
-          {showTrace && (
+          {showOverflow && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowTrace(false)} />
-              <div className="relative z-50">
-                <TracePanel onClose={() => setShowTrace(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[190px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
+                <button
+                  type="button"
+                  disabled={loadingPixabay}
+                  onClick={() => { setShowOverflow(false); void handleRandomPixabay() }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
+                >
+                  ✦ {loadingPixabay ? 'Loading…' : 'Random Load from Pixabay'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowOverflow(false); onToggleCode() }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
+                >
+                  <Code2 size={14} /> {codeOpen ? 'Hide code' : 'Show code'}
+                </button>
+                <a
+                  href={siteConfig.links.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
+                >
+                  <Github size={14} /> GitHub
+                </a>
               </div>
             </>
           )}
         </div>
-        <div className="w-px h-4 bg-ed-border shrink-0 mx-1" />
-        <PlaygroundTabs />
-        <a
-          href={siteConfig.links.github}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center px-2 py-1.5 rounded-md text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
-          title="View source on GitHub"
-        >
-          <Github size={14} />
-        </a>
+        )}
       </div>
     </header>
   )
@@ -362,9 +525,95 @@ const AspectControl = memo(function AspectControl() {
   )
 })
 
+// Mobile variant of AspectControl — the Figma's header pill ("▤ 9:16 ⌄").
+// Same engine.setStage mutation, dropdown instead of a segmented row.
+const MobileAspectSelect = memo(function MobileAspectSelect() {
+  const engine = useTimelineEngine()
+  const stage = useTracksStore((s) => s.stage)
+  const [open, setOpen] = useState(false)
+
+  const current = ASPECTS.find(
+    (a) => Math.abs(stage.width / stage.height - a.w / a.h) < 0.001,
+  )
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title="Aspect ratio"
+        className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-ed-border bg-ed-elevated text-ed-text text-xs cursor-pointer"
+      >
+        {current && (
+          <span
+            style={{
+              width: current.gw * 0.8,
+              height: current.gh * 0.8,
+              borderRadius: 2,
+              background: 'currentColor',
+            }}
+          />
+        )}
+        {current?.label ?? 'Custom'}
+        <ChevronDown size={12} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 min-w-[120px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
+            {ASPECTS.map((a) => (
+              <button
+                key={a.label}
+                type="button"
+                onClick={() => {
+                  engine.setStage(a.w, a.h)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'flex items-center gap-2 w-full px-3 py-2 text-xs transition-colors hover:bg-ed-highest',
+                  current?.label === a.label
+                    ? 'text-ed-text'
+                    : 'text-ed-text-muted hover:text-ed-text',
+                )}
+              >
+                <span
+                  style={{
+                    width: a.gw * 0.8,
+                    height: a.gh * 0.8,
+                    borderRadius: 2,
+                    background: 'currentColor',
+                  }}
+                />
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+})
+
+/** Mobile timecode: MM:SS:FF — three fields instead of the desktop four
+ * (hours dropped), so the transport grid centers the play button without
+ * the timer running underneath it. */
+function framesToCompactTimecode(frame: number, fps: number): string {
+  const totalSec = Math.floor(frame / fps)
+  const ff = frame % fps
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(ff).padStart(2, '0')}`
+}
+
 // Video transport — lives under the Preview (not in the timeline toolbar),
 // matching the Figma. Play/pause, stop, and current | total time (cyan current).
 const TransportBar = memo(function TransportBar() {
+  // The floating preview toggle owns fullscreen on mobile — drop the duplicate.
+  // Undo/redo live here on mobile (per the Figma); on desktop they stay in the header.
+  const isMobile = useIsMobile()
+  const engine = useTimelineEngine()
+  const canUndo = useTracksStore((s) => s.canUndo)
+  const canRedo = useTracksStore((s) => s.canRedo)
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
   const totalFrames = useTracksStore((s) => s.totalFrames)
@@ -372,23 +621,25 @@ const TransportBar = memo(function TransportBar() {
   const totalTimeRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
+    const fmt = isMobile ? framesToCompactTimecode : framesToTimecode
     return usePlaybackStore.subscribe((state) => {
       if (currentTimeRef.current) {
-        currentTimeRef.current.textContent = framesToTimecode(state.currentFrame, FPS)
+        currentTimeRef.current.textContent = fmt(state.currentFrame, FPS)
       }
     })
-  }, [])
+  }, [isMobile])
 
   useEffect(() => {
+    const fmt = isMobile ? framesToCompactTimecode : framesToTimecode
     const dur = Math.max(totalFrames, 1)
-    if (totalTimeRef.current) totalTimeRef.current.textContent = framesToTimecode(dur, FPS)
+    if (totalTimeRef.current) totalTimeRef.current.textContent = fmt(dur, FPS)
     if (currentTimeRef.current) {
-      currentTimeRef.current.textContent = framesToTimecode(
+      currentTimeRef.current.textContent = fmt(
         usePlaybackStore.getState().currentFrame,
         FPS,
       )
     }
-  }, [totalFrames])
+  }, [totalFrames, isMobile])
 
   const handleStop = useCallback(() => {
     usePlaybackStore.getState().pause()
@@ -399,12 +650,23 @@ const TransportBar = memo(function TransportBar() {
     'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center h-11 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
+    <div
+      className={cn(
+        'grid grid-cols-[1fr_auto_1fr] items-center h-11 bg-ed-bg-2 border-t border-ed-border shrink-0',
+        // Same centering grid on both; mobile fits because the timecode drops
+        // to three fields (MM:SS:FF) via framesToCompactTimecode.
+        isMobile ? 'px-3' : 'px-4',
+      )}
+    >
       {/* Left — current | total time (current in accent) */}
       <span className="font-mono text-[11px] tracking-[0.02em] tabular-nums whitespace-nowrap">
-        <span ref={currentTimeRef} style={{ color: 'var(--elah-accent)' }}>00:00:00:00</span>
+        <span ref={currentTimeRef} style={{ color: 'var(--elah-accent)' }}>
+          {isMobile ? '00:00:00' : '00:00:00:00'}
+        </span>
         <span className="text-ed-text-muted mx-1.5">|</span>
-        <span ref={totalTimeRef} className="text-ed-text-muted">00:00:00:00</span>
+        <span ref={totalTimeRef} className="text-ed-text-muted">
+          {isMobile ? '00:00:00' : '00:00:00:00'}
+        </span>
       </span>
 
       {/* Center — video controls */}
@@ -431,21 +693,46 @@ const TransportBar = memo(function TransportBar() {
         </button>
       </div>
 
-      {/* Right — preview view controls from the Figma (visual only for now). */}
+      {/* Right — undo/redo on mobile (Figma), preview view controls on desktop. */}
       <div className="flex items-center gap-1.5 justify-end">
-        <button type="button" title="Fullscreen" className={ghostIcon}>
-          <Maximize2 size={14} />
-        </button>
-        <button
-          type="button"
-          title="Fit"
-          className="inline-flex items-center gap-1 px-2 h-7 rounded border border-ed-border text-ed-text-muted text-[11px] hover:text-ed-text transition-colors cursor-pointer"
-        >
-          Fit <ChevronDown size={12} />
-        </button>
-        <button type="button" title="Frame" className={ghostIcon}>
-          <RectangleHorizontal size={15} />
-        </button>
+        {isMobile ? (
+          <>
+            <button
+              type="button"
+              className={cn(ghostIcon, !canUndo && 'opacity-40 cursor-not-allowed')}
+              disabled={!canUndo}
+              onClick={() => engine.undo()}
+              title="Undo"
+            >
+              <Undo2 size={16} />
+            </button>
+            <button
+              type="button"
+              className={cn(ghostIcon, !canRedo && 'opacity-40 cursor-not-allowed')}
+              disabled={!canRedo}
+              onClick={() => engine.redo()}
+              title="Redo"
+            >
+              <Redo2 size={16} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" title="Fullscreen" className={ghostIcon}>
+              <Maximize2 size={14} />
+            </button>
+            <button
+              type="button"
+              title="Fit"
+              className="inline-flex items-center gap-1 px-2 h-7 rounded border border-ed-border text-ed-text-muted text-[11px] hover:text-ed-text transition-colors cursor-pointer"
+            >
+              Fit <ChevronDown size={12} />
+            </button>
+            <button type="button" title="Frame" className={ghostIcon}>
+              <RectangleHorizontal size={15} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -459,6 +746,9 @@ export default function ProductionEditor() {
   const [showCode, setShowCode] = useState(false)
   const [activePanel, setActivePanel] = useState('stock')
   const [loadingPixabay, setLoadingPixabay] = useState(false)
+  const isMobile = useIsMobile()
+  const [mobileSheet, setMobileSheet] = useState<MobileSheetKind>(null)
+  const previewBoxRef = useRef<HTMLDivElement>(null)
 
   // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
   // clamped to [MIN, available − reserved] so the editor's top section (panels,
@@ -541,61 +831,72 @@ export default function ProductionEditor() {
 
         <div ref={workspaceRef} className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-1 min-h-0">
-            <LeftRail active={activePanel} onSelect={setActivePanel} />
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                width: 240,
-                flexShrink: 0,
-                borderRight: '1px solid var(--elah-border)',
-                background: 'var(--elah-bg-panel)',
-                minHeight: 0,
-                overflow: 'hidden',
-              }}
-            >
-              {/* Old SDK panel — kept commented for comparison, discard later. */}
-              {/* <SourcePanel style={{ flex: 1, minHeight: 0 }} /> */}
-              {activePanel === 'elements' ? (
-                <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
-              ) : (
-                <MediaPanel mode={activePanel as PanelMode} style={{ flex: 1, minHeight: 0 }} />
-              )}
-            </div>
+            {!isMobile && <LeftRail active={activePanel} onSelect={setActivePanel} />}
+            {!isMobile && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: 240,
+                  flexShrink: 0,
+                  borderRight: '1px solid var(--elah-border)',
+                  background: 'var(--elah-bg-panel)',
+                  minHeight: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Old SDK panel — kept commented for comparison, discard later. */}
+                {/* <SourcePanel style={{ flex: 1, minHeight: 0 }} /> */}
+                {activePanel === 'elements' ? (
+                  <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
+                ) : (
+                  <MediaPanel mode={activePanel as PanelMode} style={{ flex: 1, minHeight: 0 }} />
+                )}
+              </div>
+            )}
 
             <div className="flex-1 min-w-0 min-h-0 flex flex-col bg-black">
-              <AspectControl />
-              <div className="flex-1 min-h-0 relative py-6">
+              {!isMobile && <AspectControl />}
+              <div
+                ref={previewBoxRef}
+                className={cn('flex-1 min-h-0 relative bg-black', isMobile ? 'py-2' : 'py-6')}
+              >
                 <Preview
                   demuxerFactory={demuxerFactoryRef.current}
                   style={{ width: '100%', height: '100%' }}
                 />
+                {isMobile && <PreviewFullscreenButton targetRef={previewBoxRef} />}
               </div>
               <TransportBar />
             </div>
 
-            <ClipProperties />
+            {!isMobile && <ClipProperties />}
           </div>
 
-          {/* Drag handle — resize the timeline vertically; the top section
-              (panels, preview, transport) flexes to fill the remaining space. */}
-          <div
-            onPointerDown={startResize}
-            role="separator"
-            aria-orientation="horizontal"
-            title="Drag to resize timeline"
-            className="group shrink-0 h-3 flex items-center justify-center cursor-ns-resize bg-ed-elevated border-t border-ed-border hover:bg-ed-highest transition-colors"
-          >
-            <span className="h-1 w-12 rounded-full bg-ed-text-muted group-hover:bg-ed-accent transition-colors" />
-          </div>
+          {/* Drag handle — desktop only; resize the timeline vertically. The top
+              section (panels, preview, transport) flexes to fill the remaining
+              space. On mobile the timeline is a fixed height instead. */}
+          {!isMobile && (
+            <div
+              onPointerDown={startResize}
+              role="separator"
+              aria-orientation="horizontal"
+              title="Drag to resize timeline"
+              className="group shrink-0 h-3 flex items-center justify-center cursor-ns-resize bg-ed-elevated border-t border-ed-border hover:bg-ed-highest transition-colors"
+            >
+              <span className="h-1 w-12 rounded-full bg-ed-text-muted group-hover:bg-ed-accent transition-colors" />
+            </div>
+          )}
 
           <div className="relative flex flex-col min-h-0 shrink-0">
-            <TimelineControls timelineRef={timelineRef} />
+            <TimelineControls timelineRef={timelineRef} compact={isMobile} />
 
             <Timeline
               ref={timelineRef}
               fps={FPS}
-              style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
+              sidebarWidth={isMobile ? 48 : undefined}
+              compactSidebar={isMobile}
+              style={{ height: isMobile ? 158 : timelineHeight, flexShrink: 0, minWidth: 0 }}
             />
 
             {loadingPixabay && (
@@ -613,8 +914,73 @@ export default function ProductionEditor() {
               </div>
             )}
           </div>
+
+          {isMobile && <MobileToolbar onOpenSheet={setMobileSheet} />}
         </div>
+
+        {isMobile && mobileSheet && (
+          <MobileSheet
+            title={
+              mobileSheet === 'properties'
+                ? 'Clip properties'
+                : (RAIL_ITEMS.find((r) => r.id === mobileSheet)?.label ?? 'Panel')
+            }
+            onClose={() => setMobileSheet(null)}
+          >
+            {mobileSheet === 'elements' ? (
+              <ElementsPanel activateOnTap style={{ flex: 1, minHeight: 0 }} />
+            ) : mobileSheet === 'properties' ? (
+              /* Child selector outranks the panel's fixed desktop width (PANEL
+                 w-[300px]) by specificity, so stylesheet order can't flip it. */
+              <div className="min-h-0 overflow-y-auto [&>div]:w-full [&>div]:border-l-0">
+                <ClipProperties />
+              </div>
+            ) : (
+              <MediaPanel mode={mobileSheet} style={{ flex: 1, minHeight: 0 }} />
+            )}
+          </MobileSheet>
+        )}
       </div>
     </EditorProvider>
   )
 }
+
+/** Mobile bottom bar — the Figma's tool row, repurposed as sourcing-panel and
+ * properties triggers (Filter/FX/etc. have no engine features behind them). */
+const MobileToolbar = memo(function MobileToolbar({
+  onOpenSheet,
+}: {
+  onOpenSheet: (kind: MobileSheetKind) => void
+}) {
+  const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
+
+  const item =
+    'flex flex-col items-center gap-1 py-1 px-1 min-w-0 text-ed-text-muted cursor-pointer'
+  const iconBox =
+    'flex items-center justify-center w-9 h-9 rounded-xl bg-ed-elevated'
+
+  return (
+    <div className="flex items-center justify-around border-t border-ed-border bg-ed-bg-2 shrink-0 pt-1.5 pb-[max(env(safe-area-inset-bottom),6px)]">
+      {RAIL_ITEMS.map(({ id, label, Icon }) => (
+        <button key={id} type="button" className={item} onClick={() => onOpenSheet(id)}>
+          <span className={iconBox}>
+            <Icon size={17} />
+          </span>
+          <span className="text-[10px] leading-none">{label}</span>
+        </button>
+      ))}
+      <button
+        type="button"
+        className={cn(item, !hasSelection && 'opacity-40 cursor-not-allowed')}
+        disabled={!hasSelection}
+        onClick={() => onOpenSheet('properties')}
+        title={hasSelection ? 'Clip properties' : 'Select a clip first'}
+      >
+        <span className={iconBox}>
+          <SlidersHorizontal size={17} />
+        </span>
+        <span className="text-[10px] leading-none">Edit</span>
+      </button>
+    </div>
+  )
+})
