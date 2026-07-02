@@ -3,6 +3,12 @@ import type { FreesoundSearchResponse } from './types'
 const BASE_URL = 'https://freesound.org/apiv2/'
 const FIELDS = 'id,name,username,duration,previews,images,license'
 
+/**
+ * Default duration window (seconds) for fetched sounds. Short 20–30s clips keep
+ * the panel full of timeline-friendly assets the user can drag straight onto a track.
+ */
+const DEFAULT_DURATION_FILTER = 'duration:[20 TO 30]'
+
 function getApiKey(): string {
   const key = process.env.FREESOUND_API_KEY
   if (!key) {
@@ -44,6 +50,7 @@ export function searchSounds(
 ): Promise<FreesoundSearchResponse> {
   return freesoundFetch('search/text/', {
     query: params.query,
+    filter: DEFAULT_DURATION_FILTER,
     page: String(params.page),
     page_size: String(params.perPage),
   }, signal)
@@ -56,7 +63,7 @@ export function popularSounds(
 ): Promise<FreesoundSearchResponse> {
   return freesoundFetch('search/text/', {
     query: '',
-    filter: 'duration:[1 TO 120]',
+    filter: DEFAULT_DURATION_FILTER,
     sort: 'downloads_desc',
     page: String(params.page),
     page_size: String(params.perPage),

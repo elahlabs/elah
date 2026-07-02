@@ -189,6 +189,17 @@ function pickRandom<T>(items: T[]): T | undefined {
   return items[Math.floor(Math.random() * items.length)]
 }
 
+/** Pick up to `n` distinct random items from `items` (fewer if the pool is smaller). */
+function pickManyRandom<T>(items: T[], n: number): T[] {
+  const pool = [...items]
+  const out: T[] = []
+  while (out.length < n && pool.length > 0) {
+    const [item] = pool.splice(Math.floor(Math.random() * pool.length), 1)
+    out.push(item)
+  }
+  return out
+}
+
 function pickTopic(): [string, PixabayTopic] {
   const keys = Object.keys(PIXABAY_TOPICS)
   const key = keys[Math.floor(Math.random() * keys.length)]
@@ -207,20 +218,20 @@ async function fetchPixabay<T extends 'photos' | 'videos'>(
   return data.hits ?? []
 }
 
-async function fetchRandomVideo(topic: PixabayTopic): Promise<PixabayVideo | undefined> {
+/** One API call for a batch of videos on a random tag/page for the topic. */
+async function fetchVideos(topic: PixabayTopic): Promise<PixabayVideo[]> {
   const tag = pickRandom(topic.videotags)
-  if (!tag) return undefined
+  if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  const results = await fetchPixabay('videos', tag, page)
-  return pickRandom(results)
+  return fetchPixabay('videos', tag, page)
 }
 
-async function fetchRandomImage(topic: PixabayTopic): Promise<PixabayPhoto | undefined> {
+/** One API call for a batch of images on a random tag/page for the topic. */
+async function fetchImages(topic: PixabayTopic): Promise<PixabayPhoto[]> {
   const tag = pickRandom(topic.imagetags)
-  if (!tag) return undefined
+  if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  const results = await fetchPixabay('photos', tag, page)
-  return pickRandom(results)
+  return fetchPixabay('photos', tag, page)
 }
 
 export interface LoadRandomPixabayDeps {
@@ -236,14 +247,29 @@ export interface LoadRandomPixabayDeps {
 export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixabayDeps): Promise<string> {
   const [topicName, topic] = pickTopic()
 
-  // Alternate video/image so the edit doesn't clump by kind.
+  // Exactly two API calls — one batch of videos, one batch of images — run in
+  // parallel. Each proxy request returns up to 15 hits, so we pick distinct
+  // clips from those pools locally instead of one request per visual.
+  const videoSlots = Math.ceil(VISUAL_COUNT / 2)
+  const imageSlots = VISUAL_COUNT - videoSlots
+  const [videoPool, imagePool] = await Promise.all([fetchVideos(topic), fetchImages(topic)])
+  const videos = pickManyRandom(videoPool, videoSlots)
+  const images = pickManyRandom(imagePool, imageSlots)
+
+  // Alternate video/image so the edit doesn't clump by kind. If one pool runs
+  // dry, fall back to the other so we still fill up to VISUAL_COUNT slots.
+  const takeVideo = () => {
+    const item = videos.shift()
+    return item && { kind: 'video' as const, asset: importPixabayVideo(item) }
+  }
+  const takeImage = () => {
+    const item = images.shift()
+    return item && { kind: 'image' as const, asset: importPixabayPhoto(item) }
+  }
   const fetched: { kind: 'video' | 'image'; asset: MediaAsset }[] = []
   for (let i = 0; i < VISUAL_COUNT; i++) {
-    const wantVideo = i % 2 === 0
-    const item = wantVideo ? await fetchRandomVideo(topic) : await fetchRandomImage(topic)
-    if (!item) continue
-    const asset = wantVideo ? importPixabayVideo(item as PixabayVideo) : importPixabayPhoto(item as PixabayPhoto)
-    fetched.push({ kind: wantVideo ? 'video' : 'image', asset })
+    const next = i % 2 === 0 ? takeVideo() || takeImage() : takeImage() || takeVideo()
+    if (next) fetched.push(next)
   }
 
   if (fetched.length === 0) {
