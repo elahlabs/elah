@@ -12,7 +12,7 @@
  * will be discarded once this is approved.
  */
 
-import { useCallback, useRef, useState, type DragEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import {
   UploadCloud,
   Search,
@@ -29,9 +29,12 @@ import {
   importFiles,
   importUrl,
   MEDIA_DRAG_MIME,
+  insertMediaAsset,
+  useTimelineEngine,
   type MediaAsset,
   type MediaKind,
   type DragMediaPayload,
+  type InsertAssetResult,
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
 
@@ -121,7 +124,15 @@ function Dropdown({
   )
 }
 
-function AssetCard({ asset }: { asset: MediaAsset }) {
+function AssetCard({
+  asset,
+  active,
+  onActivate,
+}: {
+  asset: MediaAsset
+  active: boolean
+  onActivate: (asset: MediaAsset) => void
+}) {
   const removeAsset = useMediaLibraryStore((s) => s.removeAsset)
   const duration = fmtDuration(asset.durationSec)
 
@@ -133,15 +144,35 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
     },
     [asset.id],
   )
+  const handleActivate = useCallback(() => onActivate(asset), [asset, onActivate])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      onActivate(asset)
+    },
+    [asset, onActivate],
+  )
 
   return (
     <div
       draggable
+      role="button"
+      tabIndex={0}
       onDragStart={onDragStart}
+      onClick={handleActivate}
+      onKeyDown={handleKeyDown}
       title={asset.name}
       className="group flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
     >
-      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
+      <div
+        className={cn(
+          'relative aspect-video w-full overflow-hidden rounded-md border bg-ed-bg-2 transition-[border-color,box-shadow]',
+          active
+            ? 'border-[var(--elah-accent)] shadow-[0_0_0_1px_var(--elah-accent)]'
+            : 'border-ed-border',
+        )}
+      >
         {asset.thumbnailUrl ? (
           <img
             src={asset.thumbnailUrl}
@@ -177,7 +208,10 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
 
         <button
           type="button"
-          onClick={() => removeAsset(asset.id)}
+          onClick={(e) => {
+            e.stopPropagation()
+            removeAsset(asset.id)
+          }}
           title="Remove from library"
           className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded bg-black/60 text-white/80 opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
         >
@@ -187,6 +221,11 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
       <span className="truncate text-[11px] text-ed-text">{asset.name}</span>
     </div>
   )
+}
+
+interface InsertNotice {
+  message: string
+  tone: 'info' | 'warn'
 }
 
 const PANEL_CONFIG: Record<
@@ -244,6 +283,7 @@ function filterByMode(asset: MediaAsset, mode: PanelMode): boolean {
 }
 
 export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSProperties; mode?: PanelMode }) {
+  const engine = useTimelineEngine()
   const { assets } = useMediaLibrary()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [sort, setSort] = useState<SortKey>('added')
@@ -255,8 +295,19 @@ export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSPropert
   const [urlBusy, setUrlBusy] = useState(false)
   const [urlError, setUrlError] = useState<string | null>(null)
   const [urlFallback, setUrlFallback] = useState<string | null>(null)
+  const [insertNotice, setInsertNotice] = useState<InsertNotice | null>(null)
+  const [activeAssetId, setActiveAssetId] = useState<string | null>(null)
 
   const cfg = PANEL_CONFIG[mode]
+
+  useEffect(() => {
+    if (!insertNotice) return
+    const timer = globalThis.setTimeout(() => {
+      setInsertNotice(null)
+      setActiveAssetId(null)
+    }, 1600)
+    return () => globalThis.clearTimeout(timer)
+  }, [insertNotice])
 
   const onPick = useCallback(async (files: FileList | File[] | null) => {
     if (!files || ('length' in files && files.length === 0)) return
@@ -282,6 +333,15 @@ export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSPropert
       setUrlBusy(false)
     }
   }, [url, urlBusy, cfg.expectedKind])
+
+  const onActivateAsset = useCallback(
+    async (asset: MediaAsset) => {
+      const result = await insertMediaAsset(engine, asset.id)
+      showInsertNotice(asset, result, setInsertNotice)
+      if (result.ok) setActiveAssetId(asset.id)
+    },
+    [engine],
+  )
 
   const onDrop = useCallback(
     (e: DragEvent<HTMLButtonElement>) => {
@@ -450,6 +510,20 @@ export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSPropert
             />
           </div>
 
+          {insertNotice && (
+            <div
+              role="status"
+              className={cn(
+                'mb-2 rounded-md border px-2.5 py-1.5 text-[11px]',
+                insertNotice.tone === 'warn'
+                  ? 'border-ed-error/40 bg-ed-error/10 text-ed-error'
+                  : 'border-ed-border bg-ed-elevated text-ed-text',
+              )}
+            >
+              {insertNotice.message}
+            </div>
+          )}
+
           {/* Asset grid */}
           <div className="flex-1 overflow-y-auto">
             {filtered.length === 0 ? (
@@ -464,7 +538,12 @@ export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSPropert
             ) : (
               <div className="grid grid-cols-2 gap-2.5">
                 {filtered.map((a) => (
-                  <AssetCard key={a.id} asset={a} />
+                  <AssetCard
+                    key={a.id}
+                    asset={a}
+                    active={activeAssetId === a.id}
+                    onActivate={onActivateAsset}
+                  />
                 ))}
               </div>
             )}
@@ -472,6 +551,26 @@ export function MediaPanel({ style, mode = 'media' }: { style?: React.CSSPropert
         </div>
       </div>
   )
+}
+
+function showInsertNotice(
+  asset: MediaAsset,
+  result: InsertAssetResult,
+  setInsertNotice: (notice: InsertNotice) => void,
+) {
+  if (result.ok) {
+    setInsertNotice({ message: `Added ${asset.name}`, tone: 'info' })
+    return
+  }
+
+  if (result.reason === 'cancelled') return
+
+  if (result.reason === 'missing-asset') {
+    setInsertNotice({ message: 'Asset unavailable', tone: 'warn' })
+    return
+  }
+
+  setInsertNotice({ message: `No unlocked track for ${asset.kind}`, tone: 'warn' })
 }
 
 export default MediaPanel

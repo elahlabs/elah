@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Type, Square, Circle, Triangle, Pencil } from 'lucide-react'
 import type { Clip } from '@elah/core'
@@ -23,6 +23,7 @@ const WAVE_BARS = [
 ]
 
 const TRIM_HANDLE_WIDTH = 8
+const TOUCH_DRAG_THRESHOLD_PX = 6
 
 // Flat solid clip bodies — the design uses no gradient. Audio takes its darkest
 // token so the tinted waveform reads on top; the rest use their mid tone. Static
@@ -96,6 +97,7 @@ export const ClipBlock = memo(function ClipBlock({
 
   const blockRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const activeGestureCleanup = useRef<(() => void) | null>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
 
   const left = clip.startFrame * zoom
@@ -140,26 +142,43 @@ export const ClipBlock = memo(function ClipBlock({
     waveBars = sampled
   }
 
-  const handleBodyMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const clearActiveGesture = useCallback(() => {
+    activeGestureCleanup.current?.()
+    activeGestureCleanup.current = null
+  }, [])
+
+  useEffect(() => clearActiveGesture, [clearActiveGesture])
+
+  const handleBodyPointerDown = useCallback(
+    (e: React.PointerEvent) => {
       if (e.button !== 0) return
       e.stopPropagation()
       selectClip(clip.id)
+      clearActiveGesture()
       if (trackLocked) return // selectable, but not draggable
 
       const startX = e.clientX
+      const isTouchDrag = e.pointerType === 'touch'
       const originalStart = clip.startFrame
       let currentStart = originalStart
       isDragging.current = false
 
       const allClips = useTracksStore.getState().clips
 
-      const handleMove = (moveEvent: MouseEvent) => {
+      const handleMove = (moveEvent: PointerEvent) => {
+        const deltaX = moveEvent.clientX - startX
+        if (
+          isTouchDrag &&
+          !isDragging.current &&
+          Math.abs(deltaX) <= TOUCH_DRAG_THRESHOLD_PX
+        ) {
+          return
+        }
+
         isDragging.current = true
         if (blockRef.current) {
           blockRef.current.style.zIndex = '30'
         }
-        const deltaX = moveEvent.clientX - startX
         const deltaFrames = Math.round(deltaX / zoom)
         let nextStart = Math.max(0, originalStart + deltaFrames)
 
@@ -175,11 +194,17 @@ export const ClipBlock = memo(function ClipBlock({
         }
       }
 
-      const handleUp = () => {
-        window.removeEventListener('mousemove', handleMove)
-        window.removeEventListener('mouseup', handleUp)
+      const removeWindowListeners = () => {
+        window.removeEventListener('pointermove', handleMove)
+        window.removeEventListener('pointerup', handleUp)
+        window.removeEventListener('pointercancel', handleCancel)
+      }
 
-        if (isDragging.current && currentStart !== originalStart) {
+      const finish = (shouldCommit: boolean) => {
+        removeWindowListeners()
+        activeGestureCleanup.current = null
+
+        if (shouldCommit && isDragging.current && currentStart !== originalStart) {
           const trackClips =
             useTracksStore.getState().clips[clip.trackId] ?? []
           const settledStart = resolveOverlapEdgeSnap(
@@ -198,16 +223,23 @@ export const ClipBlock = memo(function ClipBlock({
         isDragging.current = false
       }
 
-      window.addEventListener('mousemove', handleMove)
-      window.addEventListener('mouseup', handleUp)
+      const handleUp = () => finish(true)
+      const handleCancel = () => finish(false)
+
+      activeGestureCleanup.current = handleCancel
+      window.addEventListener('pointermove', handleMove)
+      window.addEventListener('pointerup', handleUp)
+      window.addEventListener('pointercancel', handleCancel)
     },
-    [clip, zoom, engine, selectClip, left, snapEnabled, trackLocked],
+    [clip, zoom, engine, selectClip, clearActiveGesture, left, snapEnabled, trackLocked],
   )
 
-  const handleLeftTrimMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handleLeftTrimPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return
       e.stopPropagation()
       selectClip(clip.id)
+      clearActiveGesture()
       if (trackLocked) return
 
       const startX = e.clientX
@@ -229,7 +261,7 @@ export const ClipBlock = memo(function ClipBlock({
         return { newStart, newDuration }
       }
 
-      const handleMove = (moveEvent: MouseEvent) => {
+      const handleMove = (moveEvent: PointerEvent) => {
         const { newStart, newDuration } = calcLeftTrim(moveEvent.clientX)
         if (blockRef.current) {
           blockRef.current.style.left = `${newStart * zoom}px`
@@ -237,11 +269,29 @@ export const ClipBlock = memo(function ClipBlock({
         }
       }
 
-      const handleUp = (upEvent: MouseEvent) => {
-        window.removeEventListener('mousemove', handleMove)
-        window.removeEventListener('mouseup', handleUp)
+      const restoreOriginal = () => {
+        if (blockRef.current) {
+          blockRef.current.style.left = `${originalStart * zoom}px`
+          blockRef.current.style.width = `${Math.max(originalDuration * zoom, 4)}px`
+        }
+      }
 
-        const { newStart, newDuration } = calcLeftTrim(upEvent.clientX)
+      const removeWindowListeners = () => {
+        window.removeEventListener('pointermove', handleMove)
+        window.removeEventListener('pointerup', handleUp)
+        window.removeEventListener('pointercancel', handleCancel)
+      }
+
+      const finish = (clientX: number | null) => {
+        removeWindowListeners()
+        activeGestureCleanup.current = null
+
+        if (clientX === null) {
+          restoreOriginal()
+          return
+        }
+
+        const { newStart, newDuration } = calcLeftTrim(clientX)
 
         if (newStart !== originalStart || newDuration !== originalDuration) {
           engine.trimClip(clip.id, clip.trackId, newStart, newDuration)
@@ -256,16 +306,23 @@ export const ClipBlock = memo(function ClipBlock({
         }
       }
 
-      window.addEventListener('mousemove', handleMove)
-      window.addEventListener('mouseup', handleUp)
+      const handleUp = (upEvent: PointerEvent) => finish(upEvent.clientX)
+      const handleCancel = () => finish(null)
+
+      activeGestureCleanup.current = handleCancel
+      window.addEventListener('pointermove', handleMove)
+      window.addEventListener('pointerup', handleUp)
+      window.addEventListener('pointercancel', handleCancel)
     },
-    [clip, zoom, engine, selectClip, trackLocked],
+    [clip, zoom, engine, selectClip, clearActiveGesture, trackLocked],
   )
 
-  const handleRightTrimMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handleRightTrimPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return
       e.stopPropagation()
       selectClip(clip.id)
+      clearActiveGesture()
       if (trackLocked) return
 
       const startX = e.clientX
@@ -278,18 +335,35 @@ export const ClipBlock = memo(function ClipBlock({
         return Math.min(maxDuration, Math.max(minDuration, originalDuration + deltaFrames))
       }
 
-      const handleMove = (moveEvent: MouseEvent) => {
+      const handleMove = (moveEvent: PointerEvent) => {
         const newDuration = calcRightTrim(moveEvent.clientX)
         if (blockRef.current) {
           blockRef.current.style.width = `${newDuration * zoom}px`
         }
       }
 
-      const handleUp = (upEvent: MouseEvent) => {
-        window.removeEventListener('mousemove', handleMove)
-        window.removeEventListener('mouseup', handleUp)
+      const restoreOriginal = () => {
+        if (blockRef.current) {
+          blockRef.current.style.width = `${Math.max(originalDuration * zoom, 4)}px`
+        }
+      }
 
-        const newDuration = calcRightTrim(upEvent.clientX)
+      const removeWindowListeners = () => {
+        window.removeEventListener('pointermove', handleMove)
+        window.removeEventListener('pointerup', handleUp)
+        window.removeEventListener('pointercancel', handleCancel)
+      }
+
+      const finish = (clientX: number | null) => {
+        removeWindowListeners()
+        activeGestureCleanup.current = null
+
+        if (clientX === null) {
+          restoreOriginal()
+          return
+        }
+
+        const newDuration = calcRightTrim(clientX)
 
         if (newDuration !== originalDuration) {
           engine.trimClip(clip.id, clip.trackId, clip.startFrame, newDuration)
@@ -302,10 +376,15 @@ export const ClipBlock = memo(function ClipBlock({
         }
       }
 
-      window.addEventListener('mousemove', handleMove)
-      window.addEventListener('mouseup', handleUp)
+      const handleUp = (upEvent: PointerEvent) => finish(upEvent.clientX)
+      const handleCancel = () => finish(null)
+
+      activeGestureCleanup.current = handleCancel
+      window.addEventListener('pointermove', handleMove)
+      window.addEventListener('pointerup', handleUp)
+      window.addEventListener('pointercancel', handleCancel)
     },
-    [clip, zoom, engine, selectClip, trackLocked],
+    [clip, zoom, engine, selectClip, clearActiveGesture, trackLocked],
   )
 
   const handleContextMenu = useCallback(
@@ -329,7 +408,7 @@ export const ClipBlock = memo(function ClipBlock({
   return (
     <div
       ref={blockRef}
-      onMouseDown={handleBodyMouseDown}
+      onPointerDown={handleBodyPointerDown}
       onContextMenu={handleContextMenu}
       // Styling hooks (inert): let CSS retint per clip type / selection state —
       // e.g. audio waveform tint and the blue selected-audio body.
@@ -356,6 +435,7 @@ export const ClipBlock = memo(function ClipBlock({
           : `inset 0 1px 0 var(--elah-effect-inner-highlight), var(--elah-effect-clip-shadow)`,
         cursor: trackLocked ? 'default' : 'grab',
         overflow: 'hidden',
+        touchAction: 'none',
         userSelect: 'none',
         willChange: 'transform',
         zIndex: isSelected ? 5 : 1,
@@ -475,7 +555,8 @@ export const ClipBlock = memo(function ClipBlock({
 
       {/* Left trim handle */}
       <div
-        onMouseDown={handleLeftTrimMouseDown}
+        className="elah-trim-handle elah-trim-handle-left"
+        onPointerDown={handleLeftTrimPointerDown}
         style={{
           position: 'absolute',
           left: 0,
@@ -483,10 +564,24 @@ export const ClipBlock = memo(function ClipBlock({
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
           cursor: trackLocked ? 'default' : 'ew-resize',
-          background: `linear-gradient(90deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
+          background: 'transparent',
+          touchAction: 'none',
           zIndex: 2,
         }}
-      />
+      >
+        <div
+          className="elah-trim-handle-visual"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: TRIM_HANDLE_WIDTH,
+            pointerEvents: 'none',
+            background: `linear-gradient(90deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
+          }}
+        />
+      </div>
 
       {/* Clip label — audio, text, shape, freehand show a name + glyph.
           Video/image clips show their thumbnail filmstrip instead. */}
@@ -538,7 +633,8 @@ export const ClipBlock = memo(function ClipBlock({
 
       {/* Right trim handle */}
       <div
-        onMouseDown={handleRightTrimMouseDown}
+        className="elah-trim-handle elah-trim-handle-right"
+        onPointerDown={handleRightTrimPointerDown}
         style={{
           position: 'absolute',
           right: 0,
@@ -546,10 +642,24 @@ export const ClipBlock = memo(function ClipBlock({
           width: TRIM_HANDLE_WIDTH,
           height: '100%',
           cursor: trackLocked ? 'default' : 'ew-resize',
-          background: `linear-gradient(270deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
+          background: 'transparent',
+          touchAction: 'none',
           zIndex: 2,
         }}
-      />
+      >
+        <div
+          className="elah-trim-handle-visual"
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: TRIM_HANDLE_WIDTH,
+            pointerEvents: 'none',
+            background: `linear-gradient(270deg, var(--elah-effect-trim-scrim) 0%, transparent 100%)`,
+          }}
+        />
+      </div>
 
       {ctxMenu && createPortal(
         <>

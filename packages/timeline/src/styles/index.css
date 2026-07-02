@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  @media (pointer: coarse) {
+    .elah-trim-handle {
+      width: 28px !important;
+    }
+
+    .elah-playhead-head-hit {
+      left: -11px !important;
+      top: -7px !important;
+      width: 24px !important;
+      height: 24px !important;
+    }
+
+    .elah-playhead-head-visual {
+      left: 4px !important;
+      top: 5px !important;
+    }
+
+    .elah-transition-chip-affordance {
+      opacity: 1 !important;
+    }
+  }
+}

@@ -44,6 +44,10 @@ interface TrackRowProps {
   totalFrames: number
   zoom: number
   fps: number
+  /** Sidebar width in px — must match Timeline's ruler offset. */
+  sidebarWidth?: number
+  /** Icon-only label for narrow sidebars: name and header controls hidden. */
+  compact?: boolean
   /** Override class for the row container. */
   className?: string
   /** Override class for the track-label sidebar. */
@@ -72,6 +76,8 @@ export const TrackRow = memo(function TrackRow({
   totalFrames,
   zoom,
   fps,
+  sidebarWidth = SIDEBAR_WIDTH,
+  compact = false,
   className,
   labelClassName,
   laneClassName,
@@ -192,7 +198,7 @@ export const TrackRow = memo(function TrackRow({
           position: 'sticky',
           left: 0,
           zIndex: 6,
-          width: SIDEBAR_WIDTH,
+          width: sidebarWidth,
           flexShrink: 0,
           // The left bar paints from currentColor (set by kindAccentClass above).
           borderLeft: '3px solid currentColor',
@@ -202,32 +208,38 @@ export const TrackRow = memo(function TrackRow({
           borderBottomStyle: 'solid',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          paddingLeft: 10,
-          paddingRight: 6,
+          justifyContent: compact ? 'center' : undefined,
+          gap: compact ? 0 : 8,
+          paddingLeft: compact ? 0 : 10,
+          paddingRight: compact ? 0 : 6,
           cursor: 'pointer',
           userSelect: 'none',
         }}
+        title={compact ? track.name : undefined}
       >
         {/* Type glyph — paints from currentColor (the track accent). */}
-        <TypeIcon size={13} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden />
+        <TypeIcon size={compact ? 15 : 13} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden />
 
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: 13,
-            color: isActive ? `var(--elah-text)` : `var(--elah-text-muted)`,
-            fontWeight: isActive ? 600 : 500,
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {track.name}
-        </span>
+        {!compact && (
+          <span
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 13,
+              color: isActive ? `var(--elah-text)` : `var(--elah-text-muted)`,
+              fontWeight: isActive ? 600 : 500,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {track.name}
+          </span>
+        )}
 
-        {/* Per-track controls — visibility, mute (audio only), lock. */}
+        {/* Per-track controls — visibility, mute (audio only), lock.
+            Hidden in compact mode: a ~48px sidebar fits only the kind glyph. */}
+        {!compact && (
         <span style={{ display: 'inline-flex', gap: 1, flexShrink: 0 }}>
           <button
             type="button"
@@ -297,6 +309,7 @@ export const TrackRow = memo(function TrackRow({
             </button>
           )}
         </span>
+        )}
       </div>
 
       {/* Clip area — bottom border is static */}

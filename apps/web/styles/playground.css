@@ -35,6 +35,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* Mobile Chrome: 100vh is the large viewport (URL bar retracted), which
+     pushes the bottom bar behind the toolbar. dvh tracks the visible height. */
+  height: 100dvh;
   overflow: hidden;
   background: var(--pg-bg);
   color: var(--pg-text);
@@ -183,6 +186,16 @@
   min-height: 0;
   overflow: hidden;
   position: relative;
+}
+
+/* Touch layout: gesture surfaces own their pans — never rubber-band the shell,
+   and two-finger pinch belongs to the editor (timeline zoom), not page zoom.
+   touch-action intersects down the chain, so one rule here covers the shell. */
+@media (max-width: 767px) {
+  .pg-shell {
+    overscroll-behavior: none;
+    touch-action: pan-x pan-y;
+  }
 }
 
 /* ── Editor chrome ───────────────────────────────────────────────────────── */

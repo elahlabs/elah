@@ -74,6 +74,17 @@ export interface TimelineProps {
   style?: React.CSSProperties
   /** Per-slot Tailwind class overrides for the timeline subtree. */
   classNames?: TimelineClassNames
+  /**
+   * Width of the track-label sidebar in px. Ruler offset, playhead origin, and
+   * fit-to-window math all derive from it, which is why it is a prop and not a
+   * class override. Defaults to the desktop width.
+   */
+  sidebarWidth?: number
+  /**
+   * Icon-only track labels for narrow sidebars (~48px). Track name and header
+   * controls are hidden; pair with a small `sidebarWidth`.
+   */
+  compactSidebar?: boolean
 }
 
 /**
@@ -95,7 +106,7 @@ export interface TimelineProps {
  */
 export const Timeline = memo(
   forwardRef<TimelineRef, TimelineProps>(function Timeline(
-    { fps = 30, className, style, classNames },
+    { fps = 30, className, style, classNames, sidebarWidth = SIDEBAR_WIDTH, compactSidebar = false },
     ref,
   ) {
     const { engine, playback } = useEditor()
@@ -109,12 +120,12 @@ export const Timeline = memo(
     const fitToWindow = useCallback(() => {
       const el = scrollRef.current
       if (!el) return
-      const available = el.clientWidth - SIDEBAR_WIDTH
+      const available = el.clientWidth - sidebarWidth
       if (available <= 0) return
       const totalFrames = useTracksStore.getState().totalFrames
       const frames = Math.max(totalFrames, fps * 10)
       usePlaybackStore.getState().setZoom(available / frames)
-    }, [fps])
+    }, [fps, sidebarWidth])
 
     useImperativeHandle(
       ref,
@@ -151,6 +162,58 @@ export const Timeline = memo(
       el.addEventListener('wheel', handleWheel, { passive: false })
       return () => el.removeEventListener('wheel', handleWheel)
     }, [setZoom])
+
+    // Pinch → timeline zoom, anchored at the finger midpoint so the frame
+    // under the pinch stays put. preventDefault stops the browser from
+    // zooming the page instead; single-finger pan keeps native scrolling.
+    useEffect(() => {
+      const el = scrollRef.current
+      if (!el) return
+
+      let pinching = false
+      let startDist = 0
+      let startZoom = 1
+
+      const dist = (t: TouchList) =>
+        Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+
+      const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length !== 2) return
+        pinching = true
+        startDist = dist(e.touches)
+        startZoom = usePlaybackStore.getState().zoom
+        e.preventDefault()
+      }
+
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!pinching || e.touches.length !== 2 || startDist === 0) return
+        e.preventDefault()
+        const rect = el.getBoundingClientRect()
+        // Lane x of the pinch midpoint (content coords minus the sticky sidebar).
+        const midX =
+          (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left - sidebarWidth
+        const prevZoom = usePlaybackStore.getState().zoom
+        const anchorFrame = (el.scrollLeft + midX) / prevZoom
+        usePlaybackStore.getState().setZoom((startZoom * dist(e.touches)) / startDist)
+        const nextZoom = usePlaybackStore.getState().zoom // store-clamped
+        el.scrollLeft = anchorFrame * nextZoom - midX
+      }
+
+      const handleTouchEnd = (e: TouchEvent) => {
+        if (e.touches.length < 2) pinching = false
+      }
+
+      el.addEventListener('touchstart', handleTouchStart, { passive: false })
+      el.addEventListener('touchmove', handleTouchMove, { passive: false })
+      el.addEventListener('touchend', handleTouchEnd)
+      el.addEventListener('touchcancel', handleTouchEnd)
+      return () => {
+        el.removeEventListener('touchstart', handleTouchStart)
+        el.removeEventListener('touchmove', handleTouchMove)
+        el.removeEventListener('touchend', handleTouchEnd)
+        el.removeEventListener('touchcancel', handleTouchEnd)
+      }
+    }, [sidebarWidth])
 
     // Keyboard shortcuts: Space = play/pause, Ctrl+Z/Y = undo/redo
     useEffect(() => {
@@ -286,7 +349,7 @@ export const Timeline = memo(
           <div
             className="bg-ed-panel border-ed-border border-ed-border-subtle"
             style={{
-              width: SIDEBAR_WIDTH,
+              width: sidebarWidth,
               flexShrink: 0,
               height: rulerHeight,
               borderRightWidth: 1,
@@ -319,6 +382,9 @@ export const Timeline = memo(
             overflow: 'auto',
             position: 'relative',
             minHeight: 0,
+            // pan only — two-finger pinch belongs to the zoom handler above,
+            // and must never trigger the browser's page zoom.
+            touchAction: 'pan-x pan-y',
           }}
         >
           {tracks.map((track) => (
@@ -328,6 +394,8 @@ export const Timeline = memo(
               totalFrames={Math.max(totalFrames, fps * 10)}
               zoom={zoom}
               fps={fps}
+              sidebarWidth={sidebarWidth}
+              compact={compactSidebar}
               className={classNames?.track}
               labelClassName={classNames?.trackLabel}
               laneClassName={classNames?.lane}
@@ -362,7 +430,7 @@ export const Timeline = memo(
           zoom={zoom}
           height="100%"
           scrollContainerRef={scrollRef}
-          sidebarWidth={SIDEBAR_WIDTH}
+          sidebarWidth={sidebarWidth}
           className={classNames?.playhead}
         />
 
