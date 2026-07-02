@@ -74,6 +74,17 @@ export interface TimelineProps {
   style?: React.CSSProperties
   /** Per-slot Tailwind class overrides for the timeline subtree. */
   classNames?: TimelineClassNames
+  /**
+   * Width of the track-label sidebar in px. Ruler offset, playhead origin, and
+   * fit-to-window math all derive from it, which is why it is a prop and not a
+   * class override. Defaults to the desktop width.
+   */
+  sidebarWidth?: number
+  /**
+   * Icon-only track labels for narrow sidebars (~48px). Track name and header
+   * controls are hidden; pair with a small `sidebarWidth`.
+   */
+  compactSidebar?: boolean
 }
 
 /**
@@ -95,7 +106,7 @@ export interface TimelineProps {
  */
 export const Timeline = memo(
   forwardRef<TimelineRef, TimelineProps>(function Timeline(
-    { fps = 30, className, style, classNames },
+    { fps = 30, className, style, classNames, sidebarWidth = SIDEBAR_WIDTH, compactSidebar = false },
     ref,
   ) {
     const { engine, playback } = useEditor()
@@ -109,12 +120,12 @@ export const Timeline = memo(
     const fitToWindow = useCallback(() => {
       const el = scrollRef.current
       if (!el) return
-      const available = el.clientWidth - SIDEBAR_WIDTH
+      const available = el.clientWidth - sidebarWidth
       if (available <= 0) return
       const totalFrames = useTracksStore.getState().totalFrames
       const frames = Math.max(totalFrames, fps * 10)
       usePlaybackStore.getState().setZoom(available / frames)
-    }, [fps])
+    }, [fps, sidebarWidth])
 
     useImperativeHandle(
       ref,
@@ -286,7 +297,7 @@ export const Timeline = memo(
           <div
             className="bg-ed-panel border-ed-border border-ed-border-subtle"
             style={{
-              width: SIDEBAR_WIDTH,
+              width: sidebarWidth,
               flexShrink: 0,
               height: rulerHeight,
               borderRightWidth: 1,
@@ -328,6 +339,8 @@ export const Timeline = memo(
               totalFrames={Math.max(totalFrames, fps * 10)}
               zoom={zoom}
               fps={fps}
+              sidebarWidth={sidebarWidth}
+              compact={compactSidebar}
               className={classNames?.track}
               labelClassName={classNames?.trackLabel}
               laneClassName={classNames?.lane}
@@ -362,7 +375,7 @@ export const Timeline = memo(
           zoom={zoom}
           height="100%"
           scrollContainerRef={scrollRef}
-          sidebarWidth={SIDEBAR_WIDTH}
+          sidebarWidth={sidebarWidth}
           className={classNames?.playhead}
         />
 

@@ -185,6 +185,13 @@
   position: relative;
 }
 
+/* Touch layout: gesture surfaces own their pans — never rubber-band the shell. */
+@media (max-width: 767px) {
+  .pg-shell {
+    overscroll-behavior: none;
+  }
+}
+
 /* ── Editor chrome ───────────────────────────────────────────────────────── */
 /* Token definitions live in globals.css .elah-root; only presentational     */
 /* and scrollbar rules belong here.                                           */
