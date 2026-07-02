@@ -45,6 +45,7 @@ export function Playhead({
   className,
 }: PlayheadProps) {
   const needleRef = useRef<HTMLDivElement>(null)
+  const activeGestureCleanup = useRef<(() => void) | null>(null)
 
   // Always-fresh refs so every callback always reads the latest prop values
   // without creating new closures or re-registering subscriptions.
@@ -97,9 +98,18 @@ export function Playhead({
     return () => el.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const clearActiveGesture = useCallback(() => {
+    activeGestureCleanup.current?.()
+    activeGestureCleanup.current = null
+  }, [])
+
+  useEffect(() => clearActiveGesture, [clearActiveGesture])
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return
       e.preventDefault()
+      clearActiveGesture()
       const store = usePlaybackStore.getState()
       const { setCurrentFrame } = store
 
@@ -108,7 +118,7 @@ export function Playhead({
       const wasPlaying = store.isPlaying
       if (wasPlaying) store.pause()
 
-      const handleMove = (moveEvent: MouseEvent) => {
+      const handleMove = (moveEvent: PointerEvent) => {
         const container = scrollContainerRef?.current
         const scrollLeft = container?.scrollLeft ?? 0
         const parent = needleRef.current?.parentElement
@@ -118,22 +128,33 @@ export function Playhead({
         setCurrentFrame(Math.max(0, Math.round(x / zoomRef.current)))
       }
 
-      const handleUp = () => {
-        window.removeEventListener('mousemove', handleMove)
-        window.removeEventListener('mouseup', handleUp)
+      const removeWindowListeners = () => {
+        window.removeEventListener('pointermove', handleMove)
+        window.removeEventListener('pointerup', handleUp)
+        window.removeEventListener('pointercancel', handleCancel)
+      }
+
+      const finish = () => {
+        removeWindowListeners()
+        activeGestureCleanup.current = null
         if (wasPlaying) usePlaybackStore.getState().play()
       }
 
-      window.addEventListener('mousemove', handleMove)
-      window.addEventListener('mouseup', handleUp)
+      const handleUp = () => finish()
+      const handleCancel = () => finish()
+
+      activeGestureCleanup.current = handleCancel
+      window.addEventListener('pointermove', handleMove)
+      window.addEventListener('pointerup', handleUp)
+      window.addEventListener('pointercancel', handleCancel)
     },
-    [scrollContainerRef],
+    [scrollContainerRef, clearActiveGesture],
   )
 
   return (
     <div
       ref={needleRef}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
       className={cn('text-playhead', className)}
       style={{
         position: 'absolute',
@@ -148,24 +169,39 @@ export function Playhead({
         ...(color ? { color } : null),
         zIndex: 50,
         cursor: 'col-resize',
+        touchAction: 'none',
         willChange: 'left',
         pointerEvents: 'all',
       }}
     >
       <div
+        className="elah-playhead-head-hit"
         style={{
           position: 'absolute',
           top: -2,
           left: -7,
           width: 16,
           height: 14,
-          // Inherits the parent's currentColor, so it tracks the playhead color.
-          background: 'currentColor',
-          borderRadius: '3px 3px 0 0',
-          clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
-          boxShadow: '0 0 8px currentColor',
+          touchAction: 'none',
         }}
-      />
+      >
+        <div
+          className="elah-playhead-head-visual"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 16,
+            height: 14,
+            // Inherits the parent's currentColor, so it tracks the playhead color.
+            background: 'currentColor',
+            borderRadius: '3px 3px 0 0',
+            clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
+            boxShadow: '0 0 8px currentColor',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
     </div>
   )
 }
