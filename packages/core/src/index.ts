@@ -53,7 +53,7 @@ export { GpuRenderer } from './renderer/gpu/GpuRenderer'
 export type { RendererOptions } from './renderer/gpu/types'
 
 // --- Renderer internals (used by overlays + placement helpers) ---
-export { resolveDrawRect, transformFromContainRect } from './renderer/gpu/layers/drawRect'
+export { resolveDrawRect, transformFromContainRect, transformFromCoverRect } from './renderer/gpu/layers/drawRect'
 export { computeContainViewport } from './renderer/gpu/viewport'
 export { computeTextLayout, SIDE_MARGIN } from './renderer/gpu/layers/textLayout'
 export type { TextLayout } from './renderer/gpu/layers/textLayout'
@@ -78,6 +78,8 @@ export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFramePr
 // --- Media: audio playback ---
 export { AudioPlaybackController } from './media/audio/AudioPlaybackController'
 export type { AudioPlaybackControllerOptions } from './media/audio/AudioPlaybackController'
+export { defaultAudioResolver } from './media/audio/audioResolver'
+export type { AudioResolver } from './media/audio/audioResolver'
 
 // --- Audio mixer hooks ---
 export { useAudioMixer } from './media/audio/useAudioMixer'
@@ -87,12 +89,17 @@ export type { TrackLevel } from './media/audio/useTrackLevels'
 export { useMasterVolume } from './media/audio/useMasterVolume'
 export type { MasterVolumeApi } from './media/audio/useMasterVolume'
 
+// --- Image decode cache (warming) ---
+export { warmImageSrc, preloadProjectImages } from './renderer/gpu/layers/imageCache'
+export type { ImageLoader, LoadedImage } from './renderer/gpu/layers/imageCache'
+
 // --- Assets / Media Library ---
 export {
   useMediaLibrary,
   useAssets,
   useMediaLibraryStore,
   MEDIA_DRAG_MIME,
+  mediaDragKindMime,
   importFiles,
   importUrl,
   importBlob,

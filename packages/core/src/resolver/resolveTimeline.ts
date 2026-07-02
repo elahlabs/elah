@@ -9,6 +9,9 @@ import type {
   ActiveFreehandClip,
 } from './scene'
 
+/** Elements tracks always render above every video/audio track. */
+const ELEMENTS_ZINDEX_BASE = 1000000
+
 function applyEasing(t: number, easing: TransitionEasing = 'linear'): number {
   const c = Math.max(0, Math.min(1, t))
   if (easing === 'ease-in') return c * c
@@ -52,6 +55,11 @@ function findClipById(
  *  the last element (highest zIndex) renders on top.
  *  The `* 1000` multiplier reserves space for future sub-layer offsets
  *  (e.g. text overlays always +100 above their base video layer).
+ *  Elements tracks (text/shape/freehand) are offset above every video/audio
+ *  track by ELEMENTS_ZINDEX_BASE, but still ordered by track.order relative to
+ *  each other — so when multiple elements tracks overlap in time, the one
+ *  placed higher in the UI (lower order) still renders on top, matching the
+ *  video-track convention instead of collapsing to one flat value.
  *
  * @example
  * ```ts
@@ -105,7 +113,13 @@ export function resolveTimeline(frame: number, project: Project): Scene {
     const clips = project.clips[track.id]
     if (!clips || clips.length === 0) continue
 
-    const zIndex = track.kind === 'elements' ? 1000000 : (maxOrder - track.order) * 1000
+    // Elements tracks sit above every video/audio track (ELEMENTS_ZINDEX_BASE),
+    // but keep the same order-based ranking as everyone else so relative
+    // stacking among multiple elements tracks follows the UI's track order
+    // instead of colliding on one shared zIndex.
+    const zIndex = track.kind === 'elements'
+      ? ELEMENTS_ZINDEX_BASE + (maxOrder - track.order) * 1000
+      : (maxOrder - track.order) * 1000
 
     for (const clip of clips) {
       if (clip.disabled) continue

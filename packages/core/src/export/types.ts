@@ -1,3 +1,5 @@
+import type { AudioResolver } from '../media/audio/audioResolver'
+
 export type ExportVideoCodec = 'avc' | 'vp9' | 'vp8'
 export type ExportAudioCodec = 'aac' | 'opus'
 
@@ -11,6 +13,10 @@ export interface ExportOptions {
   onProgress?: (progress: ExportProgress) => void
   /** Abort signal — reject the export promise and terminate the worker when aborted. */
   signal?: AbortSignal
+  /** Injectable URL→bytes seam for the audio mix (CDN/auth/proxy overrides). Defaults to fetch(src).arrayBuffer(). */
+  audioResolver?: AudioResolver
+  /** Called once per audio clip that failed to fetch/decode and was skipped from the mix. */
+  onAudioIssue?: (message: string, src: string | undefined) => void
 }
 
 export interface ExportProgress {

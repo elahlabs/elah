@@ -10,7 +10,6 @@ import {
   Maximize2,
   ChevronDown,
   RectangleHorizontal,
-  UploadCloud,
   Film,
   Image as ImageIcon,
   Music,
@@ -27,7 +26,8 @@ import { ClipProperties } from './properties/ClipProperties'
 import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
-import { loadElahDemo } from './loadElahDemo'
+import { loadRandomPixabay } from './loadRandomPixabay'
+import { PixabayLogo } from './PixabayResults'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { TracePanel } from './TracePanel'
@@ -145,14 +145,21 @@ function PreviewFullscreenButton({
   )
 }
 
-// Minimal default — one of each. The model allows a single video track but any
-// number of audio / elements tracks; more are added from the toolbar at runtime.
+// Default lanes. The model allows a single video track but any number of audio
+// / elements tracks, so we seed extra text + audio lanes up front: four elements
+// tracks (text overlays) on top, one video, then two audio lanes (one main,
+// full-volume track plus one lower-volume secondary track). The demo loader
+// fills the elements lanes; the audio lanes start empty.
 // Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
 // per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
-  { kind: 'elements', name: 'Elements' },
   { kind: 'video', name: 'Video' },
-  { kind: 'audio', name: 'Audio' },
+  { kind: 'elements', name: 'Elements' },
+  { kind: 'elements', name: 'Elements 2' },
+  { kind: 'elements', name: 'Elements 3' },
+  { kind: 'elements', name: 'Elements 4' },
+  { kind: 'audio', name: 'Audio (Main)' },
+  { kind: 'audio', name: 'Audio 2' },
 ]
 
 // Base Tailwind classes for toolbar buttons
@@ -164,37 +171,41 @@ const AppHeader = memo(function AppHeader({
   onToggleCode,
   codeOpen,
   timelineRef,
+  loadingPixabay,
+  setLoadingPixabay,
 }: {
   onExport: () => void
   onToggleCode: () => void
   codeOpen: boolean
   timelineRef: React.RefObject<TimelineRef | null>
+  loadingPixabay: boolean
+  setLoadingPixabay: (loading: boolean) => void
 }) {
   const [showTrace, setShowTrace] = useState(false)
   const [showOverflow, setShowOverflow] = useState(false)
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
-  const [loadingDemo, setLoadingDemo] = useState(false)
   // Conditional rendering, not responsive classes: the published packages ship
   // their own Tailwind utilities (.hidden/.inline-flex), and stylesheet load
   // order lets those beat the app's md: variants either way.
   const isMobile = useIsMobile()
 
-  const handleLoadDemo = useCallback(async () => {
-    setLoadingDemo(true)
+  const handleRandomPixabay = useCallback(async () => {
+    setLoadingPixabay(true)
     try {
-      await loadElahDemo({ engine, timelineRef })
+      const topic = await loadRandomPixabay({ engine, timelineRef })
+      console.info(`[playground] Loaded random Pixabay project — topic: ${topic}`)
     } catch (err) {
-      console.error('[playground] Failed to load Elah demo project:', err)
-      globalThis.alert?.('Could not load the demo project — check the console for details.')
+      console.error('[playground] Failed to load random Pixabay project:', err)
+      globalThis.alert?.('Could not load a random Pixabay project — check the console for details.')
     } finally {
-      setLoadingDemo(false)
+      setLoadingPixabay(false)
     }
   }, [engine, timelineRef])
 
-  // Demo button — gradient + glow are dynamic based on loadingDemo state
-  const demoBtnStyle: React.CSSProperties = loadingDemo
+  // Pixabay button — gradient + glow are dynamic based on loadingPixabay state
+  const pixabayBtnStyle: React.CSSProperties = loadingPixabay
     ? {
         background: 'var(--elah-bg-panel)',
         border: '1px solid var(--elah-border)',
@@ -241,13 +252,20 @@ const AppHeader = memo(function AppHeader({
             </span>
             <button
               type="button"
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
-              style={demoBtnStyle}
-              disabled={loadingDemo}
-              onClick={handleLoadDemo}
-              title="Load a cinematic demo project: assets, fades, and text overlays"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
+              style={pixabayBtnStyle}
+              disabled={loadingPixabay}
+              onClick={handleRandomPixabay}
+              title="Load a random topic from Pixabay: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
             >
-              {loadingDemo ? 'Loading…' : '✦ Load Elah Demo Project'}
+              {loadingPixabay ? (
+                'Loading…'
+              ) : (
+                <>
+                  ✦ Random Load from
+                  <PixabayLogo size={12} className="text-white" />
+                </>
+              )}
             </button>
           </>
         )}
@@ -369,11 +387,11 @@ const AppHeader = memo(function AppHeader({
               <div className="absolute right-0 top-full mt-1 z-50 min-w-[190px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
                 <button
                   type="button"
-                  disabled={loadingDemo}
-                  onClick={() => { setShowOverflow(false); void handleLoadDemo() }}
+                  disabled={loadingPixabay}
+                  onClick={() => { setShowOverflow(false); void handleRandomPixabay() }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
                 >
-                  ✦ {loadingDemo ? 'Loading…' : 'Load Demo Project'}
+                  ✦ {loadingPixabay ? 'Loading…' : 'Random Load from Pixabay'}
                 </button>
                 <button
                   type="button"
@@ -403,8 +421,7 @@ const AppHeader = memo(function AppHeader({
 // Left icon rail — far-left vertical nav (Figma). UI-only for now: clicking
 // moves the active highlight but doesn't switch panels yet.
 const RAIL_ITEMS = [
-  { id: 'media', label: 'Media', Icon: UploadCloud },
-  { id: 'stock', label: 'Stock', Icon: Film },
+  { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
@@ -727,10 +744,37 @@ export default function ProductionEditor() {
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  const [activePanel, setActivePanel] = useState('media')
+  const [activePanel, setActivePanel] = useState('stock')
+  const [loadingPixabay, setLoadingPixabay] = useState(false)
   const isMobile = useIsMobile()
   const [mobileSheet, setMobileSheet] = useState<MobileSheetKind>(null)
   const previewBoxRef = useRef<HTMLDivElement>(null)
+
+  // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
+  // clamped to [MIN, available − reserved] so the editor's top section (panels,
+  // preview, transport) never collapses.
+  const TIMELINE_MIN = 120
+  const [timelineHeight, setTimelineHeight] = useState(186)
+  const workspaceRef = useRef<HTMLDivElement>(null)
+
+  const startResize = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    const startY = e.clientY
+    const startH = timelineHeight
+    const maxH = (workspaceRef.current?.clientHeight ?? 800) - 140
+    const onMove = (ev: PointerEvent) => {
+      const next = startH + (startY - ev.clientY) // drag up → taller
+      setTimelineHeight(Math.min(Math.max(next, TIMELINE_MIN), Math.max(maxH, TIMELINE_MIN)))
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    document.body.style.userSelect = 'none'
+  }, [timelineHeight])
 
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
@@ -760,7 +804,12 @@ export default function ProductionEditor() {
   }, [])
 
   return (
-    <EditorProvider fps={FPS} defaultTrackHeight={36} initialTracks={INITIAL_TRACKS}>
+    <EditorProvider
+      fps={FPS}
+      defaultTrackHeight={36}
+      initialTracks={INITIAL_TRACKS}
+      stage={{ width: 1920, height: 1080 }}
+    >
       <div
         className="elah-root flex flex-col h-full"
       >
@@ -769,6 +818,8 @@ export default function ProductionEditor() {
           onToggleCode={() => setShowCode((o) => !o)}
           codeOpen={showCode}
           timelineRef={timelineRef}
+          loadingPixabay={loadingPixabay}
+          setLoadingPixabay={setLoadingPixabay}
         />
         {showExportModal && (
           <ExportModal
@@ -778,7 +829,7 @@ export default function ProductionEditor() {
         )}
         <ProductionCodePanel open={showCode} onClose={() => setShowCode(false)} />
 
-        <div className="flex flex-col flex-1 min-h-0">
+        <div ref={workspaceRef} className="flex flex-col flex-1 min-h-0">
           <div className="flex flex-1 min-h-0">
             {!isMobile && <LeftRail active={activePanel} onSelect={setActivePanel} />}
             {!isMobile && (
@@ -822,15 +873,47 @@ export default function ProductionEditor() {
             {!isMobile && <ClipProperties />}
           </div>
 
-          <TimelineControls timelineRef={timelineRef} compact={isMobile} />
+          {/* Drag handle — desktop only; resize the timeline vertically. The top
+              section (panels, preview, transport) flexes to fill the remaining
+              space. On mobile the timeline is a fixed height instead. */}
+          {!isMobile && (
+            <div
+              onPointerDown={startResize}
+              role="separator"
+              aria-orientation="horizontal"
+              title="Drag to resize timeline"
+              className="group shrink-0 h-3 flex items-center justify-center cursor-ns-resize bg-ed-elevated border-t border-ed-border hover:bg-ed-highest transition-colors"
+            >
+              <span className="h-1 w-12 rounded-full bg-ed-text-muted group-hover:bg-ed-accent transition-colors" />
+            </div>
+          )}
 
-          <Timeline
-            ref={timelineRef}
-            fps={FPS}
-            sidebarWidth={isMobile ? 48 : undefined}
-            compactSidebar={isMobile}
-            style={{ height: isMobile ? 158 : 186, flexShrink: 0, minWidth: 0 }}
-          />
+          <div className="relative flex flex-col min-h-0 shrink-0">
+            <TimelineControls timelineRef={timelineRef} compact={isMobile} />
+
+            <Timeline
+              ref={timelineRef}
+              fps={FPS}
+              sidebarWidth={isMobile ? 48 : undefined}
+              compactSidebar={isMobile}
+              style={{ height: isMobile ? 158 : timelineHeight, flexShrink: 0, minWidth: 0 }}
+            />
+
+            {loadingPixabay && (
+              <div
+                className="absolute inset-0 z-50 flex items-center justify-center gap-2 backdrop-blur-[1px]"
+                style={{ background: 'rgba(0, 0, 0, 0.55)' }}
+              >
+                <span
+                  className="h-4 w-4 rounded-full border-2 border-white/30 animate-spin"
+                  style={{ borderTopColor: '#fff' }}
+                />
+                <span className="text-xs font-medium text-white">
+                  Loading random Pixabay project…
+                </span>
+              </div>
+            )}
+          </div>
 
           {isMobile && <MobileToolbar onOpenSheet={setMobileSheet} />}
         </div>

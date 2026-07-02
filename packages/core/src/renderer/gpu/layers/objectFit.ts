@@ -67,3 +67,53 @@ export function computeContainRect(
     height,
   }
 }
+
+/**
+ * Smallest rect of the content's aspect ratio that fully covers the stage,
+ * centred (CSS `object-fit: cover`). The content is scaled up until it fills
+ * the stage in both dimensions, cropping whichever axis overflows.
+ *
+ * - Content wider than the stage aspect → crop left/right.
+ * - Content taller than the stage aspect → crop top/bottom.
+ * - Equal aspect → fills the stage exactly.
+ *
+ * Degenerate inputs (any dimension ≤ 0) fall back to filling the stage, so the
+ * caller never gets a zero-area rect.
+ */
+export function computeCoverRect(
+  contentWidth: number,
+  contentHeight: number,
+  stageWidth: number,
+  stageHeight: number,
+): FitRect {
+  if (
+    contentWidth <= 0 ||
+    contentHeight <= 0 ||
+    stageWidth <= 0 ||
+    stageHeight <= 0
+  ) {
+    return { x: 0, y: 0, width: Math.max(stageWidth, 0), height: Math.max(stageHeight, 0) }
+  }
+
+  const stageAspect = stageWidth / stageHeight
+  const contentAspect = contentWidth / contentHeight
+
+  let width: number
+  let height: number
+  if (stageAspect > contentAspect) {
+    // Stage is wider than the content → content width fills, crop top/bottom.
+    width = stageWidth
+    height = width / contentAspect
+  } else {
+    // Stage is taller (or equal) → content height fills, crop left/right.
+    height = stageHeight
+    width = height * contentAspect
+  }
+
+  return {
+    x: (stageWidth - width) / 2,
+    y: (stageHeight - height) / 2,
+    width,
+    height,
+  }
+}

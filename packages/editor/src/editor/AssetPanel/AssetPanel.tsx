@@ -12,6 +12,7 @@ import {
   importFiles,
   importUrl,
   MEDIA_DRAG_MIME,
+  mediaDragKindMime,
   useMediaLibrary,
   useMediaLibraryStore,
   type SkippedImport,
@@ -107,6 +108,7 @@ function AssetThumbnail({
     (e: DragEvent<HTMLDivElement>) => {
       const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
       e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
+      e.dataTransfer.setData(mediaDragKindMime(asset.kind), '')
       e.dataTransfer.effectAllowed = 'copy'
     },
     [asset.id],

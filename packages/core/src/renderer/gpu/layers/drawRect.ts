@@ -9,7 +9,7 @@
  */
 
 import type { Transform } from '../../../types'
-import { computeContainRect } from './objectFit'
+import { computeContainRect, computeCoverRect } from './objectFit'
 
 /** Pixel rect (stage space, origin top-left) plus a rotation about its centre. */
 export interface DrawRect {
@@ -129,6 +129,31 @@ export function transformFromContainRect(
   stageHeight: number,
 ): Transform {
   const fit = computeContainRect(contentWidth, contentHeight, stageWidth, stageHeight)
+  return {
+    x: stageWidth > 0 ? (fit.x + fit.width / 2) / stageWidth : 0.5,
+    y: stageHeight > 0 ? (fit.y + fit.height / 2) / stageHeight : 0.5,
+    scale: contentWidth > 0 ? fit.width / contentWidth : 1,
+    rotation: 0,
+    anchor: { x: 0.5, y: 0.5 },
+  }
+}
+
+/**
+ * Synthesize the explicit Transform that fits a clip's content to *cover* the
+ * stage (CSS `object-fit: cover`), cropping whichever axis overflows instead
+ * of letterboxing. Useful for callers that place clips programmatically (e.g.
+ * random project generation) and want off-aspect media to fill the frame
+ * rather than default to the renderer's contain behaviour.
+ *
+ * Same shape as `transformFromContainRect`: anchor `{0.5,0.5}`, uniform scale.
+ */
+export function transformFromCoverRect(
+  contentWidth: number,
+  contentHeight: number,
+  stageWidth: number,
+  stageHeight: number,
+): Transform {
+  const fit = computeCoverRect(contentWidth, contentHeight, stageWidth, stageHeight)
   return {
     x: stageWidth > 0 ? (fit.x + fit.width / 2) / stageWidth : 0.5,
     y: stageHeight > 0 ? (fit.y + fit.height / 2) / stageHeight : 0.5,

@@ -164,7 +164,7 @@ export const TrackRow = memo(function TrackRow({
     color: 'var(--elah-text-muted)',
   }
 
-  useTimelineDrop(track.id, laneEl)
+  const dropState = useTimelineDrop(track.id, laneEl)
 
   // Minimum pixel width so there is always a usable timeline on small screens.
   // flex:1 grows it to fill the container when the container is larger.
@@ -329,6 +329,21 @@ export const TrackRow = memo(function TrackRow({
           overflow: 'visible',
           // Locked lanes read as non-editable.
           opacity: track.locked ? 0.6 : 1,
+          // Highlight the lane the pointer is currently dragging media over —
+          // accent when the drop is legal here, red when it isn't (locked
+          // track or an incompatible media/element kind) — before release.
+          boxShadow:
+            dropState === 'valid'
+              ? 'inset 0 0 0 2px var(--elah-accent)'
+              : dropState === 'invalid'
+                ? 'inset 0 0 0 2px var(--elah-color-error)'
+                : undefined,
+          background:
+            dropState === 'valid'
+              ? 'color-mix(in srgb, var(--elah-accent) 12%, transparent)'
+              : dropState === 'invalid'
+                ? 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
+                : undefined,
         }}
       >
         {clips.map((clip) => (
