@@ -284,12 +284,14 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
 
   // Fetch one sound per audio lane (music bed, ambience, texture/sfx) up front —
   // network calls can't happen inside the synchronous engine.batch() below.
-  const audioFetched: (MediaAsset | undefined)[] = []
-  for (let i = 0; i < audioTracks.length; i++) {
-    const tag = topic.audiotags[i % topic.audiotags.length]
-    const sound = tag ? await fetchRandomFreesound(tag) : undefined
-    audioFetched.push(sound ? importFreesoundSound(sound) : undefined)
-  }
+  // Lanes are independent, so fetch them concurrently rather than serially.
+  const audioFetched = await Promise.all(
+    audioTracks.map(async (_track, i) => {
+      const tag = topic.audiotags[i % topic.audiotags.length]
+      const sound = tag ? await fetchRandomFreesound(tag) : undefined
+      return sound ? importFreesoundSound(sound) : undefined
+    }),
+  )
 
   engine.batch(() => {
     engine.setStage(STAGE.width, STAGE.height)

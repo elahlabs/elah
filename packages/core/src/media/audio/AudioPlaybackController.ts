@@ -390,9 +390,38 @@ export class AudioPlaybackController {
     if (!ctx) return Promise.reject(new Error('AudioPlaybackController: no AudioContext'))
 
     const promise = fetch(src)
-      .then((res) => res.arrayBuffer())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status} fetching audio ${src}`)
+        return res.arrayBuffer()
+      })
       .then((buf) => ctx.decodeAudioData(buf))
+    // Evict on failure so a transient error can retry later; identity guard
+    // avoids clobbering a newer in-flight retry. This side-chain also marks
+    // the rejection "handled" so fire-and-forget preload callers don't raise
+    // unhandledrejection — `_scheduleClip` still awaits `promise` directly,
+    // so its own rejection handling is unaffected.
+    promise.catch((e) => {
+      if (this._buffers.get(src) === promise) this._buffers.delete(src)
+      console.warn(`[audio] failed to load ${src}:`, e)
+    })
     this._buffers.set(src, promise)
     return promise
+  }
+
+  /**
+   * Warm the decode cache for every audio clip in the project so first play
+   * doesn't wait on download + decode. Dedupe is the `_buffers` cache itself;
+   * failures are handled (evict + warn) inside `_ensureBuffer`. The cache is
+   * intentionally never evicted except on load failure.
+   */
+  preloadProjectAudio(): void {
+    if (!this._ctx) return
+    for (const clips of Object.values(this._getProject().clips)) {
+      for (const clip of clips) {
+        if (clip.type === 'audio' && typeof clip.src === 'string') {
+          void this._ensureBuffer(clip.src)
+        }
+      }
+    }
   }
 }

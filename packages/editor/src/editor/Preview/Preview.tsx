@@ -129,6 +129,15 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       : null
     audio?.start()
 
+    // Warm the decode cache for remote audio (e.g. Freesound previews) as soon
+    // as clips land on the timeline, instead of waiting for first play.
+    let warmAudio: (() => void) | null = null
+    if (audio) {
+      warmAudio = () => audio.preloadProjectAudio()
+      warmAudio()
+      engine.on('change', warmAudio)
+    }
+
     let rafId = 0
     const tick = () => {
       const frame = Math.floor(playback.getFrameAt())
@@ -145,6 +154,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     return () => {
       cancelAnimationFrame(rafId)
       observer.disconnect()
+      if (warmAudio) engine.off('change', warmAudio)
       audio?.destroy()
       renderer.dispose()
       rendererRef.current = null
