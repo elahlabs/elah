@@ -620,7 +620,14 @@ const TransportBar = memo(function TransportBar() {
     'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center h-11 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
+    <div
+      className={cn(
+        'items-center h-11 bg-ed-bg-2 border-t border-ed-border shrink-0',
+        // Desktop hard-centers the transport via grid; on narrow screens the
+        // timecode runs under it, so mobile uses justify-between instead.
+        isMobile ? 'flex justify-between gap-2 px-3' : 'grid grid-cols-[1fr_auto_1fr] px-4',
+      )}
+    >
       {/* Left — current | total time (current in accent) */}
       <span className="font-mono text-[11px] tracking-[0.02em] tabular-nums whitespace-nowrap">
         <span ref={currentTimeRef} style={{ color: 'var(--elah-accent)' }}>00:00:00:00</span>
