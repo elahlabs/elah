@@ -49,8 +49,9 @@ const FPS = 30
 
 // Default lanes. The model allows a single video track but any number of audio
 // / elements tracks, so we seed extra text + audio lanes up front: four elements
-// tracks (text overlays) on top, one video, then three audio lanes. The demo
-// loader fills the elements lanes; the audio lanes start empty.
+// tracks (text overlays) on top, one video, then two audio lanes (one main,
+// full-volume track plus one lower-volume secondary track). The demo loader
+// fills the elements lanes; the audio lanes start empty.
 // Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
 // per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
@@ -59,9 +60,8 @@ const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'elements', name: 'Elements 2' },
   { kind: 'elements', name: 'Elements 3' },
   { kind: 'elements', name: 'Elements 4' },
-  { kind: 'audio', name: 'Audio' },
+  { kind: 'audio', name: 'Audio (Main)' },
   { kind: 'audio', name: 'Audio 2' },
-  { kind: 'audio', name: 'Audio 3' },
 ]
 
 // Base Tailwind classes for toolbar buttons
@@ -73,17 +73,20 @@ const AppHeader = memo(function AppHeader({
   onToggleCode,
   codeOpen,
   timelineRef,
+  loadingPexels,
+  setLoadingPexels,
 }: {
   onExport: () => void
   onToggleCode: () => void
   codeOpen: boolean
   timelineRef: React.RefObject<TimelineRef | null>
+  loadingPexels: boolean
+  setLoadingPexels: (loading: boolean) => void
 }) {
   const [showTrace, setShowTrace] = useState(false)
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
-  const [loadingPexels, setLoadingPexels] = useState(false)
 
   const handleRandomPexels = useCallback(async () => {
     setLoadingPexels(true)
@@ -447,6 +450,7 @@ export default function ProductionEditor() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
   const [activePanel, setActivePanel] = useState('stock')
+  const [loadingPexels, setLoadingPexels] = useState(false)
 
   // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
   // clamped to [MIN, available − reserved] so the editor's top section (panels,
@@ -511,6 +515,8 @@ export default function ProductionEditor() {
           onToggleCode={() => setShowCode((o) => !o)}
           codeOpen={showCode}
           timelineRef={timelineRef}
+          loadingPexels={loadingPexels}
+          setLoadingPexels={setLoadingPexels}
         />
         {showExportModal && (
           <ExportModal
@@ -570,13 +576,30 @@ export default function ProductionEditor() {
             <span className="h-1 w-12 rounded-full bg-ed-text-muted group-hover:bg-ed-accent transition-colors" />
           </div>
 
-          <TimelineControls timelineRef={timelineRef} />
+          <div className="relative flex flex-col min-h-0 shrink-0">
+            <TimelineControls timelineRef={timelineRef} />
 
-          <Timeline
-            ref={timelineRef}
-            fps={FPS}
-            style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
-          />
+            <Timeline
+              ref={timelineRef}
+              fps={FPS}
+              style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
+            />
+
+            {loadingPexels && (
+              <div
+                className="absolute inset-0 z-50 flex items-center justify-center gap-2 backdrop-blur-[1px]"
+                style={{ background: 'rgba(0, 0, 0, 0.55)' }}
+              >
+                <span
+                  className="h-4 w-4 rounded-full border-2 border-white/30 animate-spin"
+                  style={{ borderTopColor: '#fff' }}
+                />
+                <span className="text-xs font-medium text-white">
+                  Loading random Pexels project…
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </EditorProvider>

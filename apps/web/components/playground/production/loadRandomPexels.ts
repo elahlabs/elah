@@ -5,8 +5,9 @@
  * from our `/api/pexels/*` proxy for that topic's tags, and composes a
  * portrait (9:16) timeline: alternating video/image clips with fade
  * transitions on the video lane, topic-relevant captions spread across all 4
- * elements (text) lanes, and topic-relevant audio spread across all 3 audio
- * lanes (music bed, ambience, texture), each looped to cover the full edit.
+ * elements (text) lanes, and topic-relevant audio spread across up to 2 audio
+ * lanes (one main track at full volume, one secondary track at a lower
+ * volume), each looped to cover the full edit.
  */
 import {
   type TimelineEngine,
@@ -36,8 +37,9 @@ const CLIP_SECONDS = 4
 
 /**
  * A topic pairs Pexels search tags for video/image lookups with caption copy
- * for the 4 text lanes and Freesound search tags for the 3 audio lanes
- * (index 0 → music bed, 1 → ambience, 2 → texture/sfx).
+ * for the 4 text lanes and Freesound search tags for the (up to 2) audio
+ * lanes (index 0 → main music bed, 1 → secondary ambience/texture). Extra
+ * tags beyond the audio lane count are unused pool entries.
  */
 interface PexelsTopic {
   videotags: string[]
@@ -228,8 +230,8 @@ async function fetchRandomImage(topic: PexelsTopic): Promise<PexelsPhoto | undef
   return pickRandom(results)
 }
 
-/** Relative loudness per audio lane: music bed loudest, sfx/texture quietest. */
-const AUDIO_LANE_VOLUME = [1, 0.5, 0.35]
+/** Relative loudness per audio lane: main track full volume, secondary lower. */
+const AUDIO_LANE_VOLUME = [1, 0.5]
 
 async function fetchRandomFreesound(query: string): Promise<FreesoundSound | undefined> {
   const page = 1 + Math.floor(Math.random() * 3)
