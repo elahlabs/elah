@@ -10,6 +10,16 @@ import type { PixabayPhoto, PixabayVideo, PixabayVideoFile } from './types'
  */
 const TARGET_LONG_EDGE = 1080
 
+/**
+ * Pixabay caps `largeImageURL` at this long edge (docs: "Large image, max
+ * 1280px"). `imageWidth`/`imageHeight` describe the *original upload*, which
+ * is frequently bigger — so for any photo above this cap the actual
+ * downloaded file is 1280px on its long edge, and its short edge is the
+ * original scaled to match. `fullHDURL` (1920px) needs full API access and
+ * is not in the search response we consume.
+ */
+const PIXABAY_LARGE_LONG_EDGE = 1280
+
 function longEdge(width: number | null | undefined, height: number | null | undefined): number {
   return Math.max(width ?? 0, height ?? 0)
 }
@@ -38,10 +48,31 @@ function findExisting(src: string): MediaAsset | undefined {
  * unless the source itself is smaller than the target, in which case
  * `largeImageURL` would just be an upscale of `webformatURL` — use
  * `webformatURL` instead so we never serve an artificially inflated image.
+ *
+ * Returns the width/height matching whichever URL was picked. For
+ * `largeImageURL` that means scaling `imageWidth`/`imageHeight` (the original
+ * upload's dimensions) down to `PIXABAY_LARGE_LONG_EDGE`, since the file
+ * itself is capped there — using the original's dimensions unconditionally
+ * desyncs the cover-fit transform (baked against the wrong size) from the
+ * image the renderer actually loads, shrinking it to a fraction of the frame.
  */
-function pickPhotoSrc(photo: PixabayPhoto): string {
-  if (longEdge(photo.imageWidth, photo.imageHeight) < TARGET_LONG_EDGE) return photo.webformatURL
-  return photo.largeImageURL || photo.webformatURL
+function pickPhotoSrc(photo: PixabayPhoto): { src: string; width: number; height: number } {
+  const webformat = { src: photo.webformatURL, width: photo.webformatWidth, height: photo.webformatHeight }
+  // Guaranteed non-zero on every Pixabay photo hit — last-resort fallback so a
+  // clip never ends up with a falsy width/height and silently loses its cover
+  // transform (see loadRandomPixabay, which relies on this being always valid).
+  const preview = { src: photo.webformatURL, width: photo.previewWidth, height: photo.previewHeight }
+
+  if (longEdge(photo.imageWidth, photo.imageHeight) < TARGET_LONG_EDGE) {
+    return webformat.width && webformat.height ? webformat : preview
+  }
+  if (photo.largeImageURL) {
+    const scale = Math.min(1, PIXABAY_LARGE_LONG_EDGE / longEdge(photo.imageWidth, photo.imageHeight))
+    const width = Math.round(photo.imageWidth * scale)
+    const height = Math.round(photo.imageHeight * scale)
+    if (width && height) return { src: photo.largeImageURL, width, height }
+  }
+  return webformat.width && webformat.height ? webformat : preview
 }
 
 /**
@@ -53,7 +84,7 @@ function pickPhotoSrc(photo: PixabayPhoto): string {
  * returning.
  */
 export function importPixabayPhoto(photo: PixabayPhoto): MediaAsset {
-  const src = pickPhotoSrc(photo)
+  const { src, width, height } = pickPhotoSrc(photo)
   const existing = findExisting(src)
   if (existing) return existing
 
@@ -63,8 +94,8 @@ export function importPixabayPhoto(photo: PixabayPhoto): MediaAsset {
     name: photo.tags?.trim() || `pixabay-photo-${photo.id}`,
     src,
     durationSec: 0,
-    width: photo.imageWidth,
-    height: photo.imageHeight,
+    width,
+    height,
     thumbnailUrl: photo.webformatURL,
     byteSize: 0,
     lastModified: Date.now(),

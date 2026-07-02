@@ -3,10 +3,10 @@
  *
  * Picks a random topic from `PIXABAY_TOPICS`, pulls a handful of images/videos
  * from our `/api/pixabay/*` proxy for that topic's tags, and composes a
- * portrait (9:16) timeline: alternating video/image clips with fade
- * transitions on the video lane, and topic-relevant captions spread across
- * all 4 elements (text) lanes. Audio is not auto-populated — users add audio
- * manually from the audio panel.
+ * timeline at the project's current stage aspect ratio: alternating
+ * video/image clips with fade transitions on the video lane, and
+ * topic-relevant captions spread across all 4 elements (text) lanes. Audio
+ * is not auto-populated — users add audio manually from the audio panel.
  */
 import {
   type TimelineEngine,
@@ -20,9 +20,6 @@ import {
 import type { RefObject } from 'react'
 import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
 import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
-
-/** Portrait 9:16 stage, matching the cinematic demo. */
-const STAGE = { width: 1080, height: 1920 }
 
 /** 400ms transition / fade at the project fps. */
 const FADE_MS = 400
@@ -235,11 +232,12 @@ export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixab
     throw new Error(`No Pixabay results for topic "${topicName}" — try again.`)
   }
 
-  const fps = engine.getProject().fps
+  const project = engine.getProject()
+  const fps = project.fps
+  const stage = project.stage
   const fadeFrames = Math.max(2, secondsToFrames(FADE_MS / 1000, fps))
   const desiredFrames = Math.round(fps * CLIP_SECONDS)
 
-  const project = engine.getProject()
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
   const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
   if (!videoTrack || elementsTracks.length === 0) {
@@ -247,8 +245,6 @@ export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixab
   }
 
   engine.batch(() => {
-    engine.setStage(STAGE.width, STAGE.height)
-
     // --- VIDEO LANE: alternating video/image clips --------------------------
     let cursor = 0
     const videoClipIds: string[] = []
@@ -257,10 +253,12 @@ export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixab
       const sourceFrames =
         item.asset.durationSec > 0 ? Math.max(1, secondsToFrames(item.asset.durationSec, fps)) : desiredFrames
       const duration = Math.min(desiredFrames, sourceFrames)
-      const transform =
-        item.asset.width && item.asset.height
-          ? transformFromCoverRect(item.asset.width, item.asset.height, STAGE.width, STAGE.height)
-          : undefined
+      const transform = transformFromCoverRect(
+        item.asset.width ?? stage.width,
+        item.asset.height ?? stage.height,
+        stage.width,
+        stage.height,
+      )
       const clip = engine.addClip({
         trackId: videoTrack.id,
         type: item.kind,
