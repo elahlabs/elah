@@ -4,20 +4,20 @@
 
 ## Current state — the three systems
 
-| # | System | Where | Shape | Palette |
-|---|--------|-------|-------|---------|
-| A | `timelineTheme` | [`packages/timeline/src/theme.ts`](../../packages/timeline/src/theme.ts) | **JS object, hardcoded hex** | *cool* blue-black (`#0A0D14`, blue clips, `#FF2D55` playhead) |
-| B | `--elah-*` | [`packages/editor/src/styles/tokens.css`](../../packages/editor/src/styles/tokens.css) | **CSS variables** | *warm* charcoal (`#0a0909`, crimson `#e03050`) |
-| C | `--color-*` | [`apps/web/styles/globals.css`](../../apps/web/styles/globals.css) | **CSS variables**, light + `.dark`, maps `.elah-root` → `--elah-*` | Material-ish warm, theme-switching |
+| #   | System          | Where                                                                                  | Shape                                                              | Palette                                                       |
+| --- | --------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| A   | `timelineTheme` | [`packages/timeline/src/theme.ts`](../../packages/timeline/src/theme.ts)               | **JS object, hardcoded hex**                                       | _cool_ blue-black (`#0A0D14`, blue clips, `#FF2D55` playhead) |
+| B   | `--elah-*`      | [`packages/editor/src/styles/tokens.css`](../../packages/editor/src/styles/tokens.css) | **CSS variables**                                                  | _warm_ charcoal (`#0a0909`, crimson `#e03050`)                |
+| C   | `--color-*`     | [`apps/web/styles/globals.css`](../../apps/web/styles/globals.css)                     | **CSS variables**, light + `.dark`, maps `.elah-root` → `--elah-*` | Material-ish warm, theme-switching                            |
 
 ### How they actually conflict (not cosmetic — structural)
 
 1. **Duplicated tokens that can drift.** Clip colors and the playhead exist in
-   *both* A and B:
+   _both_ A and B:
    - `theme.ts` `clip.video = { top:#3B82F6, mid:#2563EB, … }` **and**
      `tokens.css` `--elah-clip-video-top:#3b82f6` … — same values, two owners.
    - `theme.ts` `playhead:'#FF2D55'` **and** `tokens.css` `--elah-playhead:#ff2d55`.
-   Two sources of truth for one visual fact is the definition of "fighting."
+     Two sources of truth for one visual fact is the definition of "fighting."
 2. **Surfaces disagree.** Timeline surface is cool (`#0A0D14`); editor panel
    surface is warm (`#0a0909`/`--elah-bg`). The timeline visibly does not match the
    panels docked next to it.
@@ -101,14 +101,14 @@ The unification is not "fix the timeline." The token layer must reach **every**
 surface a developer sees, so re-theming is one consistent operation. Each surface
 below must read from `--elah-*` after this workstream:
 
-| Surface | Files | Tokens it needs (add to `tokens.css` where missing) |
-|---|---|---|
-| **Timeline** | `packages/timeline/src/*` via `timelineTheme` | clip ramps, surfaces, ruler, playhead, menu, popover, dialog, transition, effect |
-| **Asset / media panel** | `SourcePanel.tsx` (+ deprecated `AssetPanel.tsx`) | surfaces, card, kind tags, chips, **toast** (`--elah-toast-info-*`, `--elah-toast-warn-*`), accent |
-| **Elements panel** | `ElementsPanel.tsx` / Elements lane | element-tile tags (`--elah-tag-text-*` exists; extend per future element) |
-| **Preview** | `Preview.tsx`, `StageBorder.tsx` | `--elah-stage-bg` (backdrop), `--elah-stage-frame` + `--elah-stage-frame-glow` (outline) — **route the StageBorder accent to the token accent so it stops being a third crimson** |
-| **Overlays (selection chrome)** | `TextOverlay.tsx`, `MediaTransformOverlay.tsx` | `--elah-selection-ring`, `--elah-selection-handle`, `--elah-selection-handle-border` — one "selected" color across both, derived from the system accent |
-| **Inspector (right text panel)** | new in [`03`](./03-text-editing-and-inspector.md) | surfaces, control bg/border/focus, label text, section divider — **must be built on tokens from day one, zero hex** |
+| Surface                          | Files                                             | Tokens it needs (add to `tokens.css` where missing)                                                                                                                               |
+| -------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Timeline**                     | `packages/timeline/src/*` via `timelineTheme`     | clip ramps, surfaces, ruler, playhead, menu, popover, dialog, transition, effect                                                                                                  |
+| **Asset / media panel**          | `SourcePanel.tsx` (+ deprecated `AssetPanel.tsx`) | surfaces, card, kind tags, chips, **toast** (`--elah-toast-info-*`, `--elah-toast-warn-*`), accent                                                                                |
+| **Elements panel**               | `ElementsPanel.tsx` / Elements lane               | element-tile tags (`--elah-tag-text-*` exists; extend per future element)                                                                                                         |
+| **Preview**                      | `Preview.tsx`, `StageBorder.tsx`                  | `--elah-stage-bg` (backdrop), `--elah-stage-frame` + `--elah-stage-frame-glow` (outline) — **route the StageBorder accent to the token accent so it stops being a third crimson** |
+| **Overlays (selection chrome)**  | `TextOverlay.tsx`, `MediaTransformOverlay.tsx`    | `--elah-selection-ring`, `--elah-selection-handle`, `--elah-selection-handle-border` — one "selected" color across both, derived from the system accent                           |
+| **Inspector (right text panel)** | new in [`03`](./03-text-editing-and-inspector.md) | surfaces, control bg/border/focus, label text, section divider — **must be built on tokens from day one, zero hex**                                                               |
 
 > The Inspector ([`03`](./03-text-editing-and-inspector.md)) and Preview-overlay
 > work land alongside this doc: anything new they introduce is defined here as
@@ -123,10 +123,10 @@ all of it — from **one place**:
 ```css
 /* The consumer's stylesheet — re-theme the ENTIRE editor, no JS. */
 .elah-root {
-  --elah-accent:       #6366f1;   /* recolors selection chrome, chips, StageBorder, buttons */
-  --elah-bg-panel:     #1e1e2e;   /* every panel surface: asset, inspector, timeline sidebar */
-  --elah-stage-bg:     #0b0b12;   /* the Preview backdrop */
-  --elah-radius-md:    10px;      /* geometry flows everywhere too */
+  --elah-accent: #6366f1; /* recolors selection chrome, chips, StageBorder, buttons */
+  --elah-bg-panel: #1e1e2e; /* every panel surface: asset, inspector, timeline sidebar */
+  --elah-stage-bg: #0b0b12; /* the Preview backdrop */
+  --elah-radius-md: 10px; /* geometry flows everywhere too */
 }
 ```
 
@@ -183,7 +183,7 @@ in `ROADMAP.md`.
 
 ## Out of scope / guardrails
 
-- Don't change *which* hues things are unless the surface-reconciliation in task 1
+- Don't change _which_ hues things are unless the surface-reconciliation in task 1
   requires it — this is a unification, not a re-skin.
 - Don't introduce a JS theme provider/context; the cascade is the mechanism.
 - Don't break the published `timelineTheme` / `TimelineTheme` exports — third
@@ -193,7 +193,7 @@ in `ROADMAP.md`.
 
 - [ ] Exactly **one** file contains color literals for the editor + timeline
       (`tokens.css`); `theme.ts` contains zero hex.
-- [ ] Toggling app light/dark recolors the timeline *and* panels together.
+- [ ] Toggling app light/dark recolors the timeline _and_ panels together.
 - [ ] No raw hex in any timeline/editor **component** file (`grep '#[0-9a-fA-F]'`)
       — **including** `Preview`, `StageBorder`, both overlays, and the Inspector.
 - [ ] "Selected" is **one** color across Preview overlays, asset cards, and the

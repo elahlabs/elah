@@ -25,7 +25,7 @@ export function DocsToc({ items }: DocsTocProps) {
           }
         }
       },
-      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 },
     )
 
     items.forEach(({ id }) => {
@@ -41,7 +41,9 @@ export function DocsToc({ items }: DocsTocProps) {
   return (
     <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 overflow-y-auto xl:block">
       <div className="py-6 pl-4 pr-2">
-        <h4 className="label-mono mb-3 text-2xs text-on-surface-variant opacity-70">On this page</h4>
+        <h4 className="label-mono mb-3 text-2xs text-on-surface-variant opacity-70">
+          On this page
+        </h4>
         <nav>
           <ul className="space-y-0.5">
             {items.map((item) => (
@@ -53,7 +55,7 @@ export function DocsToc({ items }: DocsTocProps) {
                     item.level === 3 && 'pl-4',
                     activeId === item.id
                       ? 'text-primary font-medium'
-                      : 'text-on-surface-variant hover:text-on-surface'
+                      : 'text-on-surface-variant hover:text-on-surface',
                   )}
                 >
                   {item.title}

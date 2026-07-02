@@ -18,11 +18,7 @@ export function pruneOrphanedTransitions(draft: Draft<Project>): void {
 }
 
 /** Remove a clip by id from a specific track */
-export function removeClip(
-  draft: Draft<Project>,
-  clipId: string,
-  trackId: string,
-): void {
+export function removeClip(draft: Draft<Project>, clipId: string, trackId: string): void {
   const trackClips = draft.clips[trackId]
   if (!trackClips) return
 

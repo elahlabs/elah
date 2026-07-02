@@ -22,7 +22,9 @@ async function transparentMark() {
   const { data, info } = await sharp(SRC).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   const { width, height, channels } = info
   for (let i = 0; i < data.length; i += channels) {
-    const r = data[i], g = data[i + 1], b = data[i + 2]
+    const r = data[i],
+      g = data[i + 1],
+      b = data[i + 2]
     const min = Math.min(r, g, b)
     if (min > 235) {
       data[i + 3] = 0 // fully white → transparent
@@ -30,9 +32,7 @@ async function transparentMark() {
       data[i + 3] = Math.round(((235 - min) / 35) * 255) // feather edge
     }
   }
-  return sharp(data, { raw: { width, height, channels } })
-    .png()
-    .trim({ threshold: 1 })
+  return sharp(data, { raw: { width, height, channels } }).png().trim({ threshold: 1 })
 }
 
 async function run() {
@@ -54,7 +54,12 @@ async function run() {
 
   const makeIcon = async (size, out) => {
     const innerSized = Math.round(size * (1 - PAD * 2))
-    const fg = await sharp(padded).resize(innerSized, innerSized, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer()
+    const fg = await sharp(padded)
+      .resize(innerSized, innerSized, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .toBuffer()
     await sharp({ create: { width: size, height: size, channels: 4, background: BRAND_BG } })
       .composite([{ input: fg, gravity: 'center' }])
       .png()

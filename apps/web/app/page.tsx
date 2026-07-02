@@ -122,7 +122,8 @@ export default function HomePage() {
                 Built for precision.
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-surface-variant">
-                Every layer of the stack is designed around one principle: determinism. Same input, same output, every time.
+                Every layer of the stack is designed around one principle: determinism. Same input,
+                same output, every time.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -168,7 +169,8 @@ export default function HomePage() {
                   Launch a playground.
                 </h2>
                 <p className="mt-3 max-w-lg text-sm leading-relaxed text-on-surface-variant">
-                  Explore the editor live. Each playground is a fully functional deployment of the SDK.
+                  Explore the editor live. Each playground is a fully functional deployment of the
+                  SDK.
                 </p>
               </div>
             </div>
@@ -195,7 +197,8 @@ export default function HomePage() {
                   Drop in. Wire. Ship.
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-                  The full editor composes in fewer than 20 lines. Bring your own demuxer factory and the preview handles decode, render, playback, and audio automatically.
+                  The full editor composes in fewer than 20 lines. Bring your own demuxer factory
+                  and the preview handles decode, render, playback, and audio automatically.
                 </p>
                 <div className="mt-6 space-y-3">
                   {[
@@ -227,10 +230,13 @@ export default function HomePage() {
 
 function ArchitectureDiagram() {
   const layers = [
-    { label: 'React UI',       items: ['Timeline', 'Preview', 'AssetPanel', 'TransformOverlay'] },
-    { label: 'Engine Layer',   items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'] },
-    { label: 'Pure Resolver',  items: ['resolveTimeline(frame, project) → Scene'] },
-    { label: 'Renderers',      items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'] },
+    { label: 'React UI', items: ['Timeline', 'Preview', 'AssetPanel', 'TransformOverlay'] },
+    {
+      label: 'Engine Layer',
+      items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'],
+    },
+    { label: 'Pure Resolver', items: ['resolveTimeline(frame, project) → Scene'] },
+    { label: 'Renderers', items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'] },
     { label: 'Media Pipeline', items: ['StreamingFrameProducer', 'WebCodecs', 'mediabunny demux'] },
   ]
 
@@ -240,13 +246,13 @@ function ArchitectureDiagram() {
         <div
           key={layer.label}
           className="flex items-start gap-4 border-b border-outline-variant p-4 last:border-0"
-          style={{ backgroundColor: i % 2 === 0 ? 'var(--color-surface-container)' : 'var(--color-surface-high)' }}
+          style={{
+            backgroundColor:
+              i % 2 === 0 ? 'var(--color-surface-container)' : 'var(--color-surface-high)',
+          }}
         >
           <div className="w-28 shrink-0">
-            <span
-              className="label-mono text-2xs text-on-surface-variant"
-              style={{ opacity: 0.7 }}
-            >
+            <span className="label-mono text-2xs text-on-surface-variant" style={{ opacity: 0.7 }}>
               {layer.label.toUpperCase()}
             </span>
           </div>

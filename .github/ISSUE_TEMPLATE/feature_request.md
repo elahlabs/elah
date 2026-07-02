@@ -14,8 +14,8 @@ labels: enhancement
 
 ## Acceptance criteria
 
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
 
 ## Additional context
 

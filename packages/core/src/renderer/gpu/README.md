@@ -86,8 +86,8 @@ Implements `Renderer`. Owns `WebGLContext`, `TexturePool`, `RenderGraph`, and th
 const renderer = new GpuRenderer({ maxTextures: 16, clearColor: [0, 0, 0, 1] })
 renderer.mount(container)
 renderer.resize(cssW, cssH, window.devicePixelRatio)
-renderer.render(scene)   // synchronous, idempotent on equal scene refs
-renderer.setDebug(true)  // optional DOM overlay
+renderer.render(scene) // synchronous, idempotent on equal scene refs
+renderer.setDebug(true) // optional DOM overlay
 renderer.dispose()
 ```
 
@@ -176,15 +176,15 @@ See [`../../media/video/README.md`](../../media/video/README.md) and [`../../med
 
 All optional, importable without affecting the production pipeline.
 
-| File | Role |
-|---|---|
+| File                       | Role                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `GpuRendererDebugPanel.ts` | DOM overlay used by `GpuRenderer.setDebug(true)`. Polls a `DebugPanelSnapshot` getter every 100 ms — no GL coupling. |
-| `DebugGpuRenderer.ts` | Parallel renderer wired to `TestLayer` (solid-colour quads). Exercises shader/transform/zIndex paths with no decode. |
-| `DebugOverlay.ts` | FPS + bounding boxes for scenario rendering. |
-| `GpuDebugCounters.ts` | Static counters: cache hits/misses, decode latency, upload timing. Used by debug overlay + tests. |
-| `GpuDebugGlobal.ts` | Optional `window.__GPU_DEBUG__` getter for live inspection. |
-| `playground.ts` | `loadDebugScenario(container, 'A'..'E')` mounts the debug renderer + overlay. |
-| `scenarios.ts` | Validation scenarios A–E: overlap, transform, opacity, full-stage. |
+| `DebugGpuRenderer.ts`      | Parallel renderer wired to `TestLayer` (solid-colour quads). Exercises shader/transform/zIndex paths with no decode. |
+| `DebugOverlay.ts`          | FPS + bounding boxes for scenario rendering.                                                                         |
+| `GpuDebugCounters.ts`      | Static counters: cache hits/misses, decode latency, upload timing. Used by debug overlay + tests.                    |
+| `GpuDebugGlobal.ts`        | Optional `window.__GPU_DEBUG__` getter for live inspection.                                                          |
+| `playground.ts`            | `loadDebugScenario(container, 'A'..'E')` mounts the debug renderer + overlay.                                        |
+| `scenarios.ts`             | Validation scenarios A–E: overlap, transform, opacity, full-stage.                                                   |
 
 The `@elah/editor` package's `Preview/Preview.tsx` is the production wiring example — RAF loop, `playback.getFrameAt()`, `resolveTimeline()`, and `renderer.render(scene)`.
 
@@ -194,17 +194,17 @@ The `@elah/editor` package's `Preview/Preview.tsx` is the production wiring exam
 
 **Compositing suites** under `gpu/__tests__/` (mock GL + DOM):
 
-| File | Focus |
-|---|---|
-| `GpuRenderer` is exercised indirectly via | `RenderSynchronization`, `ErrorHandling`, `DebugGpuRenderer` |
-| `RenderSynchronization.test.ts` | sourceFrame correctness, seek recovery, idempotent render, context-loss re-acquire |
-| `RenderGraph.test.ts` | zIndex order, diff/acquire/release |
-| `VideoLayer.test.ts` | provider sharing, transform/opacity uniforms, draw synchrony |
-| `ErrorHandling.test.ts` | errored decoder, pool exhaustion, isolation |
-| `GoldenFrameHash.test.ts` | draw call sequence stability |
-| `CanvasValidation.test.ts` | helpers (`captureFrame`, `hashFrame`, `samplePixel`, `expectPixelApprox`) |
-| `TestLayer.test.ts` | debug quad lifecycle |
-| `DebugGpuRenderer.test.ts` | debug renderer lifecycle |
+| File                                      | Focus                                                                              |
+| ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| `GpuRenderer` is exercised indirectly via | `RenderSynchronization`, `ErrorHandling`, `DebugGpuRenderer`                       |
+| `RenderSynchronization.test.ts`           | sourceFrame correctness, seek recovery, idempotent render, context-loss re-acquire |
+| `RenderGraph.test.ts`                     | zIndex order, diff/acquire/release                                                 |
+| `VideoLayer.test.ts`                      | provider sharing, transform/opacity uniforms, draw synchrony                       |
+| `ErrorHandling.test.ts`                   | errored decoder, pool exhaustion, isolation                                        |
+| `GoldenFrameHash.test.ts`                 | draw call sequence stability                                                       |
+| `CanvasValidation.test.ts`                | helpers (`captureFrame`, `hashFrame`, `samplePixel`, `expectPixelApprox`)          |
+| `TestLayer.test.ts`                       | debug quad lifecycle                                                               |
+| `DebugGpuRenderer.test.ts`                | debug renderer lifecycle                                                           |
 
 **Decode suites** under [`core/media/video/__tests__/`](../../media/video/__tests__/) include `VideoFrameProvider`, `VideoDecoderManager`, `FrameCache`, demuxer, and stress tests (`PlaybackStress`, `RapidSeekStress`, …).
 
@@ -223,12 +223,12 @@ Helpers: `gpu/__tests__/helpers/` (`trackingFrame.ts`, `canvasValidation.ts`); `
 
 On `_handleContextRestored()`, the next `render()` triggers `VideoLayer._ensurePipeline()` which recompiles the shader program and rebuilds the VAO. `FrameCache` and `VideoDecoderManager` hold no GL objects and survive unchanged.
 
-| Module | Holds GL? | Recovery |
-|---|---|---|
-| `WebGLContext` | yes (the context itself) | re-acquires on `webglcontextrestored`, re-runs `_initGLState()` |
-| `TexturePool` | yes | `handleContextLost()` clears handles |
-| `VideoTexture` | yes (entry ref) | `handleContextLost()` nulls `_entry`; next `upload()` re-acquires |
-| `VideoLayer` | yes (program + VAO) | `notifyContextLost()` nulls them; `_ensurePipeline()` rebuilds on next acquire |
-| `RenderGraph` | no (just bookkeeping) | `notifyContextLost()` releases active items |
-| `FrameCache` | no | unchanged |
-| `VideoDecoderManager` | no | unchanged |
+| Module                | Holds GL?                | Recovery                                                                       |
+| --------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `WebGLContext`        | yes (the context itself) | re-acquires on `webglcontextrestored`, re-runs `_initGLState()`                |
+| `TexturePool`         | yes                      | `handleContextLost()` clears handles                                           |
+| `VideoTexture`        | yes (entry ref)          | `handleContextLost()` nulls `_entry`; next `upload()` re-acquires              |
+| `VideoLayer`          | yes (program + VAO)      | `notifyContextLost()` nulls them; `_ensurePipeline()` rebuilds on next acquire |
+| `RenderGraph`         | no (just bookkeeping)    | `notifyContextLost()` releases active items                                    |
+| `FrameCache`          | no                       | unchanged                                                                      |
+| `VideoDecoderManager` | no                       | unchanged                                                                      |

@@ -32,9 +32,7 @@ export function updateClip(
 
   const overlaps = findOverlaps(trackClips as Clip[], merged, clipId)
   if (overlaps.length > 0) {
-    throw new Error(
-      `Update would cause clip "${clipId}" to overlap with "${overlaps[0].id}"`,
-    )
+    throw new Error(`Update would cause clip "${clipId}" to overlap with "${overlaps[0].id}"`)
   }
 
   Object.assign(clip, updates)
@@ -45,11 +43,7 @@ export function updateClip(
 }
 
 /** Update track properties in place */
-export function updateTrack(
-  draft: Draft<Project>,
-  trackId: string,
-  updates: Partial<Track>,
-): void {
+export function updateTrack(draft: Draft<Project>, trackId: string, updates: Partial<Track>): void {
   const track = draft.tracks.find((t) => t.id === trackId)
   if (!track) return
   Object.assign(track, updates)

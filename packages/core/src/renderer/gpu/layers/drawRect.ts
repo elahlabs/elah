@@ -41,11 +41,7 @@ export function buildTransformMatrixFromRect(
   const tx = 2 * (xs + ws / 2 - 0.5 * sc * ws + 0.5 * ss * hs) - 1
   const ty = 2 * (ys + hs / 2 - 0.5 * ss * ws - 0.5 * sc * hs) - 1
 
-  return new Float32Array([
-    2 * sc * ws, 2 * ss * ws, 0,
-    -2 * ss * hs, 2 * sc * hs, 0,
-    tx, ty, 1,
-  ])
+  return new Float32Array([2 * sc * ws, 2 * ss * ws, 0, -2 * ss * hs, 2 * sc * hs, 0, tx, ty, 1])
 }
 
 /** Convert a normalized Transform + content size into a pixel draw rect. */

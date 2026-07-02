@@ -54,7 +54,7 @@ export function FeatureCard({
       transition={{ duration: 0.4, delay: index * 0.05 }}
       className={cn(
         'group rounded-md border border-outline-variant bg-surface-lowest dark:bg-surface-container p-5 transition-colors hover:border-outline dark:hover:bg-surface-high',
-        className
+        className,
       )}
     >
       <div className="mb-3 flex h-8 w-8 items-center justify-center rounded border border-outline-variant bg-surface-low">

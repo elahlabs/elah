@@ -36,12 +36,7 @@ export function computeContainRect(
   stageWidth: number,
   stageHeight: number,
 ): FitRect {
-  if (
-    contentWidth <= 0 ||
-    contentHeight <= 0 ||
-    stageWidth <= 0 ||
-    stageHeight <= 0
-  ) {
+  if (contentWidth <= 0 || contentHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) {
     return { x: 0, y: 0, width: Math.max(stageWidth, 0), height: Math.max(stageHeight, 0) }
   }
 
@@ -86,12 +81,7 @@ export function computeCoverRect(
   stageWidth: number,
   stageHeight: number,
 ): FitRect {
-  if (
-    contentWidth <= 0 ||
-    contentHeight <= 0 ||
-    stageWidth <= 0 ||
-    stageHeight <= 0
-  ) {
+  if (contentWidth <= 0 || contentHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) {
     return { x: 0, y: 0, width: Math.max(stageWidth, 0), height: Math.max(stageHeight, 0) }
   }
 

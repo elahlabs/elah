@@ -19,19 +19,10 @@
  * Holds no GL objects. Survives context loss unchanged.
  */
 
-import {
-  MediabunnyDemuxer,
-  type DemuxerFactory,
-} from './demuxer/MediabunnyDemuxer'
+import { MediabunnyDemuxer, type DemuxerFactory } from './demuxer/MediabunnyDemuxer'
 
 export type DecoderState =
-  | 'Idle'
-  | 'Opening'
-  | 'Ready'
-  | 'Resetting'
-  | 'Draining'
-  | 'Disposed'
-  | 'Errored'
+  'Idle' | 'Opening' | 'Ready' | 'Resetting' | 'Draining' | 'Disposed' | 'Errored'
 
 export interface VideoDecoderLike {
   state: string
@@ -89,7 +80,10 @@ const MAX_DECODE_QUEUE_DEPTH = 4
  * per-packet + per-frame decoder traces.
  */
 function _vdmTrace(msg: string, data?: Record<string, unknown>): void {
-  if (typeof globalThis !== 'undefined' && (globalThis as { __VDM_DEBUG__?: boolean }).__VDM_DEBUG__) {
+  if (
+    typeof globalThis !== 'undefined' &&
+    (globalThis as { __VDM_DEBUG__?: boolean }).__VDM_DEBUG__
+  ) {
     if (data) {
       console.log(`[VDM-TRACE] ${msg}`, data)
     } else {
@@ -163,12 +157,14 @@ export class VideoDecoderManager {
     this._onDroppedFrame = options.onDroppedFrame ?? null
     this._onError = options.onError ?? null
 
-    this._decoderFactory = options.decoderFactory ?? ((output, error) => {
-      if (typeof VideoDecoder === 'undefined') {
-        throw new Error('VideoDecoderManager: VideoDecoder not available')
-      }
-      return new VideoDecoder({ output, error }) as unknown as VideoDecoderLike
-    })
+    this._decoderFactory =
+      options.decoderFactory ??
+      ((output, error) => {
+        if (typeof VideoDecoder === 'undefined') {
+          throw new Error('VideoDecoderManager: VideoDecoder not available')
+        }
+        return new VideoDecoder({ output, error }) as unknown as VideoDecoderLike
+      })
   }
 
   /** Frames per second this manager is configured for. */
@@ -440,7 +436,7 @@ export class VideoDecoderManager {
         // → the check is skipped → no change to test behaviour.
         const queueDepth = (this._decoder as { decodeQueueSize?: number }).decodeQueueSize
         if (queueDepth !== undefined && queueDepth >= MAX_DECODE_QUEUE_DEPTH) {
-          await new Promise<void>(resolve => setTimeout(resolve, 0))
+          await new Promise<void>((resolve) => setTimeout(resolve, 0))
           // Re-validate after the yield — state may have changed.
           if (gen !== this._feedGeneration) return
           if (this._state !== 'Ready') {
@@ -485,7 +481,7 @@ export class VideoDecoderManager {
     }
 
     // Normal completion — check gen before touching shared state.
-    if (gen !== this._feedGeneration) return  // Became stale during final iteration.
+    if (gen !== this._feedGeneration) return // Became stale during final iteration.
 
     // Start the coalesced pending range if one accumulated while we were busy.
     const pending = this._feedPendingRange
@@ -529,11 +525,7 @@ export class VideoDecoderManager {
 
   private _handleError(error: unknown): void {
     const err = error instanceof Error ? error : new Error(String(error))
-    if (
-      this._state !== 'Disposed' &&
-      this._state !== 'Idle' &&
-      this._state !== 'Errored'
-    ) {
+    if (this._state !== 'Disposed' && this._state !== 'Idle' && this._state !== 'Errored') {
       this._transition('Errored')
     }
     this._onError?.(err)
@@ -552,5 +544,4 @@ export class VideoDecoderManager {
       this._idleTimer = null
     }
   }
-
 }

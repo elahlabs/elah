@@ -97,10 +97,7 @@ export const TrackRow = memo(function TrackRow({
   const rawClips = useTracksStore((s) => s.clips[track.id]) ?? []
 
   // Clips sorted by startFrame so adjacent-pair detection is reliable.
-  const clips = useMemo(
-    () => [...rawClips].sort((a, b) => a.startFrame - b.startFrame),
-    [rawClips],
-  )
+  const clips = useMemo(() => [...rawClips].sort((a, b) => a.startFrame - b.startFrame), [rawClips])
 
   // Adjacent pairs — clips where B starts at or within 2 frames of where A ends.
   // The ≤2 tolerance handles 1-frame rounding artefacts from snap/trim operations.
@@ -145,9 +142,7 @@ export const TrackRow = memo(function TrackRow({
 
   // Only allow deleting a track when more than one of its kind exists — never
   // remove the last audio/text track (video is single by model).
-  const sameKindCount = useTracksStore(
-    (s) => s.tracks.filter((t) => t.kind === track.kind).length,
-  )
+  const sameKindCount = useTracksStore((s) => s.tracks.filter((t) => t.kind === track.kind).length)
 
   const TypeIcon = KIND_ICON[track.kind] ?? Film
   const ctrlBtn: React.CSSProperties = {
@@ -240,75 +235,73 @@ export const TrackRow = memo(function TrackRow({
         {/* Per-track controls — visibility, mute (audio only), lock.
             Hidden in compact mode: a ~48px sidebar fits only the kind glyph. */}
         {!compact && (
-        <span style={{ display: 'inline-flex', gap: 1, flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={toggleVisible}
-            title={track.disabled ? 'Show track' : 'Hide track'}
-            aria-label={track.disabled ? 'Show track' : 'Hide track'}
-            aria-pressed={!track.disabled}
-            style={ctrlBtn}
-          >
-            {track.disabled ? (
-              <EyeOff size={13} strokeWidth={1.75} />
-            ) : (
-              <Eye size={13} strokeWidth={1.75} />
-            )}
-          </button>
-
-          {track.kind === 'audio' && (
+          <span style={{ display: 'inline-flex', gap: 1, flexShrink: 0 }}>
             <button
               type="button"
-              onClick={toggleMuted}
-              title={track.muted ? 'Unmute track' : 'Mute track'}
-              aria-label={track.muted ? 'Unmute track' : 'Mute track'}
-              aria-pressed={track.muted}
-              style={{
-                ...ctrlBtn,
-                color: track.muted
-                  ? 'var(--elah-color-error)'
-                  : 'var(--elah-text-muted)',
-              }}
+              onClick={toggleVisible}
+              title={track.disabled ? 'Show track' : 'Hide track'}
+              aria-label={track.disabled ? 'Show track' : 'Hide track'}
+              aria-pressed={!track.disabled}
+              style={ctrlBtn}
             >
-              {track.muted ? (
-                <VolumeX size={13} strokeWidth={1.75} />
+              {track.disabled ? (
+                <EyeOff size={13} strokeWidth={1.75} />
               ) : (
-                <Volume2 size={13} strokeWidth={1.75} />
+                <Eye size={13} strokeWidth={1.75} />
               )}
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={toggleLocked}
-            title={track.locked ? 'Unlock track' : 'Lock track'}
-            aria-label={track.locked ? 'Unlock track' : 'Lock track'}
-            aria-pressed={track.locked}
-            style={{
-              ...ctrlBtn,
-              color: track.locked ? 'var(--elah-text)' : 'var(--elah-text-muted)',
-            }}
-          >
-            {track.locked ? (
-              <Lock size={13} strokeWidth={1.75} />
-            ) : (
-              <LockOpen size={13} strokeWidth={1.75} />
+            {track.kind === 'audio' && (
+              <button
+                type="button"
+                onClick={toggleMuted}
+                title={track.muted ? 'Unmute track' : 'Mute track'}
+                aria-label={track.muted ? 'Unmute track' : 'Mute track'}
+                aria-pressed={track.muted}
+                style={{
+                  ...ctrlBtn,
+                  color: track.muted ? 'var(--elah-color-error)' : 'var(--elah-text-muted)',
+                }}
+              >
+                {track.muted ? (
+                  <VolumeX size={13} strokeWidth={1.75} />
+                ) : (
+                  <Volume2 size={13} strokeWidth={1.75} />
+                )}
+              </button>
             )}
-          </button>
 
-          {/* Delete — only when more than one track of this kind exists. */}
-          {sameKindCount > 1 && (
             <button
               type="button"
-              onClick={deleteTrack}
-              title="Delete track"
-              aria-label="Delete track"
-              style={{ ...ctrlBtn, color: 'var(--elah-text-muted)' }}
+              onClick={toggleLocked}
+              title={track.locked ? 'Unlock track' : 'Lock track'}
+              aria-label={track.locked ? 'Unlock track' : 'Lock track'}
+              aria-pressed={track.locked}
+              style={{
+                ...ctrlBtn,
+                color: track.locked ? 'var(--elah-text)' : 'var(--elah-text-muted)',
+              }}
             >
-              <Trash2 size={13} strokeWidth={1.75} />
+              {track.locked ? (
+                <Lock size={13} strokeWidth={1.75} />
+              ) : (
+                <LockOpen size={13} strokeWidth={1.75} />
+              )}
             </button>
-          )}
-        </span>
+
+            {/* Delete — only when more than one track of this kind exists. */}
+            {sameKindCount > 1 && (
+              <button
+                type="button"
+                onClick={deleteTrack}
+                title="Delete track"
+                aria-label="Delete track"
+                style={{ ...ctrlBtn, color: 'var(--elah-text-muted)' }}
+              >
+                <Trash2 size={13} strokeWidth={1.75} />
+              </button>
+            )}
+          </span>
         )}
       </div>
 

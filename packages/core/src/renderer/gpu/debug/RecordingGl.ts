@@ -170,19 +170,19 @@ export class RecordingGl {
 
   useProgram(program: WebGLProgram | null): void {
     this._write([Tag.UseProgram])
-    this._writeUint32(program ? (program as unknown as { _id: number })._id ?? 0 : 0)
-    this._boundProgram = program ? (program as unknown as { _id: number })._id ?? 0 : 0
+    this._writeUint32(program ? ((program as unknown as { _id: number })._id ?? 0) : 0)
+    this._boundProgram = program ? ((program as unknown as { _id: number })._id ?? 0) : 0
   }
 
   bindVertexArray(vao: WebGLVertexArrayObject | null): void {
     this._write([Tag.BindVertexArray])
-    this._writeUint32(vao ? (vao as unknown as { _id: number })._id ?? 0 : 0)
-    this._boundVao = vao ? (vao as unknown as { _id: number })._id ?? 0 : 0
+    this._writeUint32(vao ? ((vao as unknown as { _id: number })._id ?? 0) : 0)
+    this._boundVao = vao ? ((vao as unknown as { _id: number })._id ?? 0) : 0
   }
 
   bindTexture(_target: number, texture: WebGLTexture | null): void {
     this._write([Tag.BindTexture])
-    const id = texture ? (texture as unknown as { _id: number })._id ?? 0 : 0
+    const id = texture ? ((texture as unknown as { _id: number })._id ?? 0) : 0
     this._writeUint32(id)
     this._boundTextures.set(this._activeTexture, id)
   }
@@ -224,27 +224,34 @@ export class RecordingGl {
 
   shaderSource(_shader: WebGLShader, _source: string): void {}
   compileShader(_shader: WebGLShader): void {}
-  getShaderParameter(_shader: WebGLShader, _pname: number): unknown { return true }
-  getShaderInfoLog(_shader: WebGLShader): string { return '' }
+  getShaderParameter(_shader: WebGLShader, _pname: number): unknown {
+    return true
+  }
+  getShaderInfoLog(_shader: WebGLShader): string {
+    return ''
+  }
   attachShader(_program: WebGLProgram, _shader: WebGLShader): void {}
   detachShader(_program: WebGLProgram, _shader: WebGLShader): void {}
   linkProgram(_program: WebGLProgram): void {}
-  getProgramParameter(_program: WebGLProgram, _pname: number): unknown { return true }
-  getProgramInfoLog(_program: WebGLProgram): string { return '' }
+  getProgramParameter(_program: WebGLProgram, _pname: number): unknown {
+    return true
+  }
+  getProgramInfoLog(_program: WebGLProgram): string {
+    return ''
+  }
   deleteShader(_shader: WebGLShader | null): void {}
   deleteProgram(_program: WebGLProgram | null): void {}
   deleteTexture(_texture: WebGLTexture | null): void {}
   deleteVertexArray(_vao: WebGLVertexArrayObject | null): void {}
   deleteBuffer(_buffer: WebGLBuffer | null): void {}
 
-  getUniformLocation(
-    _program: WebGLProgram,
-    name: string,
-  ): WebGLUniformLocation {
+  getUniformLocation(_program: WebGLProgram, name: string): WebGLUniformLocation {
     return { _id: this._stableNameId(name) } as unknown as WebGLUniformLocation
   }
 
-  getAttribLocation(_program: WebGLProgram, _name: string): number { return 0 }
+  getAttribLocation(_program: WebGLProgram, _name: string): number {
+    return 0
+  }
 
   enableVertexAttribArray(_index: number): void {}
   vertexAttribPointer(
@@ -262,13 +269,14 @@ export class RecordingGl {
   viewport(_x: number, _y: number, _width: number, _height: number): void {}
   clearColor(_r: number, _g: number, _b: number, _a: number): void {}
   enable(_cap: number): void {}
-  blendFuncSeparate(
-    _srcRGB: number, _dstRGB: number,
-    _srcAlpha: number, _dstAlpha: number,
-  ): void {}
+  blendFuncSeparate(_srcRGB: number, _dstRGB: number, _srcAlpha: number, _dstAlpha: number): void {}
 
-  getContextAttributes(): WebGLContextAttributes { return {} }
-  isContextLost(): boolean { return false }
+  getContextAttributes(): WebGLContextAttributes {
+    return {}
+  }
+  isContextLost(): boolean {
+    return false
+  }
 
   generateMipmap(_target: number): void {}
 

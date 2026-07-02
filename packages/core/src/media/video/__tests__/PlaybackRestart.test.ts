@@ -34,10 +34,18 @@ function makeGlStub(): WebGL2RenderingContext {
       textures.set(handle as unknown as WebGLTexture, true)
       return handle as unknown as WebGLTexture
     },
-    deleteTexture: (t: WebGLTexture) => { textures.delete(t) },
-    bindTexture: () => { /* noop */ },
-    texParameteri: () => { /* noop */ },
-    texImage2D: () => { /* noop */ },
+    deleteTexture: (t: WebGLTexture) => {
+      textures.delete(t)
+    },
+    bindTexture: () => {
+      /* noop */
+    },
+    texParameteri: () => {
+      /* noop */
+    },
+    texImage2D: () => {
+      /* noop */
+    },
   } as unknown as WebGL2RenderingContext
 }
 

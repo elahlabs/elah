@@ -48,9 +48,15 @@ describe('Performance instrumentation', () => {
     const cache = new FrameCache({
       maxFrames: 3,
       hooks: {
-        onPut: () => { GpuDebugCounters.cacheSize++ },
-        onEvict: () => { GpuDebugCounters.cacheSize-- },
-        onClear: () => { GpuDebugCounters.cacheSize = 0 },
+        onPut: () => {
+          GpuDebugCounters.cacheSize++
+        },
+        onEvict: () => {
+          GpuDebugCounters.cacheSize--
+        },
+        onClear: () => {
+          GpuDebugCounters.cacheSize = 0
+        },
       },
     })
 
@@ -138,13 +144,15 @@ describe('Performance instrumentation', () => {
 
   it('installGpuDebugGlobal is no-op without window', () => {
     vi.stubGlobal('window', undefined)
-    expect(() => installGpuDebugGlobal(() => ({
-      decoderStates: {},
-      cacheSizes: {},
-      textureCount: 0,
-      activeClipIds: [],
-      counters: GpuDebugCounters.snapshot(),
-    }))).not.toThrow()
+    expect(() =>
+      installGpuDebugGlobal(() => ({
+        decoderStates: {},
+        cacheSizes: {},
+        textureCount: 0,
+        activeClipIds: [],
+        counters: GpuDebugCounters.snapshot(),
+      })),
+    ).not.toThrow()
     vi.unstubAllGlobals()
   })
 })

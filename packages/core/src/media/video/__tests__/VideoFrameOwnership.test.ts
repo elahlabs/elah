@@ -174,7 +174,9 @@ describe('VideoFrame ownership', () => {
   })
 })
 
-function createMockGL(options: { texImage2DThrowsOnUpload?: boolean } = {}): WebGL2RenderingContext {
+function createMockGL(
+  options: { texImage2DThrowsOnUpload?: boolean } = {},
+): WebGL2RenderingContext {
   const gl = {
     TEXTURE_2D: 0x0de1,
     RGBA: 0x1908,

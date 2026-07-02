@@ -18,12 +18,10 @@ interface TransitionsActions {
  *     s.transitions.find(t => t.fromClipId === clipId || t.toClipId === clipId)
  *   )
  */
-export const useTransitionsStore = create<TransitionsState & TransitionsActions>()(
-  (set) => ({
-    transitions: [],
+export const useTransitionsStore = create<TransitionsState & TransitionsActions>()((set) => ({
+  transitions: [],
 
-    sync: (project) => {
-      set({ transitions: project.transitions })
-    },
-  }),
-)
+  sync: (project) => {
+    set({ transitions: project.transitions })
+  },
+}))

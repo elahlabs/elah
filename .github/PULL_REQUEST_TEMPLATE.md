@@ -20,9 +20,9 @@ Closes #
 
 <!-- Steps to verify this works. Be specific. -->
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ---
 

@@ -78,8 +78,7 @@ export function AudioDropDialog() {
             color: `var(--elah-text-muted)`,
           }}
         >
-          How should{' '}
-          <span style={{ color: `var(--elah-text)`, fontWeight: 600 }}>{assetName}</span>{' '}
+          How should <span style={{ color: `var(--elah-text)`, fontWeight: 600 }}>{assetName}</span>{' '}
           be added to the timeline?
         </p>
 

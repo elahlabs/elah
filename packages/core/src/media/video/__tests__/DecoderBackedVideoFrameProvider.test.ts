@@ -5,11 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 function createProducer(
   overrides: Partial<ConstructorParameters<typeof StreamingFrameProducer>[0]> = {},
@@ -70,7 +66,7 @@ describe('StreamingFrameProducer', () => {
 
       // Trigger decode for frame 0 via setPlayhead (discontinuity reset + feed)
       producer.setPlayhead(0)
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       GpuDebugCounters.reset()
       const frame = producer.getCurrent(0)
@@ -104,8 +100,8 @@ describe('StreamingFrameProducer', () => {
 
       producer.setPlayhead(0, { lookaheadFrames: 0 })
       // Allow reset + feed async ops to complete.
-      await new Promise(resolve => setTimeout(resolve, 0))
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       // The frame at timestamp=0 should now be in cache (sourceFrameIdx=0 at 30fps).
       expect(producer.cacheSize).toBeGreaterThanOrEqual(0)

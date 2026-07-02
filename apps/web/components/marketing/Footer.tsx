@@ -34,12 +34,14 @@ export function Footer() {
             <Link href="/" className="mb-4 flex items-center gap-2 no-underline">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/elah-mark.png" alt="elah logo" className="h-6 w-6" />
-              <span className="text-sm font-semibold text-on-surface">
-                elah
-              </span>
+              <span className="text-sm font-semibold text-on-surface">elah</span>
             </Link>
-            <p className="mt-3 text-xs leading-relaxed text-on-surface-variant" style={{ maxWidth: '18rem' }}>
-              Browser-native video infrastructure. Engine-first, renderer-agnostic, built for production creative tooling.
+            <p
+              className="mt-3 text-xs leading-relaxed text-on-surface-variant"
+              style={{ maxWidth: '18rem' }}
+            >
+              Browser-native video infrastructure. Engine-first, renderer-agnostic, built for
+              production creative tooling.
             </p>
             <div className="mt-4 flex gap-1">
               <span className="label-mono rounded border border-outline-variant px-2 py-0.5 text-2xs text-on-surface-variant">
@@ -66,7 +68,9 @@ export function Footer() {
                     <Link
                       href={link.href}
                       className="text-sm text-on-surface-variant no-underline transition-colors hover:text-on-surface"
-                      {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      {...(link.href.startsWith('http')
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
                     >
                       {link.label}
                     </Link>

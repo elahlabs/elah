@@ -105,12 +105,7 @@ function createStubCanvas(): StubCanvasElement {
   }
 }
 
-function makeFile(
-  name: string,
-  type: string,
-  size = 1024,
-  lastModified = 1_700_000_000_000,
-): File {
+function makeFile(name: string, type: string, size = 1024, lastModified = 1_700_000_000_000): File {
   return new File(['x'.repeat(size)], name, { type, lastModified })
 }
 
@@ -227,9 +222,7 @@ describe('importFiles', () => {
         file: expect.objectContaining({ name: 'notes.txt' }),
       }),
     ])
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Skipping unsupported file type'),
-    )
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping unsupported file type'))
   })
 
   it('imports audio assets without thumbnails', async () => {
@@ -330,7 +323,9 @@ describe('importFiles', () => {
     const first = await importPromise
     expect(first.imported).toHaveLength(1)
 
-    const duplicatePromise = importFiles([makeFile('clip.mp4', 'video/mp4', 1024, 1_700_000_000_001)])
+    const duplicatePromise = importFiles([
+      makeFile('clip.mp4', 'video/mp4', 1024, 1_700_000_000_001),
+    ])
 
     const duplicate = await duplicatePromise
 
@@ -426,9 +421,12 @@ describe('importUrl', () => {
   })
 
   it('falls back to a HEAD content-type probe when the extension is unknown', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      headers: { get: () => 'video/mp4' },
-    })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        headers: { get: () => 'video/mp4' },
+      })),
+    )
 
     const url = 'https://cdn.example.com/asset-with-no-extension'
     const importPromise = importUrl(url)
@@ -442,9 +440,12 @@ describe('importUrl', () => {
   })
 
   it('rejects when the media kind cannot be determined', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      headers: { get: () => 'text/html' },
-    })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        headers: { get: () => 'text/html' },
+      })),
+    )
 
     await expect(importUrl('https://cdn.example.com/page')).rejects.toThrow(
       /Could not determine media kind/,
@@ -703,10 +704,13 @@ describe('computeWaveform', () => {
   beforeEach(() => {
     decodeAudioData.mockReset()
     vi.stubGlobal('window', { AudioContext: vi.fn(() => ({ decodeAudioData })) })
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      arrayBuffer: async () => new ArrayBuffer(8),
-    })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(8),
+      })),
+    )
   })
 
   afterEach(() => {

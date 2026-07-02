@@ -7,7 +7,9 @@ import { FrameCache } from '../FrameCache'
 
 let frameCounter = 0
 
-function mockFrame(overrides: Partial<{ displayWidth: number; displayHeight: number }> = {}): VideoFrame {
+function mockFrame(
+  overrides: Partial<{ displayWidth: number; displayHeight: number }> = {},
+): VideoFrame {
   frameCounter++
   return {
     close: vi.fn(),

@@ -20,9 +20,7 @@ export interface SplitAtPlayheadData {
  * Actions live outside the engine so the engine stays UI-agnostic — only
  * actions are allowed to read selection/playback stores.
  */
-export function splitClipAtPlayhead(
-  engine: TimelineEngine,
-): ActionResult<SplitAtPlayheadData> {
+export function splitClipAtPlayhead(engine: TimelineEngine): ActionResult<SplitAtPlayheadData> {
   const selectedIds = useSelectionStore.getState().selectedClipIds
   const isPlaying = usePlaybackStore.getState().isPlaying
   if (isPlaying) return { ok: false, reason: 'cannot-split-while-playing' }
@@ -39,10 +37,7 @@ export function splitClipAtPlayhead(
   const { clip, trackId } = found
   const frame = usePlaybackStore.getState().currentFrame
 
-  if (
-    frame <= clip.startFrame ||
-    frame >= clip.startFrame + clip.durationFrames
-  ) {
+  if (frame <= clip.startFrame || frame >= clip.startFrame + clip.durationFrames) {
     return { ok: false, reason: 'playhead-outside-clip' }
   }
 

@@ -14,11 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 function makeProducer(
   overrides: Partial<ConstructorParameters<typeof StreamingFrameProducer>[0]> = {},

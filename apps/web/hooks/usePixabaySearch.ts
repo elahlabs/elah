@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PixabayPhoto, PixabayPhotoSearchResponse, PixabayVideo, PixabayVideoSearchResponse } from '@/lib/pixabay/types'
+import type {
+  PixabayPhoto,
+  PixabayPhotoSearchResponse,
+  PixabayVideo,
+  PixabayVideoSearchResponse,
+} from '@/lib/pixabay/types'
 
 const DEBOUNCE_MS = 400
 const PER_PAGE = 20
@@ -7,7 +12,9 @@ const PER_PAGE = 20
 type PixabayKind = 'photos' | 'videos'
 
 type ItemFor<K extends PixabayKind> = K extends 'photos' ? PixabayPhoto : PixabayVideo
-type ResponseFor<K extends PixabayKind> = K extends 'photos' ? PixabayPhotoSearchResponse : PixabayVideoSearchResponse
+type ResponseFor<K extends PixabayKind> = K extends 'photos'
+  ? PixabayPhotoSearchResponse
+  : PixabayVideoSearchResponse
 
 export interface UsePixabaySearchResult<K extends PixabayKind> {
   items: ItemFor<K>[]
@@ -27,7 +34,10 @@ export interface UsePixabaySearchResult<K extends PixabayKind> {
  * differs between them. When `query` is empty, falls back to Pixabay's popular
  * (videos) / curated (photos) feed so the panel never starts out empty.
  */
-export function usePixabaySearch<K extends PixabayKind>(kind: K, query: string): UsePixabaySearchResult<K> {
+export function usePixabaySearch<K extends PixabayKind>(
+  kind: K,
+  query: string,
+): UsePixabaySearchResult<K> {
   const [items, setItems] = useState<ItemFor<K>[]>([])
   const [page, setPage] = useState(1)
   const [totalResults, setTotalResults] = useState(0)
@@ -54,7 +64,11 @@ export function usePixabaySearch<K extends PixabayKind>(kind: K, query: string):
         const data = (await res.json()) as ResponseFor<K> & { error?: string }
         if (!res.ok) throw new Error(data.error ?? 'Pixabay search failed.')
 
-        const results = (kind === 'photos' ? (data as PixabayPhotoSearchResponse).hits : (data as PixabayVideoSearchResponse).hits) as ItemFor<K>[]
+        const results = (
+          kind === 'photos'
+            ? (data as PixabayPhotoSearchResponse).hits
+            : (data as PixabayVideoSearchResponse).hits
+        ) as ItemFor<K>[]
         setTotalResults(data.totalHits)
         setPage(pageToFetch)
         setItems((prev) => (replace ? results : [...prev, ...results]))

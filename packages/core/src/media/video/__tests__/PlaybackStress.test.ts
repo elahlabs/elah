@@ -2,11 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveVideoClip, Scene } from '../../../resolver/scene'
 import type { VideoFrameProvider } from '../VideoFrameProvider'
 import { VideoDecoderManager } from '../VideoDecoderManager'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 // ---------------------------------------------------------------------------
 // WebGL + DOM stubs
@@ -234,9 +230,7 @@ describe('Playback stress', () => {
     })
     renderer.mount(container)
 
-    const clips = Array.from({ length: 10 }, (_, i) =>
-      makeClip(`clip-${i}`, `video://${i}`),
-    )
+    const clips = Array.from({ length: 10 }, (_, i) => makeClip(`clip-${i}`, `video://${i}`))
 
     expect(() => renderer.render(makeScene(clips))).not.toThrow()
     expect(renderer.videoLayer!.getTextureCount()).toBe(10)

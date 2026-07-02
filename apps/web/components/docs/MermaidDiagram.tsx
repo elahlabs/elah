@@ -31,11 +31,16 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         flowchart: { curve: 'basis', padding: 16 },
         sequence: { actorMargin: 60, messageMargin: 30 },
       })
-      mermaid.render(`mmd-${id}`, chart).then(({ svg: result }) => {
-        if (!cancelled) setSvg(result)
-      }).catch(() => {})
+      mermaid
+        .render(`mmd-${id}`, chart)
+        .then(({ svg: result }) => {
+          if (!cancelled) setSvg(result)
+        })
+        .catch(() => {})
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [chart, theme, id])
 
   const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(z * 100) / 100))
@@ -49,14 +54,17 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   useEffect(() => {
     if (!fullscreen) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { close(); return }
+      if (e.key === 'Escape') {
+        close()
+        return
+      }
       if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
         e.preventDefault()
-        setZoom(z => clampZoom(z + ZOOM_STEP))
+        setZoom((z) => clampZoom(z + ZOOM_STEP))
       }
       if ((e.metaKey || e.ctrlKey) && e.key === '-') {
         e.preventDefault()
-        setZoom(z => clampZoom(z - ZOOM_STEP))
+        setZoom((z) => clampZoom(z - ZOOM_STEP))
       }
       if ((e.metaKey || e.ctrlKey) && e.key === '0') {
         e.preventDefault()
@@ -74,7 +82,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
-      setZoom(z => clampZoom(z - e.deltaY * 0.002))
+      setZoom((z) => clampZoom(z - e.deltaY * 0.002))
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
@@ -102,12 +110,18 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
       {/* Fullscreen */}
       {fullscreen && (
-        <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: 'var(--color-surface, #fff)' }}>
+        <div
+          className="fixed inset-0 z-50 flex flex-col"
+          style={{ backgroundColor: 'var(--color-surface, #fff)' }}
+        >
           {/* Toolbar */}
-          <div className="flex shrink-0 items-center justify-between border-b border-outline-variant px-4 py-2" style={{ backgroundColor: 'var(--color-surface-low, #f5f5f5)' }}>
+          <div
+            className="flex shrink-0 items-center justify-between border-b border-outline-variant px-4 py-2"
+            style={{ backgroundColor: 'var(--color-surface-low, #f5f5f5)' }}
+          >
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setZoom(z => clampZoom(z - ZOOM_STEP))}
+                onClick={() => setZoom((z) => clampZoom(z - ZOOM_STEP))}
                 disabled={zoom <= MIN_ZOOM}
                 title="Zoom out (Ctrl −)"
                 className="flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
@@ -120,7 +134,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
               </span>
 
               <button
-                onClick={() => setZoom(z => clampZoom(z + ZOOM_STEP))}
+                onClick={() => setZoom((z) => clampZoom(z + ZOOM_STEP))}
                 disabled={zoom >= MAX_ZOOM}
                 title="Zoom in (Ctrl +)"
                 className="flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"

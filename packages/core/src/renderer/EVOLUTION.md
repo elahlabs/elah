@@ -2,7 +2,7 @@
 
 > **Status (2026-06):** Phases 1–4 in §4 have **shipped** — real video decode,
 > image + text layers, single-track audio, and MP4 export all exist now. Read §4
-> Phases 2–4 as the *design record* of what was built, not a future plan. The
+> Phases 2–4 as the _design record_ of what was built, not a future plan. The
 > still-load-bearing parts of this document are **§3 (invariants I1–I12)**,
 > **§6 (ownership)**, and **§7 (extension seams)** — those are the contract every
 > renderer/decode change must preserve. The next genuinely-future layer is the
@@ -13,6 +13,7 @@
 > audio, text, export, and threading layers.
 >
 > **Relation to other documents**:
+>
 > - _Renderer internals_: [`architecture.md`](./architecture.md) — diagrams + pipeline; do not duplicate, cross-reference.
 > - _Engine design principles and data model_: [`ARCHITECTURE.md`](../../../../../ARCHITECTURE.md).
 > - _Current state + next layer_: [`ROADMAP.md`](../../../../../ROADMAP.md); known gaps: [`CURRENT_LIMITATIONS.md`](../../../../../CURRENT_LIMITATIONS.md).
@@ -80,22 +81,22 @@ decode predictive rather than reactive to the current playhead.
 The following are load-bearing primitives. Nothing in this document proposes
 redesigning them; every evolution composes with them.
 
-| Primitive | Role | Source of truth |
-|---|---|---|
-| `Project` | Authoring data model — tracks, clips, fps, stage | `ARCHITECTURE.md` § 4 |
-| `TimelineEngine` | Single mutation funnel, undo/redo, event bus | `ARCHITECTURE.md` § 2 |
-| `resolveTimeline(frame, project)` | Pure function: frame + project → Scene | `ARCHITECTURE.md` § 5 |
-| `Scene` | Immutable, flat, serializable frame snapshot | `ARCHITECTURE.md` § 5 |
-| `PlaybackEngine` | Anchor-and-integrate clock, RAF owner, transport | `ARCHITECTURE.md` § 3 |
-| `Renderer` interface | `mount / resize / render / dispose` — four methods | [`types.ts`](./types.ts) |
-| `GpuRenderer` | Current `Renderer` implementation | [`gpu/GpuRenderer.ts`](./gpu/GpuRenderer.ts) |
-| `RenderGraph` | Layer orchestration: diff, acquire, release, zSort | `architecture.md` § 3 |
-| `VideoLayer` | Provider + texture bookkeeping per clip | `architecture.md` § 7 |
-| `TexturePool` | LRU GPU texture allocator (cap 16) | `architecture.md` § 3 |
-| `FrameCache` | LRU decoded-frame cache, owns `VideoFrame` lifetime | `architecture.md` § 6 |
-| `VideoFrameProvider` | Sync/async decode boundary abstraction | `architecture.md` § 6 |
-| `VideoDecoderManager` | Full state machine: Idle → Ready → Decoding → Seeking | `architecture.md` § 8 |
-| `WebGLContext` | GL context + context-loss/restore lifecycle | `architecture.md` § 9 |
+| Primitive                         | Role                                                  | Source of truth                              |
+| --------------------------------- | ----------------------------------------------------- | -------------------------------------------- |
+| `Project`                         | Authoring data model — tracks, clips, fps, stage      | `ARCHITECTURE.md` § 4                        |
+| `TimelineEngine`                  | Single mutation funnel, undo/redo, event bus          | `ARCHITECTURE.md` § 2                        |
+| `resolveTimeline(frame, project)` | Pure function: frame + project → Scene                | `ARCHITECTURE.md` § 5                        |
+| `Scene`                           | Immutable, flat, serializable frame snapshot          | `ARCHITECTURE.md` § 5                        |
+| `PlaybackEngine`                  | Anchor-and-integrate clock, RAF owner, transport      | `ARCHITECTURE.md` § 3                        |
+| `Renderer` interface              | `mount / resize / render / dispose` — four methods    | [`types.ts`](./types.ts)                     |
+| `GpuRenderer`                     | Current `Renderer` implementation                     | [`gpu/GpuRenderer.ts`](./gpu/GpuRenderer.ts) |
+| `RenderGraph`                     | Layer orchestration: diff, acquire, release, zSort    | `architecture.md` § 3                        |
+| `VideoLayer`                      | Provider + texture bookkeeping per clip               | `architecture.md` § 7                        |
+| `TexturePool`                     | LRU GPU texture allocator (cap 16)                    | `architecture.md` § 3                        |
+| `FrameCache`                      | LRU decoded-frame cache, owns `VideoFrame` lifetime   | `architecture.md` § 6                        |
+| `VideoFrameProvider`              | Sync/async decode boundary abstraction                | `architecture.md` § 6                        |
+| `VideoDecoderManager`             | Full state machine: Idle → Ready → Decoding → Seeking | `architecture.md` § 8                        |
+| `WebGLContext`                    | GL context + context-loss/restore lifecycle           | `architecture.md` § 9                        |
 
 ### 1.3 Core invariants (summary)
 
@@ -126,12 +127,12 @@ The risks this section originally listed — synthetic-only decode, no audio, no
 export, main-thread blocking — have been retired by Phases 1–4. The standing
 risks today:
 
-| Risk | Consequence if unmitigated |
-|---|---|
-| No predictive scheduler | Backward scrubbing cold-starts from a keyframe; large seeks show a held/black frame until decode catches up |
-| Decode runs on the main thread (off-tick) | Long GOPs / high resolutions compete with the UI for main-thread time |
-| Audio export not yet hardened | Long or many-clip audio timelines (whole-file main-thread mix) are untested at scale |
-| Single video/audio track tuning | Heavy multi-track compositing is not a validated path yet |
+| Risk                                      | Consequence if unmitigated                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| No predictive scheduler                   | Backward scrubbing cold-starts from a keyframe; large seeks show a held/black frame until decode catches up |
+| Decode runs on the main thread (off-tick) | Long GOPs / high resolutions compete with the UI for main-thread time                                       |
+| Audio export not yet hardened             | Long or many-clip audio timelines (whole-file main-thread mix) are untested at scale                        |
+| Single video/audio track tuning           | Heavy multi-track compositing is not a validated path yet                                                   |
 
 See [`CURRENT_LIMITATIONS.md`](../../../../../CURRENT_LIMITATIONS.md) for the full list.
 
@@ -177,6 +178,7 @@ The synchronous path inside a single `render(scene)` call.
 See [`architecture.md`](./architecture.md) § 5 for the full annotated sequence.
 
 Summary:
+
 1. Guard: `scene === lastScene` or context lost → return.
 2. `WebGLContext.clear()`.
 3. `RenderGraph.execute(scene, ctx)` — diff active vs scene items, acquire entering, release leaving.
@@ -526,7 +528,7 @@ I1, I3, I4 (drop behaviour), I5, I9, I10 (extend to real `VideoDecoder.output` f
 
 ---
 
-### Phase 2 — Audio Subsystem  ✓ Shipped
+### Phase 2 — Audio Subsystem ✓ Shipped
 
 > Shipped as `core/media/audio/AudioPlaybackController` (single track). The
 > design below records the intended shape; the live implementation follows it.
@@ -610,7 +612,7 @@ I1 (audio never inside `render()`), I2, I3, I6 (defined here), I11.
 
 ---
 
-### Phase 3 — Text Layer  ✓ Shipped (Text + Image)
+### Phase 3 — Text Layer ✓ Shipped (Text + Image)
 
 > Shipped as `gpu/layers/TextLayer` and `gpu/layers/ImageLayer`, sharing the quad
 > pipeline. Placement math lives in `gpu/layers/textLayout.ts` (reused by the
@@ -689,7 +691,7 @@ I1, I3, I5 (RenderGraph owns TextLayer lifecycle), I9, I10 (extended: rasterized
 
 ---
 
-### Phase 4 — Export Renderer  ✓ Shipped (different shape)
+### Phase 4 — Export Renderer ✓ Shipped (different shape)
 
 > Shipped as `core/export/` — but as a **2D `OffscreenCanvas`** worker reusing the
 > renderer's placement helpers + mediabunny mux, not a `GpuRenderer` on an
@@ -808,6 +810,7 @@ I1, I2, I7 (enforced here), I8 (enforced here — worker cannot import DOM), I10
 #### Extension-seam documentation
 
 Every `// future:` or `// TODO:` comment in `gpu/` becomes either:
+
 1. A numbered entry in [§7 Extension Seams](#7-extension-seams) of this document, or
 2. Deleted if the feature is now implemented.
 
@@ -871,12 +874,12 @@ flowchart LR
 
 ### 5.2 Responsibilities by domain
 
-| Domain | Owns | Must not do |
-|---|---|---|
-| Main thread | RAF loop, React rendering, `TimelineEngine`, `PlaybackEngine`, current `GpuRenderer`, `AudioScheduler` | Block the thread with long synchronous work; create a second RAF authority |
-| Async decode (main thread, off-tick) | `VideoDecoderManager` decode callbacks, `FrameCache.put` | Call any GL function; write to Zustand stores directly; call `render()` |
-| Export worker | `resolveTimeline`, `GpuRenderer` (OffscreenCanvas), `VideoEncoder` | Import `document`, `window`, React, Zustand; run a RAF loop; touch `AudioContext` |
-| Future AI / collab workers | Their own specialized work, post results via `MessagePort` | Import DOM, write `Project` without going through `TimelineEngine.commit` |
+| Domain                               | Owns                                                                                                   | Must not do                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Main thread                          | RAF loop, React rendering, `TimelineEngine`, `PlaybackEngine`, current `GpuRenderer`, `AudioScheduler` | Block the thread with long synchronous work; create a second RAF authority        |
+| Async decode (main thread, off-tick) | `VideoDecoderManager` decode callbacks, `FrameCache.put`                                               | Call any GL function; write to Zustand stores directly; call `render()`           |
+| Export worker                        | `resolveTimeline`, `GpuRenderer` (OffscreenCanvas), `VideoEncoder`                                     | Import `document`, `window`, React, Zustand; run a RAF loop; touch `AudioContext` |
+| Future AI / collab workers           | Their own specialized work, post results via `MessagePort`                                             | Import DOM, write `Project` without going through `TimelineEngine.commit`         |
 
 ### 5.3 Render thread assumption
 
@@ -899,18 +902,18 @@ The export path already has a distributed seam (§4 Phase 4): N workers, N frame
 
 ### 6.1 Resource lifecycle table
 
-| Resource | Owner | Borrower(s) | Transfer point | Disposal trigger | Leak if violated |
-|---|---|---|---|---|---|
-| `VideoFrame` | `FrameCache` | `VideoLayer.draw` | `FrameCache.get()` → borrow; `VideoTexture.upload()` → close | `upload()` `finally` block; LRU eviction; `FrameCache.dispose()` | GPU decoded memory leak; decoder pipeline crash on double-close |
-| `PoolTexture` (GL handle) | `TexturePool` | `VideoTexture` (leased) | `TexturePool.acquire()` → lease; `VideoTexture.release()` → return | LRU eviction → `gl.deleteTexture`; `TexturePool.dispose(gl)` | GPU VRAM leak; VRAM exhaustion at high clip counts |
-| `VideoDecoder` | `VideoDecoderManager` | — | — | `VideoDecoderManager.dispose()` | Decoder handle leak; decode budget exhausted |
-| `ProviderEntry` | `VideoLayer._providers` map | `VideoLayer._textures` (ref) | `VideoLayer.acquire()` bumps refCount; `VideoLayer.release()` decrements | refCount → 0 → `provider.markIdle()` | Provider kept alive after last clip leaves; source URL decoded unnecessarily |
-| `VideoTexture` | `VideoLayer._textures` map | `RenderGraph` (indirect) | `RenderGraph` → `VideoLayer.acquire()` creates; `release()` destroys | `VideoLayer.release(id)` → `VideoTexture.dispose()` → returns `PoolTexture` | `PoolTexture` stranded in leased state; pool exhaustion |
-| `WebGLProgram` + VAO | `VideoLayer` | — | — | `VideoLayer.dispose()` or context loss nulls and rebuilds | Shader program leak; phantom VAO reference after context restore |
-| `AudioElementPool` slot | `AudioScheduler` | `AudioScheduler` (internal) | `AudioScheduler.update()` diff → acquire on enter, release on exit | Clip exits `Scene.audios`; `AudioScheduler.dispose()` | `HTMLMediaElement` keeps playing silently; memory leak if many clips |
-| `VideoEncoder` (export) | Export worker | — | — | `encoder.flush()` + `encoder.close()` on completion or cancellation | Encoded chunks buffered indefinitely; worker memory grows without bound |
-| `OffscreenCanvas` (export) | Export worker | `GpuRenderer` (ref) | Transferred to worker at startup | Worker termination | Canvas backing-store leak if worker is orphaned |
-| `MessagePort` | Main thread | Export worker | `Worker.postMessage({ port }, [port])` | Worker `dispose()` → `port.close()` | Orphaned port keeps GC from collecting worker |
+| Resource                   | Owner                       | Borrower(s)                  | Transfer point                                                           | Disposal trigger                                                            | Leak if violated                                                             |
+| -------------------------- | --------------------------- | ---------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `VideoFrame`               | `FrameCache`                | `VideoLayer.draw`            | `FrameCache.get()` → borrow; `VideoTexture.upload()` → close             | `upload()` `finally` block; LRU eviction; `FrameCache.dispose()`            | GPU decoded memory leak; decoder pipeline crash on double-close              |
+| `PoolTexture` (GL handle)  | `TexturePool`               | `VideoTexture` (leased)      | `TexturePool.acquire()` → lease; `VideoTexture.release()` → return       | LRU eviction → `gl.deleteTexture`; `TexturePool.dispose(gl)`                | GPU VRAM leak; VRAM exhaustion at high clip counts                           |
+| `VideoDecoder`             | `VideoDecoderManager`       | —                            | —                                                                        | `VideoDecoderManager.dispose()`                                             | Decoder handle leak; decode budget exhausted                                 |
+| `ProviderEntry`            | `VideoLayer._providers` map | `VideoLayer._textures` (ref) | `VideoLayer.acquire()` bumps refCount; `VideoLayer.release()` decrements | refCount → 0 → `provider.markIdle()`                                        | Provider kept alive after last clip leaves; source URL decoded unnecessarily |
+| `VideoTexture`             | `VideoLayer._textures` map  | `RenderGraph` (indirect)     | `RenderGraph` → `VideoLayer.acquire()` creates; `release()` destroys     | `VideoLayer.release(id)` → `VideoTexture.dispose()` → returns `PoolTexture` | `PoolTexture` stranded in leased state; pool exhaustion                      |
+| `WebGLProgram` + VAO       | `VideoLayer`                | —                            | —                                                                        | `VideoLayer.dispose()` or context loss nulls and rebuilds                   | Shader program leak; phantom VAO reference after context restore             |
+| `AudioElementPool` slot    | `AudioScheduler`            | `AudioScheduler` (internal)  | `AudioScheduler.update()` diff → acquire on enter, release on exit       | Clip exits `Scene.audios`; `AudioScheduler.dispose()`                       | `HTMLMediaElement` keeps playing silently; memory leak if many clips         |
+| `VideoEncoder` (export)    | Export worker               | —                            | —                                                                        | `encoder.flush()` + `encoder.close()` on completion or cancellation         | Encoded chunks buffered indefinitely; worker memory grows without bound      |
+| `OffscreenCanvas` (export) | Export worker               | `GpuRenderer` (ref)          | Transferred to worker at startup                                         | Worker termination                                                          | Canvas backing-store leak if worker is orphaned                              |
+| `MessagePort`              | Main thread                 | Export worker                | `Worker.postMessage({ port }, [port])`                                   | Worker `dispose()` → `port.close()`                                         | Orphaned port keeps GC from collecting worker                                |
 
 ### 6.2 Context-loss ownership changes
 
@@ -931,21 +934,21 @@ These are the deliberate joints in the architecture where future systems plug in
 without restructuring existing code. Each seam has a contract it must honour and
 invariants it must preserve.
 
-| # | Name | Where it plugs in | Contract to honour | Stays invariant |
-|---|---|---|---|---|
-| S1 | WebGPU migration | `WebGLContext` → `GraphicsContext` interface; `ShaderProgram` → `Pipeline` | `Layer.draw(item, ctx)` call site unchanged; `TexturePool` swap for `GPUBuffer`-backed pool | `RenderGraph`, all `Layer` classes, `Renderer` interface |
-| S2 | Advanced effects / post-process | Between `RenderGraph.execute()` and final blit; or additional `ShaderProgram` per layer | Must not call `await`; must not touch `FrameCache` or decode state | I1, I5 |
-| S3 | Transitions | `Scene.transitions` array (already reserved); `VideoLayer` receives `transition` metadata | `resolveTimeline` produces overlapping clips with transition; renderer composites blend pass | `Scene` shape extensible without breaking existing clips |
-| S4 | AI overlays | `Scene.overlays` array (new); `OverlayLayer` registered in `RenderGraph` | AI worker posts bounding-box / segmentation data; layer renders textured quads | I2 (renderer sees only `Scene`), I5, I8 (AI worker is separate) |
-| S5 | Collaborative runtime | `TimelineEngine.commit()` accepts CRDT / OT-merged `Project` patch | Mutations still go through `commit()`; Ring 0 remains authoritative | I12 |
-| S6 | Sports replay / multi-camera | `Scene.videos` already supports multiple clips; slow-motion = `sourceFrame` interpolation in resolver | No renderer change; deterministic frame stepping covers instant replay | I3, I7 |
-| S7 | Cloud / distributed rendering | Export worker's `(Scene, frame) → pixels` contract exposed as a remote RPC | Identical contract to local export; worker-safe invariants already hold | I7, I8 |
-| S8 | Headless rendering | `GpuRenderer` receives `OffscreenCanvas` from `headless-gl` or WebGPU Node adapter | Renderer never imports `document` or `window` (already enforced by I2, I8) | I2, I8 |
-| S9 | Public SDK / runtime API | Public surface: `{ TimelineEngine, resolveTimeline, Renderer, GpuRenderer }` | No React types in public exports; `Scene` and `Project` are plain TypeScript interfaces | All invariants I1–I12 |
-| S10 | Worker decode migration | `VideoDecoderManager` moves behind a `MessagePort`; `DecoderBackedVideoFrameProvider` posts requests and receives `VideoFrame` objects | `getCurrent()` / `requestFrame()` interface unchanged; ownership rule I10 preserved because `VideoFrame.transfer()` is destructive — exactly one owner at all times | I1 (sync render), I10 (ownership) |
-| S11 | Transferable `VideoFrame` | Decoded frames cross `postMessage` via `VideoFrame.transfer()` from a decode worker | Ownership transfers atomically; the receiving thread is sole owner; `FrameCache.put()` call site unchanged | I10 |
-| S12 | Hardware acceleration paths | `VideoDecoderConfig.hardwareAcceleration` sourced from a project-level preference; forwarded through `RendererOptions` → `VideoDecoderManagerOptions` | No renderer or provider interface changes; decoder configuration is an internal detail of `VideoDecoderManager` | I2 (renderer sees only Scene) |
-| S13 | Multi-stream decode scaling | Per-src `VideoDecoderManager` cap (max N active managers); LRU eviction of idle managers via the existing `markIdle` / idle-timeout path | Provider factory remains `(src, deps?) => VideoFrameProvider`; eviction is transparent to `VideoLayer` | I5 (RenderGraph owns layer lifecycle) |
+| #   | Name                            | Where it plugs in                                                                                                                                     | Contract to honour                                                                                                                                                  | Stays invariant                                                 |
+| --- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| S1  | WebGPU migration                | `WebGLContext` → `GraphicsContext` interface; `ShaderProgram` → `Pipeline`                                                                            | `Layer.draw(item, ctx)` call site unchanged; `TexturePool` swap for `GPUBuffer`-backed pool                                                                         | `RenderGraph`, all `Layer` classes, `Renderer` interface        |
+| S2  | Advanced effects / post-process | Between `RenderGraph.execute()` and final blit; or additional `ShaderProgram` per layer                                                               | Must not call `await`; must not touch `FrameCache` or decode state                                                                                                  | I1, I5                                                          |
+| S3  | Transitions                     | `Scene.transitions` array (already reserved); `VideoLayer` receives `transition` metadata                                                             | `resolveTimeline` produces overlapping clips with transition; renderer composites blend pass                                                                        | `Scene` shape extensible without breaking existing clips        |
+| S4  | AI overlays                     | `Scene.overlays` array (new); `OverlayLayer` registered in `RenderGraph`                                                                              | AI worker posts bounding-box / segmentation data; layer renders textured quads                                                                                      | I2 (renderer sees only `Scene`), I5, I8 (AI worker is separate) |
+| S5  | Collaborative runtime           | `TimelineEngine.commit()` accepts CRDT / OT-merged `Project` patch                                                                                    | Mutations still go through `commit()`; Ring 0 remains authoritative                                                                                                 | I12                                                             |
+| S6  | Sports replay / multi-camera    | `Scene.videos` already supports multiple clips; slow-motion = `sourceFrame` interpolation in resolver                                                 | No renderer change; deterministic frame stepping covers instant replay                                                                                              | I3, I7                                                          |
+| S7  | Cloud / distributed rendering   | Export worker's `(Scene, frame) → pixels` contract exposed as a remote RPC                                                                            | Identical contract to local export; worker-safe invariants already hold                                                                                             | I7, I8                                                          |
+| S8  | Headless rendering              | `GpuRenderer` receives `OffscreenCanvas` from `headless-gl` or WebGPU Node adapter                                                                    | Renderer never imports `document` or `window` (already enforced by I2, I8)                                                                                          | I2, I8                                                          |
+| S9  | Public SDK / runtime API        | Public surface: `{ TimelineEngine, resolveTimeline, Renderer, GpuRenderer }`                                                                          | No React types in public exports; `Scene` and `Project` are plain TypeScript interfaces                                                                             | All invariants I1–I12                                           |
+| S10 | Worker decode migration         | `VideoDecoderManager` moves behind a `MessagePort`; `DecoderBackedVideoFrameProvider` posts requests and receives `VideoFrame` objects                | `getCurrent()` / `requestFrame()` interface unchanged; ownership rule I10 preserved because `VideoFrame.transfer()` is destructive — exactly one owner at all times | I1 (sync render), I10 (ownership)                               |
+| S11 | Transferable `VideoFrame`       | Decoded frames cross `postMessage` via `VideoFrame.transfer()` from a decode worker                                                                   | Ownership transfers atomically; the receiving thread is sole owner; `FrameCache.put()` call site unchanged                                                          | I10                                                             |
+| S12 | Hardware acceleration paths     | `VideoDecoderConfig.hardwareAcceleration` sourced from a project-level preference; forwarded through `RendererOptions` → `VideoDecoderManagerOptions` | No renderer or provider interface changes; decoder configuration is an internal detail of `VideoDecoderManager`                                                     | I2 (renderer sees only Scene)                                   |
+| S13 | Multi-stream decode scaling     | Per-src `VideoDecoderManager` cap (max N active managers); LRU eviction of idle managers via the existing `markIdle` / idle-timeout path              | Provider factory remains `(src, deps?) => VideoFrameProvider`; eviction is transparent to `VideoLayer`                                                              | I5 (RenderGraph owns layer lifecycle)                           |
 
 ---
 
@@ -1063,13 +1066,13 @@ Phase 5 partial means: `types.ts` freeze, `acquire/release` naming audit, and `L
 
 ### 9.2 Validation milestones
 
-| Milestone | Criterion | Phase |
-|---|---|---|
-| M1 | Real `MediabunnyDemuxer` decodes a 1080p mp4 to the canvas at ≥ 30 FPS | Phase 1 |
-| M2 | Two clips on overlapping tracks; zIndex sort correct; no flicker on 100 rapid seeks | Phase 1 |
-| M3 | Audio plays in sync; drift < 1 frame (33 ms at 30 fps) after 60 s of playback | Phase 2 |
-| M4 | Text clip renders + transforms + zIndexes correctly between two video clips | Phase 3 |
-| M5 | Export 10 s 1080p H.264 in a worker; hash-equal output across two runs | Phase 4 |
+| Milestone | Criterion                                                                           | Phase   |
+| --------- | ----------------------------------------------------------------------------------- | ------- |
+| M1        | Real `MediabunnyDemuxer` decodes a 1080p mp4 to the canvas at ≥ 30 FPS              | Phase 1 |
+| M2        | Two clips on overlapping tracks; zIndex sort correct; no flicker on 100 rapid seeks | Phase 1 |
+| M3        | Audio plays in sync; drift < 1 frame (33 ms at 30 fps) after 60 s of playback       | Phase 2 |
+| M4        | Text clip renders + transforms + zIndexes correctly between two video clips         | Phase 3 |
+| M5        | Export 10 s 1080p H.264 in a worker; hash-equal output across two runs              | Phase 4 |
 
 ### 9.3 Testing priorities
 
@@ -1108,10 +1111,10 @@ At the end of each phase:
 
 ### 9.5 Release checkpoints
 
-| Checkpoint | Criteria |
-|---|---|
-| MVP | Milestones M1–M4 met; audio + text + video render correctly; export not required |
-| v1.0 | All milestones M1–M5 met; export is deterministic; stress harness passes; all invariants documented and linted |
+| Checkpoint | Criteria                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------- |
+| MVP        | Milestones M1–M4 met; audio + text + video render correctly; export not required                               |
+| v1.0       | All milestones M1–M5 met; export is deterministic; stress harness passes; all invariants documented and linted |
 
 ---
 
@@ -1160,14 +1163,14 @@ layers that precede them.
 
 ### 10.5 Likely future bottlenecks
 
-| Bottleneck | When it appears | Architectural mitigation |
-|---|---|---|
-| GPU upload bandwidth | 4K video, 4+ simultaneous clips | Decode on a worker thread; transfer `VideoFrame` to main thread via `VideoFrame.transfer()` |
-| Single WebGL2 context | GPU parallelism limits; advanced effects requiring multiple render targets | S1: WebGPU migration; multi-pass render targets within one context (intermediate FBO) |
-| `FrameCache` size tuning | High clip count; many concurrent seek positions | Per-source quotas; eviction policy tunable via `FrameCache` constructor |
-| JS GC pauses during export | Long exports allocating many `Uint8Array` for encoded chunks | Pre-allocate ring buffer in export worker; reuse chunk backing stores |
-| `resolveTimeline` at high clip count | 500+ clips across 20 tracks | Binary-search by `startFrame`; memoize per `(frame, projectVersion)` pair |
-| Main-thread audio scheduling jitter | High-latency `setTimeout` under CPU load | Migrate to `AudioContext`-scheduled sources (WebAudio); remove `setTimeout` from `AudioScheduler` critical path |
+| Bottleneck                           | When it appears                                                            | Architectural mitigation                                                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| GPU upload bandwidth                 | 4K video, 4+ simultaneous clips                                            | Decode on a worker thread; transfer `VideoFrame` to main thread via `VideoFrame.transfer()`                     |
+| Single WebGL2 context                | GPU parallelism limits; advanced effects requiring multiple render targets | S1: WebGPU migration; multi-pass render targets within one context (intermediate FBO)                           |
+| `FrameCache` size tuning             | High clip count; many concurrent seek positions                            | Per-source quotas; eviction policy tunable via `FrameCache` constructor                                         |
+| JS GC pauses during export           | Long exports allocating many `Uint8Array` for encoded chunks               | Pre-allocate ring buffer in export worker; reuse chunk backing stores                                           |
+| `resolveTimeline` at high clip count | 500+ clips across 20 tracks                                                | Binary-search by `startFrame`; memoize per `(frame, projectVersion)` pair                                       |
+| Main-thread audio scheduling jitter  | High-latency `setTimeout` under CPU load                                   | Migrate to `AudioContext`-scheduled sources (WebAudio); remove `setTimeout` from `AudioScheduler` critical path |
 
 ### 10.6 Strategic position
 
@@ -1211,6 +1214,7 @@ _Last updated: 2026-05-23. Cross-references validated against [`architecture.md`
 - `RecordingGl` (test-only) — `WebGL2RenderingContext` stub that records draw calls into a byte log for SHA-256 golden-frame hashing.
 
 **New test suites** (added to `gpu/__tests__/`):
+
 - `DecoderBackedVideoFrameProvider.test.ts` — happy path, coalescing, cap, dispose.
 - `RapidSeekStress.test.ts` — 100+ seek cycles, leak counters, non-stuck assertion.
 - `FrameOwnership.test.ts` — FrameCache ownership invariant, multi-clip, double-close detection.
@@ -1220,6 +1224,7 @@ _Last updated: 2026-05-23. Cross-references validated against [`architecture.md`
 - Extended `MediabunnyDemuxer.test.ts` — actionable error when mediabunny absent.
 
 **Invariants preserved**:
+
 - I1: `render(scene)` remains synchronous. `DecoderBackedVideoFrameProvider.requestFrame()` is fire-and-forget. `getCurrent()` never awaits.
 - I3: `scene === lastScene` guard untouched. Validated by `GoldenFrameHash` 3-run test.
 - I4: cache miss returns `null`; last uploaded texture drawn; `requestFrame` is fire-and-forget.
@@ -1229,17 +1234,20 @@ _Last updated: 2026-05-23. Cross-references validated against [`architecture.md`
 - I11: Integer frame model preserved; `fps` parameter ensures correct microsecond timestamps.
 
 **Architectural tradeoffs**:
+
 - mediabunny is optional (peer, not a dep): keeps the package footprint small; consumers opt in. Tradeoff: consumers must wire the factory; the error message is comprehensive enough to guide them.
 - `maxOutstanding` cap (default 4) is a conservative bound; high-throughput use cases may increase it. Frame drops are observable via `GpuDebugCounters.droppedFrames`.
 - `RecordingGl` is a call-recording stub, not a pixel-rendering stub. Golden hashes encode draw order and uniform values, not pixel bytes. True pixel hashes require a real GPU (deferred to Phase 4 CI / Playwright).
 
 **Future implications** (new seams documented, §7 S10–S13):
+
 - S10: Worker decode migration — `DecoderBackedVideoFrameProvider` is the natural seam. The provider interface does not change; the manager moves behind a `MessagePort`.
 - S11: Transferable `VideoFrame` — `VideoFrame.transfer()` is destructive; I10 is preserved at the transfer site.
 - S12: Hardware acceleration — forwarded through `RendererOptions` without touching the renderer.
 - S13: Multi-stream scaling — idle manager eviction is already modelled via `markIdle` / idle-timeout.
 
 **Known risks**:
+
 - `VideoDecoderManager._decodeFrame` iterates `packets()` sequentially. High-bitrate sources or slow demuxers may take > 1 frame budget; the provider coalesces so the renderer is not blocked, but visible lag may increase.
 - The `DecoderBackedVideoFrameProvider` does not attempt recovery from `Errored` decoder state automatically. Callers must dispose and recreate the provider. Recovery automation is deferred to Phase 1.5 or Phase 5 stabilization.
 
@@ -1261,6 +1269,7 @@ _Last updated: 2026-05-23. Cross-references validated against [`architecture.md`
 - `@elah/editor` `index.ts` — re-exports `createMediabunnyBackend`, `isMediabunnyCompatible`, `MediabunnyModule`, `CreateMediabunnyBackendOpts`, `DemuxerBackend`, `DemuxerFactory`.
 
 **New test suites**:
+
 - `MediabunnyBackend.test.ts` — unit tests for the rewritten backend: µs→sec conversion, `getKeyPacket` seek caching, dispose, null codec error, `isMediabunnyCompatible`.
 - `PlaybackRestart.test.ts` — 10 play/pause cycles; `TexturePool.getLeasedCount()` returns to 0 after each cycle.
 - `MultiClipOverlap.playback.test.ts` — two clips at same src: one provider, coalesced requests, bounded pending count.
@@ -1268,10 +1277,12 @@ _Last updated: 2026-05-23. Cross-references validated against [`architecture.md`
 - `e2e/realPlayback.spec.ts` — Playwright: import MP4 fixture, seek to frame 15, SHA-256 hash pixels via `window.__GPU__.readCanvas()`, assert stable across 3 runs and after WebGL context loss.
 
 **Architectural tradeoffs**:
+
 - **Blob-fetch round-trip**: object URLs created by `URL.createObjectURL(file)` are fetched back as a Blob in `createMediabunnyBackend`. This creates a temporary in-memory copy. Future optimisation: maintain a `Map<objectUrl, File>` in the playground and pass the `File` directly via `blobResolver`, skipping the fetch. The `blobResolver` parameter already supports this without API change.
 - **Container-format tree-shake**: `ALL_FORMATS` is passed to `Input` for maximum compatibility in the playground. Production apps that know their format can pass a specific format array to reduce bundle size.
 - **mediabunny in playground only**: `@elah/editor` remains free of the mediabunny dependency. Only `apps/playground/src/createPlaygroundDemuxerFactory.ts` imports it statically. This was a deliberate trade-off: the editor SDK stays lean; the playground pays the bundle cost.
 
 **Known risks before audio phase**:
+
 - **Clock drift**: `PlaybackEngine` uses `performance.now()`. When the audio phase ships a `VideoDecoder` + `AudioContext` timeline, the video-frame clock must be disciplined to `AudioContext.currentTime`. A drift of > 1 frame (~33ms) becomes visible. The architecture supports the upgrade; a seam for it exists at `PlaybackEngine.getFrameAt()`.
 - **Back-pressure signal gap**: `VideoLayer` currently has no back-pressure signal to providers when GPU upload is slow (texture pool full). When the pool is exhausted, `acquire()` returns `null` and the frame is skipped silently. A future `onPoolPressure` callback from `TexturePool` to `DecoderBackedVideoFrameProvider` would allow the provider to throttle `requestFrame` calls. Deferred to Phase 2.

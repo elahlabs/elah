@@ -36,9 +36,9 @@ export default function PricingPage() {
               Open source. Commercial licensing on request.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-              elah is free to build on. If you need a commercial license, want
-              dedicated support, or have a use case the open-source license
-              doesn&apos;t cover, reach out — we&apos;ll work something out.
+              elah is free to build on. If you need a commercial license, want dedicated support, or
+              have a use case the open-source license doesn&apos;t cover, reach out — we&apos;ll
+              work something out.
             </p>
           </div>
         </div>
@@ -58,8 +58,8 @@ export default function PricingPage() {
                 Free
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                Everything you need to build a browser-native video editor, in
-                the open. Install from npm and ship today.
+                Everything you need to build a browser-native video editor, in the open. Install
+                from npm and ship today.
               </p>
 
               <ul className="mt-6 space-y-3">
@@ -102,9 +102,9 @@ export default function PricingPage() {
                 Let&apos;s talk
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                For commercial licensing, priority support, custom integration
-                help, or anything the open-source license doesn&apos;t cover,
-                get in touch. No forms, no sales funnel — just email or Discord.
+                For commercial licensing, priority support, custom integration help, or anything the
+                open-source license doesn&apos;t cover, get in touch. No forms, no sales funnel —
+                just email or Discord.
               </p>
 
               <div className="mt-6 space-y-3">

@@ -333,5 +333,4 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     }
     this._vao = vao
   }
-
 }

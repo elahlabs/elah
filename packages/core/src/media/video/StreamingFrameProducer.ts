@@ -80,7 +80,10 @@ type ProviderState = 'active' | 'idle' | 'disposed'
  * detailed `[SFP-TRACE]` logging of every setPlayhead + cache.put + feed window.
  */
 function _sfpTrace(msg: string, data?: Record<string, unknown>): void {
-  if (typeof globalThis !== 'undefined' && (globalThis as { __SFP_DEBUG__?: boolean }).__SFP_DEBUG__) {
+  if (
+    typeof globalThis !== 'undefined' &&
+    (globalThis as { __SFP_DEBUG__?: boolean }).__SFP_DEBUG__
+  ) {
     if (data) {
       console.log(`[SFP-TRACE] ${msg}`, data)
     } else {
@@ -191,10 +194,7 @@ export class StreamingFrameProducer implements VideoFrameProvider {
         // Surface the underlying decoder/demuxer error so it doesn't get
         // swallowed by the automatic reopen. Critical for diagnosing
         // mid-playback stalls (e.g. WebCodecs internal failure).
-        console.warn(
-          '[StreamingFrameProducer] decoder errored — reopening manager:',
-          err,
-        )
+        console.warn('[StreamingFrameProducer] decoder errored — reopening manager:', err)
         this._reopening = true
         // After reopen the manager is fresh: no seek, no frames decoded.
         // Reset producer bookkeeping so the next setPlayhead() is treated as

@@ -1,15 +1,14 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  type CSSProperties,
-} from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, type CSSProperties } from 'react'
 import { GpuRenderer } from '@elah/core'
 import { resolveTimeline } from '@elah/core'
 import { useTimelineEngine, usePlaybackEngine } from '@elah/core'
 import type { DemuxerFactory } from '@elah/core'
-import { AudioPlaybackController, useMediaLibraryStore, preloadProjectImages, warmImageSrc } from '@elah/core'
+import {
+  AudioPlaybackController,
+  useMediaLibraryStore,
+  preloadProjectImages,
+  warmImageSrc,
+} from '@elah/core'
 import type { AudioResolver } from '@elah/core'
 import { cn } from '@elah/timeline'
 import { TextOverlay } from './TextOverlay'
@@ -186,7 +185,16 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       rendererRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, playback, demuxerFactory, debug, probeLayer, preserveDrawingBuffer, enableAudio, audioResolver])
+  }, [
+    engine,
+    playback,
+    demuxerFactory,
+    debug,
+    probeLayer,
+    preserveDrawingBuffer,
+    enableAudio,
+    audioResolver,
+  ])
 
   return (
     <div

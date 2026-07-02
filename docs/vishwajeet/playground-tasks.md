@@ -35,25 +35,25 @@ The `<Timeline>` component accepts a `classNames` prop (`TimelineClassNames`) an
 
 These map to the `classNames` prop on `<Timeline>` (type: `TimelineClassNames` from `@elah/timeline`):
 
-| Slot | Controls | Description |
-|---|---|---|
-| `root` | free-form class input | Outer wrapper (e.g. `rounded-xl`) |
-| `ruler` | color picker / preset classes | Ruler strip background |
-| `rulerTick` | color picker / preset classes | Tick marks in the ruler |
-| `rulerLabel` | color picker / preset classes | Timecode labels |
-| `track` | free-form class input | Each track row container |
-| `trackLabel` | free-form class input | Track-label sidebar per row |
-| `lane` | color picker / preset classes | Clip lane background |
-| `clip` | free-form class input | Clip block shape/shadow (all types) |
-| `clipVideo` | gradient preset | Video clip body gradient (`from-* to-*`) |
-| `clipAudio` | gradient preset | Audio clip body gradient |
-| `clipText` | gradient preset | Text clip body gradient |
-| `clipImage` | gradient preset | Image clip body gradient |
-| `clipVideoAccent` | color text class | Video clip stripe + selected border |
-| `clipAudioAccent` | color text class | Audio clip accent |
-| `clipTextAccent` | color text class | Text clip accent |
-| `clipImageAccent` | color text class | Image clip accent |
-| `playhead` | color text class | Playhead needle color (uses `currentColor`) |
+| Slot              | Controls                      | Description                                 |
+| ----------------- | ----------------------------- | ------------------------------------------- |
+| `root`            | free-form class input         | Outer wrapper (e.g. `rounded-xl`)           |
+| `ruler`           | color picker / preset classes | Ruler strip background                      |
+| `rulerTick`       | color picker / preset classes | Tick marks in the ruler                     |
+| `rulerLabel`      | color picker / preset classes | Timecode labels                             |
+| `track`           | free-form class input         | Each track row container                    |
+| `trackLabel`      | free-form class input         | Track-label sidebar per row                 |
+| `lane`            | color picker / preset classes | Clip lane background                        |
+| `clip`            | free-form class input         | Clip block shape/shadow (all types)         |
+| `clipVideo`       | gradient preset               | Video clip body gradient (`from-* to-*`)    |
+| `clipAudio`       | gradient preset               | Audio clip body gradient                    |
+| `clipText`        | gradient preset               | Text clip body gradient                     |
+| `clipImage`       | gradient preset               | Image clip body gradient                    |
+| `clipVideoAccent` | color text class              | Video clip stripe + selected border         |
+| `clipAudioAccent` | color text class              | Audio clip accent                           |
+| `clipTextAccent`  | color text class              | Text clip accent                            |
+| `clipImageAccent` | color text class              | Image clip accent                           |
+| `playhead`        | color text class              | Playhead needle color (uses `currentColor`) |
 
 > **Note on color slots:** Clip bodies take a `from-*/to-*` gradient or `bg-*`. Accent/playhead slots take a `text-*` class since those elements paint from `currentColor`.
 
@@ -61,11 +61,11 @@ These map to the `classNames` prop on `<Timeline>` (type: `TimelineClassNames` f
 
 These are props on `<EditorProvider>`:
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `defaultTrackHeight` | `number` | 36 | Height in px of each track row |
-| `maxHistorySize` | `number` | engine default | Max undo history entries |
-| `stage.width` / `stage.height` | `number` | 1920 × 1080 | Canvas/stage dimensions |
+| Prop                           | Type     | Default        | Description                    |
+| ------------------------------ | -------- | -------------- | ------------------------------ |
+| `defaultTrackHeight`           | `number` | 36             | Height in px of each track row |
+| `maxHistorySize`               | `number` | engine default | Max undo history entries       |
+| `stage.width` / `stage.height` | `number` | 1920 × 1080    | Canvas/stage dimensions        |
 
 Because `EditorProvider` memoizes the engine once on mount, `stage`, `defaultTrackHeight`, and `maxHistorySize` can only be applied on mount. Wire these as controls that require a remount (show a "Remount to apply" note next to them, or implement a key-based remount).
 
@@ -149,6 +149,7 @@ resolveTimeline(frame: number, project: Project): Scene
 ```
 
 The `Scene` shape:
+
 ```ts
 {
   frame: number
@@ -297,13 +298,15 @@ flowchart TB
 In the panel area (currently the 240px-wide sidebar), when `activePanel === 'json'`, render the live JSON viewer:
 
 ```tsx
-{activePanel === 'json' ? (
-  <LiveJsonPanel />
-) : activePanel === 'text' ? (
-  <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
-) : (
-  <MediaPanel style={{ flex: 1, minHeight: 0 }} />
-)}
+{
+  activePanel === 'json' ? (
+    <LiveJsonPanel />
+  ) : activePanel === 'text' ? (
+    <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
+  ) : (
+    <MediaPanel style={{ flex: 1, minHeight: 0 }} />
+  )
+}
 ```
 
 ### `LiveJsonPanel` implementation
@@ -311,14 +314,21 @@ In the panel area (currently the 240px-wide sidebar), when `activePanel === 'jso
 ```tsx
 function LiveJsonPanel() {
   const engine = useTimelineEngine()
-  const tracks = useTracksStore((s) => s.tracks)     // re-renders on any track/clip change
+  const tracks = useTracksStore((s) => s.tracks) // re-renders on any track/clip change
   const currentFrame = usePlaybackStore((s) => s.currentFrame)
 
   const scene = resolveTimeline(currentFrame, engine.getProject())
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '8px' }}>
-      <pre style={{ fontSize: 10, fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+      <pre
+        style={{
+          fontSize: 10,
+          fontFamily: 'monospace',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+        }}
+      >
         {JSON.stringify(scene, null, 2)}
       </pre>
     </div>
@@ -332,15 +342,15 @@ function LiveJsonPanel() {
 
 ## Relevant Files
 
-| File | Purpose |
-|---|---|
-| `apps/web/components/playground/TimelineEditor.tsx` | Timeline-only playground (Tasks 1 & 2) |
-| `apps/web/components/playground/ProductionEditor.tsx` | Full production editor (Task 3) |
-| `packages/timeline/src/classNames.ts` | `TimelineClassNames` interface — all slot names and docs |
-| `packages/timeline/src/Timeline.tsx` | `TimelineProps` — `classNames`, `fps`, `className`, `style` |
-| `packages/editor/src/editor/EditorProvider.tsx` | `EditorProviderProps` — `fps`, `stage`, `defaultTrackHeight`, `maxHistorySize`, `initialTracks` |
-| `packages/core/src/resolver/resolveTimeline.ts` | `resolveTimeline(frame, project): Scene` |
-| `packages/core/src/resolver/scene.ts` | `Scene` type + active clip shapes |
+| File                                                  | Purpose                                                                                         |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/web/components/playground/TimelineEditor.tsx`   | Timeline-only playground (Tasks 1 & 2)                                                          |
+| `apps/web/components/playground/ProductionEditor.tsx` | Full production editor (Task 3)                                                                 |
+| `packages/timeline/src/classNames.ts`                 | `TimelineClassNames` interface — all slot names and docs                                        |
+| `packages/timeline/src/Timeline.tsx`                  | `TimelineProps` — `classNames`, `fps`, `className`, `style`                                     |
+| `packages/editor/src/editor/EditorProvider.tsx`       | `EditorProviderProps` — `fps`, `stage`, `defaultTrackHeight`, `maxHistorySize`, `initialTracks` |
+| `packages/core/src/resolver/resolveTimeline.ts`       | `resolveTimeline(frame, project): Scene`                                                        |
+| `packages/core/src/resolver/scene.ts`                 | `Scene` type + active clip shapes                                                               |
 
 ---
 

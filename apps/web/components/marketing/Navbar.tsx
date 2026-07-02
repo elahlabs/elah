@@ -49,7 +49,7 @@ export function Navbar() {
                 'rounded px-3 py-1.5 text-sm transition-colors',
                 pathname === link.href || pathname.startsWith(link.href + '/')
                   ? 'bg-surface-high text-on-surface font-medium'
-                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
               )}
             >
               {link.label}
@@ -116,7 +116,7 @@ export function Navbar() {
                     'rounded px-3 py-2 text-sm transition-colors',
                     pathname === link.href
                       ? 'bg-surface-high text-on-surface font-medium'
-                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
                   )}
                 >
                   {link.label}

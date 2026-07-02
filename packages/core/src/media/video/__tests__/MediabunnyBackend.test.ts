@@ -14,7 +14,7 @@
  *  - _assertMediabunnyApi throws on missing exports
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createMediabunnyBackend,
   isMediabunnyCompatible,
@@ -132,9 +132,7 @@ describe('createMediabunnyBackend', () => {
 
       expect(MOCK_BLOB_RESOLVER).toHaveBeenCalledWith('blob:example.com/abc')
       expect(mb.BlobSource).toHaveBeenCalledWith(MOCK_BLOB)
-      expect(mb.Input).toHaveBeenCalledWith(
-        expect.objectContaining({ formats: mb.ALL_FORMATS }),
-      )
+      expect(mb.Input).toHaveBeenCalledWith(expect.objectContaining({ formats: mb.ALL_FORMATS }))
       expect(mocks.input.getPrimaryVideoTrack).toHaveBeenCalled()
       expect(mocks.track!.getDecoderConfig).toHaveBeenCalled()
       expect(mb.EncodedPacketSink).toHaveBeenCalledWith(mocks.track)
@@ -157,7 +155,9 @@ describe('createMediabunnyBackend', () => {
 
   describe('getConfig', () => {
     it('returns the decoder config obtained during open()', async () => {
-      const { mb } = createMockMb({ config: { codec: 'avc1.64001e', codedWidth: 1920, codedHeight: 1080 } })
+      const { mb } = createMockMb({
+        config: { codec: 'avc1.64001e', codedWidth: 1920, codedHeight: 1080 },
+      })
       const backend = createMediabunnyBackend(mb, { blobResolver: MOCK_BLOB_RESOLVER })
       await backend.open('blob:x')
 
@@ -258,11 +258,15 @@ describe('createMediabunnyBackend', () => {
       await backend.seekToKeyframe(0)
 
       // First packets() call consumes cache
-      for await (const _c of backend.packets([0, 50_000])) { /* noop */ }
+      for await (const _c of backend.packets([0, 50_000])) {
+        /* noop */
+      }
       const callsAfterFirst = mocks.sink.getKeyPacket.mock.calls.length
 
       // Second packets() call — no cache → should call getKeyPacket again
-      for await (const _c of backend.packets([0, 50_000])) { /* noop */ }
+      for await (const _c of backend.packets([0, 50_000])) {
+        /* noop */
+      }
       const callsAfterSecond = mocks.sink.getKeyPacket.mock.calls.length
 
       expect(callsAfterSecond).toBeGreaterThan(callsAfterFirst)

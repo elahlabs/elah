@@ -60,8 +60,7 @@ export function clipsOverlap(
   b: { startFrame: number; durationFrames: number },
 ): boolean {
   return (
-    a.startFrame < b.startFrame + b.durationFrames &&
-    a.startFrame + a.durationFrames > b.startFrame
+    a.startFrame < b.startFrame + b.durationFrames && a.startFrame + a.durationFrames > b.startFrame
   )
 }
 
@@ -74,7 +73,5 @@ export function findOverlaps(
   candidate: { startFrame: number; durationFrames: number },
   excludeId?: string,
 ): Clip[] {
-  return trackClips.filter(
-    (c) => c.id !== excludeId && clipsOverlap(c, candidate),
-  )
+  return trackClips.filter((c) => c.id !== excludeId && clipsOverlap(c, candidate))
 }

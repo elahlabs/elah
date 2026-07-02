@@ -54,7 +54,9 @@ const STAGE_CHANNEL: Record<string, TraceChannel> = {
 async function fetchAssetBlob(src: string, kind: string): Promise<Blob> {
   const res = await fetch(src)
   if (!res.ok) {
-    throw new Error(`ExportWorker: failed to fetch ${kind} "${src}" (${res.status} ${res.statusText})`)
+    throw new Error(
+      `ExportWorker: failed to fetch ${kind} "${src}" (${res.status} ${res.statusText})`,
+    )
   }
   return res.blob()
 }
@@ -63,7 +65,12 @@ function xlog(stage: string, msg: string, extra?: Record<string, unknown>) {
   const channel = STAGE_CHANNEL[stage] ?? 'EXPORT'
   if (!traceEnabled(channel)) return
   const elapsed = ((performance.now() - t0) / 1000).toFixed(3)
-  const suffix = extra ? ' — ' + Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(', ') : ''
+  const suffix = extra
+    ? ' — ' +
+      Object.entries(extra)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(', ')
+    : ''
   trace(channel, `[${stage}] +${elapsed}s ${msg}${suffix}`)
 }
 
@@ -102,7 +109,12 @@ import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
 self.onmessage = async (e: MessageEvent) => {
   if (e.data?.type !== 'start') return
 
-  const { project, options, audio, trace: traceChannels } = e.data as {
+  const {
+    project,
+    options,
+    audio,
+    trace: traceChannels,
+  } = e.data as {
     project: Project
     options: ExportOptions
     audio: RenderedAudio | null
@@ -126,7 +138,11 @@ self.onmessage = async (e: MessageEvent) => {
 // Main export logic
 // ---------------------------------------------------------------------------
 
-async function runExport(project: Project, options: ExportOptions, audio: RenderedAudio | null): Promise<ArrayBuffer> {
+async function runExport(
+  project: Project,
+  options: ExportOptions,
+  audio: RenderedAudio | null,
+): Promise<ArrayBuffer> {
   const { width, height } = project.stage
   const fps = project.fps
   const totalFrames = getTotalFrames(project.clips)
@@ -147,14 +163,16 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   const allClips = Object.values(project.clips).flat()
   xlog('run', `clip inventory`, {
     total: allClips.length,
-    video: allClips.filter(c => c.type === 'video').length,
-    image: allClips.filter(c => c.type === 'image').length,
-    audio: allClips.filter(c => c.type === 'audio').length,
-    text: allClips.filter(c => c.type === 'text').length,
+    video: allClips.filter((c) => c.type === 'video').length,
+    image: allClips.filter((c) => c.type === 'image').length,
+    audio: allClips.filter((c) => c.type === 'audio').length,
+    text: allClips.filter((c) => c.type === 'text').length,
   })
 
   // --- Open mediabunny CanvasSinks for unique video srcs ---
-  const videoSrcs = [...new Set(allClips.filter(c => c.type === 'video' && c.src).map(c => c.src!))]
+  const videoSrcs = [
+    ...new Set(allClips.filter((c) => c.type === 'video' && c.src).map((c) => c.src!)),
+  ]
   xlog('assets:video', `opening ${videoSrcs.length} CanvasSink(s)`)
   const videoSinks = new Map<string, mb.CanvasSink>()
   for (let i = 0; i < videoSrcs.length; i++) {
@@ -162,7 +180,10 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetching "${src.slice(-40)}"`)
     const fetchStart = performance.now()
     const blob = await fetchAssetBlob(src, 'video')
-    xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetched`, { size: fmtBytes(blob.size), ms: (performance.now() - fetchStart).toFixed(1) })
+    xlog('assets:video', `[${i + 1}/${videoSrcs.length}] fetched`, {
+      size: fmtBytes(blob.size),
+      ms: (performance.now() - fetchStart).toFixed(1),
+    })
     const input = new mb.Input({ formats: mb.ALL_FORMATS, source: new mb.BlobSource(blob) })
     const track = await input.getPrimaryVideoTrack()
     if (track) {
@@ -174,7 +195,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   }
 
   // --- Load ImageBitmaps for unique image srcs ---
-  const imageSrcs = [...new Set(allClips.filter(c => c.type === 'image' && c.src).map(c => c.src!))]
+  const imageSrcs = [
+    ...new Set(allClips.filter((c) => c.type === 'image' && c.src).map((c) => c.src!)),
+  ]
   xlog('assets:image', `loading ${imageSrcs.length} ImageBitmap(s)`)
   const imageBitmaps = new Map<string, ImageBitmap>()
   for (let i = 0; i < imageSrcs.length; i++) {
@@ -183,7 +206,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     const fetchStart = performance.now()
     const blob = await fetchAssetBlob(src, 'image')
     const bitmap = await createImageBitmap(blob).catch((e) => {
-      throw new Error(`ExportWorker: failed to decode image "${src}" (${blob.type || 'unknown type'}, ${fmtBytes(blob.size)}): ${e instanceof Error ? e.message : e}`)
+      throw new Error(
+        `ExportWorker: failed to decode image "${src}" (${blob.type || 'unknown type'}, ${fmtBytes(blob.size)}): ${e instanceof Error ? e.message : e}`,
+      )
     })
     imageBitmaps.set(src, bitmap)
     xlog('assets:image', `[${i + 1}/${imageSrcs.length}] ready`, {
@@ -244,7 +269,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   await timed('mediabunny', 'output.start()', () => output.start())
 
   if (audio && audioSource) {
-    await timed('mediabunny', 'audioSource.add() — encoding mixed PCM', () => addAudioMix(audioSource!, audio))
+    await timed('mediabunny', 'audioSource.add() — encoding mixed PCM', () =>
+      addAudioMix(audioSource!, audio),
+    )
   }
 
   // --- Per-clip sequential decoders ---
@@ -259,7 +286,7 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     clipEndFrame: number
   }
   const clipDecoders = new Map<string, ClipDecoder>()
-  const videoClips = allClips.filter(c => c.type === 'video' && c.src)
+  const videoClips = allClips.filter((c) => c.type === 'video' && c.src)
   xlog('frames', `setting up ${videoClips.length} per-clip sequential decoder(s)`)
   for (const clip of videoClips) {
     const sink = videoSinks.get(clip.src!)
@@ -268,8 +295,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     // Pre-compute source timestamps for every export frame this clip covers.
     // Using +0.5 midpoint matches the preview's Math.round(PTS / usPerFrame)
     // convention and avoids off-by-one on sources with a different frame rate.
-    const sourceTimestamps = Array.from({ length: clip.durationFrames }, (_, i) =>
-      (clip.sourceStartFrame + i + 0.5) / fps,
+    const sourceTimestamps = Array.from(
+      { length: clip.durationFrames },
+      (_, i) => (clip.sourceStartFrame + i + 0.5) / fps,
     )
     clipDecoders.set(clip.id, {
       gen: sink.canvasesAtTimestamps(sourceTimestamps),
@@ -288,7 +316,10 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   // transition window. Drawn on top at globalAlpha=1-t to produce a crossfade
   // while the GPU only decodes the incoming clip (same logic as TransitionOverlay
   // in preview, mirroring it for export parity).
-  type SnapshotEntry = { source: CanvasImageSource & { width: number; height: number }; owned: boolean }
+  type SnapshotEntry = {
+    source: CanvasImageSource & { width: number; height: number }
+    owned: boolean
+  }
   const transitionSnapshots = new Map<string, SnapshotEntry>()
 
   for (let frame = 0; frame < totalFrames; frame++) {
@@ -321,8 +352,8 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     // transition. The canvas is already decoded above — no extra seek needed.
     for (const tr of scene.transitions) {
       if (transitionSnapshots.has(tr.id)) continue
-      const fromVideo = scene.videos.find(v => v.id === tr.fromClipId)
-      const fromImage = scene.images.find(i => i.id === tr.fromClipId)
+      const fromVideo = scene.videos.find((v) => v.id === tr.fromClipId)
+      const fromImage = scene.images.find((i) => i.id === tr.fromClipId)
       if (fromVideo) {
         const wrapped = clipCanvases.get(fromVideo.id) ?? null
         if (wrapped) {
@@ -335,11 +366,20 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
       }
     }
 
-    await renderFrame(ctx2d, scene, clipCanvases, imageBitmaps, transitionSnapshots, width, height, frame)
+    await renderFrame(
+      ctx2d,
+      scene,
+      clipCanvases,
+      imageBitmaps,
+      transitionSnapshots,
+      width,
+      height,
+      frame,
+    )
     await canvasSource.add(frame / fps, 1 / fps)
 
     // Release snapshots whose transition window has closed.
-    const activeIds = new Set(scene.transitions.map(tr => tr.id))
+    const activeIds = new Set(scene.transitions.map((tr) => tr.id))
     for (const [id, snap] of transitionSnapshots) {
       if (!activeIds.has(id)) {
         if (snap.owned) (snap.source as ImageBitmap).close()
@@ -378,10 +418,15 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
  */
 async function addAudioMix(source: mb.AudioSampleSource, audio: RenderedAudio): Promise<void> {
   const { sampleRate, numberOfChannels, length } = audio
-  const channels = audio.channels.map(b => new Float32Array(b))
+  const channels = audio.channels.map((b) => new Float32Array(b))
   const chunkFrames = sampleRate // 1 second per chunk
   const totalChunks = Math.ceil(length / chunkFrames)
-  xlog('audio', `encoding PCM in chunks`, { totalChunks, chunkFrames, numberOfChannels, sampleRate })
+  xlog('audio', `encoding PCM in chunks`, {
+    totalChunks,
+    chunkFrames,
+    numberOfChannels,
+    sampleRate,
+  })
 
   let chunkIndex = 0
   for (let start = 0; start < length; start += chunkFrames) {
@@ -420,7 +465,10 @@ async function renderFrame(
   scene: ReturnType<typeof resolveTimeline>,
   clipCanvases: Map<string, mb.WrappedCanvas | null>,
   imageBitmaps: Map<string, ImageBitmap>,
-  transitionSnapshots: Map<string, { source: CanvasImageSource & { width: number; height: number }; owned: boolean }>,
+  transitionSnapshots: Map<
+    string,
+    { source: CanvasImageSource & { width: number; height: number }; owned: boolean }
+  >,
   stageW: number,
   stageH: number,
   frameIndex: number,
@@ -449,11 +497,11 @@ async function renderFrame(
     | { kind: 'freehand'; item: ActiveFreehandClip }
 
   const items: AnyItem[] = [
-    ...scene.videos.map(item => ({ kind: 'video' as const, item })),
-    ...scene.images.map(item => ({ kind: 'image' as const, item })),
-    ...scene.texts.map(item => ({ kind: 'text' as const, item })),
-    ...scene.shapes.map(item => ({ kind: 'shape' as const, item })),
-    ...scene.freehand.map(item => ({ kind: 'freehand' as const, item })),
+    ...scene.videos.map((item) => ({ kind: 'video' as const, item })),
+    ...scene.images.map((item) => ({ kind: 'image' as const, item })),
+    ...scene.texts.map((item) => ({ kind: 'text' as const, item })),
+    ...scene.shapes.map((item) => ({ kind: 'shape' as const, item })),
+    ...scene.freehand.map((item) => ({ kind: 'freehand' as const, item })),
   ].sort((a, b) => a.item.zIndex - b.item.zIndex)
 
   for (const entry of items) {
@@ -475,7 +523,8 @@ async function renderFrame(
       if (wrapped) {
         drawMedia(ctx, wrapped.canvas, entry.item.transform, stageW, stageH)
       } else {
-        if (isDebugFrame) xlog('render:frame0', `video layer — WARNING: no canvas for clip "${entry.item.id}"`)
+        if (isDebugFrame)
+          xlog('render:frame0', `video layer — WARNING: no canvas for clip "${entry.item.id}"`)
       }
     } else if (entry.kind === 'image') {
       const bitmap = imageBitmaps.get(entry.item.src)
@@ -545,7 +594,10 @@ async function renderFrame(
   }
 
   if (isDebugFrame) {
-    xlog('render:frame0', `frame 0 draw complete — ${items.length} layer(s) composited onto ${stageW}x${stageH}`)
+    xlog(
+      'render:frame0',
+      `frame 0 draw complete — ${items.length} layer(s) composited onto ${stageW}x${stageH}`,
+    )
   }
 }
 

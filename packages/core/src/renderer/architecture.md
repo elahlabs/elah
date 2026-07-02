@@ -17,11 +17,11 @@ The renderer is the **last** stage of the pipeline. It reads only an immutable
 
 The editor `core/` namespace is split into three honest layers:
 
-| Layer | Role | Key modules |
-|---|---|---|
-| `core/assets/` | Asset/file manager — import, metadata, thumbnails | `useMediaLibrary`, `importFiles`, `MediaAsset` |
-| `core/media/` | Frame/sample producers — decode, caches, future audio/text/image | `core/media/video/` (`VideoFrameProvider`, `FrameCache`, demuxer) |
-| `core/renderer/` | Compositing only — imports `core/media/` **interfaces** via the public barrel | `GpuRenderer`, `VideoLayer`, `RenderGraph` |
+| Layer            | Role                                                                          | Key modules                                                       |
+| ---------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `core/assets/`   | Asset/file manager — import, metadata, thumbnails                             | `useMediaLibrary`, `importFiles`, `MediaAsset`                    |
+| `core/media/`    | Frame/sample producers — decode, caches, future audio/text/image              | `core/media/video/` (`VideoFrameProvider`, `FrameCache`, demuxer) |
+| `core/renderer/` | Compositing only — imports `core/media/` **interfaces** via the public barrel | `GpuRenderer`, `VideoLayer`, `RenderGraph`                        |
 
 ```mermaid
 flowchart TB
@@ -477,13 +477,13 @@ sequenceDiagram
 
 `StreamingFrameProducer` avoids redundant work via a feed-watermark:
 
-| Rule | Condition | Action |
-|---|---|---|
-| Cache hit | `cache.has(n)` | `getCurrent` returns frame; no feed needed |
-| Watermark covered | `windowEnd <= _feedWatermark` | No-op — packets already sent to decoder |
-| Contiguous advance | `\|Δ\| ≤ 1` | Feed only the new tail: `[watermark+1, N+lookahead]` |
-| Discontinuity | `\|Δ\| > 1` or first call | `reset(keyframeUs)` → clear watermark → feed full window |
-| Disposed | `state === 'disposed'` | All operations no-op immediately |
+| Rule               | Condition                     | Action                                                   |
+| ------------------ | ----------------------------- | -------------------------------------------------------- |
+| Cache hit          | `cache.has(n)`                | `getCurrent` returns frame; no feed needed               |
+| Watermark covered  | `windowEnd <= _feedWatermark` | No-op — packets already sent to decoder                  |
+| Contiguous advance | `\|Δ\| ≤ 1`                   | Feed only the new tail: `[watermark+1, N+lookahead]`     |
+| Discontinuity      | `\|Δ\| > 1` or first call     | `reset(keyframeUs)` → clear watermark → feed full window |
+| Disposed           | `state === 'disposed'`        | All operations no-op immediately                         |
 
 The decoder stays warm across contiguous `feed()` calls — no per-frame `flush()`.
 `flush()` is called only in `drain()` during dispose.
@@ -495,12 +495,12 @@ The decoder stays warm across contiguous `feed()` calls — no per-frame `flush(
 > Read this if §6 and §10 felt abstract. Same story, no jargon. **This is the
 > exact boundary that caused the "freeze after ~18 frames" bug.**
 
-### A `VideoFrame` is a *borrowed library book*, not a photo
+### A `VideoFrame` is a _borrowed library book_, not a photo
 
 The hardware video decoder is a tiny library with a **fixed shelf of ~16 books**
 (its internal frame pool). Each time it decodes a picture it hands you one
 **book** — a `VideoFrame`. A `VideoFrame` is **not** a copy of the pixels; it is
-a *borrowed handle* to one shelf slot inside the decoder.
+a _borrowed handle_ to one shelf slot inside the decoder.
 
 The library's rule:
 
@@ -537,7 +537,7 @@ flowchart LR
     class BUG bad
 ```
 
-👉 **The breaking arrow was `cache.put(📕)`** — the cache held the *book itself*.
+👉 **The breaking arrow was `cache.put(📕)`** — the cache held the _book itself_.
 That was the one line the fix changed.
 
 ### The fix (shipped): photocopy the book, return the original immediately ✅
@@ -561,13 +561,13 @@ flowchart LR
     class OK good
 ```
 
-|  | Holds a decoder slot? | How many can exist? | Survives a GPU reset? |
-|---|:--:|:--:|:--:|
-| `VideoFrame` (book) | **Yes** — pins 1 of ~16 | ~16, then freeze | yes (not a GPU object) |
-| `ImageBitmap` (photocopy) | **No** | limited only by RAM | yes |
+|                           |  Holds a decoder slot?  | How many can exist? | Survives a GPU reset?  |
+| ------------------------- | :---------------------: | :-----------------: | :--------------------: |
+| `VideoFrame` (book)       | **Yes** — pins 1 of ~16 |  ~16, then freeze   | yes (not a GPU object) |
+| `ImageBitmap` (photocopy) |         **No**          | limited only by RAM |          yes           |
 
-**One-line summary of the fix:** move `frame.close()` from *"later, on cache
-eviction"* to *"**right now**, the instant we've photocopied it."* That single
+**One-line summary of the fix:** move `frame.close()` from _"later, on cache
+eviction"_ to _"**right now**, the instant we've photocopied it."_ That single
 move is what unfreezes playback.
 
 ### Knock-on simplification (also shipped)
@@ -575,7 +575,7 @@ move is what unfreezes playback.
 [`VideoLayer.draw`](./gpu/layers/VideoLayer.ts) used to call `frame.clone()`
 before upload, because **two owners** both thought they must close the frame: the
 cache **and** `VideoTexture.upload`'s `finally`. Cloning was a smell that said
-*"nobody agreed who owns this."* Now the cache holds a photocopy that only **it**
+_"nobody agreed who owns this."_ Now the cache holds a photocopy that only **it**
 owns, the clone is gone, and `upload()` simply **borrows**. The whole pipeline
 collapses to one sentence:
 
@@ -689,8 +689,8 @@ flowchart TB
 ```
 
 - `acquire(item)` → new `VideoTexture`, bump or create the provider entry.
-- `release(id)`   → dispose the texture, decrement refCount, `markIdle()` at 0.
-- `draw(item)`    → see render-tick diagram above.
+- `release(id)` → dispose the texture, decrement refCount, `markIdle()` at 0.
+- `draw(item)` → see render-tick diagram above.
 
 ---
 
@@ -784,15 +784,15 @@ sequenceDiagram
     VL->>VT: upload() re-acquires fresh PoolTexture
 ```
 
-| Module                | Holds GL? | Recovery strategy                                 |
-|-----------------------|:--------:|---------------------------------------------------|
-| `WebGLContext`        | yes (the context itself) | re-`getContext` on restore, re-run `_initGLState` |
-| `TexturePool`         | yes      | `handleContextLost()` clears handles, no deletes  |
-| `VideoTexture`        | yes      | `handleContextLost()` nulls `_entry`; re-acquires on next upload |
-| `VideoLayer`          | yes (program + VAO) | nulls them; `_ensurePipeline()` rebuilds         |
-| `RenderGraph`         | no       | releases all active items; next tick re-acquires  |
-| `FrameCache`          | no       | unchanged                                          |
-| `VideoDecoderManager` | no       | unchanged                                          |
+| Module                |        Holds GL?         | Recovery strategy                                                |
+| --------------------- | :----------------------: | ---------------------------------------------------------------- |
+| `WebGLContext`        | yes (the context itself) | re-`getContext` on restore, re-run `_initGLState`                |
+| `TexturePool`         |           yes            | `handleContextLost()` clears handles, no deletes                 |
+| `VideoTexture`        |           yes            | `handleContextLost()` nulls `_entry`; re-acquires on next upload |
+| `VideoLayer`          |   yes (program + VAO)    | nulls them; `_ensurePipeline()` rebuilds                         |
+| `RenderGraph`         |            no            | releases all active items; next tick re-acquires                 |
+| `FrameCache`          |            no            | unchanged                                                        |
+| `VideoDecoderManager` |            no            | unchanged                                                        |
 
 ---
 
@@ -928,25 +928,25 @@ graph LR
 
 ## File index (quick jump)
 
-| Concern                   | File                                                                 |
-|---------------------------|----------------------------------------------------------------------|
-| Public interface          | [`types.ts`](./types.ts)                                             |
-| GPU entry point           | [`gpu/GpuRenderer.ts`](./gpu/GpuRenderer.ts)                         |
-| Scene diff / dispatch     | [`gpu/RenderGraph.ts`](./gpu/RenderGraph.ts)                         |
-| GL context + recovery     | [`gpu/WebGLContext.ts`](./gpu/WebGLContext.ts)                       |
-| Texture allocator         | [`gpu/TexturePool.ts`](./gpu/TexturePool.ts)                         |
-| Shader helper             | [`gpu/ShaderProgram.ts`](./gpu/ShaderProgram.ts) + [`gpu/shaders/`](./gpu/shaders) |
-| Video layer               | [`gpu/layers/VideoLayer.ts`](./gpu/layers/VideoLayer.ts)             |
-| Per-clip GPU texture      | [`gpu/VideoTexture.ts`](./gpu/VideoTexture.ts)                       |
-| Frame access boundary     | [`../media/video/VideoFrameProvider.ts`](../media/video/VideoFrameProvider.ts) |
-| Decoded-frame cache       | [`../media/video/FrameCache.ts`](../media/video/FrameCache.ts)     |
-| Decoder + state machine   | [`../media/video/VideoDecoderManager.ts`](../media/video/VideoDecoderManager.ts) |
-| Demuxer adapter           | [`../media/video/demuxer/MediabunnyDemuxer.ts`](../media/video/demuxer/MediabunnyDemuxer.ts) |
+| Concern                    | File                                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Public interface           | [`types.ts`](./types.ts)                                                                                 |
+| GPU entry point            | [`gpu/GpuRenderer.ts`](./gpu/GpuRenderer.ts)                                                             |
+| Scene diff / dispatch      | [`gpu/RenderGraph.ts`](./gpu/RenderGraph.ts)                                                             |
+| GL context + recovery      | [`gpu/WebGLContext.ts`](./gpu/WebGLContext.ts)                                                           |
+| Texture allocator          | [`gpu/TexturePool.ts`](./gpu/TexturePool.ts)                                                             |
+| Shader helper              | [`gpu/ShaderProgram.ts`](./gpu/ShaderProgram.ts) + [`gpu/shaders/`](./gpu/shaders)                       |
+| Video layer                | [`gpu/layers/VideoLayer.ts`](./gpu/layers/VideoLayer.ts)                                                 |
+| Per-clip GPU texture       | [`gpu/VideoTexture.ts`](./gpu/VideoTexture.ts)                                                           |
+| Frame access boundary      | [`../media/video/VideoFrameProvider.ts`](../media/video/VideoFrameProvider.ts)                           |
+| Decoded-frame cache        | [`../media/video/FrameCache.ts`](../media/video/FrameCache.ts)                                           |
+| Decoder + state machine    | [`../media/video/VideoDecoderManager.ts`](../media/video/VideoDecoderManager.ts)                         |
+| Demuxer adapter            | [`../media/video/demuxer/MediabunnyDemuxer.ts`](../media/video/demuxer/MediabunnyDemuxer.ts)             |
 | mediabunny backend adapter | [`../media/video/demuxer/createMediabunnyBackend.ts`](../media/video/demuxer/createMediabunnyBackend.ts) |
-| Push-based frame producer | [`../media/video/StreamingFrameProducer.ts`](../media/video/StreamingFrameProducer.ts) |
-| Media layer overview      | [`../media/README.md`](../media/README.md)                           |
-| Debug renderer & overlay  | [`gpu/debug/`](./gpu/debug)                                          |
-| Recording GL (test only)  | [`gpu/debug/RecordingGl.ts`](./gpu/debug/RecordingGl.ts)            |
-| Renderer tests            | [`gpu/__tests__/`](./gpu/__tests__)                                  |
-| Media/decode tests        | [`../media/video/__tests__/`](../media/video/__tests__)              |
-| Import boundary tests     | [`../media/__tests__/ImportBoundary.test.ts`](../media/__tests__/ImportBoundary.test.ts) |
+| Push-based frame producer  | [`../media/video/StreamingFrameProducer.ts`](../media/video/StreamingFrameProducer.ts)                   |
+| Media layer overview       | [`../media/README.md`](../media/README.md)                                                               |
+| Debug renderer & overlay   | [`gpu/debug/`](./gpu/debug)                                                                              |
+| Recording GL (test only)   | [`gpu/debug/RecordingGl.ts`](./gpu/debug/RecordingGl.ts)                                                 |
+| Renderer tests             | [`gpu/__tests__/`](./gpu/__tests__)                                                                      |
+| Media/decode tests         | [`../media/video/__tests__/`](../media/video/__tests__)                                                  |
+| Import boundary tests      | [`../media/__tests__/ImportBoundary.test.ts`](../media/__tests__/ImportBoundary.test.ts)                 |

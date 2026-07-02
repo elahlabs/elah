@@ -18,7 +18,9 @@ export default function GettingStartedPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Getting Started</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+            Getting Started
+          </div>
           <h1
             className="text-3xl font-semibold tracking-tight text-on-surface"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
@@ -26,17 +28,30 @@ export default function GettingStartedPage() {
             Quick Start
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            Three levels of integration — timeline only, timeline + preview, and the full editor. Start from whichever level matches your use case.
+            Three levels of integration — timeline only, timeline + preview, and the full editor.
+            Start from whichever level matches your use case.
           </p>
         </div>
 
         {/* Timeline only */}
         <section className="mb-10">
-          <h2 id="timeline-only" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="timeline-only"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Level 1: Timeline Only
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component is the most isolated piece. Wrap it in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> and you get a fully functional NLE timeline — drag, trim, split, snap, undo/redo.
+            The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Timeline
+            </code>{' '}
+            component is the most isolated piece. Wrap it in{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              EditorProvider
+            </code>{' '}
+            and you get a fully functional NLE timeline — drag, trim, split, snap, undo/redo.
           </p>
           <CodeBlock
             language="tsx"
@@ -113,11 +128,21 @@ export default function TimelineOnly() {
 
         {/* Preview component */}
         <section className="mb-10">
-          <h2 id="preview-component" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="preview-component"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Level 2: Timeline + Preview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Add <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<Preview>'}</code> to mount the WebGL2 renderer and drive the RAF loop. You inject a <strong className="text-on-surface font-medium">demuxer factory</strong> so the SDK never hard-depends on a specific decode backend:
+            Add{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              {'<Preview>'}
+            </code>{' '}
+            to mount the WebGL2 renderer and drive the RAF loop. You inject a{' '}
+            <strong className="text-on-surface font-medium">demuxer factory</strong> so the SDK
+            never hard-depends on a specific decode backend:
           </p>
           <CodeBlock
             language="tsx"
@@ -168,18 +193,31 @@ export default function App() {
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
             <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">Note</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">{'<Preview>'}</code> paints interactive transform overlays automatically — drag/resize for video and image clips, inline-edit for text clips. No additional wiring needed.
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">
+                {'<Preview>'}
+              </code>{' '}
+              paints interactive transform overlays automatically — drag/resize for video and image
+              clips, inline-edit for text clips. No additional wiring needed.
             </p>
           </div>
         </section>
 
         {/* Full editor */}
         <section className="mb-10">
-          <h2 id="full-editor" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="full-editor"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Level 3: Full Editor
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Add <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<AssetPanel>'}</code> for the media library (drag-drop import, filmstrip thumbnails, waveform previews), a transport toolbar, and export:
+            Add{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              {'<AssetPanel>'}
+            </code>{' '}
+            for the media library (drag-drop import, filmstrip thumbnails, waveform previews), a
+            transport toolbar, and export:
           </p>
           <CodeBlock
             language="tsx"
@@ -278,7 +316,8 @@ export default function FullEditor() {
           />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              This is the same integration used in the live Production playground — asset panel, preview, timeline, transport, and export.
+              This is the same integration used in the live Production playground — asset panel,
+              preview, timeline, transport, and export.
             </p>
             <Link
               href="/playground/production"
@@ -291,7 +330,11 @@ export default function FullEditor() {
 
         {/* Keyboard shortcuts */}
         <section className="mb-10">
-          <h2 id="keyboard-shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="keyboard-shortcuts"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Keyboard Shortcuts
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -324,11 +367,27 @@ export default function FullEditor() {
 
         {/* Adding clips programmatically */}
         <section className="mb-10">
-          <h2 id="adding-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="adding-clips"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Adding Clips Programmatically
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Use <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTimelineEngine()</code> to access the engine from any child of <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code>. All mutations go through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.addClip()</code>:
+            Use{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              useTimelineEngine()
+            </code>{' '}
+            to access the engine from any child of{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              EditorProvider
+            </code>
+            . All mutations go through{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              engine.addClip()
+            </code>
+            :
           </p>
           <CodeBlock
             language="tsx"
@@ -397,9 +456,15 @@ export function AddClipButton() {
 }`}
           />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">Batch edits</div>
+            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">
+              Batch edits
+            </div>
             <p className="mb-3 text-xs leading-relaxed text-on-surface-variant">
-              Wrap multiple mutations in <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">engine.batch()</code> to commit them as a single undo entry:
+              Wrap multiple mutations in{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">
+                engine.batch()
+              </code>{' '}
+              to commit them as a single undo entry:
             </p>
             <CodeBlock
               language="tsx"

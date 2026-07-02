@@ -13,32 +13,26 @@ export interface SelectionActions {
   setActiveTrack: (trackId: string | null) => void
 }
 
-export const useSelectionStore = create<SelectionState & SelectionActions>()(
-  (set) => ({
-    selectedClipIds: new Set(),
-    activeTrackId: null,
+export const useSelectionStore = create<SelectionState & SelectionActions>()((set) => ({
+  selectedClipIds: new Set(),
+  activeTrackId: null,
 
-    selectClip: (clipId) =>
-      set({ selectedClipIds: new Set([clipId]) }),
+  selectClip: (clipId) => set({ selectedClipIds: new Set([clipId]) }),
 
-    toggleClipSelection: (clipId) =>
-      set((s) => {
-        const next = new Set(s.selectedClipIds)
-        if (next.has(clipId)) {
-          next.delete(clipId)
-        } else {
-          next.add(clipId)
-        }
-        return { selectedClipIds: next }
-      }),
+  toggleClipSelection: (clipId) =>
+    set((s) => {
+      const next = new Set(s.selectedClipIds)
+      if (next.has(clipId)) {
+        next.delete(clipId)
+      } else {
+        next.add(clipId)
+      }
+      return { selectedClipIds: next }
+    }),
 
-    selectClips: (clipIds) =>
-      set({ selectedClipIds: new Set(clipIds) }),
+  selectClips: (clipIds) => set({ selectedClipIds: new Set(clipIds) }),
 
-    clearSelection: () =>
-      set({ selectedClipIds: new Set() }),
+  clearSelection: () => set({ selectedClipIds: new Set() }),
 
-    setActiveTrack: (trackId) =>
-      set({ activeTrackId: trackId }),
-  }),
-)
+  setActiveTrack: (trackId) => set({ activeTrackId: trackId }),
+}))

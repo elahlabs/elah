@@ -289,7 +289,9 @@ export function MediaTransformOverlay() {
             width: rect.width + BOX_PAD * 2,
             height: rect.height + BOX_PAD * 2,
             boxSizing: 'border-box',
-            border: selected ? '1px solid var(--elah-selection-color, #4c9aff)' : '1px solid transparent',
+            border: selected
+              ? '1px solid var(--elah-selection-color, #4c9aff)'
+              : '1px solid transparent',
             borderRadius: 2,
             cursor: 'move',
             pointerEvents: 'auto',

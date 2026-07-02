@@ -45,8 +45,12 @@ export interface RenderedAudio {
 // Internal Worker message protocol (not part of the public API)
 // ---------------------------------------------------------------------------
 
-export type WorkerInMessage =
-  | { type: 'start'; project: unknown; options: ExportOptions; audio: RenderedAudio | null }
+export type WorkerInMessage = {
+  type: 'start'
+  project: unknown
+  options: ExportOptions
+  audio: RenderedAudio | null
+}
 
 export type WorkerOutMessage =
   | { type: 'progress'; frame: number; totalFrames: number }

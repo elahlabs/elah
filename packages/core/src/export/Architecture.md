@@ -90,12 +90,12 @@ sets the loop bound.
 
 Message protocol (internal, not public API — see `export/types.ts`):
 
-| Direction | Message | Payload |
-|---|---|---|
-| main → worker | `start` | `project`, `options` (with `onProgress`/`signal` stripped), `audio`, enabled trace channels |
-| worker → main | `progress` | `frame`, `totalFrames` |
-| worker → main | `done` | `buffer: ArrayBuffer` (transferred) |
-| worker → main | `error` | `message: string` |
+| Direction     | Message    | Payload                                                                                     |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------- |
+| main → worker | `start`    | `project`, `options` (with `onProgress`/`signal` stripped), `audio`, enabled trace channels |
+| worker → main | `progress` | `frame`, `totalFrames`                                                                      |
+| worker → main | `done`     | `buffer: ArrayBuffer` (transferred)                                                         |
+| worker → main | `error`    | `message: string`                                                                           |
 
 `onProgress` and `signal` are stripped before posting (neither is
 structured-cloneable); progress is reconstructed on the main thread from
@@ -129,7 +129,7 @@ the clip's frames, applies per-clip gain, and renders to planar Float32 PCM.
   at frame N" for both preview and export.
 - **Reuse placement, not the draw path.** The worker draws with the 2D canvas API
   (no WebGL context needed in a worker for the common case) but shares the
-  geometry helpers (`resolveDrawRect`, `computeTextLayout`). Shared *math* keeps
+  geometry helpers (`resolveDrawRect`, `computeTextLayout`). Shared _math_ keeps
   the two paths pixel-aligned without forcing a GPU context into the worker.
 - **No export-specific scene system.** Adding one would create a second source of
   truth that silently drifts from preview. The `Scene` is the contract.
@@ -165,7 +165,7 @@ per unique image `src`.
   chunks — the deterministic contract already permits it.
 - Cancellation: an `AbortSignal` (`options.signal`) already aborts an export by
   terminating the worker and rejecting the promise; the remaining work is
-  cooperative cancel *between frames* with clean in-worker resource teardown.
+  cooperative cancel _between frames_ with clean in-worker resource teardown.
 
 > Tracing: enable `EXPORT`, `EXPORT_ASSETS`, `EXPORT_AUDIO`, `EXPORT_MUX`,
 > `EXPORT_FRAMES` via `__trace.on(...)` in the console before exporting. The main

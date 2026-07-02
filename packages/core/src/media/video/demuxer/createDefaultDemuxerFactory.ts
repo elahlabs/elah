@@ -27,7 +27,11 @@
  */
 
 import * as mediabunny from 'mediabunny'
-import { createMediabunnyBackend, type MediabunnyModule, type CreateMediabunnyBackendOpts } from './createMediabunnyBackend'
+import {
+  createMediabunnyBackend,
+  type MediabunnyModule,
+  type CreateMediabunnyBackendOpts,
+} from './createMediabunnyBackend'
 import type { DemuxerFactory } from './MediabunnyDemuxer'
 
 const mb = mediabunny as unknown as MediabunnyModule

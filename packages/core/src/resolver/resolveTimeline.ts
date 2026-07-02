@@ -117,9 +117,10 @@ export function resolveTimeline(frame: number, project: Project): Scene {
     // but keep the same order-based ranking as everyone else so relative
     // stacking among multiple elements tracks follows the UI's track order
     // instead of colliding on one shared zIndex.
-    const zIndex = track.kind === 'elements'
-      ? ELEMENTS_ZINDEX_BASE + (maxOrder - track.order) * 1000
-      : (maxOrder - track.order) * 1000
+    const zIndex =
+      track.kind === 'elements'
+        ? ELEMENTS_ZINDEX_BASE + (maxOrder - track.order) * 1000
+        : (maxOrder - track.order) * 1000
 
     for (const clip of clips) {
       if (clip.disabled) continue
@@ -174,7 +175,10 @@ export function resolveTimeline(frame: number, project: Project): Scene {
             resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, localFrame / d))
           }
           if (anim.out === 'fade') {
-            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, (clip.durationFrames - localFrame) / d))
+            resolvedOpacity = Math.min(
+              resolvedOpacity,
+              Math.min(1, (clip.durationFrames - localFrame) / d),
+            )
           }
         }
 
@@ -218,7 +222,10 @@ export function resolveTimeline(frame: number, project: Project): Scene {
             resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, localFrame / d))
           }
           if (sanim.out === 'fade') {
-            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, (clip.durationFrames - localFrame) / d))
+            resolvedOpacity = Math.min(
+              resolvedOpacity,
+              Math.min(1, (clip.durationFrames - localFrame) / d),
+            )
           }
         }
         const active: ActiveShapeClip = {
@@ -281,7 +288,8 @@ export function resolveTimeline(frame: number, project: Project): Scene {
     const { clip: toClip } = toResult
 
     // zIndex: outgoing sits below incoming during the transition
-    const fromZIndex = (maxOrder - (project.tracks.find((tr) => tr.id === transition.trackId)?.order ?? 0)) * 1000
+    const fromZIndex =
+      (maxOrder - (project.tracks.find((tr) => tr.id === transition.trackId)?.order ?? 0)) * 1000
     const toZIndex = fromZIndex + 1
 
     // Source frames — clamped so we never seek past the clip's source bounds.
@@ -396,8 +404,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
 
   // Sort ascending by zIndex: lower values = further back = earlier in array.
   // Higher zIndex = front; the last element in each array renders on top.
-  const byDepth = (a: { zIndex: number }, b: { zIndex: number }) =>
-    a.zIndex - b.zIndex
+  const byDepth = (a: { zIndex: number }, b: { zIndex: number }) => a.zIndex - b.zIndex
 
   scene.videos.sort(byDepth)
   scene.audios.sort(byDepth)

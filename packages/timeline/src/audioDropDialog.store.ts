@@ -26,23 +26,23 @@ interface AudioDropDialogActions {
  * modal (`AudioDropDialog`). The handler awaits `request()`; the modal calls
  * `respond()` on a button click.
  */
-export const useAudioDropDialogStore = create<
-  AudioDropDialogState & AudioDropDialogActions
->((set, get) => ({
-  open: false,
-  assetName: '',
-  resolve: null,
+export const useAudioDropDialogStore = create<AudioDropDialogState & AudioDropDialogActions>(
+  (set, get) => ({
+    open: false,
+    assetName: '',
+    resolve: null,
 
-  request: (assetName) => {
-    // A pending request is abandoned (resolved null) if a new drop arrives.
-    get().resolve?.(null)
-    return new Promise<AudioDropChoice | null>((resolve) => {
-      set({ open: true, assetName, resolve })
-    })
-  },
+    request: (assetName) => {
+      // A pending request is abandoned (resolved null) if a new drop arrives.
+      get().resolve?.(null)
+      return new Promise<AudioDropChoice | null>((resolve) => {
+        set({ open: true, assetName, resolve })
+      })
+    },
 
-  respond: (choice) => {
-    get().resolve?.(choice)
-    set({ open: false, assetName: '', resolve: null })
-  },
-}))
+    respond: (choice) => {
+      get().resolve?.(choice)
+      set({ open: false, assetName: '', resolve: null })
+    },
+  }),
+)

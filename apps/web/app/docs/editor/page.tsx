@@ -20,21 +20,40 @@ export default function EditorPage() {
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Editor</div>
-          <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h1
+            className="text-3xl font-semibold tracking-tight text-on-surface"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Editor
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            EditorProvider, Preview, AssetPanel, transform overlays, text editing, and the transition system.
+            EditorProvider, Preview, AssetPanel, transform overlays, text editing, and the
+            transition system.
           </p>
         </div>
 
         {/* EditorProvider */}
         <section className="mb-10">
-          <h2 id="editor-provider" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="editor-provider"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             EditorProvider
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> creates and wires the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code>, and all Zustand stores. It must wrap all components that use engine hooks.
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              EditorProvider
+            </code>{' '}
+            creates and wires the{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              TimelineEngine
+            </code>
+            ,{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              PlaybackEngine
+            </code>
+            , and all Zustand stores. It must wrap all components that use engine hooks.
           </p>
           <CodeBlock
             language="tsx"
@@ -69,7 +88,11 @@ function App() {
               <tbody className="text-on-surface-variant">
                 {[
                   ['fps', 'number', 'Frames per second (e.g. 30, 60, 24)'],
-                  ['initialTracks', 'InitialTrackConfig[]', 'Track layout to initialize the engine with'],
+                  [
+                    'initialTracks',
+                    'InitialTrackConfig[]',
+                    'Track layout to initialize the engine with',
+                  ],
                   ['children', 'ReactNode', 'All components that need engine access'],
                 ].map(([prop, type, desc]) => (
                   <tr key={prop} className="border-b border-outline-variant last:border-0">
@@ -85,11 +108,24 @@ function App() {
 
         {/* Preview */}
         <section className="mb-10">
-          <h2 id="preview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="preview"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Preview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<Preview>'}</code> mounts the WebGL2 renderer and drives the RAF playback loop. It reads resolved scenes from <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline</code> and composites video, image, and text layers. Transform overlays are painted on top automatically.
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              {'<Preview>'}
+            </code>{' '}
+            mounts the WebGL2 renderer and drives the RAF playback loop. It reads resolved scenes
+            from{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              resolveTimeline
+            </code>{' '}
+            and composites video, image, and text layers. Transform overlays are painted on top
+            automatically.
           </p>
           <CodeBlock
             language="tsx"
@@ -122,17 +158,33 @@ function MyPreview() {
 }`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            The canvas is letterboxed to the project stage aspect ratio. Off-aspect clips are <strong className="text-on-surface font-medium">contained</strong> (never stretched) within the frame using <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">object-fit: contain</code> semantics.
+            The canvas is letterboxed to the project stage aspect ratio. Off-aspect clips are{' '}
+            <strong className="text-on-surface font-medium">contained</strong> (never stretched)
+            within the frame using{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              object-fit: contain
+            </code>{' '}
+            semantics.
           </p>
         </section>
 
         {/* AssetPanel */}
         <section className="mb-10">
-          <h2 id="asset-panel" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="asset-panel"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             AssetPanel
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">AssetPanel</code> provides the media library UI. Features: file import via button or drag-drop, filmstrip thumbnail generation, audio waveform visualization, and drag-to-timeline for clip creation.
+            The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              AssetPanel
+            </code>{' '}
+            provides the media library UI. Features: file import via button or drag-drop, filmstrip
+            thumbnail generation, audio waveform visualization, and drag-to-timeline for clip
+            creation.
           </p>
           <CodeBlock
             language="tsx"
@@ -166,11 +218,23 @@ function CustomLibrary() {
 
         {/* Transforms */}
         <section className="mb-10">
-          <h2 id="transforms" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="transforms"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Transforms
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Every clip has an optional <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">transform</code> property. The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">MediaTransformOverlay</code> provides interactive drag-move and corner-drag uniform scale for video and image clips:
+            Every clip has an optional{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              transform
+            </code>{' '}
+            property. The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              MediaTransformOverlay
+            </code>{' '}
+            provides interactive drag-move and corner-drag uniform scale for video and image clips:
           </p>
           <CodeBlock
             language="typescript"
@@ -191,20 +255,38 @@ engine.updateClip(clipId, {
 // ExportWorker: applies via resolveDrawRect() placement math`}
           />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">Status</div>
+            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">
+              Status
+            </div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              Move and uniform scale are fully interactive. Rotation handle is partial — <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">transform.rotation</code> flows through both renderers but the interactive drag handle is not yet built.
+              Move and uniform scale are fully interactive. Rotation handle is partial —{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">
+                transform.rotation
+              </code>{' '}
+              flows through both renderers but the interactive drag handle is not yet built.
             </p>
           </div>
         </section>
 
         {/* Text overlays */}
         <section className="mb-10">
-          <h2 id="text-overlays" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="text-overlays"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Text Overlays
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Text clips are rendered via a 2D-canvas-to-texture pipeline (GPU <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TextLayer</code>). An interactive overlay (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TextOverlay</code>) handles drag, resize (re-rasterized to stay crisp), and inline-edit.
+            Text clips are rendered via a 2D-canvas-to-texture pipeline (GPU{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              TextLayer
+            </code>
+            ). An interactive overlay (
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              TextOverlay
+            </code>
+            ) handles drag, resize (re-rasterized to stay crisp), and inline-edit.
           </p>
           <CodeBlock
             language="tsx"
@@ -241,11 +323,31 @@ engine.addClip({
 
         {/* Transitions */}
         <section className="mb-10">
-          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="transitions"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions use a snapshot-overlay architecture. The resolver sets <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">fromClip.opacity</code> and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">toClip.opacity</code>; <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TransitionOverlay</code> fades a frozen canvas snapshot via CSS; export mirrors with <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">globalAlpha</code>.
+            Transitions use a snapshot-overlay architecture. The resolver sets{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              fromClip.opacity
+            </code>{' '}
+            and{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              toClip.opacity
+            </code>
+            ;{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              TransitionOverlay
+            </code>{' '}
+            fades a frozen canvas snapshot via CSS; export mirrors with{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              globalAlpha
+            </code>
+            .
           </p>
           <CodeBlock
             language="tsx"
@@ -268,11 +370,20 @@ engine.removeTransition(transitionId)`}
 
         {/* Stage aspect */}
         <section className="mb-10">
-          <h2 id="stage-aspect" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="stage-aspect"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Stage / Aspect Ratio
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The stage aspect ratio is set on the engine and changes the canvas viewport. All clips are letterboxed to the stage. The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">StageBorder</code> component shows a frame outline:
+            The stage aspect ratio is set on the engine and changes the canvas viewport. All clips
+            are letterboxed to the stage. The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              StageBorder
+            </code>{' '}
+            component shows a frame outline:
           </p>
           <CodeBlock
             language="tsx"

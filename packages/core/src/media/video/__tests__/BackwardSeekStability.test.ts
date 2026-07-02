@@ -45,20 +45,20 @@ describe('BackwardSeekStability', () => {
 
     // Trigger initial discontinuity (first ever setPlayhead) and wait for it to settle
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 40))
+    await new Promise((r) => setTimeout(r, 40))
 
     // Advance forward contiguously from frame 0 to 30
     for (let i = 1; i <= 30; i++) {
       producer.setPlayhead(i)
     }
-    await new Promise(r => setTimeout(r, 20))
+    await new Promise((r) => setTimeout(r, 20))
 
     // Count seeks so far (includes the initial open-time seek)
     const seekCountBeforeBackward = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
 
     // Backward jump: 30 → 0 (|delta| = 30 > 1 → discontinuity → exactly one seek)
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 50))
 
     const seekCountAfterBackward = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
     expect(seekCountAfterBackward - seekCountBeforeBackward).toBe(1)
@@ -85,11 +85,11 @@ describe('BackwardSeekStability', () => {
     for (let cycle = 0; cycle < 5; cycle++) {
       // Jump forward (discontinuity)
       producer.setPlayhead(50)
-      await new Promise(r => setTimeout(r, 10))
+      await new Promise((r) => setTimeout(r, 10))
 
       // Jump backward (discontinuity)
       producer.setPlayhead(10)
-      await new Promise(r => setTimeout(r, 10))
+      await new Promise((r) => setTimeout(r, 10))
 
       expect(producer.state).not.toBe('disposed')
     }
@@ -123,11 +123,11 @@ describe('BackwardSeekStability', () => {
 
     // Play forward 0 → 8 so the cache fills and evicts early frames.
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 40))
+    await new Promise((r) => setTimeout(r, 40))
 
     for (let i = 1; i <= 8; i++) {
       producer.setPlayhead(i)
-      await new Promise(r => setTimeout(r, 15))
+      await new Promise((r) => setTimeout(r, 15))
     }
 
     // Frame 5 must be evicted for the test to be meaningful.
@@ -138,7 +138,7 @@ describe('BackwardSeekStability', () => {
     // Step 6→5 is a cache miss with |delta|=1 — the regression case.
     for (let i = 7; i >= 5; i--) {
       producer.setPlayhead(i)
-      await new Promise(r => setTimeout(r, 40))
+      await new Promise((r) => setTimeout(r, 40))
       expect(producer.getCurrent(i)).not.toBeNull()
     }
 
@@ -164,7 +164,7 @@ describe('BackwardSeekStability', () => {
 
     // Wait for the initial open-time seek (discontinuity on first setPlayhead)
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 40))
+    await new Promise((r) => setTimeout(r, 40))
 
     const seekCountAfterFirst = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
 
@@ -173,7 +173,7 @@ describe('BackwardSeekStability', () => {
       producer.setPlayhead(i)
       await Promise.resolve()
     }
-    await new Promise(r => setTimeout(r, 20))
+    await new Promise((r) => setTimeout(r, 20))
 
     const seekCountAfterPlay = vi.mocked(demuxerBackend.seekToKeyframe).mock.calls.length
     expect(seekCountAfterPlay).toBe(seekCountAfterFirst) // no extra seeks during contiguous play

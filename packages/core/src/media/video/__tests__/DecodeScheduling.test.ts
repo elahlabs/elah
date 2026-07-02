@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockVideoFrameProvider } from '../VideoFrameProvider'
 import { VideoDecoderManager } from '../VideoDecoderManager'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 describe('Decode scheduling', () => {
   beforeEach(() => {
@@ -103,7 +99,9 @@ describe('Decode scheduling', () => {
         ...createMockDemuxerBackend({ chunks: [createMockChunk()] }),
         packets: vi.fn(async function* (_range: [number, number]) {
           yield createMockChunk(0)
-          await new Promise<void>(r => { pending.resolve = r as () => void })
+          await new Promise<void>((r) => {
+            pending.resolve = r as () => void
+          })
           yield createMockChunk(33333)
         }),
       }

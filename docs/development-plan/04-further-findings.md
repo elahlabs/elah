@@ -96,7 +96,7 @@ hover to preview frames.
 - **View-mode + density persistence — DECISION NEEDED.** `SourcePanel` resets
   `viewMode`/`kindFilter`/`sort` on every mount. Decide: persist per-editor (prop
   default) vs local persistence (localStorage). The skill leaves this open;
-  recommend a `defaultView`/`defaultDensity` prop *plus* optional local persistence.
+  recommend a `defaultView`/`defaultDensity` prop _plus_ optional local persistence.
 - **Density token** — ship a calm default, expose `comfortable | compact` via the
   token layer once [`01`](./01-unified-design-system.md) lands.
 - **Elements-lane search is a no-op** — `SourcePanel` renders a "Search elements…"

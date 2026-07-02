@@ -16,10 +16,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VideoDecoderManager } from '../VideoDecoderManager'
-import {
-  createMediabunnyBackend,
-  type MediabunnyModule,
-} from '../demuxer/createMediabunnyBackend'
+import { createMediabunnyBackend, type MediabunnyModule } from '../demuxer/createMediabunnyBackend'
 import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 // ---------------------------------------------------------------------------
@@ -108,7 +105,9 @@ describe('createMediabunnyBackend — contiguous packets() forward progress', ()
     const backend = createMediabunnyBackend(mb, { blobResolver })
     await backend.open('blob:x')
 
-    for await (const _c of backend.packets([0, 33_333])) { /* prime */ }
+    for await (const _c of backend.packets([0, 33_333])) {
+      /* prime */
+    }
 
     const second: EncodedVideoChunk[] = []
     for await (const c of backend.packets([33_333, 66_666])) {

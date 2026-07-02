@@ -33,7 +33,8 @@ const examples = [
     id: 'timeline-only',
     category: 'Integration',
     title: 'Timeline Only',
-    description: 'The timeline as a drop-in component — no renderer, no decode pipeline. Ideal for building a custom rendering layer or exploring the edit model.',
+    description:
+      'The timeline as a drop-in component — no renderer, no decode pipeline. Ideal for building a custom rendering layer or exploring the edit model.',
     code: `import { useRef } from 'react'
 import {
   EditorProvider,
@@ -82,7 +83,8 @@ export default function TimelineOnlyExample() {
     id: 'custom-demuxer',
     category: 'Advanced',
     title: 'Custom Demuxer',
-    description: 'Replace mediabunny with your own demuxer by implementing the DemuxerFactory interface.',
+    description:
+      'Replace mediabunny with your own demuxer by implementing the DemuxerFactory interface.',
     code: `import {
   EditorProvider,
   Preview,
@@ -199,7 +201,8 @@ export function ExportPanel() {
     id: 'resolve-timeline-custom',
     category: 'Advanced',
     title: 'Custom Renderer with resolveTimeline',
-    description: 'Use the pure resolver to build a completely custom rendering layer — DOM, Canvas 2D, or any other target.',
+    description:
+      'Use the pure resolver to build a completely custom rendering layer — DOM, Canvas 2D, or any other target.',
     code: `import { useEffect, useRef } from 'react'
 import {
   EditorProvider,
@@ -308,7 +311,9 @@ export default function ExamplesPage() {
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
               Runnable, end-to-end editor apps consuming the published{' '}
-              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs">@elah/editor</code>{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs">
+                @elah/editor
+              </code>{' '}
               package. Clone, install, and run — or read the source on GitHub.
             </p>
 
@@ -368,7 +373,9 @@ export default function ExamplesPage() {
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <div className="mb-2 flex items-center gap-2">
-                    <span className={`rounded border px-2 py-0.5 text-2xs font-medium ${categoryColors[ex.category] ?? ''}`}>
+                    <span
+                      className={`rounded border px-2 py-0.5 text-2xs font-medium ${categoryColors[ex.category] ?? ''}`}
+                    >
                       {ex.category}
                     </span>
                   </div>
@@ -383,12 +390,7 @@ export default function ExamplesPage() {
                   </p>
                 </div>
               </div>
-              <CodeBlock
-                code={ex.code}
-                language="tsx"
-                filename={`${ex.id}.tsx`}
-                showLineNumbers
-              />
+              <CodeBlock code={ex.code} language="tsx" filename={`${ex.id}.tsx`} showLineNumbers />
             </section>
           ))}
         </div>
@@ -398,7 +400,9 @@ export default function ExamplesPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-medium text-on-surface">Need something more specific?</div>
+                <div className="text-sm font-medium text-on-surface">
+                  Need something more specific?
+                </div>
                 <p className="mt-1 text-xs text-on-surface-variant">
                   Check the API reference or open an issue on GitHub.
                 </p>

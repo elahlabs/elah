@@ -34,7 +34,9 @@ import type { VideoFrameProvider } from '../../../media/video'
  * Used in golden hash tests where we want to validate the no-frame case.
  */
 class NullVideoFrameProvider implements VideoFrameProvider {
-  getCurrent(_n: number): VideoFrame | null { return null }
+  getCurrent(_n: number): VideoFrame | null {
+    return null
+  }
   setPlayhead(_n: number, _opts?: { lookaheadFrames?: number }): void {}
   markIdle(): void {}
   markActive(): void {}
@@ -173,7 +175,12 @@ describe('GoldenFrameHash', () => {
     const nullProvider = new NullVideoFrameProvider()
     const videoLayer = new VideoLayer(pool, (_src: string) => nullProvider)
 
-    rg.registerLayer(videoLayer, (s) => s.videos, (v) => v.id, (v) => v.zIndex)
+    rg.registerLayer(
+      videoLayer,
+      (s) => s.videos,
+      (v) => v.id,
+      (v) => v.zIndex,
+    )
 
     const clip = makeClip('clip-1', 'video://golden.mp4', 0)
     const scene = makeScene({ videos: [clip], frame: 1 })
@@ -208,7 +215,12 @@ describe('GoldenFrameHash', () => {
     const nullProvider = new NullVideoFrameProvider()
     const videoLayer = new VideoLayer(pool, (_src: string) => nullProvider)
 
-    rg.registerLayer(videoLayer, (s) => s.videos, (v) => v.id, (v) => v.zIndex)
+    rg.registerLayer(
+      videoLayer,
+      (s) => s.videos,
+      (v) => v.id,
+      (v) => v.zIndex,
+    )
 
     const clip = makeClip('clip-ctx', 'video://ctx-loss.mp4', 5)
     const scene = makeScene({ videos: [clip], frame: 5 })
@@ -244,7 +256,12 @@ describe('GoldenFrameHash', () => {
     const nullProvider = new NullVideoFrameProvider()
     const videoLayer = new VideoLayer(pool, (_src: string) => nullProvider)
 
-    rg.registerLayer(videoLayer, (s) => s.videos, (v) => v.id, (v) => v.zIndex)
+    rg.registerLayer(
+      videoLayer,
+      (s) => s.videos,
+      (v) => v.id,
+      (v) => v.zIndex,
+    )
 
     const clipBack = makeClip('clip-back', 'video://back.mp4', 0, 1000)
     const clipFront = makeClip('clip-front', 'video://back.mp4', 0, 2000)

@@ -106,7 +106,7 @@ describe('Export frame-sampling — midpoint seek (half-frame offset)', () => {
     let failures = 0
     for (let n = 0; n < 300; n++) {
       const seekSec = (n + 0.5) / PROJECT_FPS
-      const expectedSourceFrame = Math.floor((n + 0.5) * sourceFps / PROJECT_FPS)
+      const expectedSourceFrame = Math.floor(((n + 0.5) * sourceFps) / PROJECT_FPS)
       if (canvasSinkFrame(seekSec, pts) !== expectedSourceFrame) failures++
     }
     expect(failures).toBe(0)

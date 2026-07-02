@@ -44,67 +44,71 @@ export const TransitionOverlay = forwardRef<TransitionOverlayHandle>(
     const rootRef = useRef<HTMLDivElement>(null)
     const snapshotsRef = useRef(new Map<string, Snapshot>())
 
-    useImperativeHandle(ref, () => ({
-      captureIfNewTransition(scene: Scene, webglCanvas: HTMLCanvasElement) {
-        const root = rootRef.current
-        if (!root) return
+    useImperativeHandle(
+      ref,
+      () => ({
+        captureIfNewTransition(scene: Scene, webglCanvas: HTMLCanvasElement) {
+          const root = rootRef.current
+          if (!root) return
 
-        for (const tr of scene.transitions) {
-          if (snapshotsRef.current.has(tr.id)) continue
+          for (const tr of scene.transitions) {
+            if (snapshotsRef.current.has(tr.id)) continue
 
-          // Copy the WebGL canvas at its full internal resolution.
-          // CSS width/height: 100% stretches it to fill the overlay container.
-          const snap = document.createElement('canvas')
-          snap.width = webglCanvas.width
-          snap.height = webglCanvas.height
-          const ctx2d = snap.getContext('2d')
-          if (!ctx2d) continue
-          ctx2d.drawImage(webglCanvas, 0, 0)
+            // Copy the WebGL canvas at its full internal resolution.
+            // CSS width/height: 100% stretches it to fill the overlay container.
+            const snap = document.createElement('canvas')
+            snap.width = webglCanvas.width
+            snap.height = webglCanvas.height
+            const ctx2d = snap.getContext('2d')
+            if (!ctx2d) continue
+            ctx2d.drawImage(webglCanvas, 0, 0)
 
-          const div = document.createElement('div')
-          div.style.cssText = 'position:absolute;inset:0;pointer-events:none;'
-          snap.style.cssText = 'display:block;width:100%;height:100%;'
-          div.appendChild(snap)
-          root.appendChild(div)
+            const div = document.createElement('div')
+            div.style.cssText = 'position:absolute;inset:0;pointer-events:none;'
+            snap.style.cssText = 'display:block;width:100%;height:100%;'
+            div.appendChild(snap)
+            root.appendChild(div)
 
-          snapshotsRef.current.set(tr.id, { div })
-        }
-      },
-
-      update(scene: Scene) {
-        const activeIds = new Set(scene.transitions.map(tr => tr.id))
-
-        // Remove snapshots whose transition window has closed.
-        for (const [id, { div }] of snapshotsRef.current) {
-          if (!activeIds.has(id)) {
-            div.remove()
-            snapshotsRef.current.delete(id)
+            snapshotsRef.current.set(tr.id, { div })
           }
-        }
+        },
 
-        // Advance CSS for each active transition.
-        for (const tr of scene.transitions) {
-          const snap = snapshotsRef.current.get(tr.id)
-          if (!snap) continue
+        update(scene: Scene) {
+          const activeIds = new Set(scene.transitions.map((tr) => tr.id))
 
-          if (tr.kind === 'slide') {
-            const sign = tr.direction === 'left' ? -1 : 1
-            snap.div.style.opacity = '1'
-            snap.div.style.transform = `translateX(${sign * tr.t * 100}%)`
-            snap.div.style.clipPath = ''
-          } else if (tr.kind === 'wipe') {
-            snap.div.style.opacity = '1'
-            snap.div.style.transform = ''
-            snap.div.style.clipPath = `inset(0 ${tr.t * 100}% 0 0)`
-          } else {
-            // fade (default)
-            snap.div.style.opacity = String(1 - tr.t)
-            snap.div.style.transform = ''
-            snap.div.style.clipPath = ''
+          // Remove snapshots whose transition window has closed.
+          for (const [id, { div }] of snapshotsRef.current) {
+            if (!activeIds.has(id)) {
+              div.remove()
+              snapshotsRef.current.delete(id)
+            }
           }
-        }
-      },
-    }), [])
+
+          // Advance CSS for each active transition.
+          for (const tr of scene.transitions) {
+            const snap = snapshotsRef.current.get(tr.id)
+            if (!snap) continue
+
+            if (tr.kind === 'slide') {
+              const sign = tr.direction === 'left' ? -1 : 1
+              snap.div.style.opacity = '1'
+              snap.div.style.transform = `translateX(${sign * tr.t * 100}%)`
+              snap.div.style.clipPath = ''
+            } else if (tr.kind === 'wipe') {
+              snap.div.style.opacity = '1'
+              snap.div.style.transform = ''
+              snap.div.style.clipPath = `inset(0 ${tr.t * 100}% 0 0)`
+            } else {
+              // fade (default)
+              snap.div.style.opacity = String(1 - tr.t)
+              snap.div.style.transform = ''
+              snap.div.style.clipPath = ''
+            }
+          }
+        },
+      }),
+      [],
+    )
 
     return (
       <div

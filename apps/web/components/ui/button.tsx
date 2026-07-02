@@ -14,8 +14,7 @@ interface ButtonProps {
 }
 
 const variantStyles = {
-  primary:
-    'bg-primary text-white hover:bg-primary-hover border-transparent',
+  primary: 'bg-primary text-white hover:bg-primary-hover border-transparent',
   ghost:
     'bg-transparent text-on-surface border-outline-variant hover:bg-surface-container hover:text-on-surface',
   link: 'bg-transparent text-primary border-transparent hover:underline px-0',
@@ -43,7 +42,7 @@ export function Button({
     variantStyles[variant],
     sizeStyles[size],
     disabled && 'opacity-50 cursor-not-allowed',
-    className
+    className,
   )
 
   if (href) {

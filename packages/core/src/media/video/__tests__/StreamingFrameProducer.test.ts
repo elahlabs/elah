@@ -18,11 +18,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,7 +45,7 @@ async function waitForFrames(
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     if (producer.cacheSize >= expectedCount) return producer.cacheSize
-    await new Promise(r => setTimeout(r, 5))
+    await new Promise((r) => setTimeout(r, 5))
   }
   return producer.cacheSize
 }
@@ -70,8 +66,12 @@ async function waitForFrames(
 // ---------------------------------------------------------------------------
 
 describe('Regression: copy-and-close lets decode advance past frame 16', () => {
-  beforeEach(() => { GpuDebugCounters.reset() })
-  afterEach(() => { GpuDebugCounters.reset() })
+  beforeEach(() => {
+    GpuDebugCounters.reset()
+  })
+  afterEach(() => {
+    GpuDebugCounters.reset()
+  })
 
   it('delivers frames beyond index 16 with maxFrames=30', async () => {
     const demuxer = makeDemuxer(60)
@@ -91,9 +91,9 @@ describe('Regression: copy-and-close lets decode advance past frame 16', () => {
     // Drive the playhead contiguously well past the old freeze point.
     for (let i = 0; i <= 25; i++) {
       producer.setPlayhead(i)
-      await new Promise(r => setTimeout(r, 5))
+      await new Promise((r) => setTimeout(r, 5))
     }
-    await new Promise(r => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 50))
 
     // A frame past index 16 must be present in the cache — proof the decoder
     // never wedged on an exhausted pool.
@@ -106,8 +106,12 @@ describe('Regression: copy-and-close lets decode advance past frame 16', () => {
 })
 
 describe('AC7(a): 30 contiguous setPlayhead calls → frames in cache', () => {
-  beforeEach(() => { GpuDebugCounters.reset() })
-  afterEach(() => { GpuDebugCounters.reset() })
+  beforeEach(() => {
+    GpuDebugCounters.reset()
+  })
+  afterEach(() => {
+    GpuDebugCounters.reset()
+  })
 
   it('fills cache with ≥30 decoded frames within 200 ms', async () => {
     const demuxer = makeDemuxer(40)
@@ -126,7 +130,7 @@ describe('AC7(a): 30 contiguous setPlayhead calls → frames in cache', () => {
 
     // Feed the first discontinuity (setPlayhead(0) → reset) and wait for it.
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 50)) // warm-up
+    await new Promise((r) => setTimeout(r, 50)) // warm-up
 
     // Now drive 30 contiguous frames
     const timings: number[] = []
@@ -157,8 +161,12 @@ describe('AC7(a): 30 contiguous setPlayhead calls → frames in cache', () => {
 // ---------------------------------------------------------------------------
 
 describe('AC7(b): backward seek of 60 frames → exactly one seekToKeyframe', () => {
-  beforeEach(() => { GpuDebugCounters.reset() })
-  afterEach(() => { GpuDebugCounters.reset() })
+  beforeEach(() => {
+    GpuDebugCounters.reset()
+  })
+  afterEach(() => {
+    GpuDebugCounters.reset()
+  })
 
   it('triggers exactly one seekToKeyframe on a backward jump ≥2', async () => {
     const demuxer = makeDemuxer(70)
@@ -177,14 +185,14 @@ describe('AC7(b): backward seek of 60 frames → exactly one seekToKeyframe', ()
 
     // Advance to frame 60 (triggers first open-time reset + contiguous play)
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 30))
+    await new Promise((r) => setTimeout(r, 30))
     const seekCountAfterOpen = vi.mocked(demuxer.seekToKeyframe).mock.calls.length
 
     // Advance contiguously to frame 60
     for (let i = 1; i <= 60; i++) {
       producer.setPlayhead(i)
     }
-    await new Promise(r => setTimeout(r, 30))
+    await new Promise((r) => setTimeout(r, 30))
 
     const seekCountAtFrame60 = vi.mocked(demuxer.seekToKeyframe).mock.calls.length
     // No extra seeks during contiguous forward play
@@ -192,7 +200,7 @@ describe('AC7(b): backward seek of 60 frames → exactly one seekToKeyframe', ()
 
     // Now backward jump 60 frames (60 → 0): classified as discontinuity
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 50))
 
     const seekCountAfterBackward = vi.mocked(demuxer.seekToKeyframe).mock.calls.length
     expect(seekCountAfterBackward - seekCountAtFrame60).toBe(1)
@@ -207,12 +215,18 @@ describe('AC7(b): backward seek of 60 frames → exactly one seekToKeyframe', ()
 // ---------------------------------------------------------------------------
 
 describe('AC7(c): forward scrub by 30-frame jumps → no VideoFrame leak', () => {
-  beforeEach(() => { GpuDebugCounters.reset() })
-  afterEach(() => { GpuDebugCounters.reset() })
+  beforeEach(() => {
+    GpuDebugCounters.reset()
+  })
+  afterEach(() => {
+    GpuDebugCounters.reset()
+  })
 
   it('cache is empty and no frames are leaked after disposal', async () => {
     let puts = 0
-    let evictions = 0
+    // Tracked for debugging only — see the ownership-invariant comment below for
+    // why puts === evictions can't be asserted.
+    let _evictions = 0
 
     const demuxer = makeDemuxer(200)
     const decoderMock = createMockDecoder()
@@ -225,9 +239,15 @@ describe('AC7(c): forward scrub by 30-frame jumps → no VideoFrame leak', () =>
       demuxerFactory: () => demuxer,
       decoderFactory: decoderMock.factory,
       cacheHooks: {
-        onPut: () => { puts++ },
-        onEvict: () => { evictions++ },
-        onClear: () => { evictions += (producer as unknown as { _cache: { size: number } })._cache?.size ?? 0 },
+        onPut: () => {
+          puts++
+        },
+        onEvict: () => {
+          _evictions++
+        },
+        onClear: () => {
+          _evictions += (producer as unknown as { _cache: { size: number } })._cache?.size ?? 0
+        },
       },
     })
 
@@ -236,7 +256,7 @@ describe('AC7(c): forward scrub by 30-frame jumps → no VideoFrame leak', () =>
     // Scrub forward by 30-frame jumps (each is a discontinuity → reset)
     for (let jump = 0; jump < 5; jump++) {
       producer.setPlayhead(jump * 30)
-      await new Promise(r => setTimeout(r, 30))
+      await new Promise((r) => setTimeout(r, 30))
     }
 
     // Dispose — clears all remaining cached frames

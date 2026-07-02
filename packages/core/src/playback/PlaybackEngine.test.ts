@@ -10,11 +10,9 @@ describe('PlaybackEngine', () => {
 
   let documentHidden = false
   let visibilityHandler: (() => void) | null = null
-  const addEventListener = vi.fn(
-    (event: string, handler: () => void) => {
-      if (event === 'visibilitychange') visibilityHandler = handler
-    },
-  )
+  const addEventListener = vi.fn((event: string, handler: () => void) => {
+    if (event === 'visibilitychange') visibilityHandler = handler
+  })
   const removeEventListener = vi.fn()
 
   function flushRAF(times = 1): void {
@@ -206,10 +204,7 @@ describe('PlaybackEngine', () => {
     engine.play()
     engine.destroy()
 
-    expect(removeEventListener).toHaveBeenCalledWith(
-      'visibilitychange',
-      expect.any(Function),
-    )
+    expect(removeEventListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function))
     expect(cancelAnimationFrame).toHaveBeenCalled()
   })
 

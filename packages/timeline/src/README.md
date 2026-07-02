@@ -2,7 +2,7 @@
 
 The timeline **UI surface**: the React components and hooks that render tracks,
 clips, the ruler, and the playhead, and that turn user gestures into engine
-mutations. It is a *consumer* of `core/` — it owns no project state and no
+mutations. It is a _consumer_ of `core/` — it owns no project state and no
 playback clock.
 
 > Layering rule: `@elah/timeline` may import from `@elah/core`, **not** from
@@ -21,24 +21,30 @@ playback clock.
 
 ## Components
 
-| Component | Role |
-|---|---|
-| `Timeline` | The root surface. Renders tracks + ruler + playhead; owns gesture wiring. Forwards a `TimelineRef` exposing `.engine`. |
-| `Ruler` | Time ruler; click/drag to scrub (seeks via the playback store). |
-| `TrackRow` | One track lane; hosts its clips and the per-lane drop target. |
-| `ClipBlock` | A single clip; drag to move, edge-drag to trim, select. |
-| `Playhead` | The playhead needle; positioned from `usePlaybackStore.currentFrame`. |
-| `TransitionChip` / `TransitionPicker` | Render and edit transitions between clips (rendered by `TrackRow`). |
+| Component                             | Role                                                                                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Timeline`                            | The root surface. Renders tracks + ruler + playhead; owns gesture wiring. Forwards a `TimelineRef` exposing `.engine`. |
+| `Ruler`                               | Time ruler; click/drag to scrub (seeks via the playback store).                                                        |
+| `TrackRow`                            | One track lane; hosts its clips and the per-lane drop target.                                                          |
+| `ClipBlock`                           | A single clip; drag to move, edge-drag to trim, select.                                                                |
+| `Playhead`                            | The playhead needle; positioned from `usePlaybackStore.currentFrame`.                                                  |
+| `TransitionChip` / `TransitionPicker` | Render and edit transitions between clips (rendered by `TrackRow`).                                                    |
 
 ## Public API (re-exported from `@elah/editor`)
 
 ```ts
 import {
-  Timeline, type TimelineProps, type TimelineRef,
-  useTimeline,            // engine handle from context
-  useTracks, usePlayback, useSelection,  // Ring 1 hooks
-  useTimelineDrop,        // attach a media-drop target to a lane
-  ELEMENT_DRAG_MIME, type DragElementPayload, type ElementKind,
+  Timeline,
+  type TimelineProps,
+  type TimelineRef,
+  useTimeline, // engine handle from context
+  useTracks,
+  usePlayback,
+  useSelection, // Ring 1 hooks
+  useTimelineDrop, // attach a media-drop target to a lane
+  ELEMENT_DRAG_MIME,
+  type DragElementPayload,
+  type ElementKind,
 } from '@elah/editor'
 ```
 

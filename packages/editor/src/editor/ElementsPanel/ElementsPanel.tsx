@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState, type CSSProperties, type DragEvent } from 'react'
-import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind, type ShapeVariant } from '@elah/timeline'
+import {
+  ELEMENT_DRAG_MIME,
+  cn,
+  type DragElementPayload,
+  type ElementKind,
+  type ShapeVariant,
+} from '@elah/timeline'
 import {
   isActivationKey,
   useAssetActivation,
@@ -23,7 +29,15 @@ interface PaletteTile {
 }
 
 const ShapeRect = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 24 24"
+    width={20}
+    height={20}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="5" width="18" height="14" rx="2" />
   </svg>
 )
@@ -35,13 +49,30 @@ const ShapeCircle = () => (
 )
 
 const ShapeTriangle = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 24 24"
+    width={20}
+    height={20}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinejoin="round"
+  >
     <polygon points="12,3 22,21 2,21" />
   </svg>
 )
 
 const FreehandIcon = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 24 24"
+    width={20}
+    height={20}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M3 17c3-3 5-7 8-7s4 4 7 1" />
     <path d="M17 11l2 2-2 2" />
   </svg>
@@ -134,14 +165,9 @@ export function ElementsPanel({
   )
 
   return (
-    <div
-      className={cn('flex flex-col bg-transparent', className)}
-      style={style}
-    >
+    <div className={cn('flex flex-col bg-transparent', className)} style={style}>
       <div className="px-3 py-[10px] border-b border-ed-border shrink-0">
-        <span className="text-[10px] font-bold text-ed-text-muted tracking-[0.08em]">
-          ELEMENTS
-        </span>
+        <span className="text-[10px] font-bold text-ed-text-muted tracking-[0.08em]">ELEMENTS</span>
       </div>
 
       {toast && (
@@ -149,8 +175,14 @@ export function ElementsPanel({
           role="status"
           className="mx-[10px] mt-[10px] rounded-sm px-[10px] py-2 text-[10px] font-mono leading-[1.4]"
           style={{
-            color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
-            background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+            color:
+              toast.tone === 'warn'
+                ? 'var(--elah-danger-text, #f5d0a9)'
+                : 'var(--elah-info-text, #c8d8f0)',
+            background:
+              toast.tone === 'warn'
+                ? 'var(--elah-danger-bg, #3a2418)'
+                : 'var(--elah-info-bg, #1a2433)',
             border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
           }}
         >
@@ -168,7 +200,11 @@ export function ElementsPanel({
             tabIndex={activationEnabled ? 0 : undefined}
             className="elah-element-card flex flex-col items-center justify-center gap-[6px] px-2 py-3 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms] min-h-[72px]"
             onDragStart={makeDragStart(element, shapeVariant)}
-            onClick={activationEnabled ? () => handleElementActivate(element, shapeVariant, label) : undefined}
+            onClick={
+              activationEnabled
+                ? () => handleElementActivate(element, shapeVariant, label)
+                : undefined
+            }
             onKeyDown={
               activationEnabled
                 ? (e) => {

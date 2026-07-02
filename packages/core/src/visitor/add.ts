@@ -17,10 +17,7 @@ export function addClip(draft: Draft<Project>, clip: Clip): void {
     draft.clips[clip.trackId] = []
   }
 
-  const overlaps = findOverlaps(
-    draft.clips[clip.trackId] as Clip[],
-    clip,
-  )
+  const overlaps = findOverlaps(draft.clips[clip.trackId] as Clip[], clip)
   if (overlaps.length > 0) {
     throw new Error(
       `Clip overlaps with existing clip "${overlaps[0].id}" on track "${clip.trackId}"`,

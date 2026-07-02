@@ -33,7 +33,12 @@ describe('ProviderObjectUrlCleanup', () => {
     let resolveOpen!: () => void
     const slowBackend = {
       ...createMockDemuxerBackend({ chunks: [] }),
-      open: vi.fn(() => new Promise<void>((r) => { resolveOpen = r })),
+      open: vi.fn(
+        () =>
+          new Promise<void>((r) => {
+            resolveOpen = r
+          }),
+      ),
     }
 
     const producer = new StreamingFrameProducer({

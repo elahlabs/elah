@@ -45,11 +45,7 @@ export class VideoTexture {
     const width = 'displayWidth' in frame ? frame.displayWidth : frame.width
     const height = 'displayHeight' in frame ? frame.displayHeight : frame.height
 
-    if (
-      !this._entry
-      || this._entry.width !== width
-      || this._entry.height !== height
-    ) {
+    if (!this._entry || this._entry.width !== width || this._entry.height !== height) {
       if (this._entry) {
         this._pool.release(this._entry)
         this._entry = null
@@ -63,14 +59,7 @@ export class VideoTexture {
     }
 
     gl.bindTexture(gl.TEXTURE_2D, this._entry.glTexture)
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      frame as TexImageSource,
-    )
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame as TexImageSource)
     gl.bindTexture(gl.TEXTURE_2D, null)
 
     this._hasContent = true

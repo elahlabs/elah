@@ -6,8 +6,7 @@
  * failure case explicitly. Use `result.ok` to narrow.
  */
 export type ActionResult<T = void> =
-  | { ok: true; data: T }
-  | { ok: false; reason: ActionFailureReason }
+  { ok: true; data: T } | { ok: false; reason: ActionFailureReason }
 
 export type ActionFailureReason =
   | 'no-selection'

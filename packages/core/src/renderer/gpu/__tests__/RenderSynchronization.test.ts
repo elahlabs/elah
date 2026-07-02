@@ -92,10 +92,7 @@ import { GpuRenderer } from '../GpuRenderer'
 // Scene helpers
 // ---------------------------------------------------------------------------
 
-function makeScene(
-  frame: number,
-  videos: ActiveVideoClip[],
-): Scene {
+function makeScene(frame: number, videos: ActiveVideoClip[]): Scene {
   return {
     frame,
     fps: 30,

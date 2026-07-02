@@ -10,65 +10,65 @@
     --font-inter: 'Inter', system-ui, sans-serif;
 
     /* Surface hierarchy — tonal layers, lightest at top */
-    --color-surface:             #fcf9f8;
-    --color-surface-dim:         #dcd9d9;
-    --color-surface-bright:      #fcf9f8;
-    --color-surface-lowest:      #ffffff;
-    --color-surface-low:         #f6f3f2;
-    --color-surface-container:   #f0eded;
-    --color-surface-high:        #eae7e7;
-    --color-surface-highest:     #e5e2e1;
+    --color-surface: #fcf9f8;
+    --color-surface-dim: #dcd9d9;
+    --color-surface-bright: #fcf9f8;
+    --color-surface-lowest: #ffffff;
+    --color-surface-low: #f6f3f2;
+    --color-surface-container: #f0eded;
+    --color-surface-high: #eae7e7;
+    --color-surface-highest: #e5e2e1;
 
     /* Text */
-    --color-on-surface:          #1c1b1b;
-    --color-on-surface-variant:  #5b403f;
-    --color-inverse-surface:     #313030;
-    --color-inverse-on-surface:  #f3f0ef;
+    --color-on-surface: #1c1b1b;
+    --color-on-surface-variant: #5b403f;
+    --color-inverse-surface: #313030;
+    --color-inverse-on-surface: #f3f0ef;
 
     /* Borders */
-    --color-outline:             #8f6f6e;
-    --color-outline-variant:     #e4bebc;
+    --color-outline: #8f6f6e;
+    --color-outline-variant: #e4bebc;
 
     /* Accent — Crimson */
-    --color-primary:             #b7102a;
-    --color-primary-hover:       #9a0d23;
-    --color-primary-dim:         #b7102a; /* same as primary in light */
+    --color-primary: #b7102a;
+    --color-primary-hover: #9a0d23;
+    --color-primary-dim: #b7102a; /* same as primary in light */
 
     /* Supporting */
-    --color-secondary:           #485f84;
-    --color-tertiary:            #006860;
+    --color-secondary: #485f84;
+    --color-tertiary: #006860;
   }
 
   /* ── Dark theme (Precision Studio — warm charcoal + crimson) ────────── */
   .dark {
     /* Surface hierarchy — tonal lift via warm charcoal steps */
-    --color-surface:             #111010; /* main background */
-    --color-surface-dim:         #0d0c0c;
-    --color-surface-bright:      #2c2828;
-    --color-surface-lowest:      #0a0909; /* deepest — nav underlay */
-    --color-surface-low:         #181616; /* panels, sidebars */
-    --color-surface-container:   #201d1d; /* cards, sections */
-    --color-surface-high:        #282424; /* modals, elevated menus */
-    --color-surface-highest:     #312d2d; /* chips, scrollbar thumb */
+    --color-surface: #111010; /* main background */
+    --color-surface-dim: #0d0c0c;
+    --color-surface-bright: #2c2828;
+    --color-surface-lowest: #0a0909; /* deepest — nav underlay */
+    --color-surface-low: #181616; /* panels, sidebars */
+    --color-surface-container: #201d1d; /* cards, sections */
+    --color-surface-high: #282424; /* modals, elevated menus */
+    --color-surface-highest: #312d2d; /* chips, scrollbar thumb */
 
     /* Text */
-    --color-on-surface:          #f0ecea; /* warm off-white */
-    --color-on-surface-variant:  #9e918f; /* warm mid-gray */
-    --color-inverse-surface:     #f0ecea;
-    --color-inverse-on-surface:  #231f1f;
+    --color-on-surface: #f0ecea; /* warm off-white */
+    --color-on-surface-variant: #9e918f; /* warm mid-gray */
+    --color-inverse-surface: #f0ecea;
+    --color-inverse-on-surface: #231f1f;
 
     /* Borders */
-    --color-outline:             #564848; /* interactive / focus edges */
-    --color-outline-variant:     #302828; /* structural hairlines */
+    --color-outline: #564848; /* interactive / focus edges */
+    --color-outline-variant: #302828; /* structural hairlines */
 
     /* Accent — Crimson (slightly more vibrant for dark bg contrast) */
-    --color-primary:             #e03050;
-    --color-primary-hover:       #cc2846;
-    --color-primary-dim:         #f08090; /* soft glow for highlights */
+    --color-primary: #e03050;
+    --color-primary-hover: #cc2846;
+    --color-primary-dim: #f08090; /* soft glow for highlights */
 
     /* Supporting */
-    --color-secondary:           #a09898;
-    --color-tertiary:            #6ab0d0;
+    --color-secondary: #a09898;
+    --color-tertiary: #6ab0d0;
   }
 
   * {
@@ -89,7 +89,9 @@
     color: var(--color-on-surface);
     font-family: var(--font-inter);
     line-height: 1.6;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
   }
 
   ::selection {
@@ -198,40 +200,40 @@
      overriding any of these --elah-* variables. */
 
   /* Surfaces */
-  --elah-bg:            #06070a;
-  --elah-bg-secondary:  #0a0d14;
-  --elah-bg-panel:      #121722;
-  --elah-bg-card:       #0d1017;
-  --elah-bg-elevated:   #171d2b;
-  --elah-bg-highest:    #1e2433;
+  --elah-bg: #06070a;
+  --elah-bg-secondary: #0a0d14;
+  --elah-bg-panel: #121722;
+  --elah-bg-card: #0d1017;
+  --elah-bg-elevated: #171d2b;
+  --elah-bg-highest: #1e2433;
 
   /* Borders */
-  --elah-border:        #232938;
+  --elah-border: #232938;
   --elah-border-subtle: #1a1f2b;
-  --elah-outline:       #2d3548;
+  --elah-outline: #2d3548;
 
   /* Text */
-  --elah-text:          #f3f4f6;
-  --elah-text-muted:    #9ca3af;
+  --elah-text: #f3f4f6;
+  --elah-text-muted: #9ca3af;
 
   /* Accent — cyan (Figma Export button #00c2ff; dark text on the fill) */
-  --elah-accent:        #00c2ff;
-  --elah-accent-hover:  #2bcbff;
-  --elah-accent-dim:    #7adcff;
-  --elah-accent-glow:   rgba(0, 194, 255, 0.35);
-  --elah-accent-soft:   rgba(0, 194, 255, 0.12);
-  --elah-accent-text:   #06212b;
+  --elah-accent: #00c2ff;
+  --elah-accent-hover: #2bcbff;
+  --elah-accent-dim: #7adcff;
+  --elah-accent-glow: rgba(0, 194, 255, 0.35);
+  --elah-accent-soft: rgba(0, 194, 255, 0.12);
+  --elah-accent-text: #06212b;
 
   /* Semantic */
-  --elah-color-error:   #f87171;
+  --elah-color-error: #f87171;
 
   /* Timeline (Figma: white playhead, cool-gray ticks) */
-  --elah-playhead:      #ffffff;
-  --elah-tick-color:    #394146;
-  --elah-tick-label:    #7a858b;
+  --elah-playhead: #ffffff;
+  --elah-tick-color: #394146;
+  --elah-tick-label: #7a858b;
 
   /* Typography */
-  --elah-font-ui:   var(--font-geist-sans, system-ui, sans-serif);
+  --elah-font-ui: var(--font-geist-sans, system-ui, sans-serif);
   --elah-font-mono: var(--font-geist-mono, ui-monospace, monospace);
 
   /* Geometry */
@@ -239,46 +241,46 @@
   --elah-radius-md: 8px;
 
   /* Kind tag colours — pale tones on the dark editor surface */
-  --elah-tag-video-fg:  #93c5fd;
-  --elah-tag-video-bg:  rgba(37, 99, 235, 0.2);
-  --elah-tag-audio-fg:  #86efac;
-  --elah-tag-audio-bg:  rgba(22, 163, 74, 0.2);
-  --elah-tag-image-fg:  #fcd34d;
-  --elah-tag-image-bg:  rgba(245, 158, 11, 0.2);
+  --elah-tag-video-fg: #93c5fd;
+  --elah-tag-video-bg: rgba(37, 99, 235, 0.2);
+  --elah-tag-audio-fg: #86efac;
+  --elah-tag-audio-bg: rgba(22, 163, 74, 0.2);
+  --elah-tag-image-fg: #fcd34d;
+  --elah-tag-image-bg: rgba(245, 158, 11, 0.2);
 
   /* Element type colours (Figma text clips are orange/rust) */
-  --elah-tag-text-fg:     #f0b483;
-  --elah-tag-text-bg:     rgba(173, 86, 33, 0.25);
+  --elah-tag-text-fg: #f0b483;
+  --elah-tag-text-bg: rgba(173, 86, 33, 0.25);
   --elah-tag-text-border: rgba(173, 86, 33, 0.4);
 
   /* Clip colours are editor-domain and don't vary by light/dark */
-  --elah-clip-video-top:    #3b82f6;
-  --elah-clip-video-mid:    #2563eb;
+  --elah-clip-video-top: #3b82f6;
+  --elah-clip-video-mid: #2563eb;
   --elah-clip-video-bottom: #1d4ed8;
   --elah-clip-video-accent: #60a5fa;
 
-  --elah-clip-audio-top:    #1c8160;
-  --elah-clip-audio-mid:    #115843;
+  --elah-clip-audio-top: #1c8160;
+  --elah-clip-audio-mid: #115843;
   --elah-clip-audio-bottom: #0c2a26; /* exact body */
   --elah-clip-audio-accent: #0d4d3c; /* exact border */
 
-  --elah-clip-text-top:    #ad5621;
-  --elah-clip-text-mid:    #8f3f18;
+  --elah-clip-text-top: #ad5621;
+  --elah-clip-text-mid: #8f3f18;
   --elah-clip-text-bottom: #7a2e10; /* exact body */
   --elah-clip-text-accent: #ad5621; /* exact border */
 
-  --elah-clip-image-top:    #fbbf24;
-  --elah-clip-image-mid:    #d97706;
+  --elah-clip-image-top: #fbbf24;
+  --elah-clip-image-mid: #d97706;
   --elah-clip-image-bottom: #b45309;
   --elah-clip-image-accent: #fcd34d;
 
-  --elah-clip-shape-top:    #818cf8;
-  --elah-clip-shape-mid:    #6366f1;
+  --elah-clip-shape-top: #818cf8;
+  --elah-clip-shape-mid: #6366f1;
   --elah-clip-shape-bottom: #4f46e5;
   --elah-clip-shape-accent: #a5b4fc;
 
-  --elah-clip-freehand-top:    #34d399;
-  --elah-clip-freehand-mid:    #10b981;
+  --elah-clip-freehand-top: #34d399;
+  --elah-clip-freehand-mid: #10b981;
   --elah-clip-freehand-bottom: #059669;
   --elah-clip-freehand-accent: #6ee7b7;
 
@@ -286,72 +288,72 @@
   --elah-text-on-clip: rgba(255, 255, 255, 0.95);
 
   --elah-selection-border: #00c2ff;
-  --elah-selection-glow:   rgba(0, 194, 255, 0.4);
+  --elah-selection-glow: rgba(0, 194, 255, 0.4);
 
-  --elah-transition-line:       rgba(107, 140, 255, 0.9);
+  --elah-transition-line: rgba(107, 140, 255, 0.9);
   --elah-transition-line-hover: rgba(255, 255, 255, 0.55);
-  --elah-transition-line-idle:  rgba(255, 255, 255, 0.18);
-  --elah-transition-fill:       #3c3e94;
-  --elah-transition-stroke:     #525480;
-  --elah-transition-add-fill:   rgba(255, 255, 255, 0.12);
+  --elah-transition-line-idle: rgba(255, 255, 255, 0.18);
+  --elah-transition-fill: #3c3e94;
+  --elah-transition-stroke: #525480;
+  --elah-transition-add-fill: rgba(255, 255, 255, 0.12);
   --elah-transition-add-stroke: rgba(255, 255, 255, 0.7);
 
-  --elah-menu-bg:     #1e2433;
+  --elah-menu-bg: #1e2433;
   --elah-menu-border: #2d3548;
   --elah-menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 
-  --elah-popover-bg:               #1a1f2b;
-  --elah-popover-border:           #2d3548;
-  --elah-popover-shadow:           0 8px 32px rgba(0, 0, 0, 0.6);
-  --elah-popover-option-bg:        #232938;
-  --elah-popover-option-bg-hover:  #2d3548;
+  --elah-popover-bg: #1a1f2b;
+  --elah-popover-border: #2d3548;
+  --elah-popover-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --elah-popover-option-bg: #232938;
+  --elah-popover-option-bg-hover: #2d3548;
   --elah-popover-option-bg-active: #3b4a6b;
-  --elah-popover-accent:           #6b8cff;
-  --elah-popover-accent-text:      #a5b4fc;
-  --elah-popover-icon:             #9ca3af;
+  --elah-popover-accent: #6b8cff;
+  --elah-popover-accent-text: #a5b4fc;
+  --elah-popover-icon: #9ca3af;
 
-  --elah-dialog-overlay:          rgba(5, 7, 12, 0.6);
-  --elah-dialog-bg:               #171d2b;
-  --elah-dialog-border:           #232938;
-  --elah-dialog-shadow:           0 24px 60px rgba(0, 0, 0, 0.55);
-  --elah-dialog-option-bg:        #1b2230;
-  --elah-dialog-option-bg-hover:  #222b3c;
-  --elah-dialog-option-border:    #2a3142;
-  --elah-dialog-primary-border:   #2563eb;
-  --elah-dialog-primary-bg:       rgba(37, 99, 235, 0.16);
+  --elah-dialog-overlay: rgba(5, 7, 12, 0.6);
+  --elah-dialog-bg: #171d2b;
+  --elah-dialog-border: #232938;
+  --elah-dialog-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --elah-dialog-option-bg: #1b2230;
+  --elah-dialog-option-bg-hover: #222b3c;
+  --elah-dialog-option-border: #2a3142;
+  --elah-dialog-primary-border: #2563eb;
+  --elah-dialog-primary-bg: rgba(37, 99, 235, 0.16);
   --elah-dialog-primary-bg-hover: rgba(37, 99, 235, 0.28);
 
-  --elah-danger-text:     #ff6b6b;
+  --elah-danger-text: #ff6b6b;
   --elah-danger-text-alt: #f87171;
   --elah-danger-bg-hover: rgba(255, 107, 107, 0.12);
-  --elah-danger-border:   #3f2a2a;
+  --elah-danger-border: #3f2a2a;
 
   /* Flat clip treatment to match the Figma — minimal gloss/highlight/shadow. */
-  --elah-effect-gloss:                  rgba(255, 255, 255, 0.04);
-  --elah-effect-inner-highlight:        rgba(255, 255, 255, 0.04);
+  --elah-effect-gloss: rgba(255, 255, 255, 0.04);
+  --elah-effect-inner-highlight: rgba(255, 255, 255, 0.04);
   --elah-effect-inner-highlight-strong: rgba(255, 255, 255, 0.06);
-  --elah-effect-clip-shadow:            0 1px 2px rgba(0, 0, 0, 0.25);
-  --elah-effect-tile-separator:         rgba(0, 0, 0, 0.28);
-  --elah-effect-waveform:               rgba(255, 255, 255, 0.85);
-  --elah-effect-placeholder-bg:         rgba(0, 0, 0, 0.22);
-  --elah-effect-placeholder-border:     rgba(255, 255, 255, 0.08);
-  --elah-effect-trim-scrim:             rgba(0, 0, 0, 0.35);
-  --elah-effect-label-shadow:           0 1px 2px rgba(0, 0, 0, 0.45);
-  --elah-effect-delete-btn-bg:          rgba(0, 0, 0, 0.5);
-  --elah-effect-delete-btn-border:      rgba(255, 255, 255, 0.35);
-  --elah-effect-delete-btn-text:        #ffffff;
+  --elah-effect-clip-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --elah-effect-tile-separator: rgba(0, 0, 0, 0.28);
+  --elah-effect-waveform: rgba(255, 255, 255, 0.85);
+  --elah-effect-placeholder-bg: rgba(0, 0, 0, 0.22);
+  --elah-effect-placeholder-border: rgba(255, 255, 255, 0.08);
+  --elah-effect-trim-scrim: rgba(0, 0, 0, 0.35);
+  --elah-effect-label-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --elah-effect-delete-btn-bg: rgba(0, 0, 0, 0.5);
+  --elah-effect-delete-btn-border: rgba(255, 255, 255, 0.35);
+  --elah-effect-delete-btn-text: #ffffff;
 
   /* Editor overlays / toasts / preview. Stage outline follows the accent;
      selection affordances and toasts are intrinsic editor chrome (literal). */
-  --elah-preview-bg:       #06070a;
-  --elah-stage-border:     rgba(0, 194, 255, 0.45);
-  --elah-stage-glow:       0 0 20px rgba(0, 194, 255, 0.08);
-  --elah-selection-color:  #4c9aff;
+  --elah-preview-bg: #06070a;
+  --elah-stage-border: rgba(0, 194, 255, 0.45);
+  --elah-stage-glow: 0 0 20px rgba(0, 194, 255, 0.08);
+  --elah-selection-color: #4c9aff;
   --elah-selection-handle: #ffffff;
-  --elah-danger-bg:        #3a2418;
-  --elah-info-bg:          #1a2433;
-  --elah-info-border:      #355070;
-  --elah-info-text:        #c8d8f0;
+  --elah-danger-bg: #3a2418;
+  --elah-info-bg: #1a2433;
+  --elah-info-border: #355070;
+  --elah-info-text: #c8d8f0;
 }
 
 /* Figma: audio clips show a tinted waveform on a dark body — teal-green at rest,
@@ -363,11 +365,11 @@
   --elah-effect-waveform: #248f6c; /* exact green waveform */
 }
 .elah-root [data-clip-type='audio'][data-selected='true'] {
-  --elah-clip-audio-top:    #2b4a82;
-  --elah-clip-audio-mid:    #1d3460;
+  --elah-clip-audio-top: #2b4a82;
+  --elah-clip-audio-mid: #1d3460;
   --elah-clip-audio-bottom: #162245; /* exact blue body */
   --elah-clip-audio-accent: #4370b2; /* exact blue border */
-  --elah-effect-waveform:   #4370b2; /* exact blue waveform */
+  --elah-effect-waveform: #4370b2; /* exact blue waveform */
 }
 
 /* Syntax highlight overrides */

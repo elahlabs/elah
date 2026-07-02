@@ -2,7 +2,7 @@
 
 > An honest list of what the engine does **not** do yet. Everything here is a
 > known gap or deliberate trade-off, verified against the current code — not a
-> bug report and not a promise. Features the engine *does* ship are in
+> bug report and not a promise. Features the engine _does_ ship are in
 > [`README.md`](./README.md); the forward plan is in [`ROADMAP.md`](./ROADMAP.md).
 
 ---
@@ -14,13 +14,13 @@
   tested for one active video track and one audio track. Heavy multi-track
   compositing is not yet a supported path.
 - **Reverse / backward scrubbing is unstable.** `StreamingFrameProducer` feeds a
-  *forward* lookahead window. A backward jump larger than the lookahead is a
+  _forward_ lookahead window. A backward jump larger than the lookahead is a
   discontinuity: it seeks the demuxer to the nearest keyframe and cold-starts the
   decoder, so scrubbing backward can show the last frame or a brief black frame
   until decode catches up.
 - **No scheduler / predictive frame caching.** Decode is reactive to the current
   playhead. There is no component that warms frames ahead of where the playhead
-  is *heading*, prioritizes across clips, or pre-rolls around cuts. This is the
+  is _heading_, prioritizes across clips, or pre-rolls around cuts. This is the
   next planned architectural layer (see [`ROADMAP.md`](./ROADMAP.md)).
 - **Cache misses on large jumps look like a stall.** On a miss the renderer keeps
   the last uploaded texture (by design — no flicker). During a big seek or a

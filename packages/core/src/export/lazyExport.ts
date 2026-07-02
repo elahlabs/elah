@@ -19,10 +19,7 @@ import type { ExportOptions, ExportProgress } from './types'
  *
  * This keeps mediabunny out of the main bundle.
  */
-export async function lazyExportVideo(
-  project: Project,
-  options?: ExportOptions
-): Promise<Blob> {
+export async function lazyExportVideo(project: Project, options?: ExportOptions): Promise<Blob> {
   const { exportVideo: actualExport } = await import(
     /* webpackChunkName: "editor-export" */
     './exportVideo'

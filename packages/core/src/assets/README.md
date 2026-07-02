@@ -10,13 +10,13 @@ Clips on the timeline reference assets by `id` rather than duplicating URLs and 
 
 ## What lives here
 
-| File | Purpose |
-| --- | --- |
-| [`types.ts`](./types.ts) | `MediaAsset`, `MediaKind`, drag MIME constants |
-| [`store.ts`](./store.ts) | Zustand store — in-memory asset registry |
-| [`importFiles.ts`](./importFiles.ts) | File import, metadata probing, thumbnail generation |
+| File                                           | Purpose                                             |
+| ---------------------------------------------- | --------------------------------------------------- |
+| [`types.ts`](./types.ts)                       | `MediaAsset`, `MediaKind`, drag MIME constants      |
+| [`store.ts`](./store.ts)                       | Zustand store — in-memory asset registry            |
+| [`importFiles.ts`](./importFiles.ts)           | File import, metadata probing, thumbnail generation |
 | [`importFiles.test.ts`](./importFiles.test.ts) | Unit tests for import, probe, and thumbnail helpers |
-| [`index.ts`](./index.ts) | Public exports and `useMediaLibrary()` hook |
+| [`index.ts`](./index.ts)                       | Public exports and `useMediaLibrary()` hook         |
 
 UI integration lives in the `@elah/editor` package's [`AssetPanel.tsx`](../../../../editor/src/editor/AssetPanel/AssetPanel.tsx). Timeline drop handling consumes `MEDIA_DRAG_MIME` via the `@elah/timeline` package's [`useTimelineDrop.ts`](../../../../timeline/src/useTimelineDrop.ts).
 
@@ -91,10 +91,10 @@ The synchronous pre-pass avoids a race where parallel `importSingleFile` calls a
 
 `SkippedImport` entries carry:
 
-| Field | Meaning |
-| --- | --- |
-| `file` | The original `File` object |
-| `reason` | `'duplicate'` or `'unsupported'` |
+| Field             | Meaning                                                 |
+| ----------------- | ------------------------------------------------------- |
+| `file`            | The original `File` object                              |
+| `reason`          | `'duplicate'` or `'unsupported'`                        |
 | `existingAssetId` | Set when the file matches an asset already in the store |
 
 `AssetPanel` reads `skipped` and shows a short inline toast (duplicates as info, unsupported types as warn).
@@ -136,17 +136,17 @@ Use for non-React code paths (`importFiles`, workers, actions). Components that 
 
 ```ts
 const { imported, skipped } = await importFiles(files, {
-  thumbnailMaxDim: 240,  // optional, default 240
-  fallbackFps: 30,       // reserved; not used during import yet
+  thumbnailMaxDim: 240, // optional, default 240
+  fallbackFps: 30, // reserved; not used during import yet
 })
 ```
 
 ### Probe helpers (exported for reuse / testing)
 
 ```ts
-probeVideo(src)   // → { durationSec, width, height }
-probeAudio(src)   // → { durationSec }
-probeImage(src)   // → { durationSec: 0, width, height }
+probeVideo(src) // → { durationSec, width, height }
+probeAudio(src) // → { durationSec }
+probeImage(src) // → { durationSec: 0, width, height }
 makeVideoThumbnail(src, durationSec, maxDim)
 makeImageThumbnail(src, maxDim)
 ```

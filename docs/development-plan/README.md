@@ -6,7 +6,7 @@
 
 This wave is about turning a working engine + first-pass panels into a **coherent,
 composable editor SDK**. The engine layer (decode, render, export, resolve) is
-solid; the gaps are now in the *UI/UX seam* and the *developer-facing surface*.
+solid; the gaps are now in the _UI/UX seam_ and the _developer-facing surface_.
 
 Read [`packages/editor/src/core/Architecture.md`](../../packages/editor/src/core/Architecture.md)
 and the `elah-editor-ui` skill before starting — every task here is expected to
@@ -20,7 +20,7 @@ These come straight from the architecture and must hold across all four
 workstreams:
 
 - **Package boundaries** — `@elah/core` = engine/state/media model (no UI);
-  `@elah/timeline` = timeline UI + drag *consumers*; `@elah/editor` =
+  `@elah/timeline` = timeline UI + drag _consumers_; `@elah/editor` =
   batteries-included **replaceable** components. UI never computes timeline math.
 - **Components are replaceable** — every panel takes `style?` + `className?` and
   reads state from public hooks (`useMediaLibrary()`, `useEditor()`). A consumer
@@ -40,12 +40,12 @@ workstreams:
 
 ## Workstreams
 
-| # | Doc | One-line goal |
-|---|-----|---------------|
-| 1 | [`01-unified-design-system.md`](./01-unified-design-system.md) | Collapse three competing token systems into one CSS-variable source of truth, spanning **every** surface (Preview, Inspector, asset panel, timeline) so a developer can re-theme the whole editor from one place. |
-| 2 | [`02-asset-panel-abstraction.md`](./02-asset-panel-abstraction.md) | Let consumers pass media URLs *as-is*; segregate by source + kind on the fly. |
-| 3 | [`03-text-editing-and-inspector.md`](./03-text-editing-and-inspector.md) | A real text-editing surface (Inspector) inside the editor, not just the canvas overlay. |
-| 4 | [`04-further-findings.md`](./04-further-findings.md) | Consolidation, open decisions (Draw/Shapes), filmstrip view, debt sweep. |
+| #   | Doc                                                                      | One-line goal                                                                                                                                                                                                     |
+| --- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | [`01-unified-design-system.md`](./01-unified-design-system.md)           | Collapse three competing token systems into one CSS-variable source of truth, spanning **every** surface (Preview, Inspector, asset panel, timeline) so a developer can re-theme the whole editor from one place. |
+| 2   | [`02-asset-panel-abstraction.md`](./02-asset-panel-abstraction.md)       | Let consumers pass media URLs _as-is_; segregate by source + kind on the fly.                                                                                                                                     |
+| 3   | [`03-text-editing-and-inspector.md`](./03-text-editing-and-inspector.md) | A real text-editing surface (Inspector) inside the editor, not just the canvas overlay.                                                                                                                           |
+| 4   | [`04-further-findings.md`](./04-further-findings.md)                     | Consolidation, open decisions (Draw/Shapes), filmstrip view, debt sweep.                                                                                                                                          |
 
 ## Suggested sequencing
 
@@ -61,6 +61,7 @@ workstreams:
 ## Cross-cutting acceptance bar
 
 A workstream is done when, in addition to its own criteria:
+
 - no new raw hex (`#rrggbb`) in a component — color/space/radius/type via tokens;
 - every new component is replaceable (`style`/`className`, hook-driven);
 - every new draggable is handled in `useTimelineDrop`;

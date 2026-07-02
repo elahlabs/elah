@@ -11,11 +11,11 @@
 Per-package `dist/` (ESM output of `tsc`, no app bundler), measured on the
 current `main`:
 
-| Package | gzipped | raw |
-|---|---|---|
-| `@elah/core` | ~41 KiB | 218 KiB |
-| `@elah/timeline` | ~12 KiB | 61 KiB |
-| `@elah/editor` (layer only) | ~10 KiB | 51 KiB |
+| Package                                       | gzipped     | raw     |
+| --------------------------------------------- | ----------- | ------- |
+| `@elah/core`                                  | ~41 KiB     | 218 KiB |
+| `@elah/timeline`                              | ~12 KiB     | 61 KiB  |
+| `@elah/editor` (layer only)                   | ~10 KiB     | 51 KiB  |
 | **Full SDK** (`core` + `timeline` + `editor`) | **~63 KiB** | 330 KiB |
 
 Runtime deps that ship with the SDK: `immer` (~9 KiB gz) and `zustand`
@@ -29,10 +29,10 @@ see below.
 
 The published package depends on exactly two runtime libraries:
 
-| Dependency | Why it's in |
-|---|---|
-| `immer` | Structural-sharing mutations + undo/redo in `TimelineEngine` |
-| `zustand` | Ring 1 reactive store mirrors for React consumers |
+| Dependency | Why it's in                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `immer`    | Structural-sharing mutations + undo/redo in `TimelineEngine` |
+| `zustand`  | Ring 1 reactive store mirrors for React consumers            |
 
 `react` / `react-dom` are **peer** dependencies (`>= 18`) — the host app owns the
 React copy.
@@ -54,7 +54,7 @@ and wires it in:
 import { GpuRenderer, createMediabunnyBackend } from '@elah/editor'
 import * as mediabunny from 'mediabunny'
 
-const demuxerFactory = () => createMediabunnyBackend(mediabunny, { /* … */ })
+const demuxerFactory = () => createMediabunnyBackend(mediabunny, {/* … */})
 new GpuRenderer({ demuxerFactory })
 ```
 
@@ -66,7 +66,7 @@ Consequences:
 - Without a `demuxerFactory`, the renderer falls back to a synthetic provider, so
   the engine is usable (and testable) with zero media dependencies.
 
-The export path *does* use mediabunny directly inside the worker, because muxing
+The export path _does_ use mediabunny directly inside the worker, because muxing
 an MP4 has to happen somewhere; that import lives in `ExportWorker.ts` and is only
 pulled when an app actually bundles and spawns the worker.
 

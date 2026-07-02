@@ -93,10 +93,7 @@ const DEFAULT_FPS = 30
 const DEFAULT_LOOKAHEAD_FRAMES = 8
 
 function canUseSyntheticFrames(): boolean {
-  return (
-    typeof OffscreenCanvas !== 'undefined' &&
-    typeof VideoFrame !== 'undefined'
-  )
+  return typeof OffscreenCanvas !== 'undefined' && typeof VideoFrame !== 'undefined'
 }
 
 /**
@@ -374,11 +371,7 @@ export class SyntheticVideoFrameProvider implements VideoFrameProvider {
     this._ctx.font = 'bold 48px monospace'
     this._ctx.textAlign = 'center'
     this._ctx.textBaseline = 'middle'
-    this._ctx.fillText(
-      String(sourceFrame),
-      this._frameWidth / 2,
-      this._frameHeight / 2,
-    )
+    this._ctx.fillText(String(sourceFrame), this._frameWidth / 2, this._frameHeight / 2)
 
     const timestamp = Math.round((sourceFrame / this._fps) * 1_000_000)
     return new VideoFrame(this._canvas, { timestamp })

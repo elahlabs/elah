@@ -32,12 +32,7 @@ export function computeContainViewport(
   stageWidth: number,
   stageHeight: number,
 ): ViewportRect {
-  if (
-    canvasWidth <= 0 ||
-    canvasHeight <= 0 ||
-    stageWidth <= 0 ||
-    stageHeight <= 0
-  ) {
+  if (canvasWidth <= 0 || canvasHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) {
     return {
       x: 0,
       y: 0,

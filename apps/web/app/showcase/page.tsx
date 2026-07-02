@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 const showcaseItems = [
   {
     name: 'Full Editor Playground',
-    description: 'The reference implementation. Asset panel, GPU-accelerated preview, timeline, audio, transitions, and MP4 export — all wired together.',
+    description:
+      'The reference implementation. Asset panel, GPU-accelerated preview, timeline, audio, transitions, and MP4 export — all wired together.',
     tags: ['Reference', 'WebGL2', 'Export'],
     icon: Layers,
     href: '/playground/production',
@@ -20,7 +21,8 @@ const showcaseItems = [
   },
   {
     name: 'Timeline Demo',
-    description: 'Isolated timeline interaction model. The full editing surface without the renderer — useful for testing integration or building a custom rendering layer.',
+    description:
+      'Isolated timeline interaction model. The full editing surface without the renderer — useful for testing integration or building a custom rendering layer.',
     tags: ['Timeline', 'Integration'],
     icon: Clock,
     href: '/playground/timeline',
@@ -29,7 +31,8 @@ const showcaseItems = [
   },
   {
     name: 'Export Pipeline Demo',
-    description: 'Step through the export worker frame-by-frame. Visualizes the resolveTimeline → OffscreenCanvas → VideoEncoder pipeline.',
+    description:
+      'Step through the export worker frame-by-frame. Visualizes the resolveTimeline → OffscreenCanvas → VideoEncoder pipeline.',
     tags: ['Export', 'WebCodecs', 'Worker'],
     icon: FileVideo,
     href: '#',
@@ -38,7 +41,8 @@ const showcaseItems = [
   },
   {
     name: 'GPU Renderer Debug',
-    description: 'GpuDebugCounters visualizer — draw call counts, texture uploads, frame timing, and context-loss simulation.',
+    description:
+      'GpuDebugCounters visualizer — draw call counts, texture uploads, frame timing, and context-loss simulation.',
     tags: ['WebGL2', 'Debug'],
     icon: Cpu,
     href: '#',
@@ -56,7 +60,9 @@ export default function ShowcasePage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Showcase</div>
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+              Showcase
+            </div>
             <h1
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
@@ -87,7 +93,10 @@ export default function ShowcasePage() {
                   >
                     <div
                       className="flex h-16 w-16 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: item.color + '20', border: `1px solid ${item.color}30` }}
+                      style={{
+                        backgroundColor: item.color + '20',
+                        border: `1px solid ${item.color}30`,
+                      }}
                     >
                       <Icon className="h-8 w-8" style={{ color: item.color }} />
                     </div>
@@ -155,10 +164,10 @@ export default function ShowcasePage() {
 
           {/* Submit */}
           <div className="mt-12 rounded-md border border-outline-variant bg-surface-low p-6">
-            <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Built something?</div>
-            <h3 className="mb-1 text-sm font-semibold text-on-surface">
-              Share your project
-            </h3>
+            <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+              Built something?
+            </div>
+            <h3 className="mb-1 text-sm font-semibold text-on-surface">Share your project</h3>
             <p className="mb-4 text-xs leading-relaxed text-on-surface-variant">
               If you have built something with elah, open a PR to add it to the showcase.
             </p>

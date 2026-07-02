@@ -22,11 +22,7 @@ export interface InsertAssetOptions {
 }
 
 export type InsertAssetFailureReason =
-  | 'missing-asset'
-  | 'no-track'
-  | 'locked'
-  | 'incompatible-track'
-  | 'cancelled'
+  'missing-asset' | 'no-track' | 'locked' | 'incompatible-track' | 'cancelled'
 
 export type InsertedKind = MediaKind | 'element'
 
@@ -89,9 +85,7 @@ export function resolveDropPosition(
     return { startFrame: prevEnd, durationFrames: Math.min(durationFrames, gapSize) }
   }
 
-  const lastOverlapEnd = Math.max(
-    ...overlapping.map((c) => c.startFrame + c.durationFrames),
-  )
+  const lastOverlapEnd = Math.max(...overlapping.map((c) => c.startFrame + c.durationFrames))
   const nextClip = sorted.find((c) => c.startFrame >= lastOverlapEnd)
   if (nextClip) {
     const available = nextClip.startFrame - lastOverlapEnd
@@ -291,10 +285,7 @@ function addElementClip(
   })
 }
 
-function mediaRefusal(
-  kind: MediaKind,
-  reason: InsertAssetFailureReason,
-): InsertAssetResult {
+function mediaRefusal(kind: MediaKind, reason: InsertAssetFailureReason): InsertAssetResult {
   return { ok: false, kind, reason }
 }
 
@@ -355,7 +346,14 @@ export async function insertMediaAsset(
   engine.batch(() => {
     if (choice === 'video-only') {
       const v = resolveOn(engine, target.trackId, desiredStart, fullDuration)
-      const clip = addMediaClip(engine, target.trackId, 'video', asset, v.startFrame, v.durationFrames)
+      const clip = addMediaClip(
+        engine,
+        target.trackId,
+        'video',
+        asset,
+        v.startFrame,
+        v.durationFrames,
+      )
       result = { ok: true, kind: asset.kind, trackId: target.trackId, clipIds: [clip.id] }
     } else if (choice === 'both') {
       // Resolve against BOTH tracks at once so the pair lands where neither
@@ -367,13 +365,23 @@ export async function insertMediaAsset(
       }
       const videoClips = clipsOn(engine, target.trackId)
       const audioClips = clipsOn(engine, audioTarget.trackId)
-      const r = resolveDropPosition(
-        [...videoClips, ...audioClips],
-        desiredStart,
-        fullDuration,
+      const r = resolveDropPosition([...videoClips, ...audioClips], desiredStart, fullDuration)
+      const video = addMediaClip(
+        engine,
+        target.trackId,
+        'video',
+        asset,
+        r.startFrame,
+        r.durationFrames,
       )
-      const video = addMediaClip(engine, target.trackId, 'video', asset, r.startFrame, r.durationFrames)
-      const audio = addMediaClip(engine, audioTarget.trackId, 'audio', asset, r.startFrame, r.durationFrames)
+      const audio = addMediaClip(
+        engine,
+        audioTarget.trackId,
+        'audio',
+        asset,
+        r.startFrame,
+        r.durationFrames,
+      )
       result = {
         ok: true,
         kind: asset.kind,
@@ -387,7 +395,14 @@ export async function insertMediaAsset(
         return
       }
       const a = resolveOn(engine, audioTarget.trackId, desiredStart, fullDuration)
-      const clip = addMediaClip(engine, audioTarget.trackId, 'audio', asset, a.startFrame, a.durationFrames)
+      const clip = addMediaClip(
+        engine,
+        audioTarget.trackId,
+        'audio',
+        asset,
+        a.startFrame,
+        a.durationFrames,
+      )
       result = { ok: true, kind: asset.kind, trackId: audioTarget.trackId, clipIds: [clip.id] }
     }
   }, 'Add media')

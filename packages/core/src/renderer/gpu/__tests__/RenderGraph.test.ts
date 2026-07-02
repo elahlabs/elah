@@ -74,9 +74,7 @@ describe('RenderGraph', () => {
     items = [item('c', 3), item('a', 1), item('b', 2)]
     graph.execute(STUB_SCENE, STUB_CTX)
 
-    const drawOrder = layer.draw.mock.calls.map(
-      ([drawn]) => (drawn as TestItem).id,
-    )
+    const drawOrder = layer.draw.mock.calls.map(([drawn]) => (drawn as TestItem).id)
     expect(drawOrder).toEqual(['a', 'b', 'c'])
   })
 
@@ -97,8 +95,14 @@ describe('RenderGraph', () => {
     graph.execute(STUB_SCENE, STUB_CTX)
 
     const allDrawCalls = [
-      ...layer.draw.mock.calls.map(([i]) => ({ id: (i as TestItem).id, z: (i as TestItem).zIndex })),
-      ...layerB.draw.mock.calls.map(([i]) => ({ id: (i as TestItem).id, z: (i as TestItem).zIndex })),
+      ...layer.draw.mock.calls.map(([i]) => ({
+        id: (i as TestItem).id,
+        z: (i as TestItem).zIndex,
+      })),
+      ...layerB.draw.mock.calls.map(([i]) => ({
+        id: (i as TestItem).id,
+        z: (i as TestItem).zIndex,
+      })),
     ].sort((a, b) => a.z - b.z)
 
     expect(allDrawCalls.map((c) => c.id)).toEqual(['b1', 'a1', 'b2'])
@@ -128,9 +132,7 @@ describe('RenderGraph', () => {
     expect(layer.release).toHaveBeenCalledTimes(1)
     expect(layer.release).toHaveBeenCalledWith('b')
 
-    const drawIds = layer.draw.mock.calls.map(
-      ([drawn]) => (drawn as TestItem).id,
-    )
+    const drawIds = layer.draw.mock.calls.map(([drawn]) => (drawn as TestItem).id)
     expect(drawIds).toEqual(['a'])
   })
 
@@ -201,14 +203,9 @@ describe('RenderGraph scene diffing', () => {
     graph.execute(STUB_SCENE, STUB_CTX)
 
     expect(layer.release).toHaveBeenCalledWith('a')
-    expect(layer.acquire).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'c' }),
-      STUB_CTX,
-    )
+    expect(layer.acquire).toHaveBeenCalledWith(expect.objectContaining({ id: 'c' }), STUB_CTX)
 
-    const drawIds = layer.draw.mock.calls.map(
-      ([drawn]) => (drawn as TestItem).id,
-    )
+    const drawIds = layer.draw.mock.calls.map(([drawn]) => (drawn as TestItem).id)
     expect(drawIds).toEqual(['b', 'c'])
   })
 })

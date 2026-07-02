@@ -8,11 +8,7 @@ import type { Clip } from '../types'
  * @param snapPoints   - Candidate snap positions in frames
  * @param threshold    - Max distance in frames to trigger snap
  */
-export function snapFrame(
-  frame: number,
-  snapPoints: number[],
-  threshold: number,
-): number {
+export function snapFrame(frame: number, snapPoints: number[], threshold: number): number {
   let nearest = frame
   let minDist = threshold
 
@@ -34,10 +30,7 @@ export function snapFrame(
  * @param clips     - All clips keyed by trackId
  * @param excludeId - Skip this clip (the one currently being dragged)
  */
-export function buildSnapPoints(
-  clips: Record<string, Clip[]>,
-  excludeId?: string,
-): number[] {
+export function buildSnapPoints(clips: Record<string, Clip[]>, excludeId?: string): number[] {
   const points = new Set<number>()
 
   for (const trackClips of Object.values(clips)) {
@@ -64,12 +57,7 @@ function clipEndFrame(c: Clip): number {
 }
 
 /** Positive when intervals overlap by at least one frame. */
-function overlapFrames(
-  aStart: number,
-  aEnd: number,
-  bStart: number,
-  bEnd: number,
-): number {
+function overlapFrames(aStart: number, aEnd: number, bStart: number, bEnd: number): number {
   const lo = Math.max(aStart, bStart)
   const hi = Math.min(aEnd, bEnd)
   const n = hi - lo
@@ -109,12 +97,7 @@ export function resolveOverlapEdgeSnap(
   let start = nextStart
 
   for (let iter = 0; iter < MAX_OVERLAP_RESOLVE_ITERATIONS; iter++) {
-    const overlapping = clipsOverlappingMoving(
-      start,
-      D,
-      movingClip.id,
-      trackClips,
-    )
+    const overlapping = clipsOverlappingMoving(start, D, movingClip.id, trackClips)
     if (overlapping.length === 0) return start
 
     let dominant: Clip | null = null
@@ -134,30 +117,17 @@ export function resolveOverlapEdgeSnap(
 
     const targetStart = dominant.startFrame
     const targetEnd = clipEndFrame(dominant)
-    let candidate =
-      maxRatio > overlapTolerance
-        ? targetEnd
-        : Math.max(0, targetStart - D)
+    let candidate = maxRatio > overlapTolerance ? targetEnd : Math.max(0, targetStart - D)
 
     if (candidate === start) {
-      candidate = Math.max(
-        ...overlapping.map((c) => clipEndFrame(c)),
-      )
+      candidate = Math.max(...overlapping.map((c) => clipEndFrame(c)))
     }
 
     start = candidate
   }
 
   // Hard cap: clear any remaining overlap by sitting after the latest blocking end.
-  const finalOverlapping = clipsOverlappingMoving(
-    start,
-    D,
-    movingClip.id,
-    trackClips,
-  )
+  const finalOverlapping = clipsOverlappingMoving(start, D, movingClip.id, trackClips)
   if (finalOverlapping.length === 0) return start
-  return Math.max(
-    start,
-    ...finalOverlapping.map((c) => clipEndFrame(c)),
-  )
+  return Math.max(start, ...finalOverlapping.map((c) => clipEndFrame(c)))
 }

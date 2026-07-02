@@ -42,9 +42,7 @@ export class MediabunnyDemuxer {
       throw new Error('MediabunnyDemuxer: already open')
     }
 
-    const backend = this._factory
-      ? this._factory()
-      : await createDefaultBackend()
+    const backend = this._factory ? this._factory() : await createDefaultBackend()
 
     await backend.open(src)
     this._backend = backend
@@ -116,12 +114,13 @@ async function createDefaultBackend(): Promise<DemuxerBackend> {
     )
   }
 
-  const { createMediabunnyBackend, isMediabunnyCompatible } = await import('./createMediabunnyBackend')
+  const { createMediabunnyBackend, isMediabunnyCompatible } =
+    await import('./createMediabunnyBackend')
   if (!isMediabunnyCompatible(mediabunny)) {
     throw new Error(
       'MediabunnyDemuxer: mediabunny module does not expose the expected API ' +
-      '(needs Input, BlobSource, EncodedPacketSink, ALL_FORMATS). ' +
-      'See createMediabunnyBackend.ts.',
+        '(needs Input, BlobSource, EncodedPacketSink, ALL_FORMATS). ' +
+        'See createMediabunnyBackend.ts.',
     )
   }
   return createMediabunnyBackend(mediabunny as Parameters<typeof createMediabunnyBackend>[0])

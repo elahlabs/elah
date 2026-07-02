@@ -113,7 +113,7 @@ problems it had to solve, and how:
 2. **No codec capability probe** — the playground accepts any file with a video
    MIME type. If the browser's `VideoDecoder` does not support the codec, the
    error surfaces in the console (`createMediabunnyBackend: video track codec is
-   not supported…`). A future `importFiles` extension could call
+not supported…`). A future `importFiles` extension could call
    `VideoDecoder.isConfigSupported()` before creating the asset.
 
 3. **Single-file blob fetch per provider open** — each call to `backend.open(src)`
@@ -152,12 +152,13 @@ importFiles(files).then(({ imported }) => {
   }
 })
 
-const factory = () => createMediabunnyBackend(mediabunny, {
-  blobResolver: (src) => {
-    const file = fileMap.get(src)
-    return file ? Promise.resolve(file) : fetch(src).then(r => r.blob())
-  },
-})
+const factory = () =>
+  createMediabunnyBackend(mediabunny, {
+    blobResolver: (src) => {
+      const file = fileMap.get(src)
+      return file ? Promise.resolve(file) : fetch(src).then((r) => r.blob())
+    },
+  })
 ```
 
 This eliminates the fetch round-trip and avoids the in-memory copy, halving the

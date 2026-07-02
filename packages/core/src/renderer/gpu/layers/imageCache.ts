@@ -49,7 +49,10 @@ const _cache = new Map<string, Promise<LoadedImage>>()
  * cache entry so a transient error can retry later; identity guard avoids
  * clobbering a newer in-flight retry.
  */
-export function loadCachedImage(src: string, loader: ImageLoader = defaultImageLoader): Promise<LoadedImage> {
+export function loadCachedImage(
+  src: string,
+  loader: ImageLoader = defaultImageLoader,
+): Promise<LoadedImage> {
   const cached = _cache.get(src)
   if (cached) return cached
 

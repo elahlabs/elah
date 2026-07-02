@@ -10,9 +10,9 @@ Everything else — the playhead needle, the timeline ruler, renderers, audio, o
 
 ## What lives here
 
-| File | Purpose |
-| --- | --- |
-| [`PlaybackEngine.ts`](./PlaybackEngine.ts) | The clock. Framework-agnostic. No React, no Zustand. |
+| File                                                 | Purpose                                                                   |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`PlaybackEngine.ts`](./PlaybackEngine.ts)           | The clock. Framework-agnostic. No React, no Zustand.                      |
 | [`PlaybackEngine.test.ts`](./PlaybackEngine.test.ts) | Unit tests, including clock-switching and anchor-and-integrate scenarios. |
 
 The engine is wired to React state by [`editor/EditorProvider.tsx`](../../editor/EditorProvider.tsx) and consumed by timeline components via the `usePlaybackStore` mirror.
@@ -80,31 +80,31 @@ engine.setAudioContext(ctx: AudioContext | null): void
 new PlaybackEngine({ fps, getTotalFrames, now? })
 ```
 
-| Member | Type | What it does |
-| --- | --- | --- |
-| `play()` | `() => void` | Begin integrating from the current `anchorFrame`. Starts rAF. Bumps `epoch`. |
-| `pause()` | `() => void` | Freeze `anchorFrame` at the current float position. Stops rAF. Bumps `epoch`. |
-| `seek(frame)` | `(n: number) => void` | Jump to integer `frame`. **No same-frame early return** — always bumps `epoch`. |
-| `setPlaybackRate(rate)` | `(r: number) => void` | Change rate without jumping the current frame. Bumps `epoch`. |
-| `setLoop(loop)` | `(b: boolean) => void` | Toggle wrap-at-end behavior. Bumps `epoch`. |
-| `setAudioContext(ctx)` | `(ctx: AudioContext \| null) => void` | Attach/detach audio clock. Re-anchors if playing. |
-| `getFrameAt(t?)` | `(t?: number) => number` | **Float** frame at time `t` (defaults to `now()`). The renderer reads this. |
-| `currentFrame` | `number` (getter) | `Math.floor(getFrameAt())` — for the store and UI. |
-| `currentTime` | `number` (getter) | `currentFrame / fps`, in seconds. |
-| `isPlaying`, `playbackRate`, `loop` | getters | Current state. |
-| `subscribe(fn)` | `(fn) => () => void` | Frame-accurate channel. Fires on transport events and integer-frame advances. |
-| `subscribeTimeupdate(fn)` | `(fn) => () => void` | Throttled (~100 ms) channel. For timecode labels. |
-| `destroy()` | `() => void` | Cancels rAF, removes the `visibilitychange` listener, clears subscribers. **Always call on unmount.** |
+| Member                              | Type                                  | What it does                                                                                          |
+| ----------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `play()`                            | `() => void`                          | Begin integrating from the current `anchorFrame`. Starts rAF. Bumps `epoch`.                          |
+| `pause()`                           | `() => void`                          | Freeze `anchorFrame` at the current float position. Stops rAF. Bumps `epoch`.                         |
+| `seek(frame)`                       | `(n: number) => void`                 | Jump to integer `frame`. **No same-frame early return** — always bumps `epoch`.                       |
+| `setPlaybackRate(rate)`             | `(r: number) => void`                 | Change rate without jumping the current frame. Bumps `epoch`.                                         |
+| `setLoop(loop)`                     | `(b: boolean) => void`                | Toggle wrap-at-end behavior. Bumps `epoch`.                                                           |
+| `setAudioContext(ctx)`              | `(ctx: AudioContext \| null) => void` | Attach/detach audio clock. Re-anchors if playing.                                                     |
+| `getFrameAt(t?)`                    | `(t?: number) => number`              | **Float** frame at time `t` (defaults to `now()`). The renderer reads this.                           |
+| `currentFrame`                      | `number` (getter)                     | `Math.floor(getFrameAt())` — for the store and UI.                                                    |
+| `currentTime`                       | `number` (getter)                     | `currentFrame / fps`, in seconds.                                                                     |
+| `isPlaying`, `playbackRate`, `loop` | getters                               | Current state.                                                                                        |
+| `subscribe(fn)`                     | `(fn) => () => void`                  | Frame-accurate channel. Fires on transport events and integer-frame advances.                         |
+| `subscribeTimeupdate(fn)`           | `(fn) => () => void`                  | Throttled (~100 ms) channel. For timecode labels.                                                     |
+| `destroy()`                         | `() => void`                          | Cancels rAF, removes the `visibilitychange` listener, clears subscribers. **Always call on unmount.** |
 
 ### The snapshot
 
 ```ts
 interface PlaybackSnapshot {
-  currentFrame: number   // integer
+  currentFrame: number // integer
   isPlaying: boolean
   playbackRate: number
   loop: boolean
-  epoch: number          // monotonically increasing; bumped on every transport event
+  epoch: number // monotonically increasing; bumped on every transport event
 }
 ```
 

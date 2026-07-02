@@ -19,10 +19,7 @@ export interface TrackingFrame extends VideoFrame {
 export function createTrackingFrame(
   overrides: Partial<{ displayWidth: number; displayHeight: number }> = {},
 ): TrackingFrame {
-  return makeTrackingFrame(
-    overrides.displayWidth ?? 640,
-    overrides.displayHeight ?? 360,
-  )
+  return makeTrackingFrame(overrides.displayWidth ?? 640, overrides.displayHeight ?? 360)
 }
 
 function makeTrackingFrame(width: number, height: number): TrackingFrame {

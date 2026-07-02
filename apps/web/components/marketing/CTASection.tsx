@@ -28,7 +28,8 @@ export function CTASection() {
               video tooling on the web.
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-on-surface-variant">
-              elah is open source. Drop in the timeline and preview components, wire your demuxer, and ship.
+              elah is open source. Drop in the timeline and preview components, wire your demuxer,
+              and ship.
             </p>
           </div>
 

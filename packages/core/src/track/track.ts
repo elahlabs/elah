@@ -14,11 +14,7 @@ export function createTrack(options: CreateTrackOptions): Track {
     id: generateId(),
     name:
       options.name ??
-      (options.kind === 'video'
-        ? 'Video'
-        : options.kind === 'audio'
-          ? 'Audio'
-          : 'Text'),
+      (options.kind === 'video' ? 'Video' : options.kind === 'audio' ? 'Audio' : 'Text'),
     kind: options.kind,
     order: options.order ?? 0,
     height: options.height ?? 64,

@@ -135,11 +135,5 @@ export function EditorProvider({
 
   const value = useMemo(() => ({ engine, playback }), [engine, playback])
 
-  return (
-    <EditorContext.Provider value={value}>
-      {children}
-    </EditorContext.Provider>
-  )
+  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
 }
-
-

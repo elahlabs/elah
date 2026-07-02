@@ -1,6 +1,6 @@
 # 03 — Text Editing & the Inspector
 
-> **Problem (requirement #3):** a text-editing component should ship *with* the
+> **Problem (requirement #3):** a text-editing component should ship _with_ the
 > Editor.
 
 ## Current state
@@ -50,19 +50,19 @@ export function Inspector({ style, className }: InspectorProps) { … }
 
 ### Text section controls (all already in the model)
 
-| Control | Field | Notes |
-|---|---|---|
-| Content | `content` | Multiline; mirrors/streams like the inline editor (`previewClip`). |
-| Font family | `fontFamily` | Curated list + the value already on the clip. |
-| Font size | `fontSize` | Number + drag; the overlay resize already writes this — keep them consistent. |
-| Weight | `fontWeight` | normal / bold (model is a string). |
-| Color | `color` | Picker; **one** undo per commit, not per pixel. |
-| Alignment | `textAlign` | left / center / right. |
-| Animation | `TextAnimation` | Use the exported `TextAnimationKind`; wire the existing enum, don't invent. |
+| Control     | Field           | Notes                                                                         |
+| ----------- | --------------- | ----------------------------------------------------------------------------- |
+| Content     | `content`       | Multiline; mirrors/streams like the inline editor (`previewClip`).            |
+| Font family | `fontFamily`    | Curated list + the value already on the clip.                                 |
+| Font size   | `fontSize`      | Number + drag; the overlay resize already writes this — keep them consistent. |
+| Weight      | `fontWeight`    | normal / bold (model is a string).                                            |
+| Color       | `color`         | Picker; **one** undo per commit, not per pixel.                               |
+| Alignment   | `textAlign`     | left / center / right.                                                        |
+| Animation   | `TextAnimation` | Use the exported `TextAnimationKind`; wire the existing enum, don't invent.   |
 
 ### Interaction parity (don't fork the truth)
 
-The Inspector and `TextOverlay` edit the *same* clip via the *same* engine calls.
+The Inspector and `TextOverlay` edit the _same_ clip via the _same_ engine calls.
 Changing `fontSize` in the Inspector must move the on-canvas handles, and vice
 versa, because both read resolved scene state — verify this explicitly. Do **not**
 add a second text-state store to back the panel.
@@ -89,7 +89,7 @@ add a second text-state store to back the panel.
 
 - Inspector lives in `@elah/editor`, is replaceable (`style`/`className`), reads
   state via hooks — a consumer can swap it for their own and lose nothing.
-- **Model seam holds:** the Inspector edits whatever the selection *is*. Text is a
+- **Model seam holds:** the Inspector edits whatever the selection _is_. Text is a
   text clip (generated element lineage); it is not a `MediaAsset`. Don't blur that.
 - All writes go through the engine's preview/commit interaction API so undo/redo
   and export parity come for free. No direct store mutation.

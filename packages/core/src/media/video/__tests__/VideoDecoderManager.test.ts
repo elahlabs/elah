@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VideoDecoderManager } from '../VideoDecoderManager'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 describe('VideoDecoderManager lifecycle', () => {
   let demuxerBackend: ReturnType<typeof createMockDemuxerBackend>
@@ -22,7 +18,9 @@ describe('VideoDecoderManager lifecycle', () => {
     vi.useRealTimers()
   })
 
-  function createManager(overrides: Partial<ConstructorParameters<typeof VideoDecoderManager>[0]> = {}) {
+  function createManager(
+    overrides: Partial<ConstructorParameters<typeof VideoDecoderManager>[0]> = {},
+  ) {
     return new VideoDecoderManager({
       demuxerFactory: () => demuxerBackend,
       decoderFactory: decoderMock.factory,
@@ -176,7 +174,9 @@ describe('VideoDecoderManager lifecycle', () => {
     await Promise.resolve()
 
     expect(manager.state).toBe('Errored')
-    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'packet stream failed' }))
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'packet stream failed' }),
+    )
   })
 
   it('dispose() from Errored state cleans up safely', async () => {
@@ -331,7 +331,7 @@ describe('VideoDecoderManager — feed/reset API', () => {
 
   it('onFrame receives frame with correct sourceFrameIdx (fps=30, usPerFrame=33333)', async () => {
     const receivedFrames: Array<{ idx: number }> = []
-    const chunk = createMockChunk(33333)  // frame 1 at 30fps
+    const chunk = createMockChunk(33333) // frame 1 at 30fps
     demuxerBackend = createMockDemuxerBackend({ chunks: [chunk] })
 
     const manager = createManager({ fps: 30 })
@@ -347,7 +347,7 @@ describe('VideoDecoderManager — feed/reset API', () => {
     await Promise.resolve()
 
     expect(receivedFrames).toHaveLength(1)
-    expect(receivedFrames[0].idx).toBe(1)  // Math.round(33333 / 33333) = 1
+    expect(receivedFrames[0].idx).toBe(1) // Math.round(33333 / 33333) = 1
   })
 
   it('reset() increments generation, causing in-progress feed to abandon packet delivery', async () => {
@@ -356,7 +356,9 @@ describe('VideoDecoderManager — feed/reset API', () => {
       ...demuxerBackend,
       packets: vi.fn(async function* (_range: [number, number]) {
         yield createMockChunk(0)
-        await new Promise<void>(r => { pending.resolve = r as () => void })
+        await new Promise<void>((r) => {
+          pending.resolve = r as () => void
+        })
         yield createMockChunk(33333)
       }),
     }

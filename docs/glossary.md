@@ -94,7 +94,7 @@ The frame inside the **source asset** (the original media file) that corresponds
 
 ### `sourceStartFrame` / `sourceDurationFrames`
 
-The trim window into the source asset. `sourceStartFrame` is the first frame of the source that this clip uses; `sourceDurationFrames` is the *total length of the source asset* (used as an upper bound when extending the trim). The clip's actual playing range is `[sourceStartFrame, sourceStartFrame + durationFrames)`.
+The trim window into the source asset. `sourceStartFrame` is the first frame of the source that this clip uses; `sourceDurationFrames` is the _total length of the source asset_ (used as an upper bound when extending the trim). The clip's actual playing range is `[sourceStartFrame, sourceStartFrame + durationFrames)`.
 
 ### Stage
 
@@ -111,6 +111,7 @@ Pathological behavior where one state change triggers many downstream re-renders
 ### Timeline
 
 Two meanings, both used:
+
 1. The `<Timeline />` React component — the UI surface ([`timeline/Timeline.tsx`](../packages/editor/src/timeline/Timeline.tsx)).
 2. The conceptual data structure (tracks + clips ordered in time). Pedantically that's the `Project`.
 

@@ -30,9 +30,10 @@ describe('Error handling', () => {
 
     it('broken source transitions to Errored', async () => {
       const manager = new VideoDecoderManager({
-        demuxerFactory: () => createMockDemuxerBackend({
-          openError: new Error('broken source'),
-        }),
+        demuxerFactory: () =>
+          createMockDemuxerBackend({
+            openError: new Error('broken source'),
+          }),
         decoderFactory: createMockDecoder().factory,
       })
 
@@ -43,10 +44,11 @@ describe('Error handling', () => {
     it('failed packet stream transitions to Errored', async () => {
       const onError = vi.fn()
       const manager = new VideoDecoderManager({
-        demuxerFactory: () => createMockDemuxerBackend({
-          chunks: [createMockChunk()],
-          packetsError: new Error('stream broken'),
-        }),
+        demuxerFactory: () =>
+          createMockDemuxerBackend({
+            chunks: [createMockChunk()],
+            packetsError: new Error('stream broken'),
+          }),
         decoderFactory: createMockDecoder().factory,
         onError,
       })
@@ -54,7 +56,7 @@ describe('Error handling', () => {
       await manager.open('video://test')
       manager.feed([0, 33333])
       // Allow async feed loop to process and surface the error.
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(manager.state).toBe('Errored')
       expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'stream broken' }))
@@ -140,9 +142,7 @@ describe('Error handling', () => {
       providerA.getCurrent.mockReturnValue(null)
       providerB.getCurrent.mockReturnValue(createTrackingFrame())
 
-      const layer = new VideoLayer(pool, (src) =>
-        src === 'video://a' ? providerA : providerB,
-      )
+      const layer = new VideoLayer(pool, (src) => (src === 'video://a' ? providerA : providerB))
 
       const clipA = makeClip({ id: 'a', src: 'video://a' })
       const clipB = makeClip({ id: 'b', src: 'video://b', zIndex: 1 })

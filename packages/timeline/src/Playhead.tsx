@@ -62,8 +62,7 @@ export function Playhead({
       // Hide the needle once it scrolls under the pinned track-label sidebar so
       // it doesn't draw over the labels (the sidebar is sticky, the playhead is
       // not — it lives in the outer container above everything).
-      needleRef.current.style.visibility =
-        left < sidebarWidthRef.current ? 'hidden' : 'visible'
+      needleRef.current.style.visibility = left < sidebarWidthRef.current ? 'hidden' : 'visible'
     }
   }
 
@@ -75,8 +74,8 @@ export function Playhead({
       const scrollLeft = scrollContainerRef?.current?.scrollLeft ?? 0
       applyPosition(state.currentFrame, scrollLeft)
     })
-  // scrollContainerRef identity is stable; re-subscribe only if it changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // scrollContainerRef identity is stable; re-subscribe only if it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollContainerRef])
 
   // Zoom / sidebarWidth change → re-sync position from current store value.
@@ -84,7 +83,7 @@ export function Playhead({
   useEffect(() => {
     const scrollLeft = scrollContainerRef?.current?.scrollLeft ?? 0
     applyPosition(usePlaybackStore.getState().currentFrame, scrollLeft)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom, sidebarWidth, scrollContainerRef])
 
   // Re-position on horizontal scroll so the needle stays over the correct frame.

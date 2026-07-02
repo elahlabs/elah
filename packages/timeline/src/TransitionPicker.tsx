@@ -42,7 +42,11 @@ interface TransitionPickerProps {
   /** Existing transition if one already exists at this cut */
   existing?: Transition
   onAdd: (kind: TransitionKind, durationFrames: number, offsetFrames: number) => void
-  onUpdate: (patch: { durationFrames?: number; offsetFrames?: number; kind?: TransitionKind }) => void
+  onUpdate: (patch: {
+    durationFrames?: number
+    offsetFrames?: number
+    kind?: TransitionKind
+  }) => void
   onRemove: () => void
   onClose: () => void
 }
@@ -66,12 +70,8 @@ export function TransitionPicker({
 }: TransitionPickerProps) {
   const ref = useRef<HTMLDivElement>(null)
 
-  const [durationFrames, setDurationFrames] = useState(
-    existing?.durationFrames ?? DEFAULT_DURATION,
-  )
-  const [offsetFrames, setOffsetFrames] = useState(
-    existing ? deriveOffset(existing, cutFrame) : 0,
-  )
+  const [durationFrames, setDurationFrames] = useState(existing?.durationFrames ?? DEFAULT_DURATION)
+  const [offsetFrames, setOffsetFrames] = useState(existing ? deriveOffset(existing, cutFrame) : 0)
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
@@ -82,8 +82,8 @@ export function TransitionPicker({
   }, [onClose])
 
   const half = Math.max(1, Math.floor(durationFrames / 2))
-  const before = half - offsetFrames   // frames taken from end of fromClip
-  const after = half + offsetFrames    // frames taken from start of toClip
+  const before = half - offsetFrames // frames taken from end of fromClip
+  const after = half + offsetFrames // frames taken from start of toClip
   const maxOffset = half - 1
   const durationSec = (durationFrames / fps).toFixed(2)
 
@@ -168,11 +168,13 @@ export function TransitionPicker({
               }}
               onMouseEnter={(e) => {
                 if (!isActive)
-                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--elah-popover-option-bg-hover)'
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    'var(--elah-popover-option-bg-hover)'
               }}
               onMouseLeave={(e) => {
                 if (!isActive)
-                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--elah-popover-option-bg)'
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    'var(--elah-popover-option-bg)'
               }}
             >
               <svg
@@ -187,7 +189,13 @@ export function TransitionPicker({
               >
                 <path d={opt.icon} />
               </svg>
-              <span style={{ fontSize: 9, color: isActive ? `var(--elah-popover-accent-text)` : `var(--elah-popover-icon)`, fontWeight: 500 }}>
+              <span
+                style={{
+                  fontSize: 9,
+                  color: isActive ? `var(--elah-popover-accent-text)` : `var(--elah-popover-icon)`,
+                  fontWeight: 500,
+                }}
+              >
                 {opt.label}
               </span>
             </button>
@@ -197,8 +205,17 @@ export function TransitionPicker({
 
       {/* Duration slider */}
       <div style={{ marginTop: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: `var(--elah-text-muted)`, fontWeight: 500 }}>Duration</span>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 4,
+          }}
+        >
+          <span style={{ fontSize: 10, color: `var(--elah-text-muted)`, fontWeight: 500 }}>
+            Duration
+          </span>
           <span style={{ fontSize: 10, color: `var(--elah-text)`, fontFamily: 'monospace' }}>
             {durationFrames}f &nbsp;{durationSec}s
           </span>
@@ -215,8 +232,17 @@ export function TransitionPicker({
 
       {/* Position slider */}
       <div style={{ marginTop: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: `var(--elah-text-muted)`, fontWeight: 500 }}>Position</span>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 4,
+          }}
+        >
+          <span style={{ fontSize: 10, color: `var(--elah-text-muted)`, fontWeight: 500 }}>
+            Position
+          </span>
           <span style={{ fontSize: 10, color: `var(--elah-text)`, fontFamily: 'monospace' }}>
             {before}f ◆ {after}f
           </span>
@@ -238,7 +264,10 @@ export function TransitionPicker({
       {existing && (
         <button
           type="button"
-          onClick={() => { onRemove(); onClose() }}
+          onClick={() => {
+            onRemove()
+            onClose()
+          }}
           style={{
             marginTop: 10,
             width: '100%',

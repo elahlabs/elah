@@ -15,24 +15,24 @@ For the things that are known-incomplete today, see
 
 ## Shipped
 
-| Area | What works |
-|---|---|
-| Data model | `Project` / `Track` / `Clip`, integer-frame time, normalized `transform` |
-| `TimelineEngine` | Immer mutations, undo/redo, batch transactions, typed events |
-| `PlaybackEngine` | Anchor-and-integrate RAF clock, subscribe / timeupdate channels |
-| `resolveTimeline` | Pure `(frame, project) → Scene`; solo / mute / disabled / zIndex |
-| Timeline UI | `Timeline`, `Ruler`, `TrackRow`, `ClipBlock`, `Playhead`, drag/trim/split |
-| Media library | `importFiles`, metadata probe, async thumbnails, drag-to-timeline |
-| GPU renderer | WebGL2 `GpuRenderer` + `RenderGraph`; video / image / text layers; context-loss recovery |
-| Real video decode | Push-based `StreamingFrameProducer` (WebCodecs) + mediabunny demux + copy-and-close `FrameCache` |
-| `<Preview>` | Mounts the renderer, drives RAF, paints the interactive text overlay |
-| Audio playback | `AudioPlaybackController` on the `PlaybackEngine` clock |
-| Aspect ratio | Contain-fit viewport + per-clip object-fit; switchable stage via `setStage` |
-| **Export** | `exportVideo()` → worker → OffscreenCanvas frame render → mediabunny MP4 mux, with main-thread audio mix |
+| Area                                | What works                                                                                                                                                                                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data model                          | `Project` / `Track` / `Clip`, integer-frame time, normalized `transform`                                                                                                                                                                     |
+| `TimelineEngine`                    | Immer mutations, undo/redo, batch transactions, typed events                                                                                                                                                                                 |
+| `PlaybackEngine`                    | Anchor-and-integrate RAF clock, subscribe / timeupdate channels                                                                                                                                                                              |
+| `resolveTimeline`                   | Pure `(frame, project) → Scene`; solo / mute / disabled / zIndex                                                                                                                                                                             |
+| Timeline UI                         | `Timeline`, `Ruler`, `TrackRow`, `ClipBlock`, `Playhead`, drag/trim/split                                                                                                                                                                    |
+| Media library                       | `importFiles`, metadata probe, async thumbnails, drag-to-timeline                                                                                                                                                                            |
+| GPU renderer                        | WebGL2 `GpuRenderer` + `RenderGraph`; video / image / text layers; context-loss recovery                                                                                                                                                     |
+| Real video decode                   | Push-based `StreamingFrameProducer` (WebCodecs) + mediabunny demux + copy-and-close `FrameCache`                                                                                                                                             |
+| `<Preview>`                         | Mounts the renderer, drives RAF, paints the interactive text overlay                                                                                                                                                                         |
+| Audio playback                      | `AudioPlaybackController` on the `PlaybackEngine` clock                                                                                                                                                                                      |
+| Aspect ratio                        | Contain-fit viewport + per-clip object-fit; switchable stage via `setStage`                                                                                                                                                                  |
+| **Export**                          | `exportVideo()` → worker → OffscreenCanvas frame render → mediabunny MP4 mux, with main-thread audio mix                                                                                                                                     |
 | **Video & image transform overlay** | `MediaTransformOverlay` — click-select, drag-move, corner-drag uniform scale; writes `transform` through `previewClip`/`commitInteraction` (one undo per gesture); export parity automatic (transform already flowed through both renderers) |
-| **Timeline thumbnails + waveforms** | Filmstrip tiles and real waveform peaks per asset; generated once on drop, cached on `MediaAsset`; displayed in `ClipBlock` |
-| **Audio-on-drop dialog** | 3-choice modal on video drop with audio; both clips in one `engine.batch` (one undo entry) |
-| **Fade transition** | Snapshot-overlay architecture: `resolveTimeline` drives opacity; `TransitionOverlay` fades a canvas snapshot via CSS; export mirrors with `globalAlpha=1-t`; `Scene.transitions` fully typed and populated |
+| **Timeline thumbnails + waveforms** | Filmstrip tiles and real waveform peaks per asset; generated once on drop, cached on `MediaAsset`; displayed in `ClipBlock`                                                                                                                  |
+| **Audio-on-drop dialog**            | 3-choice modal on video drop with audio; both clips in one `engine.batch` (one undo entry)                                                                                                                                                   |
+| **Fade transition**                 | Snapshot-overlay architecture: `resolveTimeline` drives opacity; `TransitionOverlay` fades a canvas snapshot via CSS; export mirrors with `globalAlpha=1-t`; `Scene.transitions` fully typed and populated                                   |
 
 ---
 
@@ -46,7 +46,7 @@ layer is a coordinator that sits between the render tick and the providers.
 Planned responsibilities (none implemented yet):
 
 - **Predictive frame caching** — warm frames ahead of where the playhead is
-  *going*, not just ahead of where it is.
+  _going_, not just ahead of where it is.
 - **Reverse-scrub support** — decode/cache strategy for backward playback that
   doesn't cold-start from a keyframe on every step.
 - **Decode prioritization** — order/cancel work across multiple clips by
@@ -77,18 +77,18 @@ This is the seam that `Scene.transitions` (reserved, empty today) and the
 
 ## Decisions log
 
-| Date | Decision | Rationale |
-|---|---|---|
-| 2026-05 | Frames as the only internal time unit | Eliminate floating-point drift across splits/trims |
-| 2026-05 | `resolveTimeline` is pure | Renderer-agnostic, worker-safe, testable, export-reusable |
-| 2026-05 | Single package (`@elah/editor`) | Avoid premature monorepo split; folders, not packages |
-| 2026-05 | Zustand stores are Ring 1 mirrors only | Engine stays the single source of truth |
-| 2026-05 | GPU (WebGL2) renderer as the shipped backend | A planned DOM-first renderer was dropped; the textured-quad path generalizes to image/text and reuses the same placement math the export worker uses |
-| 2026-05 | mediabunny injected, never a hard dependency | Keep WebCodecs/demux out of the core bundle (see [`BUNDLE_STRATEGY.md`](./BUNDLE_STRATEGY.md)) |
-| 2026-05 | Copy decoded frames to `ImageBitmap`, close immediately | Stop the decoder output pool from starving and freezing playback |
-| 2026-06 | Export reuses `resolveTimeline` + shared placement math | One rendering truth for preview and export; no export-specific scene system |
-| 2026-06-07 | Snapshot overlay for transitions (not GPU crossfade) | Avoids decoder contention; preview = CSS opacity on a frozen canvas snapshot; export = `globalAlpha=1-t` pass; adding new transition kinds requires only a CSS mapping, no resolver or shader change |
-| 2026-06-07 | Standalone `MediaTransformOverlay` (not unified with `TextOverlay`) | Kept the proven text path untouched; gesture math is a copy; unification deferred until both overlays are stable and a shared hook is obviously better |
+| Date       | Decision                                                            | Rationale                                                                                                                                                                                            |
+| ---------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05    | Frames as the only internal time unit                               | Eliminate floating-point drift across splits/trims                                                                                                                                                   |
+| 2026-05    | `resolveTimeline` is pure                                           | Renderer-agnostic, worker-safe, testable, export-reusable                                                                                                                                            |
+| 2026-05    | Single package (`@elah/editor`)                                     | Avoid premature monorepo split; folders, not packages                                                                                                                                                |
+| 2026-05    | Zustand stores are Ring 1 mirrors only                              | Engine stays the single source of truth                                                                                                                                                              |
+| 2026-05    | GPU (WebGL2) renderer as the shipped backend                        | A planned DOM-first renderer was dropped; the textured-quad path generalizes to image/text and reuses the same placement math the export worker uses                                                 |
+| 2026-05    | mediabunny injected, never a hard dependency                        | Keep WebCodecs/demux out of the core bundle (see [`BUNDLE_STRATEGY.md`](./BUNDLE_STRATEGY.md))                                                                                                       |
+| 2026-05    | Copy decoded frames to `ImageBitmap`, close immediately             | Stop the decoder output pool from starving and freezing playback                                                                                                                                     |
+| 2026-06    | Export reuses `resolveTimeline` + shared placement math             | One rendering truth for preview and export; no export-specific scene system                                                                                                                          |
+| 2026-06-07 | Snapshot overlay for transitions (not GPU crossfade)                | Avoids decoder contention; preview = CSS opacity on a frozen canvas snapshot; export = `globalAlpha=1-t` pass; adding new transition kinds requires only a CSS mapping, no resolver or shader change |
+| 2026-06-07 | Standalone `MediaTransformOverlay` (not unified with `TextOverlay`) | Kept the proven text path untouched; gesture math is a copy; unification deferred until both overlays are stable and a shared hook is obviously better                                               |
 
 See [`ARCHITECTURE.md` § anti-patterns](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns)
 for the standing list of things this project deliberately does not build.

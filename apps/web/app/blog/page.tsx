@@ -19,7 +19,9 @@ export default function BlogPage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Engineering</div>
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+              Engineering
+            </div>
             <h1
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
@@ -27,7 +29,8 @@ export default function BlogPage() {
               Blog
             </h1>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-on-surface-variant">
-              Architecture decisions, implementation deep-dives, and lessons from building browser-native video infrastructure.
+              Architecture decisions, implementation deep-dives, and lessons from building
+              browser-native video infrastructure.
             </p>
           </div>
         </div>
@@ -41,7 +44,9 @@ export default function BlogPage() {
                 className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-surface-container p-5 transition-colors hover:border-outline"
               >
                 <div className="mb-3 flex items-center gap-2">
-                  <span className={`rounded px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high'}`}>
+                  <span
+                    className={`rounded px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high'}`}
+                  >
                     {post.category}
                   </span>
                   <span className="text-2xs text-on-surface-variant">{post.readingTime}</span>

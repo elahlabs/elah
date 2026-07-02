@@ -58,7 +58,13 @@ overriding `--elah-*` variables in your own `.elah-root` scope — see
 ## With preview and asset panel
 
 ```tsx
-import { EditorProvider, Timeline, Preview, AssetPanel, createDefaultDemuxerFactory } from '@elah/editor'
+import {
+  EditorProvider,
+  Timeline,
+  Preview,
+  AssetPanel,
+  createDefaultDemuxerFactory,
+} from '@elah/editor'
 
 const demuxerFactory = createDefaultDemuxerFactory()
 
@@ -112,17 +118,17 @@ Runs in a web worker. Reuses `resolveTimeline` + the GPU renderer's placement ma
 
 ## Keyboard shortcuts
 
-| Key | Action |
-|---|---|
-| `Space` | Play / pause |
-| `S` | Split clip at playhead |
-| `Delete` / `Backspace` | Delete selected clip(s) |
-| `Ctrl/Cmd + C` | Copy |
-| `Ctrl/Cmd + V` | Paste at playhead |
-| `Ctrl/Cmd + Z` | Undo |
-| `Ctrl/Cmd + Shift + Z` / `Ctrl/Cmd + Y` | Redo |
-| `Ctrl/Cmd + scroll` | Zoom |
-| `← / →` | Step one frame |
+| Key                                     | Action                  |
+| --------------------------------------- | ----------------------- |
+| `Space`                                 | Play / pause            |
+| `S`                                     | Split clip at playhead  |
+| `Delete` / `Backspace`                  | Delete selected clip(s) |
+| `Ctrl/Cmd + C`                          | Copy                    |
+| `Ctrl/Cmd + V`                          | Paste at playhead       |
+| `Ctrl/Cmd + Z`                          | Undo                    |
+| `Ctrl/Cmd + Shift + Z` / `Ctrl/Cmd + Y` | Redo                    |
+| `Ctrl/Cmd + scroll`                     | Zoom                    |
+| `← / →`                                 | Step one frame          |
 
 ---
 

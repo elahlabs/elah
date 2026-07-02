@@ -18,22 +18,45 @@ export default function TimelinePage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Timeline</div>
-          <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+            Timeline
+          </div>
+          <h1
+            className="text-3xl font-semibold tracking-tight text-on-surface"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Timeline
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            The Timeline component is a fully interactive NLE timeline. Tracks, clips, drag-to-trim, drag-to-move, snapping, zoom, and the full keyboard shortcut set.
+            The Timeline component is a fully interactive NLE timeline. Tracks, clips, drag-to-trim,
+            drag-to-move, snapping, zoom, and the full keyboard shortcut set.
           </p>
         </div>
 
         {/* Overview */}
         <section className="mb-10">
-          <h2 id="overview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="overview"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Overview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component reads state from <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code> and dispatches mutations through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. It is fully controlled by the Zustand stores — you can read or write those stores directly to drive the timeline from outside.
+            The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Timeline
+            </code>{' '}
+            component reads state from{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              useTracksStore
+            </code>{' '}
+            and dispatches mutations through{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              TimelineEngine
+            </code>
+            . It is fully controlled by the Zustand stores — you can read or write those stores
+            directly to drive the timeline from outside.
           </p>
           <CodeBlock
             language="tsx"
@@ -70,11 +93,39 @@ export default function TimelineOnlyDemo() {
 
         {/* Tracks & Clips */}
         <section className="mb-10">
-          <h2 id="tracks-and-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="tracks-and-clips"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Tracks & Clips
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Each <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track</code> has a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">kind</code>: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">video</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">audio</code>, or <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">text</code>. V1 uses fixed 3-lane layout. Each track holds an array of <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip</code> objects.
+            Each{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Track
+            </code>{' '}
+            has a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              kind
+            </code>
+            :{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              video
+            </code>
+            ,{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              audio
+            </code>
+            , or{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              text
+            </code>
+            . V1 uses fixed 3-lane layout. Each track holds an array of{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Clip
+            </code>{' '}
+            objects.
           </p>
           <CodeBlock
             language="typescript"
@@ -135,11 +186,27 @@ splitClipAtPlayhead(engine, selectedClipId, currentFrame)`}
 
         {/* Playback */}
         <section className="mb-10">
-          <h2 id="playback" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="playback"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Playback
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code> owns the RAF clock and publishes <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React reads playback state via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>:
+            The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              PlaybackEngine
+            </code>{' '}
+            owns the RAF clock and publishes{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              (frame, isPlaying)
+            </code>{' '}
+            snapshots. React reads playback state via{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              usePlaybackStore
+            </code>
+            :
           </p>
           <CodeBlock
             language="tsx"
@@ -176,11 +243,18 @@ export function TransportControls({ fps = 30 }) {
 
         {/* Zooming & snapping */}
         <section className="mb-10">
-          <h2 id="zooming" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="zooming"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Zooming & Snapping
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The timeline supports <strong className="text-on-surface font-medium">Ctrl/Cmd + scroll</strong> to zoom. Clips snap to other clip edges, the playhead, and track boundaries. The snap tolerance is configurable:
+            The timeline supports{' '}
+            <strong className="text-on-surface font-medium">Ctrl/Cmd + scroll</strong> to zoom.
+            Clips snap to other clip edges, the playhead, and track boundaries. The snap tolerance
+            is configurable:
           </p>
           <CodeBlock
             language="tsx"
@@ -206,11 +280,24 @@ const snappedFrame = snapFrame(frame, snapPoints, tolerance)`}
 
         {/* Transitions */}
         <section className="mb-10">
-          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="transitions"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions are defined on the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> level and stored in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTransitionsStore</code>. The fade transition is fully implemented; slide/wipe transitions have architecture in place.
+            Transitions are defined on the{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Project
+            </code>{' '}
+            level and stored in{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              useTransitionsStore
+            </code>
+            . The fade transition is fully implemented; slide/wipe transitions have architecture in
+            place.
           </p>
           <CodeBlock
             language="tsx"
@@ -237,7 +324,11 @@ engine.addTransition({
 
         {/* Shortcuts */}
         <section className="mb-10">
-          <h2 id="shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="shortcuts"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Keyboard Shortcuts
           </h2>
           <div className="overflow-hidden rounded-md border border-outline-variant">

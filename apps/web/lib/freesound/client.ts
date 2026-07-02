@@ -48,12 +48,16 @@ export function searchSounds(
   params: FreesoundSearchParams,
   signal?: AbortSignal,
 ): Promise<FreesoundSearchResponse> {
-  return freesoundFetch('search/text/', {
-    query: params.query,
-    filter: DEFAULT_DURATION_FILTER,
-    page: String(params.page),
-    page_size: String(params.perPage),
-  }, signal)
+  return freesoundFetch(
+    'search/text/',
+    {
+      query: params.query,
+      filter: DEFAULT_DURATION_FILTER,
+      page: String(params.page),
+      page_size: String(params.perPage),
+    },
+    signal,
+  )
 }
 
 /** Popular feed — shown by default before the user searches (no query term, sorted by downloads). */
@@ -61,11 +65,15 @@ export function popularSounds(
   params: { page: number; perPage: number },
   signal?: AbortSignal,
 ): Promise<FreesoundSearchResponse> {
-  return freesoundFetch('search/text/', {
-    query: '',
-    filter: DEFAULT_DURATION_FILTER,
-    sort: 'downloads_desc',
-    page: String(params.page),
-    page_size: String(params.perPage),
-  }, signal)
+  return freesoundFetch(
+    'search/text/',
+    {
+      query: '',
+      filter: DEFAULT_DURATION_FILTER,
+      sort: 'downloads_desc',
+      page: String(params.page),
+      page_size: String(params.perPage),
+    },
+    signal,
+  )
 }

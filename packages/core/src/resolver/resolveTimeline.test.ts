@@ -61,7 +61,12 @@ describe('resolveTimeline', () => {
   })
 
   it('propagates fps and stage from project into every Scene', () => {
-    const project = makeProject({ fps: 60, stage: { width: 1920, height: 1080 }, tracks: [], clips: {} })
+    const project = makeProject({
+      fps: 60,
+      stage: { width: 1920, height: 1080 },
+      tracks: [],
+      clips: {},
+    })
     const scene = resolveTimeline(42, project)
 
     expect(scene.fps).toBe(60)
@@ -92,15 +97,21 @@ describe('resolveTimeline', () => {
     const trackA = makeTrack({ id: 'tA', order: 0 })
     const trackB = makeTrack({ id: 'tB', order: 1 })
     const clipA = makeClip({
-      id: 'cA', trackId: 'tA',
-      startFrame: 0, durationFrames: 30,
-      sourceStartFrame: 0, sourceDurationFrames: 30,
+      id: 'cA',
+      trackId: 'tA',
+      startFrame: 0,
+      durationFrames: 30,
+      sourceStartFrame: 0,
+      sourceDurationFrames: 30,
       src: 'a.mp4',
     })
     const clipB = makeClip({
-      id: 'cB', trackId: 'tB',
-      startFrame: 0, durationFrames: 30,
-      sourceStartFrame: 0, sourceDurationFrames: 30,
+      id: 'cB',
+      trackId: 'tB',
+      startFrame: 0,
+      durationFrames: 30,
+      sourceStartFrame: 0,
+      sourceDurationFrames: 30,
       src: 'b.mp4',
     })
     const project = makeProject({
@@ -120,38 +131,56 @@ describe('resolveTimeline', () => {
     // a) Video track muted → volume 0
     const mutedVideoTrack = makeTrack({ id: 'tv', kind: 'video', muted: true })
     const videoClip = makeClip({ id: 'cv', trackId: 'tv', type: 'video', src: 'v.mp4' })
-    const sceneA = resolveTimeline(0, makeProject({
-      tracks: [mutedVideoTrack],
-      clips: { tv: [videoClip] },
-    }))
+    const sceneA = resolveTimeline(
+      0,
+      makeProject({
+        tracks: [mutedVideoTrack],
+        clips: { tv: [videoClip] },
+      }),
+    )
     expect(sceneA.videos[0].volume).toBe(0)
 
     // b) Audio track muted → volume 0
     const mutedAudioTrack = makeTrack({ id: 'ta', kind: 'audio', muted: true })
     const audioClip = makeClip({ id: 'ca', trackId: 'ta', type: 'audio', src: 'a.mp3' })
-    const sceneB = resolveTimeline(0, makeProject({
-      tracks: [mutedAudioTrack],
-      clips: { ta: [audioClip] },
-    }))
+    const sceneB = resolveTimeline(
+      0,
+      makeProject({
+        tracks: [mutedAudioTrack],
+        clips: { ta: [audioClip] },
+      }),
+    )
     expect(sceneB.audios[0].volume).toBe(0)
 
     // c) Disabled track → no clips appear
     const disabledTrack = makeTrack({ id: 'td', kind: 'video', disabled: true })
     const disabledTrackClip = makeClip({ id: 'cd', trackId: 'td', type: 'video', src: 'v.mp4' })
-    const sceneC = resolveTimeline(0, makeProject({
-      tracks: [disabledTrack],
-      clips: { td: [disabledTrackClip] },
-    }))
+    const sceneC = resolveTimeline(
+      0,
+      makeProject({
+        tracks: [disabledTrack],
+        clips: { td: [disabledTrackClip] },
+      }),
+    )
     expect(sceneC.videos.length).toBe(0)
 
     // d) Disabled clip → absent; sibling clip on same track still present
     const track = makeTrack({ id: 'tt', kind: 'video' })
     const activeClip = makeClip({ id: 'c-on', trackId: 'tt', startFrame: 0, durationFrames: 30 })
-    const offClip = makeClip({ id: 'c-off', trackId: 'tt', startFrame: 0, durationFrames: 30, disabled: true })
-    const sceneD = resolveTimeline(0, makeProject({
-      tracks: [track],
-      clips: { tt: [activeClip, offClip] },
-    }))
+    const offClip = makeClip({
+      id: 'c-off',
+      trackId: 'tt',
+      startFrame: 0,
+      durationFrames: 30,
+      disabled: true,
+    })
+    const sceneD = resolveTimeline(
+      0,
+      makeProject({
+        tracks: [track],
+        clips: { tt: [activeClip, offClip] },
+      }),
+    )
     expect(sceneD.videos.length).toBe(1)
     expect(sceneD.videos[0].id).toBe('c-on')
   })
@@ -211,7 +240,10 @@ describe('resolveTimeline', () => {
     expect(sceneUnmuted.videos[0].volume).toBe(0.25)
 
     const mutedTrack = makeTrack({ id: 't1', kind: 'video', muted: true })
-    const sceneMuted = resolveTimeline(0, makeProject({ tracks: [mutedTrack], clips: { t1: [clip] } }))
+    const sceneMuted = resolveTimeline(
+      0,
+      makeProject({ tracks: [mutedTrack], clips: { t1: [clip] } }),
+    )
     expect(sceneMuted.videos[0].volume).toBe(0)
     expect(sceneMuted.videos[0].opacity).toBe(0.5)
   })
@@ -224,7 +256,10 @@ describe('resolveTimeline', () => {
       type: 'text',
       content: 'hello',
     })
-    const scene = resolveTimeline(0, makeProject({ tracks: [track], clips: { tt: [clipWithContent] } }))
+    const scene = resolveTimeline(
+      0,
+      makeProject({ tracks: [track], clips: { tt: [clipWithContent] } }),
+    )
 
     expect(scene.texts.length).toBe(1)
     expect(scene.texts[0].content).toBe('hello')
@@ -232,7 +267,10 @@ describe('resolveTimeline', () => {
     expect(typeof scene.texts[0].zIndex).toBe('number')
 
     const clipNoContent = makeClip({ id: 'c-empty', trackId: 'tt', type: 'text' })
-    const sceneEmpty = resolveTimeline(0, makeProject({ tracks: [track], clips: { tt: [clipNoContent] } }))
+    const sceneEmpty = resolveTimeline(
+      0,
+      makeProject({ tracks: [track], clips: { tt: [clipNoContent] } }),
+    )
     expect(sceneEmpty.texts[0].content).toBe('')
   })
 
@@ -291,12 +329,18 @@ describe('resolveTimeline', () => {
   it('drops video and audio clips when src is an empty string', () => {
     const videoTrack = makeTrack({ id: 'tv', kind: 'video' })
     const videoClip = makeClip({ id: 'cv', trackId: 'tv', type: 'video', src: '' })
-    const sceneVideo = resolveTimeline(0, makeProject({ tracks: [videoTrack], clips: { tv: [videoClip] } }))
+    const sceneVideo = resolveTimeline(
+      0,
+      makeProject({ tracks: [videoTrack], clips: { tv: [videoClip] } }),
+    )
     expect(sceneVideo.videos.length).toBe(0)
 
     const audioTrack = makeTrack({ id: 'ta', kind: 'audio' })
     const audioClip = makeClip({ id: 'ca', trackId: 'ta', type: 'audio', src: '' })
-    const sceneAudio = resolveTimeline(0, makeProject({ tracks: [audioTrack], clips: { ta: [audioClip] } }))
+    const sceneAudio = resolveTimeline(
+      0,
+      makeProject({ tracks: [audioTrack], clips: { ta: [audioClip] } }),
+    )
     expect(sceneAudio.audios.length).toBe(0)
   })
 
@@ -313,7 +357,10 @@ describe('resolveTimeline', () => {
 
   it('passes Clip.transform through to ActiveClipBase.transform', () => {
     const transform = {
-      x: 0.5, y: 0.5, scale: 1.5, rotation: 0,
+      x: 0.5,
+      y: 0.5,
+      scale: 1.5,
+      rotation: 0,
       anchor: { x: 0.5, y: 0.5 },
     }
     const project = makeProject({
@@ -326,8 +373,23 @@ describe('resolveTimeline', () => {
 
   it('still excludes a disabled clip even when its track is solo', () => {
     const track = makeTrack({ id: 'ts', kind: 'video', solo: true })
-    const activeClip = makeClip({ id: 'c-on', trackId: 'ts', type: 'video', src: 'a.mp4', startFrame: 0, durationFrames: 30 })
-    const disabledClip = makeClip({ id: 'c-off', trackId: 'ts', type: 'video', src: 'b.mp4', startFrame: 0, durationFrames: 30, disabled: true })
+    const activeClip = makeClip({
+      id: 'c-on',
+      trackId: 'ts',
+      type: 'video',
+      src: 'a.mp4',
+      startFrame: 0,
+      durationFrames: 30,
+    })
+    const disabledClip = makeClip({
+      id: 'c-off',
+      trackId: 'ts',
+      type: 'video',
+      src: 'b.mp4',
+      startFrame: 0,
+      durationFrames: 30,
+      disabled: true,
+    })
     const project = makeProject({ tracks: [track], clips: { ts: [activeClip, disabledClip] } })
 
     const scene = resolveTimeline(0, project)

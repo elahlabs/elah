@@ -22,9 +22,11 @@ silently regardless of their native frame rate.
 ## Governing constraint
 
 `sourceFrame` in `ActiveClipBase` (and everywhere it flows) is currently a **project-fps integer**:
+
 ```
 sourceFrame = projectFrame - clip.startFrame + clip.sourceStartFrame
 ```
+
 Both renderers convert it back to seconds with `sourceFrame / projectFps`. That's wrong when the
 source fps ≠ project fps — it picks the wrong frame (documented in Phase 3).
 
@@ -78,16 +80,18 @@ sourceTimeSec: number
 **File:** `packages/editor/src/core/resolver/resolveTimeline.ts`
 
 Current (line 94):
+
 ```ts
 const sourceFrame = frame - clip.startFrame + clip.sourceStartFrame
 ```
 
 Add after it:
+
 ```ts
 // Use clip's own source fps when available so high-fps sources
 // (120fps, 60fps) are sampled at their native frame boundaries.
 // Falls back to project fps for legacy clips without sourceFps.
-const effectiveFps = ('sourceFps' in clip && clip.sourceFps) ? clip.sourceFps : project.fps
+const effectiveFps = 'sourceFps' in clip && clip.sourceFps ? clip.sourceFps : project.fps
 const sourceTimeSec = (sourceFrame + 0.5) / effectiveFps
 ```
 
@@ -95,7 +99,7 @@ Wait — this is subtle. `sourceFrame` is in project-fps units (how many project
 source). When `sourceFps !== projectFps`, we need to convert project ticks to source ticks first:
 
 ```ts
-const sourceFrame = frame - clip.startFrame + clip.sourceStartFrame  // project-fps units
+const sourceFrame = frame - clip.startFrame + clip.sourceStartFrame // project-fps units
 // Time in seconds = project ticks / projectFps (same formula as before, independent of sourceFps)
 // The +0.5 midpoint is the Phase 3 fix — keeps us inside the correct source frame window.
 const sourceTimeSec = (sourceFrame + 0.5) / project.fps
@@ -131,8 +135,8 @@ export interface ActiveVideoClip extends ActiveClipBase {
   type: 'video'
   src: string
   volume: number
-  sourceTimeSec: number   // add
-  sourceFps?: number      // add — needed by VideoDecoderManager for cache keying
+  sourceTimeSec: number // add
+  sourceFps?: number // add — needed by VideoDecoderManager for cache keying
 }
 ```
 
@@ -143,8 +147,9 @@ export interface ActiveVideoClip extends ActiveClipBase {
 **File:** `packages/editor/src/core/media/video/VideoDecoderManager.ts`
 
 Current (line 209 and 217):
+
 ```ts
-const usPerFrame = 1_000_000 / this._fps   // this._fps is project fps
+const usPerFrame = 1_000_000 / this._fps // this._fps is project fps
 // ...
 const sourceFrameIdx = Math.round(frame.timestamp / usPerFrame)
 ```
@@ -174,11 +179,13 @@ clip. `VideoLayer` reads `sourceFps` from `ActiveVideoClip`.
 **File:** `packages/editor/src/core/export/ExportWorker.ts`
 
 Current (~line 348 — the Phase 3 fix):
+
 ```ts
 const sourceTimeSec = (entry.item.sourceFrame + 0.5) / fps
 ```
 
 After this change, the scene already carries `sourceTimeSec`. Just read it:
+
 ```ts
 const sourceTimeSec = entry.item.sourceTimeSec
 ```
@@ -198,6 +205,7 @@ available via the video track's container metadata. We need to expose it.
 **File:** `packages/editor/src/core/media/video/demuxer/createMediabunnyBackend.ts`
 
 Add to the returned object:
+
 ```ts
 getFps(): number | null {
   // mediabunny's VideoTrack exposes framerate via track metadata.
@@ -276,10 +284,13 @@ via `EditorContext` that calls `engine.setFps()` + `playback.setFps()` together.
 
 ```ts
 // In EditorContext value:
-const setProjectFps = useCallback((fps: number) => {
-  engine.setFps(fps)
-  playback.setFps(fps)
-}, [engine, playback])
+const setProjectFps = useCallback(
+  (fps: number) => {
+    engine.setFps(fps)
+    playback.setFps(fps)
+  },
+  [engine, playback],
+)
 ```
 
 The FPS dropdown reads the current fps from `useTracksStore` (which syncs from `engine.getProject().fps`
@@ -298,8 +309,8 @@ recreation resets history and all clip state.
 const FPS_OPTIONS = [24, 25, 29.97, 30, 60, 120]
 
 export function ProjectFpsSelect() {
-  const fps = useTracksStore(s => s.project.fps)       // current value
-  const { engine, playback } = useEditor()             // from EditorContext
+  const fps = useTracksStore((s) => s.project.fps) // current value
+  const { engine, playback } = useEditor() // from EditorContext
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const next = Number(e.target.value)
@@ -309,8 +320,10 @@ export function ProjectFpsSelect() {
 
   return (
     <select value={fps} onChange={handleChange}>
-      {FPS_OPTIONS.map(f => (
-        <option key={f} value={f}>{f} fps</option>
+      {FPS_OPTIONS.map((f) => (
+        <option key={f} value={f}>
+          {f} fps
+        </option>
       ))}
     </select>
   )
@@ -323,19 +336,19 @@ Mount it in the existing toolbar/header alongside the stage size controls.
 
 ## Files changed — summary
 
-| File | Change |
-|---|---|
-| `core/types/index.ts` | Add `sourceFps?: number` to `Clip` |
-| `core/resolver/scene.ts` | Add `sourceTimeSec: number`, `sourceFps?: number` to `ActiveVideoClip`; add `sourceTimeSec` to `ActiveClipBase` |
-| `core/resolver/resolveTimeline.ts` | Compute and pass `sourceTimeSec` per clip |
-| `core/media/video/demuxer/createMediabunnyBackend.ts` | Add `getFps(): number \| null` |
-| `core/media/video/demuxer/MediabunnyDemuxer.ts` | Expose `getFps()` |
-| `core/media/video/VideoDecoderManager.ts` | Add `sourceFps` to config; use it for `usPerFrame` cache keying |
-| `core/export/ExportWorker.ts` | Read `entry.item.sourceTimeSec` directly |
-| `core/editor/TimelineEngine.ts` | Add `setFps(fps: number)` |
-| `core/playback/PlaybackEngine.ts` | Add `setFps(fps: number)`; remove `readonly` from `fps` |
-| `editor/EditorProvider.tsx` | Expose `setProjectFps` via context |
-| `editor/Toolbar/ProjectFpsSelect.tsx` | New component — FPS dropdown |
+| File                                                  | Change                                                                                                          |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `core/types/index.ts`                                 | Add `sourceFps?: number` to `Clip`                                                                              |
+| `core/resolver/scene.ts`                              | Add `sourceTimeSec: number`, `sourceFps?: number` to `ActiveVideoClip`; add `sourceTimeSec` to `ActiveClipBase` |
+| `core/resolver/resolveTimeline.ts`                    | Compute and pass `sourceTimeSec` per clip                                                                       |
+| `core/media/video/demuxer/createMediabunnyBackend.ts` | Add `getFps(): number \| null`                                                                                  |
+| `core/media/video/demuxer/MediabunnyDemuxer.ts`       | Expose `getFps()`                                                                                               |
+| `core/media/video/VideoDecoderManager.ts`             | Add `sourceFps` to config; use it for `usPerFrame` cache keying                                                 |
+| `core/export/ExportWorker.ts`                         | Read `entry.item.sourceTimeSec` directly                                                                        |
+| `core/editor/TimelineEngine.ts`                       | Add `setFps(fps: number)`                                                                                       |
+| `core/playback/PlaybackEngine.ts`                     | Add `setFps(fps: number)`; remove `readonly` from `fps`                                                         |
+| `editor/EditorProvider.tsx`                           | Expose `setProjectFps` via context                                                                              |
+| `editor/Toolbar/ProjectFpsSelect.tsx`                 | New component — FPS dropdown                                                                                    |
 
 ---
 

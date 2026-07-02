@@ -106,8 +106,8 @@ export interface Clip {
   /** Stroke width in stage-space pixels */
   strokeWidth?: number
 
-  volume?: number   // 0 – 1
-  opacity?: number  // 0 – 1
+  volume?: number // 0 – 1
+  opacity?: number // 0 – 1
   locked?: boolean
   disabled?: boolean
   /** Optional spatial transform; undefined means the renderer applies its own default */

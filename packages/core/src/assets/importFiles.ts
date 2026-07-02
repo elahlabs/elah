@@ -282,10 +282,7 @@ function drawToThumbnail(
   return canvas.toDataURL('image/jpeg', 0.7)
 }
 
-export async function makeVideoThumbnail(
-  src: string,
-  maxDim: number,
-): Promise<string> {
+export async function makeVideoThumbnail(src: string, maxDim: number): Promise<string> {
   const el = await loadMediaElement<HTMLVideoElement>('video', src, (video) => {
     video.currentTime = 0
   })
@@ -402,8 +399,7 @@ function getAudioContext(): AudioContext {
   if (!sharedAudioContext) {
     const Ctor =
       window.AudioContext ??
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     sharedAudioContext = new Ctor()
   }
   return sharedAudioContext
@@ -560,9 +556,10 @@ function importSingleFile(
   })
 }
 
-function partitionFiles(
-  files: Iterable<File>,
-): { toImport: Array<{ file: File; kind: MediaKind }>; skipped: SkippedImport[] } {
+function partitionFiles(files: Iterable<File>): {
+  toImport: Array<{ file: File; kind: MediaKind }>
+  skipped: SkippedImport[]
+} {
   const storeAssets = useMediaLibraryStore.getState().assets
   const existingByKey = new Map<string, string>()
   for (const asset of Object.values(storeAssets)) {

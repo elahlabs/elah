@@ -18,8 +18,8 @@ import { normBg } from './clipSlot'
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
-  0.35, 0.55, 0.75, 0.45, 0.9, 0.6, 0.8, 0.5, 0.7, 0.4, 0.85, 0.55, 0.65, 0.45, 0.75,
-  0.5, 0.95, 0.6, 0.8, 0.45, 0.7, 0.55, 0.85, 0.4, 0.65, 0.75, 0.5, 0.9, 0.6, 0.45,
+  0.35, 0.55, 0.75, 0.45, 0.9, 0.6, 0.8, 0.5, 0.7, 0.4, 0.85, 0.55, 0.65, 0.45, 0.75, 0.5, 0.95,
+  0.6, 0.8, 0.45, 0.7, 0.55, 0.85, 0.4, 0.65, 0.75, 0.5, 0.9, 0.6, 0.45,
 ]
 
 const TRIM_HANDLE_WIDTH = 8
@@ -87,9 +87,7 @@ export const ClipBlock = memo(function ClipBlock({
   const selectClip = useSelectionStore((s) => s.selectClip)
   const clearSelection = useSelectionStore((s) => s.clearSelection)
   const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
-  const asset = useMediaLibraryStore((s) =>
-    clip.assetId ? s.assets[clip.assetId] : undefined,
-  )
+  const asset = useMediaLibraryStore((s) => (clip.assetId ? s.assets[clip.assetId] : undefined))
   // A locked track blocks drag/trim/delete gestures (engine enforces too).
   const trackLocked = useTracksStore(
     (s) => s.tracks.find((t) => t.id === clip.trackId)?.locked ?? false,
@@ -107,25 +105,32 @@ export const ClipBlock = memo(function ClipBlock({
   // Pick the slot for this clip's own type (explicit — no dynamic key access).
   // Body + accent slots for this clip's own type (explicit — no dynamic keys).
   const bodySlot =
-    clip.type === 'video' ? clipVideo
-    : clip.type === 'audio' ? clipAudio
-    : clip.type === 'text' ? clipText
-    : clip.type === 'image' ? clipImage
-    : undefined
+    clip.type === 'video'
+      ? clipVideo
+      : clip.type === 'audio'
+        ? clipAudio
+        : clip.type === 'text'
+          ? clipText
+          : clip.type === 'image'
+            ? clipImage
+            : undefined
   const accentSlot =
-    clip.type === 'video' ? clipVideoAccent
-    : clip.type === 'audio' ? clipAudioAccent
-    : clip.type === 'text' ? clipTextAccent
-    : clip.type === 'image' ? clipImageAccent
-    : undefined
+    clip.type === 'video'
+      ? clipVideoAccent
+      : clip.type === 'audio'
+        ? clipAudioAccent
+        : clip.type === 'text'
+          ? clipTextAccent
+          : clip.type === 'image'
+            ? clipImageAccent
+            : undefined
   // Body bg: slot replaces the default gradient. Accent: slot text-* class, else
   // the default token class (both feed currentColor for the stripe/border).
   const clipBg = normBg(bodySlot) ?? DEFAULT_CLIP_BG[clip.type]
   const clipAccent = accentSlot ?? DEFAULT_CLIP_ACCENT[clip.type]
 
   // Filmstrip tiles for video/image — decorative; tiles repeat/reduce with zoom.
-  const stripFrames =
-    asset?.thumbnailStrip ?? (asset?.thumbnailUrl ? [asset.thumbnailUrl] : [])
+  const stripFrames = asset?.thumbnailStrip ?? (asset?.thumbnailUrl ? [asset.thumbnailUrl] : [])
   const tileAspect = asset?.width && asset?.height ? asset.width / asset.height : 16 / 9
   const tileWidth = Math.max(12, blockHeight * tileAspect)
   const tileCount = Math.min(40, Math.max(1, Math.ceil(width / tileWidth)))
@@ -167,11 +172,7 @@ export const ClipBlock = memo(function ClipBlock({
 
       const handleMove = (moveEvent: PointerEvent) => {
         const deltaX = moveEvent.clientX - startX
-        if (
-          isTouchDrag &&
-          !isDragging.current &&
-          Math.abs(deltaX) <= TOUCH_DRAG_THRESHOLD_PX
-        ) {
+        if (isTouchDrag && !isDragging.current && Math.abs(deltaX) <= TOUCH_DRAG_THRESHOLD_PX) {
           return
         }
 
@@ -205,8 +206,7 @@ export const ClipBlock = memo(function ClipBlock({
         activeGestureCleanup.current = null
 
         if (shouldCommit && isDragging.current && currentStart !== originalStart) {
-          const trackClips =
-            useTracksStore.getState().clips[clip.trackId] ?? []
+          const trackClips = useTracksStore.getState().clips[clip.trackId] ?? []
           const settledStart = resolveOverlapEdgeSnap(
             currentStart,
             clip,
@@ -246,7 +246,10 @@ export const ClipBlock = memo(function ClipBlock({
       const originalStart = clip.startFrame
       const originalDuration = clip.durationFrames
       const anchorEnd = originalStart + originalDuration
-      const maxDuration = clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand' ? Infinity : clip.sourceDurationFrames
+      const maxDuration =
+        clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand'
+          ? Infinity
+          : clip.sourceDurationFrames
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcLeftTrim = (clientX: number) => {
@@ -327,7 +330,10 @@ export const ClipBlock = memo(function ClipBlock({
 
       const startX = e.clientX
       const originalDuration = clip.durationFrames
-      const maxDuration = clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand' ? Infinity : clip.sourceDurationFrames
+      const maxDuration =
+        clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand'
+          ? Infinity
+          : clip.sourceDurationFrames
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
 
       const calcRightTrim = (clientX: number) => {
@@ -426,9 +432,7 @@ export const ClipBlock = memo(function ClipBlock({
         // Selection border vs accent border (accent paints from currentColor).
         // Same-hue border in the clip's accent color (the Figma border tone);
         // selection swaps to the selection-ring color.
-        border: isSelected
-          ? `2px solid var(--elah-selection-border)`
-          : `1px solid currentColor`,
+        border: isSelected ? `2px solid var(--elah-selection-border)` : `1px solid currentColor`,
         // Dynamic: selection glow vs default clip shadow + inner highlight
         boxShadow: isSelected
           ? `0 0 14px var(--elah-selection-glow), inset 0 1px 0 var(--elah-effect-inner-highlight-strong)`
@@ -585,7 +589,10 @@ export const ClipBlock = memo(function ClipBlock({
 
       {/* Clip label — audio, text, shape, freehand show a name + glyph.
           Video/image clips show their thumbnail filmstrip instead. */}
-      {(clip.type === 'audio' || clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand') && (
+      {(clip.type === 'audio' ||
+        clip.type === 'text' ||
+        clip.type === 'shape' ||
+        clip.type === 'freehand') && (
         <span
           style={{
             position: 'relative',
@@ -626,7 +633,7 @@ export const ClipBlock = memo(function ClipBlock({
               textOverflow: 'ellipsis',
             }}
           >
-            {clip.type === 'text' ? (clip.content?.trim() || clip.name) : clip.name}
+            {clip.type === 'text' ? clip.content?.trim() || clip.name : clip.name}
           </span>
         </span>
       )}
@@ -661,56 +668,55 @@ export const ClipBlock = memo(function ClipBlock({
         />
       </div>
 
-      {ctxMenu && createPortal(
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-            onMouseDown={closeCtxMenu}
-          />
-          <div
-            style={{
-              position: 'fixed',
-              top: ctxMenu.y,
-              left: ctxMenu.x,
-              zIndex: 9999,
-              background: `var(--elah-menu-bg)`,
-              border: `1px solid var(--elah-menu-border)`,
-              borderRadius: 6,
-              padding: '4px 0',
-              minWidth: 140,
-              boxShadow: `var(--elah-menu-shadow)`,
-              fontFamily: 'sans-serif',
-            }}
-          >
-            <button
-              type="button"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={handleCtxDelete}
+      {ctxMenu &&
+        createPortal(
+          <>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onMouseDown={closeCtxMenu} />
+            <div
               style={{
-                display: 'block',
-                width: '100%',
-                padding: '7px 14px',
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                color: `var(--elah-danger-text)`,
-                fontSize: 13,
-                cursor: 'pointer',
-                letterSpacing: '0.01em',
-              }}
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--elah-danger-bg-hover)'
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+                position: 'fixed',
+                top: ctxMenu.y,
+                left: ctxMenu.x,
+                zIndex: 9999,
+                background: `var(--elah-menu-bg)`,
+                border: `1px solid var(--elah-menu-border)`,
+                borderRadius: 6,
+                padding: '4px 0',
+                minWidth: 140,
+                boxShadow: `var(--elah-menu-shadow)`,
+                fontFamily: 'sans-serif',
               }}
             >
-              Delete
-            </button>
-          </div>
-        </>,
-        document.body,
-      )}
+              <button
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={handleCtxDelete}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '7px 14px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  color: `var(--elah-danger-text)`,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  letterSpacing: '0.01em',
+                }}
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.background =
+                    'var(--elah-danger-bg-hover)'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   )
 })

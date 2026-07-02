@@ -68,6 +68,7 @@ captured at transition start freezes the entire canvas — including text, image
 and video tracks that are playing continuously through the cut point.
 
 During the transition window:
+
 - Overlay: outgoing clip + all through-playing tracks, frozen, fading away
 - Canvas: incoming clip + all through-playing tracks, live, underneath
 
@@ -122,6 +123,7 @@ the incoming clip edge-first may still expose a partial black frame.
 
 A `TransitionScheduler` that sits between `resolveTimeline()` output and the
 overlay renderer:
+
 - Reads `scene.transitions[]` and detects approaching transition windows
 - Calls `provider.markActive()` on the incoming clip's provider N frames early
   (N = decode lookahead budget, typically ~10 frames)
@@ -132,13 +134,14 @@ overlay renderer:
 **Prerequisite:** Expose a `warmup(frameHint: number)` method on
 `VideoFrameProvider` so the scheduler can signal intent without forcing a seek.
 
-
 ### Perf: main-thread jank during export
+
 The preview RAF loop (`Preview.tsx`) runs full-tilt while an export is in progress — `resolveTimeline` + WebGL render + transition snapshotting every frame competing with the export worker's `postMessage` deserialization. Also: `ShaderProgram.create` calls `getShaderParameter(COMPILE_STATUS)` and `getProgramParameter(LINK_STATUS)` synchronously inside `acquire()`, which forces a GPU driver flush (observed as a 144 ms `getShaderParameter` stall when the first video/image/text clip enters the scene mid-playback). Both contribute to dropped frames and sluggish UI during export. `AudioPlaybackController` also continues running during export since it drives itself off the playback clock independently of the RAF loop.
 
 Root-cause diagnosis (from Chrome DevTools trace): the longest task (163 ms `RunTask` under `requestAnimationFrame`) traces as `tick → render → execute → acquire → _ensurePipeline → ShaderProgram.create → compileShader → getShaderParameter (144 ms)`. The forced-reflow warning in the same trace is mostly browser-extension noise (McAfee WebAdvisor, React DevTools) rather than app code — but `Playhead.tsx` writing `style.left` every frame does dirty layout, making those extension reads expensive.
 
 Planned fixes (scoped, low-risk — implement post-V1):
+
 - Warm every layer's shader pipeline once at `GpuRenderer.mount()` via a `Layer.warmup?(gl)` hook so `acquire()` never blocks. Pair with `KHR_parallel_shader_compile` in `ShaderProgram` to make the deferred status check non-blocking.
 - Gate the Preview RAF loop (`if (isExporting) return`) using an `isExporting` flag in `playback.store`; flip it in `exportVideo()` around the audio mix + worker lifetime.
 - Switch `Playhead` needle from `style.left` to `style.transform = translateX(…)` (composite-only, never invalidates layout); cache `getBoundingClientRect()` once per drag gesture rather than on every `mousemove`.

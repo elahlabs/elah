@@ -6,10 +6,10 @@ Renderer abstraction layer. Defines the contract every renderer must honour and 
 
 ## What lives here
 
-| Path | Role |
-|---|---|
-| `types.ts` | `Renderer` interface — the only public contract |
-| `gpu/` | WebGL2 GPU renderer — end-to-end video pipeline + debug tooling |
+| Path       | Role                                                            |
+| ---------- | --------------------------------------------------------------- |
+| `types.ts` | `Renderer` interface — the only public contract                 |
+| `gpu/`     | WebGL2 GPU renderer — end-to-end video pipeline + debug tooling |
 
 ---
 
@@ -35,16 +35,16 @@ Every concrete renderer implements exactly these four methods. The interface is 
 
 ## Renderer implementations
 
-| Folder | Status | Description |
-|---|---|---|
-| `gpu/` | ✅ Shipped | WebGL2 GPU compositor — `Scene → RenderGraph → VideoLayer/ImageLayer/TextLayer → VideoTexture → quad draw` |
-| (WebGPU) | ⚪ Future | A WebGPU backend behind the same interface, for shader effects/transitions |
+| Folder   | Status     | Description                                                                                                |
+| -------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `gpu/`   | ✅ Shipped | WebGL2 GPU compositor — `Scene → RenderGraph → VideoLayer/ImageLayer/TextLayer → VideoTexture → quad draw` |
+| (WebGPU) | ⚪ Future  | A WebGPU backend behind the same interface, for shader effects/transitions                                 |
 
 `gpu/` is the only `Renderer` implementation. There is **no** DOM or Canvas2D
 renderer — the textured-quad path already generalizes to image and text.
 
 **Export is not a `Renderer`.** It lives in [`../export/`](../export/) and
-draws to a 2D `OffscreenCanvas` in a worker, reusing this folder's *placement*
+draws to a 2D `OffscreenCanvas` in a worker, reusing this folder's _placement_
 helpers (`gpu/layers/drawRect.ts`, `gpu/layers/textLayout.ts`) so preview and
 export stay pixel-aligned without a GPU context in the worker. See
 [`../export/Architecture.md`](../export/Architecture.md).
@@ -81,11 +81,12 @@ import { GpuRenderer, resolveTimeline, createMediabunnyBackend } from '@elah/cor
 const renderer = new GpuRenderer({
   maxTextures: 16,
   // Factory is called once per unique src; each call returns a fresh backend.
-  demuxerFactory: () => createMediabunnyBackend(mediabunny, {
-    // Optional: provide a Blob/File directly to avoid a fetch round-trip.
-    // Omitting this falls back to fetch(src).blob() which works for object URLs.
-    // blobResolver: (src) => myFileMap.get(src) ?? fetch(src).then(r => r.blob()),
-  }),
+  demuxerFactory: () =>
+    createMediabunnyBackend(mediabunny, {
+      // Optional: provide a Blob/File directly to avoid a fetch round-trip.
+      // Omitting this falls back to fetch(src).blob() which works for object URLs.
+      // blobResolver: (src) => myFileMap.get(src) ?? fetch(src).then(r => r.blob()),
+    }),
   maxOutstandingDecodes: 4, // cap in-flight decodes per provider (default 4)
 })
 renderer.mount(containerEl)
@@ -107,11 +108,21 @@ import { GpuRenderer } from '@elah/core'
 import type { DemuxerBackend, DemuxerFactory } from '@elah/core'
 
 const myBackend: DemuxerBackend = {
-  async open(src) { /* ... */ },
-  getConfig() { return { codec: 'vp8', codedWidth: 640, codedHeight: 360 } },
-  async *packets([startUs, endUs]) { /* yield EncodedVideoChunk objects */ },
-  async seekToKeyframe(timeUs) { /* ... */ },
-  dispose() { /* ... */ },
+  async open(src) {
+    /* ... */
+  },
+  getConfig() {
+    return { codec: 'vp8', codedWidth: 640, codedHeight: 360 }
+  },
+  async *packets([startUs, endUs]) {
+    /* yield EncodedVideoChunk objects */
+  },
+  async seekToKeyframe(timeUs) {
+    /* ... */
+  },
+  dispose() {
+    /* ... */
+  },
 }
 
 const renderer = new GpuRenderer({ demuxerFactory: () => myBackend })

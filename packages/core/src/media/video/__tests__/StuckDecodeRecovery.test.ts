@@ -14,11 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VideoDecoderManager } from '../VideoDecoderManager'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 /** Demuxer whose packets() async-generator never completes. */
 function createHangingDemuxerBackend() {
@@ -102,9 +98,7 @@ describe('StuckDecodeRecovery', () => {
 
     expect(manager.state).toBe('Errored')
     expect(onError).toHaveBeenCalledOnce()
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'connection reset' }),
-    )
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'connection reset' }))
   })
 
   it('multiple feed() then dispose(): state is Disposed with no thrown errors', async () => {

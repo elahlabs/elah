@@ -16,11 +16,7 @@ export function captureFrame(canvas: HTMLCanvasElement): ImageData {
 }
 
 /** Sample a single pixel from ImageData. */
-export function samplePixel(
-  data: ImageData,
-  x: number,
-  y: number,
-): Rgba {
+export function samplePixel(data: ImageData, x: number, y: number): Rgba {
   const idx = (y * data.width + x) * 4
   return [
     data.data[idx] ?? 0,
@@ -46,12 +42,7 @@ export function isBlankFrame(data: ImageData, tolerance = 4): boolean {
     const g = data.data[i + 1] ?? 0
     const b = data.data[i + 2] ?? 0
     const a = data.data[i + 3] ?? 0
-    if (
-      r > tolerance ||
-      g > tolerance ||
-      b > tolerance ||
-      a > tolerance
-    ) {
+    if (r > tolerance || g > tolerance || b > tolerance || a > tolerance) {
       return false
     }
   }

@@ -12,31 +12,31 @@ Override `--elah-*` custom properties on `.elah-root` (or any ancestor) in your 
 /* your-theme.css */
 .elah-root {
   /* accent — drives the playhead, selection chrome, and focus rings */
-  --elah-accent:        #6366f1;   /* indigo */
-  --elah-accent-hover:  #818cf8;
-  --elah-accent-dim:    #a5b4fc;
-  --elah-accent-glow:   rgba(99, 102, 241, 0.35);
-  --elah-accent-soft:   rgba(99, 102, 241, 0.12);
+  --elah-accent: #6366f1; /* indigo */
+  --elah-accent-hover: #818cf8;
+  --elah-accent-dim: #a5b4fc;
+  --elah-accent-glow: rgba(99, 102, 241, 0.35);
+  --elah-accent-soft: rgba(99, 102, 241, 0.12);
 
   /* surfaces */
-  --elah-bg:            #0f0f0f;
-  --elah-bg-secondary:  #141414;
-  --elah-bg-panel:      #1a1a1a;
-  --elah-bg-card:       #161616;
-  --elah-bg-elevated:   #222222;
+  --elah-bg: #0f0f0f;
+  --elah-bg-secondary: #141414;
+  --elah-bg-panel: #1a1a1a;
+  --elah-bg-card: #161616;
+  --elah-bg-elevated: #222222;
 
   /* playhead */
-  --elah-playhead:      #6366f1;
+  --elah-playhead: #6366f1;
 
   /* clip bodies — video track (indigo) */
-  --elah-clip-video-top:    #6366f1;
-  --elah-clip-video-mid:    #4f46e5;
+  --elah-clip-video-top: #6366f1;
+  --elah-clip-video-mid: #4f46e5;
   --elah-clip-video-bottom: #3730a3;
   --elah-clip-video-accent: #818cf8;
 
   /* clip bodies — audio track (emerald) */
-  --elah-clip-audio-top:    #10b981;
-  --elah-clip-audio-mid:    #059669;
+  --elah-clip-audio-top: #10b981;
+  --elah-clip-audio-mid: #059669;
   --elah-clip-audio-bottom: #047857;
   --elah-clip-audio-accent: #34d399;
 }
@@ -45,9 +45,9 @@ Override `--elah-*` custom properties on `.elah-root` (or any ancestor) in your 
 ```tsx
 import '@elah/timeline/styles.css'
 import '@elah/editor/styles/tokens.css' // baseline defaults
-import './your-theme.css'               // your overrides
+import './your-theme.css' // your overrides
 
-<div className="elah-root">
+;<div className="elah-root">
   {/* Timeline reads engine + playback from EditorContext — see the README quick start */}
   <Timeline />
 </div>
@@ -65,27 +65,27 @@ Pass a `classNames` map to override one specific `<Timeline>` without affecting 
 <Timeline
   classNames={{
     // structural slots
-    root:       'rounded-xl border border-zinc-800',
-    ruler:      'bg-zinc-900',
-    rulerTick:  'bg-zinc-700',
+    root: 'rounded-xl border border-zinc-800',
+    ruler: 'bg-zinc-900',
+    rulerTick: 'bg-zinc-700',
     rulerLabel: 'text-zinc-500 font-mono',
-    lane:       'bg-zinc-950',
+    lane: 'bg-zinc-950',
     trackLabel: 'bg-zinc-900 text-zinc-300',
 
     // clip shape (all types share this)
     clip: 'rounded-lg shadow-lg',
 
     // per-type clip body — gradient stops or a solid bg-*
-    clipVideo:       'from-indigo-500 to-indigo-700',
-    clipAudio:       'from-emerald-600 to-emerald-800',
-    clipText:        'from-orange-500 to-orange-700',
-    clipImage:       'from-amber-400 to-amber-600',
+    clipVideo: 'from-indigo-500 to-indigo-700',
+    clipAudio: 'from-emerald-600 to-emerald-800',
+    clipText: 'from-orange-500 to-orange-700',
+    clipImage: 'from-amber-400 to-amber-600',
 
     // per-type accent — recolor the left stripe, selection border,
     // and track-label bar. Must be a text-* class (they paint from currentColor).
     clipVideoAccent: 'text-indigo-300',
     clipAudioAccent: 'text-emerald-400',
-    clipTextAccent:  'text-orange-300',
+    clipTextAccent: 'text-orange-300',
     clipImageAccent: 'text-amber-300',
 
     // playhead needle — also a text-* class (paints from currentColor)
@@ -144,34 +144,34 @@ If you previously used `timelineTheme` to build your own style object and apply 
 
 ### Token map
 
-| `timelineTheme` path | CSS variable |
-|---|---|
-| `surface.background` | `--elah-bg-secondary` |
-| `surface.laneActive` | `--elah-bg-card` |
-| `surface.sidebar` | `--elah-bg-panel` |
-| `surface.sidebarActive` | `--elah-bg-elevated` |
-| `border.strong` | `--elah-border` |
-| `border.subtle` | `--elah-border-subtle` |
-| `text.primary` | `--elah-text` |
-| `text.secondary` / `text.muted` | `--elah-text-muted` |
-| `text.faint` | `--elah-tick-label` |
-| `text.onClip` | `--elah-text-on-clip` |
+| `timelineTheme` path                 | CSS variable                                |
+| ------------------------------------ | ------------------------------------------- |
+| `surface.background`                 | `--elah-bg-secondary`                       |
+| `surface.laneActive`                 | `--elah-bg-card`                            |
+| `surface.sidebar`                    | `--elah-bg-panel`                           |
+| `surface.sidebarActive`              | `--elah-bg-elevated`                        |
+| `border.strong`                      | `--elah-border`                             |
+| `border.subtle`                      | `--elah-border-subtle`                      |
+| `text.primary`                       | `--elah-text`                               |
+| `text.secondary` / `text.muted`      | `--elah-text-muted`                         |
+| `text.faint`                         | `--elah-tick-label`                         |
+| `text.onClip`                        | `--elah-text-on-clip`                       |
 | `clip.video.{top,mid,bottom,accent}` | `--elah-clip-video-{top,mid,bottom,accent}` |
 | `clip.audio.{top,mid,bottom,accent}` | `--elah-clip-audio-{top,mid,bottom,accent}` |
-| `clip.text.{top,mid,bottom,accent}` | `--elah-clip-text-{top,mid,bottom,accent}` |
+| `clip.text.{top,mid,bottom,accent}`  | `--elah-clip-text-{top,mid,bottom,accent}`  |
 | `clip.image.{top,mid,bottom,accent}` | `--elah-clip-image-{top,mid,bottom,accent}` |
-| `selection.border` | `--elah-selection-border` |
-| `selection.glow` | `--elah-selection-glow` |
-| `playhead` | `--elah-playhead` |
-| `ruler.tick` | `--elah-tick-color` |
-| `ruler.label` | `--elah-tick-label` |
-| `transition.line` | `--elah-transition-line` |
-| `transition.lineHover` | `--elah-transition-line-hover` |
-| `transition.lineIdle` | `--elah-transition-line-idle` |
-| `menu.background` | `--elah-menu-bg` |
-| `menu.border` | `--elah-menu-border` |
-| `menu.shadow` | `--elah-menu-shadow` |
-| `danger.text` | `--elah-danger-text` |
-| `danger.bgHover` | `--elah-danger-bg-hover` |
-| `effect.waveform` | `--elah-effect-waveform` |
-| `effect.clipShadow` | `--elah-effect-clip-shadow` |
+| `selection.border`                   | `--elah-selection-border`                   |
+| `selection.glow`                     | `--elah-selection-glow`                     |
+| `playhead`                           | `--elah-playhead`                           |
+| `ruler.tick`                         | `--elah-tick-color`                         |
+| `ruler.label`                        | `--elah-tick-label`                         |
+| `transition.line`                    | `--elah-transition-line`                    |
+| `transition.lineHover`               | `--elah-transition-line-hover`              |
+| `transition.lineIdle`                | `--elah-transition-line-idle`               |
+| `menu.background`                    | `--elah-menu-bg`                            |
+| `menu.border`                        | `--elah-menu-border`                        |
+| `menu.shadow`                        | `--elah-menu-shadow`                        |
+| `danger.text`                        | `--elah-danger-text`                        |
+| `danger.bgHover`                     | `--elah-danger-bg-hover`                    |
+| `effect.waveform`                    | `--elah-effect-waveform`                    |
+| `effect.clipShadow`                  | `--elah-effect-clip-shadow`                 |

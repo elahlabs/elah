@@ -1,11 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { MediabunnyDemuxer } from '../demuxer/MediabunnyDemuxer'
 import { VideoDecoderManager } from '../VideoDecoderManager'
-import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 
 describe('MediabunnyDemuxer adapter', () => {
   it('open(src) passes src to backend', async () => {
@@ -123,9 +119,7 @@ describe('MediabunnyDemuxer adapter', () => {
 
     const badModule = { Input: 'not-a-constructor' } as unknown
     expect(() =>
-      createMediabunnyBackend(
-        badModule as Parameters<typeof createMediabunnyBackend>[0],
-      ),
+      createMediabunnyBackend(badModule as Parameters<typeof createMediabunnyBackend>[0]),
     ).toThrow(/Input, BlobSource, EncodedPacketSink/)
   })
 

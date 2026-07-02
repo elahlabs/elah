@@ -53,7 +53,11 @@ export { GpuRenderer } from './renderer/gpu/GpuRenderer'
 export type { RendererOptions } from './renderer/gpu/types'
 
 // --- Renderer internals (used by overlays + placement helpers) ---
-export { resolveDrawRect, transformFromContainRect, transformFromCoverRect } from './renderer/gpu/layers/drawRect'
+export {
+  resolveDrawRect,
+  transformFromContainRect,
+  transformFromCoverRect,
+} from './renderer/gpu/layers/drawRect'
 export { computeContainViewport } from './renderer/gpu/viewport'
 export { computeTextLayout, SIDE_MARGIN } from './renderer/gpu/layers/textLayout'
 export type { TextLayout } from './renderer/gpu/layers/textLayout'
@@ -67,13 +71,23 @@ export type { CounterSnapshot } from './renderer/gpu/debug/GpuDebugCounters'
 
 // --- Demuxer integration ---
 export { createDefaultDemuxerFactory } from './media/video/demuxer/createDefaultDemuxerFactory'
-export { createMediabunnyBackend, isMediabunnyCompatible } from './media/video/demuxer/createMediabunnyBackend'
-export type { MediabunnyModule, CreateMediabunnyBackendOpts } from './media/video/demuxer/createMediabunnyBackend'
+export {
+  createMediabunnyBackend,
+  isMediabunnyCompatible,
+} from './media/video/demuxer/createMediabunnyBackend'
+export type {
+  MediabunnyModule,
+  CreateMediabunnyBackendOpts,
+} from './media/video/demuxer/createMediabunnyBackend'
 export type { DemuxerBackend, DemuxerFactory } from './media/video/demuxer/MediabunnyDemuxer'
 
 // --- Media: video frame producers ---
 export type { VideoFrameProvider, VideoFrameProviderDeps } from './media/video'
-export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFrameProvider } from './media/video'
+export {
+  createVideoFrameProvider,
+  MockVideoFrameProvider,
+  SyntheticVideoFrameProvider,
+} from './media/video'
 
 // --- Media: audio playback ---
 export { AudioPlaybackController } from './media/audio/AudioPlaybackController'
@@ -142,9 +156,20 @@ export type { SplitAtPlayheadData } from './actions/splitClipAtPlayhead'
 export type { ActionResult, ActionFailureReason } from './actions/types'
 
 // --- Utilities ---
-export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames, clipsOverlap } from './utils/frames'
+export {
+  framesToTimecode,
+  secondsToFrames,
+  framesToSeconds,
+  getTotalFrames,
+  clipsOverlap,
+} from './utils/frames'
 export { generateId } from './utils/id'
-export { snapFrame, buildSnapPoints, resolveOverlapEdgeSnap, DEFAULT_OVERLAP_TOLERANCE } from './utils/snap'
+export {
+  snapFrame,
+  buildSnapPoints,
+  resolveOverlapEdgeSnap,
+  DEFAULT_OVERLAP_TOLERANCE,
+} from './utils/snap'
 
 // --- Export pipeline ---
 export { exportVideo } from './export'
@@ -152,12 +177,7 @@ export { lazyExportVideo } from './export/lazyExport'
 export type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from './export'
 
 // --- Engine context hooks (for consumers) ---
-export {
-  useEditor,
-  useTimelineEngine,
-  usePlaybackEngine,
-  EditorContext,
-} from './editor-context'
+export { useEditor, useTimelineEngine, usePlaybackEngine, EditorContext } from './editor-context'
 
 // --- Debug/trace ---
 export { installTraceGlobal, trace } from './debug/trace'

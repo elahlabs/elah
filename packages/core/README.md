@@ -22,18 +22,18 @@ npm install @elah/core
 
 ## What's inside
 
-| Module | Description |
-|---|---|
-| `TimelineEngine` | Manages project state — tracks, clips, undo/redo |
-| `PlaybackEngine` | Frame-accurate playback clock |
-| `resolveTimeline` | Pure function — project → active scene at a given frame |
-| `GpuRenderer` | WebGL2 renderer for video, image, and text layers |
-| `useTracksStore` | Zustand mirror of project state for React |
-| `usePlaybackStore` | Zustand mirror of playback state for React |
-| `useSelectionStore` | Zustand mirror of selection state for React |
-| `useMediaLibrary` | Media asset library with thumbnail generation |
-| `importFiles` | Import local files into the media library |
-| `exportVideo` | Export the timeline to MP4 via a web worker |
+| Module              | Description                                             |
+| ------------------- | ------------------------------------------------------- |
+| `TimelineEngine`    | Manages project state — tracks, clips, undo/redo        |
+| `PlaybackEngine`    | Frame-accurate playback clock                           |
+| `resolveTimeline`   | Pure function — project → active scene at a given frame |
+| `GpuRenderer`       | WebGL2 renderer for video, image, and text layers       |
+| `useTracksStore`    | Zustand mirror of project state for React               |
+| `usePlaybackStore`  | Zustand mirror of playback state for React              |
+| `useSelectionStore` | Zustand mirror of selection state for React             |
+| `useMediaLibrary`   | Media asset library with thumbnail generation           |
+| `importFiles`       | Import local files into the media library               |
+| `exportVideo`       | Export the timeline to MP4 via a web worker             |
 
 ---
 
@@ -48,7 +48,13 @@ const playback = new PlaybackEngine({ fps: 30, getTotalFrames: () => engine.getT
 // Add a track, then a clip onto it. addClip takes a single typed
 // options object (a discriminated union keyed on `type`) and returns the Clip.
 const track = engine.addTrack('video')
-engine.addClip({ trackId: track.id, type: 'video', src: 'video.mp4', startFrame: 0, durationFrames: 90 })
+engine.addClip({
+  trackId: track.id,
+  type: 'video',
+  src: 'video.mp4',
+  startFrame: 0,
+  durationFrames: 90,
+})
 
 // Resolve the scene at frame 15 — pure (frame, project) → Scene.
 const scene = resolveTimeline(15, engine.getProject())

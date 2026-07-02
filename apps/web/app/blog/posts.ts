@@ -111,7 +111,7 @@ private async _copyAndCache(frame: VideoFrame, index: number) {
       {
         type: 'note',
         title: 'A second benefit: context-loss safety',
-        text: "Because the cache holds plain-memory copies rather than GPU objects, it survives a WebGL context loss (driver reset, tab backgrounded, alt-tab). When the GPU comes back, the next render re-uploads from the surviving cache — no re-decode, no stutter. A photocopy is just as re-uploadable as the original book.",
+        text: 'Because the cache holds plain-memory copies rather than GPU objects, it survives a WebGL context loss (driver reset, tab backgrounded, alt-tab). When the GPU comes back, the next render re-uploads from the surviving cache — no re-decode, no stutter. A photocopy is just as re-uploadable as the original book.',
       },
       {
         type: 'p',
@@ -257,7 +257,7 @@ currentFrame = 141`,
       },
       {
         type: 'p',
-        text: "Integers remove rounding, but you still need one rule to decide which clip is active at a seam. A clip is active if and only if `startFrame <= frame < startFrame + durationFrames`. The interval is half-open: the start frame is included, the end frame is not.",
+        text: 'Integers remove rounding, but you still need one rule to decide which clip is active at a seam. A clip is active if and only if `startFrame <= frame < startFrame + durationFrames`. The interval is half-open: the start frame is included, the end frame is not.',
       },
       {
         type: 'p',
@@ -345,7 +345,7 @@ sourceFrame = (frame - clip.startFrame) + clip.sourceStartFrame`,
       },
       {
         type: 'p',
-        text: "Here is the part that keeps preview simple: instead of blending two live clips, the preview freezes a canvas snapshot of the outgoing frame and fades that snapshot out over the top of the incoming clip using plain CSS opacity. One frozen image, one CSS transition. No second live decode, no shader blend, no per-frame compositing math on the hot path.",
+        text: 'Here is the part that keeps preview simple: instead of blending two live clips, the preview freezes a canvas snapshot of the outgoing frame and fades that snapshot out over the top of the incoming clip using plain CSS opacity. One frozen image, one CSS transition. No second live decode, no shader blend, no per-frame compositing math on the hot path.',
       },
       {
         type: 'p',

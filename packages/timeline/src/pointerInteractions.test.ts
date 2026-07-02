@@ -59,9 +59,7 @@ describe('ClipBlock pointer gestures', () => {
 
   it('commits and reverts left trim gestures', () => {
     const commit = setupClip()
-    const commitLeftHandle = commit.block.querySelector(
-      '.elah-trim-handle-left',
-    ) as HTMLElement
+    const commitLeftHandle = commit.block.querySelector('.elah-trim-handle-left') as HTMLElement
 
     dispatchPointer(commitLeftHandle, 'pointerdown', { clientX: 100 })
     dispatchPointer(window, 'pointermove', { clientX: 110 })
@@ -71,9 +69,7 @@ describe('ClipBlock pointer gestures', () => {
     expect(currentClip(commit.engine, commit.clip.id).durationFrames).toBe(30)
 
     const cancel = setupClip()
-    const cancelLeftHandle = cancel.block.querySelector(
-      '.elah-trim-handle-left',
-    ) as HTMLElement
+    const cancelLeftHandle = cancel.block.querySelector('.elah-trim-handle-left') as HTMLElement
 
     dispatchPointer(cancelLeftHandle, 'pointerdown', { clientX: 100 })
     dispatchPointer(window, 'pointermove', { clientX: 110 })
@@ -87,9 +83,7 @@ describe('ClipBlock pointer gestures', () => {
 
   it('commits and reverts right trim gestures', () => {
     const commit = setupClip()
-    const commitRightHandle = commit.block.querySelector(
-      '.elah-trim-handle-right',
-    ) as HTMLElement
+    const commitRightHandle = commit.block.querySelector('.elah-trim-handle-right') as HTMLElement
 
     dispatchPointer(commitRightHandle, 'pointerdown', { clientX: 100 })
     dispatchPointer(window, 'pointermove', { clientX: 110 })
@@ -98,9 +92,7 @@ describe('ClipBlock pointer gestures', () => {
     expect(currentClip(commit.engine, commit.clip.id).durationFrames).toBe(50)
 
     const cancel = setupClip()
-    const cancelRightHandle = cancel.block.querySelector(
-      '.elah-trim-handle-right',
-    ) as HTMLElement
+    const cancelRightHandle = cancel.block.querySelector('.elah-trim-handle-right') as HTMLElement
 
     dispatchPointer(cancelRightHandle, 'pointerdown', { clientX: 100 })
     dispatchPointer(window, 'pointermove', { clientX: 110 })
@@ -184,10 +176,7 @@ describe('Playhead pointer gestures', () => {
     const parent = document.createElement('div')
     mockRect(parent, { left: 100 })
 
-    const { container } = render(
-      createElement(Playhead, { zoom: 2, height: 100 }),
-      parent,
-    )
+    const { container } = render(createElement(Playhead, { zoom: 2, height: 100 }), parent)
     const needle = container.firstElementChild as HTMLElement
 
     dispatchPointer(needle, 'pointerdown', { clientX: 100 })
@@ -331,11 +320,7 @@ function currentClip(engine: TimelineEngine, clipId: string): Clip {
   return found.clip
 }
 
-function dispatchPointer(
-  target: EventTarget,
-  type: string,
-  init: PointerEventInit = {},
-) {
+function dispatchPointer(target: EventTarget, type: string, init: PointerEventInit = {}) {
   act(() => {
     target.dispatchEvent(
       new PointerEvent(type, {

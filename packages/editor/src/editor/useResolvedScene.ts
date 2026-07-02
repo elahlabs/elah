@@ -51,11 +51,7 @@ export function useResolvedScene(frameOverride?: number): Scene {
   const last = useRef<{ frame: number; project: typeof project; scene: Scene } | null>(null)
 
   return useMemo(() => {
-    if (
-      last.current !== null &&
-      last.current.frame === frame &&
-      last.current.project === project
-    ) {
+    if (last.current !== null && last.current.frame === frame && last.current.project === project) {
       return last.current.scene
     }
     const scene = resolveTimeline(frame, project)
@@ -63,5 +59,3 @@ export function useResolvedScene(frameOverride?: number): Scene {
     return scene
   }, [frame, project])
 }
-
-

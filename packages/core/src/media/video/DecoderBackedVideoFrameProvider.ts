@@ -275,4 +275,3 @@ export class DecoderBackedVideoFrameProvider implements VideoFrameProvider {
     // no-op: this class is deprecated.
   }
 }
-

@@ -6,7 +6,8 @@ import { Terminal } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Playgrounds',
-  description: 'Interactive playground environments for elah. Explore the full editor, timeline-only, and demo modes.',
+  description:
+    'Interactive playground environments for elah. Explore the full editor, timeline-only, and demo modes.',
 }
 
 const playgrounds = [
@@ -79,7 +80,8 @@ export default function PlaygroundsPage() {
               Playgrounds
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-surface-variant">
-              Each playground is a live deployment of the elah SDK. Launch one to explore the editor, test your integration, or demo the capabilities.
+              Each playground is a live deployment of the elah SDK. Launch one to explore the
+              editor, test your integration, or demo the capabilities.
             </p>
 
             <div className="mt-6 inline-flex items-start gap-3 rounded-md border border-outline-variant bg-surface-low p-4">
@@ -88,7 +90,9 @@ export default function PlaygroundsPage() {
                 <div className="text-sm font-medium text-on-surface">Running locally?</div>
                 <p className="mt-0.5 text-xs leading-relaxed text-on-surface-variant">
                   Start the web app with{' '}
-                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">npm run dev:web</code>{' '}
+                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">
+                    npm run dev:web
+                  </code>{' '}
                   and open any playground above directly in the browser.
                 </p>
               </div>
@@ -130,8 +134,16 @@ export default function PlaygroundsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
-                { label: 'Renderer', value: 'WebGL2 GpuRenderer', sub: 'VideoLayer, ImageLayer, TextLayer' },
-                { label: 'Decode', value: 'WebCodecs API', sub: 'Push-based StreamingFrameProducer' },
+                {
+                  label: 'Renderer',
+                  value: 'WebGL2 GpuRenderer',
+                  sub: 'VideoLayer, ImageLayer, TextLayer',
+                },
+                {
+                  label: 'Decode',
+                  value: 'WebCodecs API',
+                  sub: 'Push-based StreamingFrameProducer',
+                },
                 { label: 'Demux', value: 'mediabunny', sub: 'MP4/WebM container parsing' },
                 { label: 'Export', value: 'Web Worker', sub: 'OffscreenCanvas + mediabunny mux' },
                 { label: 'State', value: 'Zustand + Immer', sub: 'Structural sharing, undo/redo' },
@@ -139,8 +151,13 @@ export default function PlaygroundsPage() {
                 { label: 'Build', value: 'Vite + TypeScript', sub: 'npm workspaces, project refs' },
                 { label: 'Audio', value: 'Web Audio API', sub: 'Main-thread scheduling' },
               ].map(({ label, value, sub }) => (
-                <div key={label} className="rounded-md border border-outline-variant bg-surface-container p-4">
-                  <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">{label}</div>
+                <div
+                  key={label}
+                  className="rounded-md border border-outline-variant bg-surface-container p-4"
+                >
+                  <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">
+                    {label}
+                  </div>
                   <div className="text-sm font-medium text-on-surface">{value}</div>
                   <div className="mt-0.5 text-xs text-on-surface-variant">{sub}</div>
                 </div>

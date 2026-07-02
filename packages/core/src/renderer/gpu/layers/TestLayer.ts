@@ -44,11 +44,7 @@ export function buildTransformMatrix(
   const ty = 2 * (ys + hs / 2 - 0.5 * ss * ws - 0.5 * sc * hs) - 1
 
   // Column-major mat3: [col0, col1, col2]
-  return new Float32Array([
-    2 * sc * ws, 2 * ss * ws, 0,
-    -2 * ss * hs, 2 * sc * hs, 0,
-    tx, ty, 1,
-  ])
+  return new Float32Array([2 * sc * ws, 2 * ss * ws, 0, -2 * ss * hs, 2 * sc * hs, 0, tx, ty, 1])
 }
 
 export class TestLayer implements Layer<DebugRenderItem> {

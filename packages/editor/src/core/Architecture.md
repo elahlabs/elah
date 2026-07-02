@@ -35,24 +35,24 @@ packages/
 
 ## 2. Directory map
 
-| Folder | Role | Key exports |
-|--------|------|-------------|
-| `core/types/` | Shared domain types. All time values are integer frame counts. | `Project`, `Track`, `Clip`, `Transform`, `ClipType`, `TrackKind`, `EngineEvent` |
-| `core/editor/` | `TimelineEngine` — the authoritative project state machine. Immer mutations, undo/redo history, event emitter. | `TimelineEngine` |
-| `core/playback/` | `PlaybackEngine` — frame ticker, RAF loop, transport controls. Reads `currentFrame` from `PlaybackStore` and advances it. | `PlaybackEngine` |
-| `core/resolver/` | Pure, deterministic frame resolver. `resolveTimeline(frame, project) → Scene`. No DOM, no React. | `resolveTimeline`, `Scene` (and sub-types) |
-| `core/renderer/` | `Renderer` interface + the shipped WebGL2 `GpuRenderer` (`gpu/`): video/image/text layers, `RenderGraph`, context-loss recovery, shared placement helpers. | `Renderer`, `GpuRenderer` |
-| `core/media/` | Frame/sample producers. `media/video/` = WebCodecs decode (`StreamingFrameProducer`, `FrameCache`, mediabunny demuxer); `media/audio/` = `AudioPlaybackController`. | `createVideoFrameProvider`, `StreamingFrameProducer`, `AudioPlaybackController` |
-| `core/export/` | `exportVideo()` + `ExportWorker` — OffscreenCanvas frame render → mediabunny MP4 mux. | `exportVideo` |
-| `core/debug/` | Channel-based `trace()` frame-lifecycle logging (`window.__trace`). | `trace`, `traceEnabled` |
-| `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore`, `useTransitionsStore` |
-| `core/assets/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
-| `core/elements/` | Clip factory functions. Pure constructors, no side-effects. | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip` |
-| `core/track/` | Track factory. | `createTrack` |
-| `core/actions/` | Compound operations (multi-step mutations + engine calls). Currently: `splitClipAtPlayhead`. | `splitClipAtPlayhead` |
-| `core/visitor/` | Immer-based project mutation primitives. Used internally by `TimelineEngine`. Not exported publicly. | `addClip`, `removeClip`, `updateClip`, `splitClip`, `cloneClip`, `removeTrack`, `updateTrack` |
-| `core/utils/` | Pure helpers: frame math, timecode formatting, snap, ID generation. | `framesToTimecode`, `secondsToFrames`, `framesToSeconds`, `getTotalFrames`, `generateId` |
-| `core/editor-context.ts` | React context + hooks that expose the engines to the component tree. Lives in `core/` so `editor/` and `timeline/` can both import without a circular dependency. | `useEditor`, `useTimelineEngine`, `usePlaybackEngine`, `EditorContext` |
+| Folder                   | Role                                                                                                                                                                | Key exports                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `core/types/`            | Shared domain types. All time values are integer frame counts.                                                                                                      | `Project`, `Track`, `Clip`, `Transform`, `ClipType`, `TrackKind`, `EngineEvent`               |
+| `core/editor/`           | `TimelineEngine` — the authoritative project state machine. Immer mutations, undo/redo history, event emitter.                                                      | `TimelineEngine`                                                                              |
+| `core/playback/`         | `PlaybackEngine` — frame ticker, RAF loop, transport controls. Reads `currentFrame` from `PlaybackStore` and advances it.                                           | `PlaybackEngine`                                                                              |
+| `core/resolver/`         | Pure, deterministic frame resolver. `resolveTimeline(frame, project) → Scene`. No DOM, no React.                                                                    | `resolveTimeline`, `Scene` (and sub-types)                                                    |
+| `core/renderer/`         | `Renderer` interface + the shipped WebGL2 `GpuRenderer` (`gpu/`): video/image/text layers, `RenderGraph`, context-loss recovery, shared placement helpers.          | `Renderer`, `GpuRenderer`                                                                     |
+| `core/media/`            | Frame/sample producers. `media/video/` = WebCodecs decode (`StreamingFrameProducer`, `FrameCache`, mediabunny demuxer); `media/audio/` = `AudioPlaybackController`. | `createVideoFrameProvider`, `StreamingFrameProducer`, `AudioPlaybackController`               |
+| `core/export/`           | `exportVideo()` + `ExportWorker` — OffscreenCanvas frame render → mediabunny MP4 mux.                                                                               | `exportVideo`                                                                                 |
+| `core/debug/`            | Channel-based `trace()` frame-lifecycle logging (`window.__trace`).                                                                                                 | `trace`, `traceEnabled`                                                                       |
+| `core/stores/`           | Zustand stores that mirror engine state into React. Components subscribe with granular selectors.                                                                   | `useTracksStore`, `usePlaybackStore`, `useSelectionStore`, `useTransitionsStore`              |
+| `core/assets/`           | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation.                                     | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset`     |
+| `core/elements/`         | Clip factory functions. Pure constructors, no side-effects.                                                                                                         | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip`                     |
+| `core/track/`            | Track factory.                                                                                                                                                      | `createTrack`                                                                                 |
+| `core/actions/`          | Compound operations (multi-step mutations + engine calls). Currently: `splitClipAtPlayhead`.                                                                        | `splitClipAtPlayhead`                                                                         |
+| `core/visitor/`          | Immer-based project mutation primitives. Used internally by `TimelineEngine`. Not exported publicly.                                                                | `addClip`, `removeClip`, `updateClip`, `splitClip`, `cloneClip`, `removeTrack`, `updateTrack` |
+| `core/utils/`            | Pure helpers: frame math, timecode formatting, snap, ID generation.                                                                                                 | `framesToTimecode`, `secondsToFrames`, `framesToSeconds`, `getTotalFrames`, `generateId`      |
+| `core/editor-context.ts` | React context + hooks that expose the engines to the component tree. Lives in `core/` so `editor/` and `timeline/` can both import without a circular dependency.   | `useEditor`, `useTimelineEngine`, `usePlaybackEngine`, `EditorContext`                        |
 
 ---
 
@@ -87,14 +87,14 @@ Renderer (interface)
 
 **`Clip` fields** worth knowing:
 
-| Field | Meaning |
-|-------|---------|
-| `startFrame` | Position on the timeline (frame index where the clip starts) |
-| `durationFrames` | Length of the clip on the timeline |
-| `sourceStartFrame` | Trim in-point into the source asset |
-| `sourceDurationFrames` | Full length of the source asset (for trim constraints) |
-| `assetId?` | Reference to a `MediaAsset` in the `MediaLibrary` (preferred over raw `src` when set) |
-| `transform?` | Normalized spatial transform `{x, y, scale, rotation, anchor}` — undefined means renderer default |
+| Field                  | Meaning                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `startFrame`           | Position on the timeline (frame index where the clip starts)                                      |
+| `durationFrames`       | Length of the clip on the timeline                                                                |
+| `sourceStartFrame`     | Trim in-point into the source asset                                                               |
+| `sourceDurationFrames` | Full length of the source asset (for trim constraints)                                            |
+| `assetId?`             | Reference to a `MediaAsset` in the `MediaLibrary` (preferred over raw `src` when set)             |
+| `transform?`           | Normalized spatial transform `{x, y, scale, rotation, anchor}` — undefined means renderer default |
 
 ---
 
@@ -103,7 +103,7 @@ Renderer (interface)
 ```mermaid
 flowchart LR
   subgraph engines ["Engines (constructed by EditorProvider)"]
-    TE["TimelineEngine\ncore/editor/"] 
+    TE["TimelineEngine\ncore/editor/"]
     PE["PlaybackEngine\ncore/playback/"]
   end
 
@@ -153,13 +153,13 @@ flowchart LR
 
 Mirrors `Project` from the engine into React. **Never mutate directly** — always go through the engine.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `tracks` | `Track[]` | Reference changes on every engine `'change'` event |
-| `clips` | `Record<string, Clip[]>` | Indexed by `trackId` |
-| `totalFrames` | `number` | Computed max end frame across all clips |
-| `canUndo` / `canRedo` | `boolean` | Engine history state |
-| `sync(project, meta)` | method | Called by `<Timeline>` in its engine `'change'` listener |
+| Field                 | Type                     | Description                                              |
+| --------------------- | ------------------------ | -------------------------------------------------------- |
+| `tracks`              | `Track[]`                | Reference changes on every engine `'change'` event       |
+| `clips`               | `Record<string, Clip[]>` | Indexed by `trackId`                                     |
+| `totalFrames`         | `number`                 | Computed max end frame across all clips                  |
+| `canUndo` / `canRedo` | `boolean`                | Engine history state                                     |
+| `sync(project, meta)` | method                   | Called by `<Timeline>` in its engine `'change'` listener |
 
 The `tracks` reference replacement on every `sync()` call is the cheapest "project mutated" signal. `useResolvedScene` subscribes to it via `useTracksStore((s) => s.tracks)` purely for this trigger.
 
@@ -167,13 +167,13 @@ The `tracks` reference replacement on every `sync()` call is the cheapest "proje
 
 Partially persisted to `localStorage` key `myeditor-playback`. Persisted fields: `zoom`, `volume`, `muted`, `playbackRate`, `loop`, `snapEnabled`.
 
-| Field | Description |
-|-------|-------------|
-| `currentFrame` | Current playhead position (integer frames) |
+| Field               | Description                                                               |
+| ------------------- | ------------------------------------------------------------------------- |
+| `currentFrame`      | Current playhead position (integer frames)                                |
 | `currentFrameEpoch` | Monotonically incremented counter; detects repeat seeks to the same frame |
-| `isPlaying` | Transport state |
-| `zoom` | Pixels per frame (timeline zoom level) |
-| `snapEnabled` | Snap-to-grid toggle |
+| `isPlaying`         | Transport state                                                           |
+| `zoom`              | Pixels per frame (timeline zoom level)                                    |
+| `snapEnabled`       | Snap-to-grid toggle                                                       |
 
 ### `useSelectionStore` (`core/stores/selection.store.ts`)
 
@@ -185,18 +185,18 @@ Holds `selectedClipIds: string[]`. Not mirrored from the engine — selection is
 
 The engine is a typed event emitter. Listeners registered with `.on(event, handler)` are called synchronously after each mutation.
 
-| Event | Payload | When fired |
-|-------|---------|------------|
-| `'change'` | `Project` | After **every** mutation (broadest trigger) |
-| `'track:added'` | `Track` | After `addTrack()` |
-| `'track:removed'` | `string` (trackId) | After `removeTrack()` |
-| `'clip:added'` | `Clip` | After `addClip()` |
-| `'clip:removed'` | `{ clipId, trackId }` | After `removeClip()` |
-| `'clip:updated'` | `Clip` | After `updateClip()`, `moveClip()`, `trimClip()` |
-| `'clip:split'` | `{ leftId, rightId, trackId }` | After `splitClip()` |
-| `'transition:added'` | `Transition` | After `addTransition()` |
-| `'transition:removed'` | `string` (transitionId) | After `removeTransition()` |
-| `'history:change'` | `{ canUndo, canRedo }` | After any mutation or undo/redo |
+| Event                  | Payload                        | When fired                                       |
+| ---------------------- | ------------------------------ | ------------------------------------------------ |
+| `'change'`             | `Project`                      | After **every** mutation (broadest trigger)      |
+| `'track:added'`        | `Track`                        | After `addTrack()`                               |
+| `'track:removed'`      | `string` (trackId)             | After `removeTrack()`                            |
+| `'clip:added'`         | `Clip`                         | After `addClip()`                                |
+| `'clip:removed'`       | `{ clipId, trackId }`          | After `removeClip()`                             |
+| `'clip:updated'`       | `Clip`                         | After `updateClip()`, `moveClip()`, `trimClip()` |
+| `'clip:split'`         | `{ leftId, rightId, trackId }` | After `splitClip()`                              |
+| `'transition:added'`   | `Transition`                   | After `addTransition()`                          |
+| `'transition:removed'` | `string` (transitionId)        | After `removeTransition()`                       |
+| `'history:change'`     | `{ canUndo, canRedo }`         | After any mutation or undo/redo                  |
 
 `<Timeline>` subscribes to `'change'` and calls `useTracksStore.sync()`. That is the only bridge between the engine and React stores.
 
@@ -242,15 +242,15 @@ File[] → importFiles()
 
 Knowing what is absent is as important as knowing what is present:
 
-| Concern | Lives in |
-|---------|----------|
-| `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `@elah/timeline` |
-| `useTracks`, `usePlayback`, `useSelection` hooks (public API) | `@elah/timeline` (`src/hooks/`) |
-| `useTimeline`, `useTimelineDrop` drop handler | `@elah/timeline` (`src/`) |
-| `<EditorProvider>` | `@elah/editor` (`src/editor/`) |
-| `useResolvedScene` | `@elah/editor` (`src/editor/`) |
-| `<Preview>` component (mounts the renderer + RAF) | `@elah/editor` (`src/editor/Preview/`) |
-| `<AssetPanel>`, `<ElementsPanel>`, `<SourcePanel>` components | `@elah/editor` (`src/editor/`) |
+| Concern                                                                      | Lives in                               |
+| ---------------------------------------------------------------------------- | -------------------------------------- |
+| `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `@elah/timeline`                       |
+| `useTracks`, `usePlayback`, `useSelection` hooks (public API)                | `@elah/timeline` (`src/hooks/`)        |
+| `useTimeline`, `useTimelineDrop` drop handler                                | `@elah/timeline` (`src/`)              |
+| `<EditorProvider>`                                                           | `@elah/editor` (`src/editor/`)         |
+| `useResolvedScene`                                                           | `@elah/editor` (`src/editor/`)         |
+| `<Preview>` component (mounts the renderer + RAF)                            | `@elah/editor` (`src/editor/Preview/`) |
+| `<AssetPanel>`, `<ElementsPanel>`, `<SourcePanel>` components                | `@elah/editor` (`src/editor/`)         |
 
 ---
 

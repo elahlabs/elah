@@ -84,11 +84,7 @@ export function resolveTextStyle(item: {
 }
 
 /** Greedy word-wrap to `maxWidth`, honouring explicit `\n` paragraph breaks. */
-export function wrapText(
-  measure: TextMeasurer,
-  text: string,
-  maxWidth: number,
-): string[] {
+export function wrapText(measure: TextMeasurer, text: string, maxWidth: number): string[] {
   const out: string[] = []
   for (const paragraph of text.split('\n')) {
     const words = paragraph.split(' ')

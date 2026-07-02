@@ -1,6 +1,6 @@
 # Performance
 
-> The performance *philosophy* and the concrete techniques the codebase actually
+> The performance _philosophy_ and the concrete techniques the codebase actually
 > uses. We do not publish benchmark numbers here — none have been measured under
 > controlled conditions, and inventing them would be worse than omitting them.
 

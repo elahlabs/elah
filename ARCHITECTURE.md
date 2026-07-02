@@ -24,7 +24,7 @@ These principles are **load-bearing**. Every decision in the codebase traces bac
 
 ### P1. Engine first, framework second.
 
-The core of the editor — `TimelineEngine`, `PlaybackEngine`, `resolveTimeline` — has zero React imports. It runs in Node, in a Web Worker, in a CLI, or under WASM. React is a *consumer* of the engine, not its host.
+The core of the editor — `TimelineEngine`, `PlaybackEngine`, `resolveTimeline` — has zero React imports. It runs in Node, in a Web Worker, in a CLI, or under WASM. React is a _consumer_ of the engine, not its host.
 
 ### P2. Time is integer frames.
 
@@ -150,11 +150,11 @@ Storing time as floating-point seconds creates cumulative error: after enough sp
 
 ```ts
 interface PlaybackSnapshot {
-  currentFrame: number   // Math.floor(getFrameAt())
+  currentFrame: number // Math.floor(getFrameAt())
   isPlaying: boolean
   playbackRate: number
   loop: boolean
-  epoch: number          // bumped on every transport mutation
+  epoch: number // bumped on every transport mutation
 }
 
 class PlaybackEngine {
@@ -164,10 +164,10 @@ class PlaybackEngine {
   setPlaybackRate(rate: number): void
   setLoop(loop: boolean): void
   subscribe(fn: (s: PlaybackSnapshot) => void): () => void
-  subscribeTimeupdate(fn: (s: PlaybackSnapshot) => void): () => void  // ~10 Hz
+  subscribeTimeupdate(fn: (s: PlaybackSnapshot) => void): () => void // ~10 Hz
   destroy(): void
   // getters: currentFrame, currentTime, isPlaying, playbackRate, loop
-  getFrameAt(t?: number): number   // float frame; renderer reads this
+  getFrameAt(t?: number): number // float frame; renderer reads this
 }
 ```
 
@@ -177,7 +177,7 @@ Internals worth knowing:
 - **Integer vs float frames.** The store and UI use `Math.floor(getFrameAt())`. The renderer (when it lands) should call `getFrameAt()` directly for sub-frame-accurate seeking.
 - **Tab visibility.** When `document.hidden`, the integrated position freezes (re-anchor on hide). On visible again, time re-anchors without catch-up. Same UX goal as the old elapsed clamp, but tied to visibility rather than a fixed ms threshold.
 - **Notify-on-integer-advance.** During RAF, subscribers fire only when the integer frame changes — avoids storms on 60 Hz displays running a 30 fps timeline.
-- **Epoch always bumps on seek.** `seek()` does *not* early-return on same frame. Repeat seeks to the same frame must retrigger one-shot effects (loop-to-start, scrub-while-paused). The store mirrors this with `currentFrameEpoch`.
+- **Epoch always bumps on seek.** `seek()` does _not_ early-return on same frame. Repeat seeks to the same frame must retrigger one-shot effects (loop-to-start, scrub-while-paused). The store mirrors this with `currentFrameEpoch`.
 
 ### The clock ↔ Zustand bridge
 
@@ -246,7 +246,7 @@ While playing, the RAF loop samples `getFrameAt()` — it does not integrate fra
 
 ### Why not anchor to `AudioContext.currentTime`?
 
-Eventually we should. `AudioContext.currentTime` is the hardware audio clock; anchoring playback to it eliminates audio-video drift by definition. Audio *does* play today — `AudioPlaybackController` follows the clock as a downstream consumer — but the clock itself is still driven by `performance.now()`. Anchoring the clock to `AudioContext.currentTime` is a deliberate, deferred upgrade: `PlaybackEngine` reads time through a private `now()` seam expressly so that swap is a one-line change with no caller impact.
+Eventually we should. `AudioContext.currentTime` is the hardware audio clock; anchoring playback to it eliminates audio-video drift by definition. Audio _does_ play today — `AudioPlaybackController` follows the clock as a downstream consumer — but the clock itself is still driven by `performance.now()`. Anchoring the clock to `AudioContext.currentTime` is a deliberate, deferred upgrade: `PlaybackEngine` reads time through a private `now()` seam expressly so that swap is a one-line change with no caller impact.
 
 ---
 
@@ -255,10 +255,10 @@ Eventually we should. `AudioContext.currentTime` is the hardware audio clock; an
 ```ts
 interface Project {
   id: string
-  fps: number                                       // integer (24, 30, 60)
-  stage: { width: number; height: number }          // default 1080×1920 (portrait)
+  fps: number // integer (24, 30, 60)
+  stage: { width: number; height: number } // default 1080×1920 (portrait)
   tracks: Track[]
-  clips: Record<string /* trackId */, Clip[]>       // sorted by startFrame, no overlap
+  clips: Record<string /* trackId */, Clip[]> // sorted by startFrame, no overlap
   version: number
 }
 
@@ -266,12 +266,12 @@ interface Track {
   id: string
   name: string
   kind: 'video' | 'audio' | 'text'
-  order: number                                     // 0 = topmost in UI = front-most in render
-  height: number                                    // px, UI hint
-  locked: boolean                                   // UI-only; no engine effect
-  disabled: boolean                                 // skip entirely
-  muted: boolean                                    // audio→silent, video stays visible
-  solo: boolean                                     // exclude other tracks of same kind
+  order: number // 0 = topmost in UI = front-most in render
+  height: number // px, UI hint
+  locked: boolean // UI-only; no engine effect
+  disabled: boolean // skip entirely
+  muted: boolean // audio→silent, video stays visible
+  solo: boolean // exclude other tracks of same kind
 }
 
 interface Clip {
@@ -289,14 +289,14 @@ interface Clip {
   sourceDurationFrames: number
 
   // Media reference
-  src?: string                                      // direct URL (blob URL or remote)
-  assetId?: string                                  // MediaLibrary key (preferred when set)
-  content?: string                                  // text clips only
+  src?: string // direct URL (blob URL or remote)
+  assetId?: string // MediaLibrary key (preferred when set)
+  content?: string // text clips only
 
   // Compositing
-  volume?: number                                   // 0..1
-  opacity?: number                                  // 0..1
-  transform?: Transform                             // normalized 0..1, resolution-independent
+  volume?: number // 0..1
+  opacity?: number // 0..1
+  transform?: Transform // normalized 0..1, resolution-independent
 
   // Flags
   locked?: boolean
@@ -307,9 +307,14 @@ interface MediaAsset {
   id: string
   kind: 'video' | 'audio' | 'image'
   name: string
-  src: string              // blob URL after import
+  src: string // blob URL after import
   durationSec: number
-  width?, height?, sourceFps?, thumbnailUrl?, byteSize, addedAt
+  width?
+  height?
+  sourceFps?
+  thumbnailUrl?
+  byteSize
+  addedAt
 }
 ```
 
@@ -347,17 +352,17 @@ interface Scene {
   audios: ActiveAudioClip[]
   texts: ActiveTextClip[]
   images: ActiveImageClip[]
-  transitions: SceneTransition[]   // empty until transitions exist
+  transitions: SceneTransition[] // empty until transitions exist
 }
 
 interface ActiveClipBase {
   id: string
   trackId: string
   name: string
-  sourceFrame: number              // exact frame inside source to display
+  sourceFrame: number // exact frame inside source to display
   opacity: number
-  zIndex: number                   // higher = closer to viewer
-  transform?: Transform            // passed through from Clip.transform
+  zIndex: number // higher = closer to viewer
+  transform?: Transform // passed through from Clip.transform
 }
 ```
 
@@ -386,7 +391,7 @@ The `* 1000` multiplier reserves room for sub-layer offsets (e.g. text "above it
 
 ### What renderers see
 
-The shipped `GpuRenderer` consumes `Scene.videos` / `.images` / `.texts`, uploads each to a GPU texture (video frames come from the decode pipeline; text is rasterized to a canvas first), and composites them by `zIndex`. The export worker consumes the *same* `Scene` and draws to a 2D `OffscreenCanvas` using the same placement helpers. `AudioPlaybackController` consumes `Scene.audios`. **None of them imports `Project` or `Clip` directly** — the `Scene` is the entire contract.
+The shipped `GpuRenderer` consumes `Scene.videos` / `.images` / `.texts`, uploads each to a GPU texture (video frames come from the decode pipeline; text is rasterized to a canvas first), and composites them by `zIndex`. The export worker consumes the _same_ `Scene` and draws to a 2D `OffscreenCanvas` using the same placement helpers. `AudioPlaybackController` consumes `Scene.audios`. **None of them imports `Project` or `Clip` directly** — the `Scene` is the entire contract.
 
 ---
 
@@ -409,13 +414,13 @@ references** — `scene === lastScene` is a no-op. The renderer reads only the
 
 ### Current status
 
-| Piece | Status |
-|---|---|
-| `Renderer` interface | ✅ shipped (`core/renderer/types.ts`) |
-| `useResolvedScene()` hook | ✅ shipped — memoized `resolveTimeline(frame, project)` |
-| `GpuRenderer` (WebGL2) | ✅ shipped — `core/renderer/gpu/`; video / image / text layers, context-loss recovery |
-| `<Preview>` component | ✅ shipped — `editor/Preview/`; mounts the renderer, drives RAF, paints the text overlay |
-| Export path | ✅ shipped — `core/export/`; worker + `OffscreenCanvas`, not a `Renderer` instance (see below) |
+| Piece                     | Status                                                                                         |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `Renderer` interface      | ✅ shipped (`core/renderer/types.ts`)                                                          |
+| `useResolvedScene()` hook | ✅ shipped — memoized `resolveTimeline(frame, project)`                                        |
+| `GpuRenderer` (WebGL2)    | ✅ shipped — `core/renderer/gpu/`; video / image / text layers, context-loss recovery          |
+| `<Preview>` component     | ✅ shipped — `editor/Preview/`; mounts the renderer, drives RAF, paints the text overlay       |
+| Export path               | ✅ shipped — `core/export/`; worker + `OffscreenCanvas`, not a `Renderer` instance (see below) |
 
 The playground draws real decoded video to the canvas today. `<Preview>` is the
 production wiring; the playground's `GpuPreview.tsx` is the reference shell.
@@ -439,7 +444,7 @@ The full GPU + decode pipeline is documented in
 ### Export is a parallel path, not a `Renderer`
 
 Export does **not** instantiate a `Renderer`. The export worker draws to a 2D
-`OffscreenCanvas` and reuses the renderer's *placement* helpers (`resolveDrawRect`,
+`OffscreenCanvas` and reuses the renderer's _placement_ helpers (`resolveDrawRect`,
 `computeTextLayout`) so preview and export produce identical geometry without a
 GPU context in the worker. Both paths consume the same `resolveTimeline` output —
 that shared resolution, not a shared draw call, is what keeps them in sync. See
@@ -602,7 +607,7 @@ Ruler click ──► usePlaybackStore.setCurrentFrame(frame)
 
 ## 8. What lives where (package boundaries)
 
-Everything lives in one package: `@elah/editor` (`packages/editor/`). This is **intentional** — premature package splits create import-resolution overhead, build orchestration complexity, and version-skew bugs. The boundaries below are *logical* and organized as three source layers:
+Everything lives in one package: `@elah/editor` (`packages/editor/`). This is **intentional** — premature package splits create import-resolution overhead, build orchestration complexity, and version-skew bugs. The boundaries below are _logical_ and organized as three source layers:
 
 ```
 packages/editor/src/
@@ -613,26 +618,26 @@ packages/editor/src/
 Dependency rule:  core  ←  timeline  ←  editor
 ```
 
-| Logical area | Path | Status |
-|---|---|---|
-| Types | `core/types/` | ✅ |
-| Engine | `core/editor/`, `core/track/`, `core/visitor/`, `core/elements/` | ✅ |
-| Playback | `core/playback/` | ✅ |
-| Resolver + tests | `core/resolver/` | ✅ |
-| State mirrors | `core/stores/` | ✅ |
-| Media library (assets) | `core/assets/` (`importFiles`, `useMediaLibraryStore`) | ✅ |
-| Media decode pipeline | `core/media/video/` (`StreamingFrameProducer`, `FrameCache`, demuxer), `core/media/audio/` | ✅ |
-| Renderer interface | `core/renderer/types.ts` | ✅ |
-| Renderer implementation | `core/renderer/gpu/` (`GpuRenderer`, `RenderGraph`, video/image/text layers) | ✅ |
-| Export | `core/export/` (`exportVideo`, `ExportWorker`) | ✅ |
-| Trace / debug | `core/debug/trace.ts` | ✅ |
-| Engine context hooks | `core/editor-context.ts` | ✅ |
-| Actions | `core/actions/` | ✅ |
-| Utilities | `core/utils/` | ✅ |
-| Timeline UI | `timeline/` (`Timeline`, `TrackRow`, `ClipBlock`, `useTimelineDrop`) | ✅ |
-| Editor composition | `editor/` (`EditorProvider`, `AssetPanel`, `Preview`, `useResolvedScene`) | ✅ |
+| Logical area            | Path                                                                                       | Status |
+| ----------------------- | ------------------------------------------------------------------------------------------ | ------ |
+| Types                   | `core/types/`                                                                              | ✅     |
+| Engine                  | `core/editor/`, `core/track/`, `core/visitor/`, `core/elements/`                           | ✅     |
+| Playback                | `core/playback/`                                                                           | ✅     |
+| Resolver + tests        | `core/resolver/`                                                                           | ✅     |
+| State mirrors           | `core/stores/`                                                                             | ✅     |
+| Media library (assets)  | `core/assets/` (`importFiles`, `useMediaLibraryStore`)                                     | ✅     |
+| Media decode pipeline   | `core/media/video/` (`StreamingFrameProducer`, `FrameCache`, demuxer), `core/media/audio/` | ✅     |
+| Renderer interface      | `core/renderer/types.ts`                                                                   | ✅     |
+| Renderer implementation | `core/renderer/gpu/` (`GpuRenderer`, `RenderGraph`, video/image/text layers)               | ✅     |
+| Export                  | `core/export/` (`exportVideo`, `ExportWorker`)                                             | ✅     |
+| Trace / debug           | `core/debug/trace.ts`                                                                      | ✅     |
+| Engine context hooks    | `core/editor-context.ts`                                                                   | ✅     |
+| Actions                 | `core/actions/`                                                                            | ✅     |
+| Utilities               | `core/utils/`                                                                              | ✅     |
+| Timeline UI             | `timeline/` (`Timeline`, `TrackRow`, `ClipBlock`, `useTimelineDrop`)                       | ✅     |
+| Editor composition      | `editor/` (`EditorProvider`, `AssetPanel`, `Preview`, `useResolvedScene`)                  | ✅     |
 
-**Rule of thumb:** if a file logically belongs to a layer but doesn't have peers yet, it lives in `packages/editor/src/core/<layer>/`. When a layer accumulates 3+ files and gains its own dependencies, *then* extract it into its own package.
+**Rule of thumb:** if a file logically belongs to a layer but doesn't have peers yet, it lives in `packages/editor/src/core/<layer>/`. When a layer accumulates 3+ files and gains its own dependencies, _then_ extract it into its own package.
 
 For a cold-start implementation reference scoped to `core/`, see [`packages/editor/src/core/Architecture.md`](./packages/editor/src/core/Architecture.md).
 
@@ -694,7 +699,7 @@ Good: `clip.startFrame: 45`, `clip.durationFrames: 96`, `currentFrame: 141`. Int
 
 Bad: no tests on `resolveTimeline` because "it's only used by the renderer."
 
-Good: the resolver runs 60 times per second. Bugs are invisible without tests. Tests *are* the spec.
+Good: the resolver runs 60 times per second. Bugs are invisible without tests. Tests _are_ the spec.
 
 ### A10. The 800-line file with a TODO at the top.
 

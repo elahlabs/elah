@@ -104,9 +104,7 @@ function createRealisticDemuxerFactory(): DemuxerFactory {
  */
 function createRealisticDecoderFactory(): {
   factory: VideoDecoderFactory
-  flushAll: () => Promise<void>
 } {
-  let pending: { resolve: () => void }[] = []
   let outputCb: ((f: VideoFrame) => void) | null = null
   const queue: number[] = [] // timestamps awaiting output
 
@@ -151,16 +149,13 @@ function createRealisticDecoderFactory(): {
       displayWidth: 1920,
       displayHeight: 1080,
       close: vi.fn(),
-      clone: vi.fn(function (this: VideoFrame) { return makeFrame(this.timestamp) }),
+      clone: vi.fn(function (this: VideoFrame) {
+        return makeFrame(this.timestamp)
+      }),
     } as unknown as VideoFrame
   }
 
-  return {
-    factory,
-    async flushAll() {
-      pending = []
-    },
-  }
+  return { factory }
 }
 
 async function flushMicrotasks(times = 10): Promise<void> {

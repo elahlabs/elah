@@ -13,7 +13,15 @@ const toc = [
   { id: 'types', title: 'Types', level: 2 },
 ]
 
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+function Section({
+  id,
+  title,
+  children,
+}: {
+  id: string
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <section className="mb-12">
       <h2
@@ -28,7 +36,12 @@ function Section({ id, title, children }: { id: string; title: string; children:
   )
 }
 
-function ApiEntry({ name, signature, description, params }: {
+function ApiEntry({
+  name,
+  signature,
+  description,
+  params,
+}: {
   name: string
   signature: string
   description: string
@@ -65,19 +78,29 @@ export default function ApiPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Reference</div>
-          <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+            Reference
+          </div>
+          <h1
+            className="text-3xl font-semibold tracking-tight text-on-surface"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             API Reference
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            Complete reference for TimelineEngine, PlaybackEngine, resolveTimeline, GpuRenderer, React hooks, and TypeScript types.
+            Complete reference for TimelineEngine, PlaybackEngine, resolveTimeline, GpuRenderer,
+            React hooks, and TypeScript types.
           </p>
         </div>
 
         {/* TimelineEngine */}
         <Section id="timeline-engine" title="TimelineEngine">
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The single mutation funnel. All edits go through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. Backed by Immer for structural sharing; every commit produces a new Project snapshot.
+            The single mutation funnel. All edits go through{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              TimelineEngine
+            </code>
+            . Backed by Immer for structural sharing; every commit produces a new Project snapshot.
           </p>
 
           <ApiEntry
@@ -87,10 +110,22 @@ export default function ApiPage() {
             params={[
               { name: 'trackId', type: 'string', desc: 'Target track ID' },
               { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image'" },
-              { name: 'startFrame', type: 'number', desc: 'Position on the timeline (integer frames)' },
-              { name: 'durationFrames', type: 'number', desc: 'Length of the clip (integer frames)' },
+              {
+                name: 'startFrame',
+                type: 'number',
+                desc: 'Position on the timeline (integer frames)',
+              },
+              {
+                name: 'durationFrames',
+                type: 'number',
+                desc: 'Length of the clip (integer frames)',
+              },
               { name: 'src', type: 'string?', desc: 'URL or blob ref for video/audio/image clips' },
-              { name: 'text', type: 'TextClipData?', desc: 'Text content and styling for text clips' },
+              {
+                name: 'text',
+                type: 'TextClipData?',
+                desc: 'Text content and styling for text clips',
+              },
             ]}
           />
 
@@ -126,8 +161,16 @@ export default function ApiPage() {
               { name: 'fromClipId', type: 'string', desc: 'The outgoing clip' },
               { name: 'toClipId', type: 'string', desc: 'The incoming clip' },
               { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe'" },
-              { name: 'durationFrames', type: 'number', desc: 'How many frames the transition spans' },
-              { name: 'easing', type: 'TransitionEasing?', desc: "'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'" },
+              {
+                name: 'durationFrames',
+                type: 'number',
+                desc: 'How many frames the transition spans',
+              },
+              {
+                name: 'easing',
+                type: 'TransitionEasing?',
+                desc: "'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'",
+              },
             ]}
           />
 
@@ -159,7 +202,15 @@ export default function ApiPage() {
         {/* PlaybackEngine */}
         <Section id="playback-engine" title="PlaybackEngine">
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            Owns the RAF clock. Emits <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React consumes it via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>.
+            Owns the RAF clock. Emits{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              (frame, isPlaying)
+            </code>{' '}
+            snapshots. React consumes it via{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              usePlaybackStore
+            </code>
+            .
           </p>
           <CodeBlock
             language="typescript"
@@ -182,7 +233,15 @@ const unsub = engine.subscribe((snapshot) => {
         {/* resolveTimeline */}
         <Section id="resolve-timeline" title="resolveTimeline()">
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The pure, deterministic resolver. Consumes a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> and frame index; produces a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code>. No side effects, no imports, safe to call in tests, workers, and export pipelines.
+            The pure, deterministic resolver. Consumes a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Project
+            </code>{' '}
+            and frame index; produces a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Scene
+            </code>
+            . No side effects, no imports, safe to call in tests, workers, and export pipelines.
           </p>
           <CodeBlock
             language="typescript"
@@ -214,7 +273,15 @@ interface ActiveVideoClip extends ActiveClipBase {
         {/* GpuRenderer */}
         <Section id="gpu-renderer" title="GpuRenderer">
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The shipped WebGL2 renderer. Accepts a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> and draws sorted textured quads. Can be replaced with any <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Renderer</code>-conforming implementation.
+            The shipped WebGL2 renderer. Accepts a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Scene
+            </code>{' '}
+            and draws sorted textured quads. Can be replaced with any{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Renderer
+            </code>
+            -conforming implementation.
           </p>
           <CodeBlock
             language="typescript"
@@ -278,7 +345,10 @@ renderer.destroy()     // cleanup on unmount`}
                 desc: 'Access the media library. Returns { assets, addAsset, removeAsset }.',
               },
             ].map(({ hook, returns, desc }) => (
-              <div key={hook} className="rounded-md border border-outline-variant bg-surface-low p-4">
+              <div
+                key={hook}
+                className="rounded-md border border-outline-variant bg-surface-low p-4"
+              >
                 <div className="mb-1.5 flex items-start gap-3">
                   <code className="font-mono text-sm font-medium text-on-surface">{hook}</code>
                   <span className="mt-0.5 rounded bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface-variant">

@@ -3,34 +3,34 @@
 
 .pg-shell {
   /* ── Surface hierarchy (tonal layers, no shadows) ── */
-  --pg-bg:               #06070A; /* deepest background — matches theme.bgPrimary */
-  --pg-bg-secondary:     #0D1017; /* shell chrome — theme.bgSecondary */
-  --pg-bg-panel:         #121722; /* sidebars, panels — theme.bgPanel */
-  --pg-bg-container:     #151A26; /* cards, sections */
-  --pg-bg-elevated:      #171D2B; /* modals, menus, hover — theme.bgElevated */
-  --pg-bg-highest:       #232938; /* scrollbar, chips — theme.border */
+  --pg-bg: #06070a; /* deepest background — matches theme.bgPrimary */
+  --pg-bg-secondary: #0d1017; /* shell chrome — theme.bgSecondary */
+  --pg-bg-panel: #121722; /* sidebars, panels — theme.bgPanel */
+  --pg-bg-container: #151a26; /* cards, sections */
+  --pg-bg-elevated: #171d2b; /* modals, menus, hover — theme.bgElevated */
+  --pg-bg-highest: #232938; /* scrollbar, chips — theme.border */
 
   /* ── Borders / outlines ── */
-  --pg-border:           #232938; /* component edges — theme.border */
-  --pg-border-subtle:    #1A1F2B; /* hairline — theme.borderSubtle */
-  --pg-outline:          #3A4256; /* focused / interactive edges */
+  --pg-border: #232938; /* component edges — theme.border */
+  --pg-border-subtle: #1a1f2b; /* hairline — theme.borderSubtle */
+  --pg-outline: #3a4256; /* focused / interactive edges */
 
   /* ── Text ── */
-  --pg-text:             #F3F4F6; /* theme.textPrimary */
-  --pg-text-secondary:   #A7AFBF; /* theme.textSecondary */
-  --pg-text-muted:       #6B7280; /* theme.textMuted */
+  --pg-text: #f3f4f6; /* theme.textPrimary */
+  --pg-text-secondary: #a7afbf; /* theme.textSecondary */
+  --pg-text-muted: #6b7280; /* theme.textMuted */
 
   /* ── Accent — Rose signal ── */
-  --pg-accent:           #E11D48; /* theme.accent — button fill, active state */
-  --pg-accent-hover:     #FB7185; /* theme.accentHover — hover lift */
-  --pg-accent-text:      #FFFFFF; /* text on accent fill */
-  --pg-accent-dim:       #FB7185; /* highlight, underlines, focus rings */
-  --pg-accent-glow:      rgba(225, 29, 72, 0.35);
-  --pg-accent-soft:      rgba(225, 29, 72, 0.12);
+  --pg-accent: #e11d48; /* theme.accent — button fill, active state */
+  --pg-accent-hover: #fb7185; /* theme.accentHover — hover lift */
+  --pg-accent-text: #ffffff; /* text on accent fill */
+  --pg-accent-dim: #fb7185; /* highlight, underlines, focus rings */
+  --pg-accent-glow: rgba(225, 29, 72, 0.35);
+  --pg-accent-soft: rgba(225, 29, 72, 0.12);
 
   /* ── Typography ── */
-  --pg-font-ui:    'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --pg-font-mono:  'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
+  --pg-font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --pg-font-mono: 'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
 
   display: flex;
   flex-direction: column;
@@ -69,7 +69,9 @@
   letter-spacing: 0.04em;
   color: var(--pg-text-muted);
   text-decoration: none;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -146,7 +148,9 @@
   letter-spacing: 0.01em;
   color: var(--pg-text-muted);
   text-decoration: none;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
 }
 
 .pg-nav-tab:hover {
@@ -171,7 +175,9 @@
   font-size: 12px;
   color: var(--pg-text-muted);
   text-decoration: none;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
 }
 
 .pg-nav-link:hover {

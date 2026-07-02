@@ -56,7 +56,8 @@ export function HeroSection() {
           `,
           backgroundSize: '48px 48px',
           maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)',
         }}
       />
 
@@ -89,9 +90,9 @@ export function HeroSection() {
             className="mt-5 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg"
             style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
           >
-            elah provides the timeline, rendering, and editing foundation for
-            professional creative applications built entirely on the web. Engine-first,
-            renderer-agnostic, scalable from prototype to production.
+            elah provides the timeline, rendering, and editing foundation for professional creative
+            applications built entirely on the web. Engine-first, renderer-agnostic, scalable from
+            prototype to production.
           </motion.p>
 
           {/* Framework support */}
@@ -151,7 +152,9 @@ export function HeroSection() {
               { label: 'Audio', value: 'Web Audio API' },
             ].map((stat) => (
               <div key={stat.label}>
-                <div className="label-mono text-2xs text-on-surface-variant opacity-60">{stat.label}</div>
+                <div className="label-mono text-2xs text-on-surface-variant opacity-60">
+                  {stat.label}
+                </div>
                 <div className="mt-0.5 font-mono text-xs text-on-surface">{stat.value}</div>
               </div>
             ))}
@@ -197,7 +200,13 @@ function EditorMockup() {
             >
               <div
                 className={`h-1.5 w-1.5 rounded-full ${
-                  i === 0 ? 'bg-blue-400' : i === 1 ? 'bg-green-400' : i === 2 ? 'bg-purple-400' : 'bg-yellow-400'
+                  i === 0
+                    ? 'bg-blue-400'
+                    : i === 1
+                      ? 'bg-green-400'
+                      : i === 2
+                        ? 'bg-purple-400'
+                        : 'bg-yellow-400'
                 }`}
               />
               {file}
@@ -216,7 +225,9 @@ function EditorMockup() {
             </div>
           </div>
           {/* Timecode */}
-          <div className="absolute bottom-3 right-4 font-mono text-xs text-white/30">00:00:02:15</div>
+          <div className="absolute bottom-3 right-4 font-mono text-xs text-white/30">
+            00:00:02:15
+          </div>
         </div>
       </div>
 
@@ -232,9 +243,23 @@ function EditorMockup() {
         </div>
         {/* Tracks */}
         {[
-          { label: 'VIDEO', color: '#1a5f38', clips: [{ start: 0, width: 25 }, { start: 30, width: 35 }] },
+          {
+            label: 'VIDEO',
+            color: '#1a5f38',
+            clips: [
+              { start: 0, width: 25 },
+              { start: 30, width: 35 },
+            ],
+          },
           { label: 'AUDIO', color: '#4a3f2f', clips: [{ start: 5, width: 60 }] },
-          { label: 'TEXT', color: '#3a2a4a', clips: [{ start: 10, width: 15 }, { start: 50, width: 20 }] },
+          {
+            label: 'TEXT',
+            color: '#3a2a4a',
+            clips: [
+              { start: 10, width: 15 },
+              { start: 50, width: 20 },
+            ],
+          },
         ].map((track) => (
           <div key={track.label} className="mb-1 flex items-center gap-2">
             <div className="label-mono w-10 text-right text-2xs text-white/30">{track.label}</div>
@@ -252,10 +277,7 @@ function EditorMockup() {
                 />
               ))}
               {/* Playhead */}
-              <div
-                className="absolute inset-y-0 w-px bg-red-500/80"
-                style={{ left: '20%' }}
-              />
+              <div className="absolute inset-y-0 w-px bg-red-500/80" style={{ left: '20%' }} />
             </div>
           </div>
         ))}

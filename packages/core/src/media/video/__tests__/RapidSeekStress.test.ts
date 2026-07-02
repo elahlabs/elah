@@ -42,7 +42,7 @@ describe('RapidSeekStress', () => {
 
     // Run 100 rapid discontinuous seek cycles
     for (let cycle = 0; cycle < 100; cycle++) {
-      const baseFrame = (cycle * 7) % 60  // jump around to trigger discontinuities
+      const baseFrame = (cycle * 7) % 60 // jump around to trigger discontinuities
       producer.setPlayhead(baseFrame)
 
       // Let microtasks drain occasionally
@@ -97,8 +97,12 @@ describe('RapidSeekStress', () => {
       demuxerFactory: () => demuxerBackend,
       decoderFactory: createMockDecoder().factory,
       cacheHooks: {
-        onPut: () => { framePuts++ },
-        onEvict: () => { frameEvictions++ },
+        onPut: () => {
+          framePuts++
+        },
+        onEvict: () => {
+          frameEvictions++
+        },
       },
     })
 

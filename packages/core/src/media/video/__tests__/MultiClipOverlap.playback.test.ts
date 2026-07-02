@@ -48,7 +48,7 @@ describe('MultiClipOverlap', () => {
     producer.setPlayhead(0)
     producer.setPlayhead(0) // duplicate: feed-watermark deduplication prevents double feed
 
-    await new Promise(r => setTimeout(r, 30))
+    await new Promise((r) => setTimeout(r, 30))
 
     // Cache should have frame(s) but not have double-decoded
     expect(producer.cacheSize).toBeGreaterThanOrEqual(0)
@@ -77,7 +77,7 @@ describe('MultiClipOverlap', () => {
     producerA.setPlayhead(0)
     producerB.setPlayhead(0)
 
-    await new Promise(r => setTimeout(r, 30))
+    await new Promise((r) => setTimeout(r, 30))
 
     // Each producer is independent — A's frames are not in B's cache and vice versa
     expect(producerA.state).not.toBe('disposed')
@@ -109,16 +109,20 @@ describe('MultiClipOverlap', () => {
 
     // Trigger initial open-time discontinuity reset
     producer.setPlayhead(0)
-    await new Promise(r => setTimeout(r, 30))
+    await new Promise((r) => setTimeout(r, 30))
 
     // Advance contiguously — each call within the lookahead window should not seek
-    const seekCountBefore = (demuxerBackend.seekToKeyframe as ReturnType<typeof import('vitest').vi.fn>).mock.calls.length
+    const seekCountBefore = (
+      demuxerBackend.seekToKeyframe as ReturnType<typeof import('vitest').vi.fn>
+    ).mock.calls.length
     for (let f = 1; f <= 5; f++) {
       producer.setPlayhead(f)
     }
-    await new Promise(r => setTimeout(r, 20))
+    await new Promise((r) => setTimeout(r, 20))
 
-    const seekCountAfter = (demuxerBackend.seekToKeyframe as ReturnType<typeof import('vitest').vi.fn>).mock.calls.length
+    const seekCountAfter = (
+      demuxerBackend.seekToKeyframe as ReturnType<typeof import('vitest').vi.fn>
+    ).mock.calls.length
     // No extra seeks on contiguous frames
     expect(seekCountAfter).toBe(seekCountBefore)
 

@@ -6,10 +6,10 @@ not composite or paint.
 
 ## Subfolders
 
-| Folder | Role | Status |
-|---|---|---|
+| Folder               | Role                                                                                                                                | Status     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | [`video/`](./video/) | WebCodecs-backed video decode: push-based `StreamingFrameProducer`, `VideoDecoderManager`, `FrameCache`, mediabunny demuxer adapter | ✅ Working |
-| `audio/` | `AudioPlaybackController` — multi-track Web Audio with per-track gain/analyser graph, mixer hooks | ✅ Working |
+| `audio/`             | `AudioPlaybackController` — multi-track Web Audio with per-track gain/analyser graph, mixer hooks                                   | ✅ Working |
 
 > **Text and image are not media producers.** They need no decode, so they are
 > rendered directly by `TextLayer` / `ImageLayer` in `core/renderer/gpu/layers/`.

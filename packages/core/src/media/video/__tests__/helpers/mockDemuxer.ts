@@ -11,9 +11,7 @@ export interface MockDemuxerOptions {
   chunks?: EncodedVideoChunk[]
 }
 
-export function createMockDemuxerBackend(
-  options: MockDemuxerOptions = {},
-): DemuxerBackend {
+export function createMockDemuxerBackend(options: MockDemuxerOptions = {}): DemuxerBackend {
   const config: VideoDecoderConfig = options.config ?? {
     codec: 'vp8',
     codedWidth: 640,
@@ -119,6 +117,8 @@ export function createMockVideoFrame(timestamp: number): VideoFrame {
     displayWidth: 640,
     displayHeight: 360,
     close: vi.fn(),
-    clone: vi.fn(function (this: VideoFrame) { return createMockVideoFrame(this.timestamp) }),
+    clone: vi.fn(function (this: VideoFrame) {
+      return createMockVideoFrame(this.timestamp)
+    }),
   } as unknown as VideoFrame
 }

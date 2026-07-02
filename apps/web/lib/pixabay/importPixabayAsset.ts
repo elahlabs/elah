@@ -31,10 +31,15 @@ function longEdge(width: number | null | undefined, height: number | null | unde
  * falling back to `large` if none clears it.
  */
 function pickVideoFile(video: PixabayVideo): PixabayVideoFile {
-  const tiers = [video.videos.tiny, video.videos.small, video.videos.medium, video.videos.large].filter(
-    (f) => f && f.url,
+  const tiers = [
+    video.videos.tiny,
+    video.videos.small,
+    video.videos.medium,
+    video.videos.large,
+  ].filter((f) => f && f.url)
+  const sorted = [...tiers].sort(
+    (a, b) => longEdge(a.width, a.height) - longEdge(b.width, b.height),
   )
-  const sorted = [...tiers].sort((a, b) => longEdge(a.width, a.height) - longEdge(b.width, b.height))
   return sorted.find((f) => longEdge(f.width, f.height) >= TARGET_LONG_EDGE) ?? video.videos.large
 }
 
@@ -57,17 +62,28 @@ function findExisting(src: string): MediaAsset | undefined {
  * image the renderer actually loads, shrinking it to a fraction of the frame.
  */
 function pickPhotoSrc(photo: PixabayPhoto): { src: string; width: number; height: number } {
-  const webformat = { src: photo.webformatURL, width: photo.webformatWidth, height: photo.webformatHeight }
+  const webformat = {
+    src: photo.webformatURL,
+    width: photo.webformatWidth,
+    height: photo.webformatHeight,
+  }
   // Guaranteed non-zero on every Pixabay photo hit — last-resort fallback so a
   // clip never ends up with a falsy width/height and silently loses its cover
   // transform (see loadRandomPixabay, which relies on this being always valid).
-  const preview = { src: photo.webformatURL, width: photo.previewWidth, height: photo.previewHeight }
+  const preview = {
+    src: photo.webformatURL,
+    width: photo.previewWidth,
+    height: photo.previewHeight,
+  }
 
   if (longEdge(photo.imageWidth, photo.imageHeight) < TARGET_LONG_EDGE) {
     return webformat.width && webformat.height ? webformat : preview
   }
   if (photo.largeImageURL) {
-    const scale = Math.min(1, PIXABAY_LARGE_LONG_EDGE / longEdge(photo.imageWidth, photo.imageHeight))
+    const scale = Math.min(
+      1,
+      PIXABAY_LARGE_LONG_EDGE / longEdge(photo.imageWidth, photo.imageHeight),
+    )
     const width = Math.round(photo.imageWidth * scale)
     const height = Math.round(photo.imageHeight * scale)
     if (width && height) return { src: photo.largeImageURL, width, height }

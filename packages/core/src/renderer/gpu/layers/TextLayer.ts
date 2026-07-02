@@ -65,11 +65,7 @@ function buildTextTransformMatrix(
   const tyy = 2 * (py - b * wOverH * px - a * py) - 1
 
   // Column-major: column 0 → clip.x/clip.y coeffs for u, column 1 → for v.
-  return new Float32Array([
-    2 * a, 2 * b * wOverH, 0,
-    -2 * b * hOverW, 2 * a, 0,
-    txx, tyy, 1,
-  ])
+  return new Float32Array([2 * a, 2 * b * wOverH, 0, -2 * b * hOverW, 2 * a, 0, txx, tyy, 1])
 }
 
 /** Factory for the offscreen paint canvas; injectable so tests can mock the DOM. */

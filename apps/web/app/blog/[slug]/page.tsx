@@ -34,9 +34,11 @@ export async function generateMetadata({
 
 // Renders inline `code` spans inside a paragraph string by splitting on backticks.
 function renderInline(text: string) {
-  return text.split('`').map((segment, i) =>
-    i % 2 === 1 ? <InlineCode key={i}>{segment}</InlineCode> : <span key={i}>{segment}</span>
-  )
+  return text
+    .split('`')
+    .map((segment, i) =>
+      i % 2 === 1 ? <InlineCode key={i}>{segment}</InlineCode> : <span key={i}>{segment}</span>,
+    )
 }
 
 function renderBlock(block: Block, i: number) {
@@ -72,7 +74,9 @@ function renderBlock(block: Block, i: number) {
               {block.title}
             </div>
           )}
-          <p className="text-xs leading-relaxed text-on-surface-variant">{renderInline(block.text)}</p>
+          <p className="text-xs leading-relaxed text-on-surface-variant">
+            {renderInline(block.text)}
+          </p>
         </div>
       )
     case 'quote':
@@ -97,11 +101,7 @@ function renderBlock(block: Block, i: number) {
   }
 }
 
-export default async function BlogPostPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const post = getPost(slug)
   if (!post) notFound()

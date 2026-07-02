@@ -44,9 +44,9 @@ async function renderAudioMix(
   if (totalFrames === 0) return null
 
   const allClips = Object.values(project.clips).flat()
-  const audioClips = allClips.filter(c => {
+  const audioClips = allClips.filter((c) => {
     if (c.type !== 'audio' || !c.src || c.disabled) return false
-    const track = project.tracks.find(t => t.id === c.trackId)
+    const track = project.tracks.find((t) => t.id === c.trackId)
     return track && !track.muted && !track.disabled
   })
   if (audioClips.length === 0) {
@@ -57,7 +57,8 @@ async function renderAudioMix(
   const OAC: typeof OfflineAudioContext | undefined =
     typeof OfflineAudioContext !== 'undefined'
       ? OfflineAudioContext
-      : (globalThis as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext
+      : (globalThis as { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+          .webkitOfflineAudioContext
   if (!OAC) {
     console.warn('[export:main] OfflineAudioContext unavailable — audio will be skipped')
     onAudioIssue?.('OfflineAudioContext unavailable — audio will be skipped', undefined)
@@ -66,7 +67,10 @@ async function renderAudioMix(
 
   const sampleRate = 44100
   const totalSec = totalFrames / fps
-  mlog('EXPORT_AUDIO', `mixing ${audioClips.length} audio clip(s) — ${totalSec.toFixed(2)}s @ ${sampleRate}Hz`)
+  mlog(
+    'EXPORT_AUDIO',
+    `mixing ${audioClips.length} audio clip(s) — ${totalSec.toFixed(2)}s @ ${sampleRate}Hz`,
+  )
   const ctx = new OAC(2, Math.ceil(sampleRate * totalSec), sampleRate)
 
   // Fetch+decode once per unique src (mirrors the video export worker's
@@ -85,7 +89,10 @@ async function renderAudioMix(
   for (let i = 0; i < audioClips.length; i++) {
     const clip = audioClips[i]
     try {
-      mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] fetching+decoding "${clip.src?.slice(-40)}"`)
+      mlog(
+        'EXPORT_AUDIO',
+        `[${i + 1}/${audioClips.length}] fetching+decoding "${clip.src?.slice(-40)}"`,
+      )
       const fetchStart = performance.now()
       const decoded = await decodeOnce(clip.src!)
       const node = ctx.createBufferSource()
@@ -94,13 +101,16 @@ async function renderAudioMix(
       gain.gain.value = clip.volume ?? 1
       node.connect(gain).connect(ctx.destination)
       node.start(clip.startFrame / fps, clip.sourceStartFrame / fps, clip.durationFrames / fps)
-      mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] scheduled — ` +
-        `startSec=${(clip.startFrame / fps).toFixed(3)} ` +
-        `offsetSec=${(clip.sourceStartFrame / fps).toFixed(3)} ` +
-        `durSec=${(clip.durationFrames / fps).toFixed(3)} ` +
-        `vol=${clip.volume ?? 1} ` +
-        `decodedSec=${decoded.duration.toFixed(3)} ` +
-        `ms=${(performance.now() - fetchStart).toFixed(1)}`)
+      mlog(
+        'EXPORT_AUDIO',
+        `[${i + 1}/${audioClips.length}] scheduled — ` +
+          `startSec=${(clip.startFrame / fps).toFixed(3)} ` +
+          `offsetSec=${(clip.sourceStartFrame / fps).toFixed(3)} ` +
+          `durSec=${(clip.durationFrames / fps).toFixed(3)} ` +
+          `vol=${clip.volume ?? 1} ` +
+          `decodedSec=${decoded.duration.toFixed(3)} ` +
+          `ms=${(performance.now() - fetchStart).toFixed(1)}`,
+      )
     } catch (err) {
       const message = `audio clip "${clip.src?.slice(-40)}" skipped — decode error: ${String(err)}`
       mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] skipped — decode error: ${String(err)}`)
@@ -145,7 +155,9 @@ async function renderAudioMix(
 export async function exportVideo(project: Project, options: ExportOptions = {}): Promise<Blob> {
   if (exportInFlight) {
     mlog('EXPORT', 'rejected — an export is already in flight (GPU guard)')
-    throw new Error('An export is already in progress. Wait for it to finish before starting another.')
+    throw new Error(
+      'An export is already in progress. Wait for it to finish before starting another.',
+    )
   }
   exportInFlight = true
   try {
@@ -158,19 +170,24 @@ export async function exportVideo(project: Project, options: ExportOptions = {})
 async function runExportVideo(project: Project, options: ExportOptions): Promise<Blob> {
   const t0 = performance.now()
   const totalClips = Object.values(project.clips).flat().length
-  mlog('EXPORT', `exportVideo() called — stage=${project.stage.width}x${project.stage.height} fps=${project.fps} clips=${totalClips}`)
+  mlog(
+    'EXPORT',
+    `exportVideo() called — stage=${project.stage.width}x${project.stage.height} fps=${project.fps} clips=${totalClips}`,
+  )
 
-  const audio = await renderAudioMix(project, options.audioResolver ?? defaultAudioResolver, options.onAudioIssue)
+  const audio = await renderAudioMix(
+    project,
+    options.audioResolver ?? defaultAudioResolver,
+    options.onAudioIssue,
+  )
 
   const { signal } = options
-  if (signal?.aborted) return Promise.reject(signal.reason ?? new DOMException('Export aborted', 'AbortError'))
+  if (signal?.aborted)
+    return Promise.reject(signal.reason ?? new DOMException('Export aborted', 'AbortError'))
 
   return new Promise((resolve, reject) => {
     mlog('EXPORT', 'spawning ExportWorker (module worker)')
-    const worker = new Worker(
-      new URL('./ExportWorker.ts', import.meta.url),
-      { type: 'module' },
-    )
+    const worker = new Worker(new URL('./ExportWorker.ts', import.meta.url), { type: 'module' })
 
     const abort = () => {
       worker.terminate()
@@ -217,7 +234,13 @@ async function runExportVideo(project: Project, options: ExportOptions): Promise
       {
         type: 'start',
         project,
-        options: { ...options, onProgress: undefined, signal: undefined, audioResolver: undefined, onAudioIssue: undefined },
+        options: {
+          ...options,
+          onProgress: undefined,
+          signal: undefined,
+          audioResolver: undefined,
+          onAudioIssue: undefined,
+        },
         audio,
         // Forward the main thread's enabled channels so the Worker's tracer
         // mirrors them — it can't read `__trace`/localStorage on its own.

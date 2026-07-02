@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  TimelineEngine,
-  useMediaLibraryStore,
-  usePlaybackStore,
-  type MediaAsset,
-} from '@elah/core'
+import { TimelineEngine, useMediaLibraryStore, usePlaybackStore, type MediaAsset } from '@elah/core'
 import { useAudioDropDialogStore } from './audioDropDialog.store'
 import { insertElement, insertMediaAsset } from './insertAsset'
 
@@ -107,11 +102,13 @@ describe('insertMediaAsset', () => {
     const result = await insertMediaAsset(engine, 'asset-image', { desiredStartFrame: 15 })
 
     expect(result).toMatchObject({ ok: true, kind: 'image' })
-    expect(engine.getClipsOnTrack(videoTrack.id).map((clip) => ({
-      type: clip.type,
-      startFrame: clip.startFrame,
-      durationFrames: clip.durationFrames,
-    }))).toEqual([
+    expect(
+      engine.getClipsOnTrack(videoTrack.id).map((clip) => ({
+        type: clip.type,
+        startFrame: clip.startFrame,
+        durationFrames: clip.durationFrames,
+      })),
+    ).toEqual([
       { type: 'video', startFrame: 10, durationFrames: 20 },
       { type: 'image', startFrame: 30, durationFrames: 30 },
     ])

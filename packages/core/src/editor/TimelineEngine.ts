@@ -44,9 +44,7 @@ function buildEmptyProject(
   defaultTrackHeight: number,
 ): Project {
   const specs: InitialTrackConfig[] =
-    initialTracks && initialTracks.length > 0
-      ? initialTracks
-      : [{ kind: 'video', name: 'Track 1' }]
+    initialTracks && initialTracks.length > 0 ? initialTracks : [{ kind: 'video', name: 'Track 1' }]
 
   const tracks = specs.map((spec, order) =>
     createTrack({
@@ -215,13 +213,10 @@ export class TimelineEngine {
       ...options,
     })
 
-    this.commit(
-      (draft) => {
-        draft.tracks.push(track as Draft<Track>)
-        draft.clips[track.id] = []
-      },
-      `Add ${kind} track`,
-    )
+    this.commit((draft) => {
+      draft.tracks.push(track as Draft<Track>)
+      draft.clips[track.id] = []
+    }, `Add ${kind} track`)
 
     this.emit('track:added', track)
     return track
@@ -229,19 +224,13 @@ export class TimelineEngine {
 
   /** Removes the track's clips with it, all in a single undo entry. */
   removeTrack(trackId: string): void {
-    this.commit(
-      (draft) => removeTrack(draft, trackId),
-      `Remove track`,
-    )
+    this.commit((draft) => removeTrack(draft, trackId), `Remove track`)
     this.emit('track:removed', trackId)
   }
 
   /** Shallow-merges partial updates; for order changes prefer reorderTracks, which keeps all indices consistent. */
   updateTrack(trackId: string, updates: Partial<Track>): void {
-    this.commit(
-      (draft) => updateTrack(draft, trackId, updates),
-      `Update track`,
-    )
+    this.commit((draft) => updateTrack(draft, trackId, updates), `Update track`)
   }
 
   /** Expects the complete id list — tracks omitted from it keep stale order values. */
@@ -275,10 +264,7 @@ export class TimelineEngine {
   addClip(options: CreateClipOptions): Clip {
     const clip = createClip(options)
 
-    this.commit(
-      (draft) => addClip(draft, clip),
-      `Add ${clip.type} clip`,
-    )
+    this.commit((draft) => addClip(draft, clip), `Add ${clip.type} clip`)
 
     this.emit('clip:added', clip)
     return clip
@@ -287,19 +273,13 @@ export class TimelineEngine {
   /** Transitions referencing the removed clip are pruned in the same undo entry. */
   removeClip(clipId: string, trackId: string): void {
     if (this.isTrackLocked(trackId)) return
-    this.commit(
-      (draft) => removeClip(draft, clipId, trackId),
-      `Remove clip`,
-    )
+    this.commit((draft) => removeClip(draft, clipId, trackId), `Remove clip`)
     this.emit('clip:removed', { clipId, trackId })
   }
 
   /** Positional changes are validated against neighbouring clips and re-sort the track; undoable — use previewClip during gestures. */
   updateClip(clipId: string, trackId: string, updates: Partial<Clip>): void {
-    this.commit(
-      (draft) => updateClip(draft, clipId, trackId, updates),
-      `Update clip`,
-    )
+    this.commit((draft) => updateClip(draft, clipId, trackId, updates), `Update clip`)
 
     const clip = this.findClip(clipId)?.clip
     if (clip) this.emit('clip:updated', clip)
@@ -317,9 +297,7 @@ export class TimelineEngine {
   previewClip(clipId: string, trackId: string, updates: Partial<Clip>): void {
     if (this.interactionPrev === null) this.interactionPrev = this.project
 
-    const next = produce(this.project, (draft) =>
-      updateClip(draft, clipId, trackId, updates),
-    )
+    const next = produce(this.project, (draft) => updateClip(draft, clipId, trackId, updates))
     if (next === this.project) return
 
     this.project = next
@@ -372,12 +350,7 @@ export class TimelineEngine {
    * Rejects silently (no history entry, no event) when the destination range
    * overlaps an existing clip on the target track.
    */
-  moveClip(
-    clipId: string,
-    fromTrackId: string,
-    toTrackId: string,
-    startFrame: number,
-  ): void {
+  moveClip(clipId: string, fromTrackId: string, toTrackId: string, startFrame: number): void {
     // A locked source or destination track rejects the move.
     if (this.isTrackLocked(fromTrackId) || this.isTrackLocked(toTrackId)) return
 
@@ -426,19 +399,15 @@ export class TimelineEngine {
    * would overlap an existing clip on the same track, or when a left-extend
    * would reach beyond the source's available frames.
    */
-  trimClip(
-    clipId: string,
-    trackId: string,
-    startFrame: number,
-    durationFrames: number,
-  ): void {
+  trimClip(clipId: string, trackId: string, startFrame: number, durationFrames: number): void {
     if (this.isTrackLocked(trackId)) return
     // Read from the current project snapshot so we can validate before committing.
     const trackClips = this.project.clips[trackId]
     const existing = trackClips?.find((c) => c.id === clipId)
     if (!existing) return
 
-    const isUnlimited = existing.type === 'text' || existing.type === 'shape' || existing.type === 'freehand'
+    const isUnlimited =
+      existing.type === 'text' || existing.type === 'shape' || existing.type === 'freehand'
 
     const maxDuration = isUnlimited ? Infinity : existing.sourceDurationFrames
     const clampedDuration = Math.min(maxDuration, Math.max(1, toFrame(durationFrames)))
@@ -474,11 +443,7 @@ export class TimelineEngine {
   }
 
   /** The left half keeps the original clip id; returns null when atFrame isn't strictly inside the clip. */
-  splitClip(
-    clipId: string,
-    trackId: string,
-    atFrame: number,
-  ): [string, string] | null {
+  splitClip(clipId: string, trackId: string, atFrame: number): [string, string] | null {
     if (this.isTrackLocked(trackId)) return null
 
     let result: [string, string] | null = null
@@ -500,11 +465,7 @@ export class TimelineEngine {
   }
 
   /** Copies onto the same track at startFrame; returns null instead of throwing when the spot is occupied. */
-  cloneClip(
-    clipId: string,
-    trackId: string,
-    startFrame: number,
-  ): string | null {
+  cloneClip(clipId: string, trackId: string, startFrame: number): string | null {
     if (this.isTrackLocked(trackId)) return null
 
     let newId: string | null = null
@@ -536,12 +497,8 @@ export class TimelineEngine {
     /** Shift the transition center from the cut point. Negative = more frames from fromClip. */
     offsetFrames?: number
   }): Transition | null {
-    const fromClip = this.project.clips[options.trackId]?.find(
-      (c) => c.id === options.fromClipId,
-    )
-    const toClip = this.project.clips[options.trackId]?.find(
-      (c) => c.id === options.toClipId,
-    )
+    const fromClip = this.project.clips[options.trackId]?.find((c) => c.id === options.fromClipId)
+    const toClip = this.project.clips[options.trackId]?.find((c) => c.id === options.toClipId)
     if (!fromClip || !toClip) return null
 
     const half = Math.max(1, Math.floor(options.durationFrames / 2))
@@ -598,7 +555,7 @@ export class TimelineEngine {
           .flat()
           .find((c) => c.id === t.toClipId)
         if (toClipEntry) {
-          const offset = patch.offsetFrames ?? (t.startFrame - (toClipEntry.startFrame - half))
+          const offset = patch.offsetFrames ?? t.startFrame - (toClipEntry.startFrame - half)
           t.startFrame = toClipEntry.startFrame - half + offset
         }
       }
@@ -749,10 +706,7 @@ export class TimelineEngine {
    * history push and 'change' / 'history:change' emits are deferred to the
    * outer batch.
    */
-  private commit(
-    recipe: (draft: Draft<Project>) => void,
-    description: string,
-  ): void {
+  private commit(recipe: (draft: Draft<Project>) => void, description: string): void {
     const prev = this.project
     const next = produce(prev, recipe)
 
@@ -780,10 +734,7 @@ export class TimelineEngine {
     })
   }
 
-  private emit<E extends EngineEvent>(
-    event: E,
-    payload: EngineEventPayload[E],
-  ): void {
+  private emit<E extends EngineEvent>(event: E, payload: EngineEventPayload[E]): void {
     this.listeners.get(event)?.forEach((fn) => fn(payload))
   }
 }

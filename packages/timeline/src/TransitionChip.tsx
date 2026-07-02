@@ -12,7 +12,7 @@ interface TransitionChipProps {
   fps: number
 }
 
-const HIT_W = 24   // invisible hover zone width
+const HIT_W = 24 // invisible hover zone width
 const DIAMOND = 16 // icon size
 
 /**
@@ -20,16 +20,20 @@ const DIAMOND = 16 // icon size
  * Always visible as a faint vertical rule — brightens + shows a diamond on hover.
  * When a transition exists the diamond is filled and the line is colored.
  */
-export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, zoom, trackHeight, fps }: TransitionChipProps) {
+export const TransitionChip = memo(function TransitionChip({
+  fromClip,
+  toClip,
+  zoom,
+  trackHeight,
+  fps,
+}: TransitionChipProps) {
   const engine = useTimeline()
   const [pickerPos, setPickerPos] = useState<{ x: number; y: number } | null>(null)
   const pickerOpen = pickerPos !== null
   const [hovered, setHovered] = useState(false)
 
   const transition: TransitionData | undefined = useTransitionsStore((s) =>
-    s.transitions.find(
-      (t) => t.fromClipId === fromClip.id && t.toClipId === toClip.id,
-    ),
+    s.transitions.find((t) => t.fromClipId === fromClip.id && t.toClipId === toClip.id),
   )
 
   const cutX = toClip.startFrame * zoom
@@ -127,7 +131,11 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
           {hasTransition ? (
             <svg width={DIAMOND} height={DIAMOND} viewBox="0 0 16 16">
               <rect
-                x={2} y={2} width={12} height={12} rx={2}
+                x={2}
+                y={2}
+                width={12}
+                height={12}
+                rx={2}
                 transform="rotate(45 8 8)"
                 fill={`var(--elah-transition-fill)`}
                 stroke={`var(--elah-transition-stroke)`}
@@ -137,14 +145,32 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
           ) : (
             <svg width={DIAMOND} height={DIAMOND} viewBox="0 0 16 16">
               <rect
-                x={3} y={3} width={10} height={10} rx={1.5}
+                x={3}
+                y={3}
+                width={10}
+                height={10}
+                rx={1.5}
                 transform="rotate(45 8 8)"
                 fill={`var(--elah-transition-add-fill)`}
                 stroke={`var(--elah-transition-add-stroke)`}
                 strokeWidth={1.5}
               />
-              <line x1="8" y1="5" x2="8" y2="11" stroke={`var(--elah-transition-add-stroke)`} strokeWidth={1.2} />
-              <line x1="5" y1="8" x2="11" y2="8" stroke={`var(--elah-transition-add-stroke)`} strokeWidth={1.2} />
+              <line
+                x1="8"
+                y1="5"
+                x2="8"
+                y2="11"
+                stroke={`var(--elah-transition-add-stroke)`}
+                strokeWidth={1.2}
+              />
+              <line
+                x1="5"
+                y1="8"
+                x2="11"
+                y2="8"
+                stroke={`var(--elah-transition-add-stroke)`}
+                strokeWidth={1.2}
+              />
             </svg>
           )}
         </div>

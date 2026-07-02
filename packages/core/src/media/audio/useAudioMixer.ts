@@ -13,9 +13,7 @@ export interface AudioMixerApi {
  * Pass `null` while the controller is not yet initialized — all methods become
  * no-ops until a controller is available.
  */
-export function useAudioMixer(
-  controller: AudioPlaybackController | null,
-): AudioMixerApi {
+export function useAudioMixer(controller: AudioPlaybackController | null): AudioMixerApi {
   const setMasterGain = useCallback(
     (value: number) => {
       controller?.setMasterGain(value)

@@ -138,9 +138,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
     const dropMediaAsset = (e: DragEvent, desiredStartFrame: number) => {
       let payload: DragMediaPayload
       try {
-        payload = JSON.parse(
-          e.dataTransfer!.getData(MEDIA_DRAG_MIME),
-        ) as DragMediaPayload
+        payload = JSON.parse(e.dataTransfer!.getData(MEDIA_DRAG_MIME)) as DragMediaPayload
       } catch {
         return
       }
@@ -155,9 +153,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
     const dropElement = (e: DragEvent, desiredStartFrame: number) => {
       let payload: DragElementPayload
       try {
-        payload = JSON.parse(
-          e.dataTransfer!.getData(ELEMENT_DRAG_MIME),
-        ) as DragElementPayload
+        payload = JSON.parse(e.dataTransfer!.getData(ELEMENT_DRAG_MIME)) as DragElementPayload
       } catch {
         return
       }
@@ -173,9 +169,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
       e.preventDefault()
       resetDragState()
 
-      const track = useTracksStore
-        .getState()
-        .tracks.find((t) => t.id === trackId)
+      const track = useTracksStore.getState().tracks.find((t) => t.id === trackId)
       if (!track) return
       if (track.locked) return // locked tracks reject new clips
 

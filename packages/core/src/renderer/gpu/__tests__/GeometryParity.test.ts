@@ -116,7 +116,10 @@ describe('GeometryParity — resolveDrawRect shared by both renderers', () => {
 
   it('explicit transform at stage centre, scale 1 → content fills stage', () => {
     const transform: Transform = {
-      x: 0.5, y: 0.5, scale: 1, rotation: 0,
+      x: 0.5,
+      y: 0.5,
+      scale: 1,
+      rotation: 0,
       anchor: { x: 0.5, y: 0.5 },
     }
     const rect = resolveDrawRect(transform, STAGE_W, STAGE_H, STAGE_W, STAGE_H)
@@ -128,7 +131,10 @@ describe('GeometryParity — resolveDrawRect shared by both renderers', () => {
 
   it('explicit transform at top-left corner → clip anchored at (0, 0)', () => {
     const transform: Transform = {
-      x: 0, y: 0, scale: 1, rotation: 0,
+      x: 0,
+      y: 0,
+      scale: 1,
+      rotation: 0,
       anchor: { x: 0, y: 0 },
     }
     const rect = resolveDrawRect(transform, STAGE_W, STAGE_H, 400, 300)
@@ -140,7 +146,10 @@ describe('GeometryParity — resolveDrawRect shared by both renderers', () => {
 
   it('scale 0.5 halves content dimensions', () => {
     const transform: Transform = {
-      x: 0.5, y: 0.5, scale: 0.5, rotation: 0,
+      x: 0.5,
+      y: 0.5,
+      scale: 0.5,
+      rotation: 0,
       anchor: { x: 0.5, y: 0.5 },
     }
     const rect = resolveDrawRect(transform, STAGE_W, STAGE_H, 1920, 1080)
@@ -170,7 +179,11 @@ describe('GeometryParity — GPU matrix centre == 2D canvas centre', () => {
 
   it('rotated clip — centre is the rotation pivot in both paths', () => {
     const t: Transform = {
-      x: 0.5, y: 0.5, scale: 0.8, rotation: Math.PI / 4, anchor: { x: 0.5, y: 0.5 },
+      x: 0.5,
+      y: 0.5,
+      scale: 0.8,
+      rotation: Math.PI / 4,
+      anchor: { x: 0.5, y: 0.5 },
     }
     assertCentresParity(t, 640, 360)
   })
@@ -185,7 +198,10 @@ describe('GeometryParity — rotation is identical in both paths', () => {
   it('both paths use rect.rotation (radians) about the same pixel centre', () => {
     const rotation = Math.PI / 6 // 30 degrees
     const t: Transform = {
-      x: 0.5, y: 0.5, scale: 0.5, rotation,
+      x: 0.5,
+      y: 0.5,
+      scale: 0.5,
+      rotation,
       anchor: { x: 0.5, y: 0.5 },
     }
     const rect = resolveDrawRect(t, STAGE_W, STAGE_H, 800, 450)
@@ -201,9 +217,9 @@ describe('GeometryParity — rotation is identical in both paths', () => {
     const hs = rect.height / STAGE_H
     const sc = Math.cos(rotation)
     const ss = Math.sin(rotation)
-    expect(matrix[0]).toBeCloseTo(2 * sc * ws, 7)  // top-left of matrix
-    expect(matrix[4]).toBeCloseTo(2 * sc * hs, 7)  // centre of matrix
-    expect(matrix[1]).toBeCloseTo(2 * ss * ws, 7)  // rotation term
+    expect(matrix[0]).toBeCloseTo(2 * sc * ws, 7) // top-left of matrix
+    expect(matrix[4]).toBeCloseTo(2 * sc * hs, 7) // centre of matrix
+    expect(matrix[1]).toBeCloseTo(2 * ss * ws, 7) // rotation term
     expect(matrix[3]).toBeCloseTo(-2 * ss * hs, 7) // rotation term
   })
 })

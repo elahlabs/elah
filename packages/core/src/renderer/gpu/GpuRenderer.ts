@@ -13,10 +13,7 @@
 
 import type { ActiveVideoClip, Scene } from '../../resolver/scene'
 import type { Renderer } from '../types'
-import {
-  GpuRendererDebugPanel,
-  type DebugPanelSnapshot,
-} from './debug/GpuRendererDebugPanel'
+import { GpuRendererDebugPanel, type DebugPanelSnapshot } from './debug/GpuRendererDebugPanel'
 import { GpuDebugCounters } from './debug/GpuDebugCounters'
 import { VideoLayer } from './layers/VideoLayer'
 import { FrameProbeLayer } from './layers/FrameProbeLayer'
@@ -89,8 +86,9 @@ export class GpuRenderer implements Renderer {
     // If a providerFactory override is set, use it directly (tests / headless).
     // Otherwise build deps from demuxerFactory/decoderFactory/maxOutstandingDecodes
     // so that VideoLayer creates DecoderBackedVideoFrameProvider for real decode.
-    const videoLayerArg = this._options.providerFactory
-      ?? (this._options.demuxerFactory
+    const videoLayerArg =
+      this._options.providerFactory ??
+      (this._options.demuxerFactory
         ? {
             demuxerFactory: this._options.demuxerFactory,
             decoderFactory: this._options.decoderFactory,
@@ -289,10 +287,7 @@ export class GpuRenderer implements Renderer {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private _buildLayerContext(
-    scene: Scene,
-    gl: WebGL2RenderingContext,
-  ): LayerContext {
+  private _buildLayerContext(scene: Scene, gl: WebGL2RenderingContext): LayerContext {
     return {
       gl,
       stage: scene.stage,
@@ -304,9 +299,7 @@ export class GpuRenderer implements Renderer {
   private _attachDebugPanel(): void {
     if (!this._debugEnabled || this._debugPanel || !this._container) return
 
-    this._debugPanel = new GpuRendererDebugPanel(this._container, () =>
-      this._buildDebugSnapshot(),
-    )
+    this._debugPanel = new GpuRendererDebugPanel(this._container, () => this._buildDebugSnapshot())
   }
 
   private _buildDebugSnapshot(): DebugPanelSnapshot {

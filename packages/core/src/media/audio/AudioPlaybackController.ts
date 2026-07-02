@@ -70,8 +70,7 @@ export class AudioPlaybackController {
   ) {
     this._playback = playback
     this._getProject = getProject
-    this._audioContextFactory =
-      options.audioContextFactory ?? (() => new AudioContext())
+    this._audioContextFactory = options.audioContextFactory ?? (() => new AudioContext())
     this._audioResolver = options.audioResolver ?? defaultAudioResolver
   }
 
@@ -233,7 +232,8 @@ export class AudioPlaybackController {
       // A clip already awaiting its buffer is left alone — _scheduleClip
       // recomputes the offset against the live playhead once the decode
       // resolves, so re-firing every tick would just churn tokens for nothing.
-      const needRestart = transportChanged || (!this._active.has(clip.id) && !this._pendingClips.has(clip.id))
+      const needRestart =
+        transportChanged || (!this._active.has(clip.id) && !this._pendingClips.has(clip.id))
       if (!needRestart) continue
 
       void this._scheduleClip(clip.id, clip.trackId, clip.src)
@@ -281,8 +281,19 @@ export class AudioPlaybackController {
     }
     const liveOffsetSec = liveClip.sourceFrame / liveScene.fps
 
-    trace('AUDIO', 'scheduleClip starting node', { clipId, ctxState: this._ctx.state, liveOffsetSec })
-    this._startClipNode(clipId, trackId, buffer, liveOffsetSec, liveClip.volume, this._playback.playbackRate)
+    trace('AUDIO', 'scheduleClip starting node', {
+      clipId,
+      ctxState: this._ctx.state,
+      liveOffsetSec,
+    })
+    this._startClipNode(
+      clipId,
+      trackId,
+      buffer,
+      liveOffsetSec,
+      liveClip.volume,
+      this._playback.playbackRate,
+    )
   }
 
   private _startClipNode(
@@ -318,7 +329,13 @@ export class AudioPlaybackController {
     // Schedule 20 ms ahead to land cleanly on a future audio quantum.
     // Only push the schedule time — not the source offset — to avoid skipping
     // the first 20 ms of audio content and introducing A/V drift.
-    trace('AUDIO', 'node.start', { clipId, trackId, scheduleAt: ctx.currentTime + 0.02, offset, ctxState: ctx.state })
+    trace('AUDIO', 'node.start', {
+      clipId,
+      trackId,
+      scheduleAt: ctx.currentTime + 0.02,
+      offset,
+      ctxState: ctx.state,
+    })
     node.start(ctx.currentTime + 0.02, offset)
 
     this._active.set(clipId, { node, gain, trackId })

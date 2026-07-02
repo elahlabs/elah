@@ -29,10 +29,10 @@ import { exportVideo } from '@elah/core'
 import type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from '@elah/core'
 
 const blob = await exportVideo(project, {
-  videoCodec: 'avc',        // 'avc' | 'vp9' | 'vp8'   (default 'avc')
-  audioCodec: 'aac',        // 'aac' | 'opus'          (default 'aac')
-  videoBitrate: 8_000_000,  // bits/s (default 8 Mbps)
-  audioBitrate: 128_000,    // bits/s (default 128 kbps)
+  videoCodec: 'avc', // 'avc' | 'vp9' | 'vp8'   (default 'avc')
+  audioCodec: 'aac', // 'aac' | 'opus'          (default 'aac')
+  videoBitrate: 8_000_000, // bits/s (default 8 Mbps)
+  audioBitrate: 128_000, // bits/s (default 128 kbps)
   onProgress: ({ frame, totalFrames }) =>
     console.log(`${Math.round((frame / totalFrames) * 100)}%`),
 })
@@ -70,7 +70,7 @@ message protocol, and the rationale.
 
 ## Dependencies
 
-- **mediabunny** — used *inside the worker only* (`CanvasSink`, `CanvasSource`,
+- **mediabunny** — used _inside the worker only_ (`CanvasSink`, `CanvasSource`,
   `Mp4Output`, `AudioSampleSource`). The package's public entry never statically
   imports it; the worker is a separate module graph the bundler code-splits, and
   `lazyExport` defers even `exportVideo` itself behind a dynamic import.
@@ -85,7 +85,7 @@ message protocol, and the rationale.
   decoding each clip. Functional, not yet hardened for very long or
   many-clip timelines. See [`CURRENT_LIMITATIONS.md`](../../../../../CURRENT_LIMITATIONS.md).
 - Single worker, sequential frames — no parallel/distributed export yet.
-- Frames are drawn with the 2D canvas path (shared *placement*, not the GPU draw
+- Frames are drawn with the 2D canvas path (shared _placement_, not the GPU draw
   calls); GPU-specific effects would need an `OffscreenCanvas` WebGL export path.
 
 ## Future direction

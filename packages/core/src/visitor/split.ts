@@ -28,10 +28,7 @@ export function splitClip(
   const splitFrame = toFrame(atFrame)
 
   // Split point must be strictly inside the clip
-  if (
-    splitFrame <= clip.startFrame ||
-    splitFrame >= clip.startFrame + clip.durationFrames
-  ) {
+  if (splitFrame <= clip.startFrame || splitFrame >= clip.startFrame + clip.durationFrames) {
     return null
   }
 

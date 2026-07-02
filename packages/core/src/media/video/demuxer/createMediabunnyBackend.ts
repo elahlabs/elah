@@ -182,7 +182,7 @@ export function createMediabunnyBackend(
       if (!track) {
         throw new Error(
           `createMediabunnyBackend: no video track found in "${src}". ` +
-          'Ensure the file is a supported video format (MP4, WebM, MKV, MOV).',
+            'Ensure the file is a supported video format (MP4, WebM, MKV, MOV).',
         )
       }
 
@@ -190,7 +190,7 @@ export function createMediabunnyBackend(
       if (!config) {
         throw new Error(
           `createMediabunnyBackend: video track codec is not supported by this browser in "${src}". ` +
-          'Try a file encoded with H.264 (AVC) or VP8/VP9.',
+            'Try a file encoded with H.264 (AVC) or VP8/VP9.',
         )
       }
 
@@ -266,8 +266,7 @@ export function createMediabunnyBackend(
         startSec,
         endSec,
         lastEndSec: _lastEndSec,
-        contiguityGap:
-          _lastEndSec !== null ? startSec - _lastEndSec : null,
+        contiguityGap: _lastEndSec !== null ? startSec - _lastEndSec : null,
         firstPktSec: pkt ? pkt.timestamp : null,
       })
 
@@ -327,15 +326,14 @@ export function createMediabunnyBackend(
 const defaultBlobResolver: (src: string) => Promise<Blob> = (src) =>
   fetch(src).then((r) => {
     if (!r.ok) {
-      throw new Error(`createMediabunnyBackend: failed to fetch "${src}" (${r.status} ${r.statusText})`)
+      throw new Error(
+        `createMediabunnyBackend: failed to fetch "${src}" (${r.status} ${r.statusText})`,
+      )
     }
     return r.blob()
   })
 
-function _assertOpen(
-  sink: MbEncodedPacketSink | null,
-  config: VideoDecoderConfig | null,
-): void {
+function _assertOpen(sink: MbEncodedPacketSink | null, config: VideoDecoderConfig | null): void {
   if (!sink || !config) {
     throw new Error('createMediabunnyBackend: backend not open — call open(src) first')
   }

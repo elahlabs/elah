@@ -86,86 +86,150 @@ export default function ArchitecturePage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Architecture</div>
-          <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+            Architecture
+          </div>
+          <h1
+            className="text-3xl font-semibold tracking-tight text-on-surface"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Architecture Overview
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-            Four diagrams covering the state model, timeline mutations, the playback clock, and the GPU rendering pipeline.
+            Four diagrams covering the state model, timeline mutations, the playback clock, and the
+            GPU rendering pipeline.
           </p>
         </div>
 
         {/* ── Ring States ── */}
         <section className="mb-12">
-          <h2 id="ring-states" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="ring-states"
+            className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Three-Ring State Model
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            State lives in three concentric rings. Ring 0 is the single source of truth — a plain TypeScript class with no framework dependencies. Ring 1 mirrors it into Zustand so React can subscribe. Ring 2 holds ephemeral UI state (selection, drag) that never persists to history.
+            State lives in three concentric rings. Ring 0 is the single source of truth — a plain
+            TypeScript class with no framework dependencies. Ring 1 mirrors it into Zustand so React
+            can subscribe. Ring 2 holds ephemeral UI state (selection, drag) that never persists to
+            history.
           </p>
           <MermaidDiagram chart={ringStatesDiagram} />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine can run in Node, Web Workers, or WASM with no changes. Tests import it directly without mounting any React tree.
+              <strong className="text-on-surface font-medium">
+                Why keep Ring 0 framework-free?
+              </strong>{' '}
+              The engine can run in Node, Web Workers, or WASM with no changes. Tests import it
+              directly without mounting any React tree.
             </p>
           </div>
         </section>
 
         {/* ── Timeline Engine ── */}
         <section className="mb-12">
-          <h2 id="timeline-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="timeline-engine"
+            className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Timeline Engine
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            All project mutations — adding clips, trimming, splitting, undo/redo — go through one method: <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">commit()</code>. Immer applies the draft, records a history entry, and emits a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">&apos;change&apos;</code> event. Zustand listeners pick it up and React re-renders only the changed slices.
+            All project mutations — adding clips, trimming, splitting, undo/redo — go through one
+            method:{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">commit()</code>.
+            Immer applies the draft, records a history entry, and emits a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">
+              &apos;change&apos;
+            </code>{' '}
+            event. Zustand listeners pick it up and React re-renders only the changed slices.
           </p>
           <MermaidDiagram chart={timelineEngineDiagram} />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Single mutation funnel.</strong> There is no direct way to mutate the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Project</code> from outside the engine. Every edit automatically lands in the undo history and notifies all subscribers.
+              <strong className="text-on-surface font-medium">Single mutation funnel.</strong> There
+              is no direct way to mutate the{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Project</code>{' '}
+              from outside the engine. Every edit automatically lands in the undo history and
+              notifies all subscribers.
             </p>
           </div>
         </section>
 
         {/* ── Playback Clock ── */}
         <section className="mb-12">
-          <h2 id="playback-clock" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="playback-clock"
+            className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Playback Engine & Clock
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The clock uses an <em>anchor-and-integrate</em> model rather than a counter. On every <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">play()</code> or <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">seek()</code>, it records the current frame and wall-clock time. Each RAF tick derives the current frame from that anchor — no accumulated drift, and rate changes are instantaneous.
+            The clock uses an <em>anchor-and-integrate</em> model rather than a counter. On every{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">play()</code> or{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">seek()</code>, it
+            records the current frame and wall-clock time. Each RAF tick derives the current frame
+            from that anchor — no accumulated drift, and rate changes are instantaneous.
           </p>
           <MermaidDiagram chart={playbackClockDiagram} />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Tab visibility.</strong> When the tab is hidden, the engine freezes the anchor frame so playback does not fast-forward on resume. Audio syncs to the same anchor so there is no A/V drift.
+              <strong className="text-on-surface font-medium">Tab visibility.</strong> When the tab
+              is hidden, the engine freezes the anchor frame so playback does not fast-forward on
+              resume. Audio syncs to the same anchor so there is no A/V drift.
             </p>
           </div>
         </section>
 
         {/* ── Rendering Engine ── */}
         <section className="mb-12">
-          <h2 id="rendering-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="rendering-engine"
+            className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Rendering Engine
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The renderer receives a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Scene</code> — a plain list of active layers — and draws textured quads to a WebGL2 canvas. It knows nothing about the project, history, or React. Video frames are decoded asynchronously into a ring-buffer cache; the render call itself is synchronous and stays under 1 ms on the main thread.
+            The renderer receives a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Scene</code> — a
+            plain list of active layers — and draws textured quads to a WebGL2 canvas. It knows
+            nothing about the project, history, or React. Video frames are decoded asynchronously
+            into a ring-buffer cache; the render call itself is synchronous and stays under 1 ms on
+            the main thread.
           </p>
           <MermaidDiagram chart={renderingEngineDiagram} />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Cache miss graceful degradation.</strong> On a seek or cold start the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">FrameCache</code> may not have the target frame yet. The renderer shows the last cached frame while the async decoder catches up — no blank frames, no stalls.
+              <strong className="text-on-surface font-medium">
+                Cache miss graceful degradation.
+              </strong>{' '}
+              On a seek or cold start the{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">
+                FrameCache
+              </code>{' '}
+              may not have the target frame yet. The renderer shows the last cached frame while the
+              async decoder catches up — no blank frames, no stalls.
             </p>
           </div>
         </section>
 
         {/* ── Layer Reference ── */}
         <section className="mb-12">
-          <h2 id="overview" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="overview"
+            className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Layer Reference
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            Six vertical layers. Each layer only talks to the one directly below it — the React UI never touches WebGL; the renderer never imports React.
+            Six vertical layers. Each layer only talks to the one directly below it — the React UI
+            never touches WebGL; the renderer never imports React.
           </p>
 
           <div className="overflow-hidden rounded-md border border-outline-variant text-xs">
@@ -205,9 +269,7 @@ export default function ArchitecturePage() {
               {
                 label: 'Pure Resolver',
                 color: '#6b21a8',
-                items: [
-                  { name: 'resolveTimeline(frame, project)', note: '→ Scene' },
-                ],
+                items: [{ name: 'resolveTimeline(frame, project)', note: '→ Scene' }],
                 desc: 'A pure function. Given a frame number and the immutable Project, returns the exact Scene to render. Deterministic, side-effect-free, runnable in tests or workers.',
               },
               {
@@ -233,7 +295,10 @@ export default function ArchitecturePage() {
                 desc: 'Async decode pipeline feeding ImageBitmaps to the GPU textures and PCM chunks to WebAudio.',
               },
             ].map((layer, i) => (
-              <div key={layer.label} className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}>
+              <div
+                key={layer.label}
+                className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}
+              >
                 <div className="flex gap-0 sm:gap-4">
                   <div
                     className="flex w-8 shrink-0 items-stretch sm:w-28"
@@ -259,11 +324,16 @@ export default function ArchitecturePage() {
                         <div
                           key={item.name}
                           className="flex items-baseline gap-1 rounded border px-2 py-0.5"
-                          style={{ borderColor: layer.color + '30', backgroundColor: layer.color + '08' }}
+                          style={{
+                            borderColor: layer.color + '30',
+                            backgroundColor: layer.color + '08',
+                          }}
                         >
                           <span className="font-mono text-xs text-on-surface">{item.name}</span>
                           {item.note && (
-                            <span className="text-2xs text-on-surface-variant opacity-60">{item.note}</span>
+                            <span className="text-2xs text-on-surface-variant opacity-60">
+                              {item.note}
+                            </span>
                           )}
                         </div>
                       ))}

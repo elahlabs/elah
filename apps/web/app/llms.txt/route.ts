@@ -17,26 +17,77 @@ interface DocLink {
 }
 
 const DOCS: DocLink[] = [
-  { title: 'Docs home', path: '/docs', description: 'Overview of the Elah SDK and how the packages fit together.' },
-  { title: 'Installation', path: '/docs/installation', description: 'Install @elah/editor and its peer dependencies.' },
-  { title: 'Getting started', path: '/docs/getting-started', description: 'Mount EditorProvider, Preview, and Timeline into a working editor.' },
-  { title: 'Timeline', path: '/docs/timeline', description: 'The @elah/timeline UI: tracks, clips, ruler, playhead, drag/trim.' },
-  { title: 'Editor', path: '/docs/editor', description: 'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, ElementsPanel.' },
-  { title: 'Export', path: '/docs/export', description: 'Render a project to MP4 with exportVideo (worker + OffscreenCanvas + mediabunny).' },
-  { title: 'Architecture', path: '/docs/architecture', description: 'Engine design: integer frames, the one mutation funnel, pure resolver, dumb renderers.' },
-  { title: 'API reference', path: '/docs/api', description: 'Public API surface across @elah/core, @elah/timeline, and @elah/editor.' },
-  { title: 'Plugins', path: '/docs/plugins', description: 'Extension points and integration patterns.' },
+  {
+    title: 'Docs home',
+    path: '/docs',
+    description: 'Overview of the Elah SDK and how the packages fit together.',
+  },
+  {
+    title: 'Installation',
+    path: '/docs/installation',
+    description: 'Install @elah/editor and its peer dependencies.',
+  },
+  {
+    title: 'Getting started',
+    path: '/docs/getting-started',
+    description: 'Mount EditorProvider, Preview, and Timeline into a working editor.',
+  },
+  {
+    title: 'Timeline',
+    path: '/docs/timeline',
+    description: 'The @elah/timeline UI: tracks, clips, ruler, playhead, drag/trim.',
+  },
+  {
+    title: 'Editor',
+    path: '/docs/editor',
+    description: 'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, ElementsPanel.',
+  },
+  {
+    title: 'Export',
+    path: '/docs/export',
+    description:
+      'Render a project to MP4 with exportVideo (worker + OffscreenCanvas + mediabunny).',
+  },
+  {
+    title: 'Architecture',
+    path: '/docs/architecture',
+    description:
+      'Engine design: integer frames, the one mutation funnel, pure resolver, dumb renderers.',
+  },
+  {
+    title: 'API reference',
+    path: '/docs/api',
+    description: 'Public API surface across @elah/core, @elah/timeline, and @elah/editor.',
+  },
+  {
+    title: 'Plugins',
+    path: '/docs/plugins',
+    description: 'Extension points and integration patterns.',
+  },
 ]
 
 const RESOURCES: DocLink[] = [
-  { title: 'Playgrounds', path: '/playgrounds', description: 'Live, editable examples running the SDK in the browser.' },
+  {
+    title: 'Playgrounds',
+    path: '/playgrounds',
+    description: 'Live, editable examples running the SDK in the browser.',
+  },
   { title: 'Examples', path: '/examples', description: 'Focused code samples for common tasks.' },
   { title: 'Blog', path: '/blog', description: 'Engineering notes and release posts.' },
 ]
 
 const EXTERNAL: DocLink[] = [
-  { title: 'GitHub repository', path: siteConfig.links.github, description: 'Source, ARCHITECTURE.md, and AGENTS.md (the brief for coding agents in the checkout).' },
-  { title: '@elah/editor on npm', path: 'https://www.npmjs.com/package/@elah/editor', description: 'The full React editor SDK package.' },
+  {
+    title: 'GitHub repository',
+    path: siteConfig.links.github,
+    description:
+      'Source, ARCHITECTURE.md, and AGENTS.md (the brief for coding agents in the checkout).',
+  },
+  {
+    title: '@elah/editor on npm',
+    path: 'https://www.npmjs.com/package/@elah/editor',
+    description: 'The full React editor SDK package.',
+  },
 ]
 
 function section(title: string, links: DocLink[], base: string): string {

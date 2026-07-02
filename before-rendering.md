@@ -8,12 +8,12 @@
 
 ## What you already have vs what's missing
 
-| Works today | Missing (the gap) |
-|---|---|
-| Upload files in `AssetPanel` | No `<Preview>` / pixel output |
-| Drag asset onto timeline | No `DomRenderer` implementation |
-| Clips stored in `TimelineEngine` | `Renderer` is only an interface |
-| Playhead moves, frame counter updates | Nothing consumes `Scene` at 60 Hz |
+| Works today                               | Missing (the gap)                                |
+| ----------------------------------------- | ------------------------------------------------ |
+| Upload files in `AssetPanel`              | No `<Preview>` / pixel output                    |
+| Drag asset onto timeline                  | No `DomRenderer` implementation                  |
+| Clips stored in `TimelineEngine`          | `Renderer` is only an interface                  |
+| Playhead moves, frame counter updates     | Nothing consumes `Scene` at 60 Hz                |
 | `resolveTimeline(frame, project) → Scene` | `useResolvedScene` exists but nothing renders it |
 
 **The afternoon session fills the right column.** This document is how you earn the left column first.
@@ -50,12 +50,12 @@ Opens `apps/playground`. Confirm the layout:
 
 **Read (in order):**
 
-| File | What to find |
-|---|---|
-| `packages/editor/src/editor/AssetPanel/AssetPanel.tsx` | `<input type="file">`, drop zone, `onDragStart` |
-| `packages/editor/src/core/media/importFiles.ts` | `importFiles(File[])` — probe metadata, thumbnails |
-| `packages/editor/src/core/media/store.ts` | `useMediaLibraryStore` — `assets`, `order` |
-| `packages/editor/src/core/media/types.ts` | `MediaAsset`, `MEDIA_DRAG_MIME`, `DragMediaPayload` |
+| File                                                   | What to find                                        |
+| ------------------------------------------------------ | --------------------------------------------------- |
+| `packages/editor/src/editor/AssetPanel/AssetPanel.tsx` | `<input type="file">`, drop zone, `onDragStart`     |
+| `packages/editor/src/core/media/importFiles.ts`        | `importFiles(File[])` — probe metadata, thumbnails  |
+| `packages/editor/src/core/media/store.ts`              | `useMediaLibraryStore` — `assets`, `order`          |
+| `packages/editor/src/core/media/types.ts`              | `MediaAsset`, `MEDIA_DRAG_MIME`, `DragMediaPayload` |
 
 **Key shape — memorize `MediaAsset`:**
 
@@ -64,9 +64,14 @@ interface MediaAsset {
   id: string
   kind: 'video' | 'audio' | 'image'
   name: string
-  src: string              // blob URL after import
+  src: string // blob URL after import
   durationSec: number
-  width?, height?, sourceFps?, thumbnailUrl?, byteSize, addedAt
+  width?
+  height?
+  sourceFps?
+  thumbnailUrl?
+  byteSize
+  addedAt
 }
 ```
 
@@ -74,7 +79,11 @@ interface MediaAsset {
 
 ```ts
 // AssetPanel.tsx — when files are picked or dropped
-console.log('[upload] files', files.length, [...files].map(f => f.name))
+console.log(
+  '[upload] files',
+  files.length,
+  [...files].map((f) => f.name),
+)
 
 // importFiles.ts — start
 console.log('[importFiles] start', files.length)
@@ -86,7 +95,7 @@ console.log('[importFiles] asset', { id, kind, durationSec, width, height })
 console.log('[mediaStore] count', Object.keys(getState().assets).length)
 ```
 
-**Checkpoint:** *When I drop a file, what exactly lands in the media store?* You should be able to describe `MediaAsset` without opening the file.
+**Checkpoint:** _When I drop a file, what exactly lands in the media store?_ You should be able to describe `MediaAsset` without opening the file.
 
 ---
 
@@ -94,10 +103,10 @@ console.log('[mediaStore] count', Object.keys(getState().assets).length)
 
 **Read:**
 
-| File | What to find |
-|---|---|
-| `AssetPanel.tsx` | `MEDIA_DRAG_MIME`, `JSON.stringify({ kind: 'media-asset', assetId })` |
-| `packages/editor/src/timeline/useTimelineDrop.ts` | `dragover`, `drop`, frame math, `engine.addClip` |
+| File                                              | What to find                                                          |
+| ------------------------------------------------- | --------------------------------------------------------------------- |
+| `AssetPanel.tsx`                                  | `MEDIA_DRAG_MIME`, `JSON.stringify({ kind: 'media-asset', assetId })` |
+| `packages/editor/src/timeline/useTimelineDrop.ts` | `dragover`, `drop`, frame math, `engine.addClip`                      |
 
 **MIME constant:** `application/x-elah-media` (`core/media/types.ts`).
 
@@ -117,12 +126,16 @@ console.log('[drag:start]', payload)
 
 // useTimelineDrop.ts — drop (before addClip)
 console.log('[drop]', {
-  assetId, asset: asset?.name,
-  dropFrame, durationFrames, trackId, trackKind
+  assetId,
+  asset: asset?.name,
+  dropFrame,
+  durationFrames,
+  trackId,
+  trackKind,
 })
 ```
 
-**Checkpoint:** *What must cross the AssetPanel → Timeline boundary, and why each field?*  
+**Checkpoint:** _What must cross the AssetPanel → Timeline boundary, and why each field?_  
 `durationSec` → `durationFrames`; `src` → clip can play later; `assetId` → dedupe source metadata.
 
 ---
@@ -131,12 +144,12 @@ console.log('[drop]', {
 
 **Read:**
 
-| File | What to find |
-|---|---|
-| `packages/editor/src/core/editor/TimelineEngine.ts` | `addClip`, `commit`, `getProject`, events |
-| `packages/editor/src/core/visitor/add.ts` | Immer draft: insert clip, sort, no overlap |
-| `packages/editor/src/core/stores/tracks.store.ts` | `sync(project)` after `engine.on('change')` |
-| `packages/editor/src/editor/EditorProvider.tsx` | `engine.on('change') → syncTracks` |
+| File                                                | What to find                                |
+| --------------------------------------------------- | ------------------------------------------- |
+| `packages/editor/src/core/editor/TimelineEngine.ts` | `addClip`, `commit`, `getProject`, events   |
+| `packages/editor/src/core/visitor/add.ts`           | Immer draft: insert clip, sort, no overlap  |
+| `packages/editor/src/core/stores/tracks.store.ts`   | `sync(project)` after `engine.on('change')` |
+| `packages/editor/src/editor/EditorProvider.tsx`     | `engine.on('change') → syncTracks`          |
 
 **Flow:**
 
@@ -162,7 +175,7 @@ console.log('[engine] commit', { version, clipCount })
 console.log('[tracksStore] sync', project.version)
 ```
 
-**Checkpoint:** *Where does mutation become visible to React?* Count the layers: engine → event → store → selector → component.
+**Checkpoint:** _Where does mutation become visible to React?_ Count the layers: engine → event → store → selector → component.
 
 **Architecture rule (Ring 0 → Ring 1):** Components never write `Project` directly. Everything goes through `TimelineEngine.commit()`. See `video-editor/ARCHITECTURE.md` §2.
 
@@ -172,11 +185,11 @@ console.log('[tracksStore] sync', project.version)
 
 **Read:**
 
-| File | What to find |
-|---|---|
-| `packages/editor/src/core/playback/PlaybackEngine.ts` | anchor-and-integrate, `getFrameAt()`, rAF sampler |
-| `packages/editor/src/core/stores/playback.store.ts` | `togglePlayPause`, `setCurrentFrame`, `currentFrameEpoch` |
-| `packages/editor/src/editor/EditorProvider.tsx` | **Engine ↔ store bridge** (both directions) |
+| File                                                  | What to find                                              |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| `packages/editor/src/core/playback/PlaybackEngine.ts` | anchor-and-integrate, `getFrameAt()`, rAF sampler         |
+| `packages/editor/src/core/stores/playback.store.ts`   | `togglePlayPause`, `setCurrentFrame`, `currentFrameEpoch` |
+| `packages/editor/src/editor/EditorProvider.tsx`       | **Engine ↔ store bridge** (both directions)               |
 
 **Bridge lives in `EditorProvider.tsx`, not `Timeline.tsx`:**
 
@@ -187,8 +200,10 @@ console.log('[tracksStore] sync', project.version)
 
 ```ts
 // Store → Engine: only seek when epoch changed AND frames differ
-if (state.currentFrameEpoch !== prev.currentFrameEpoch &&
-    state.currentFrame !== playback.currentFrame) {
+if (
+  state.currentFrameEpoch !== prev.currentFrameEpoch &&
+  state.currentFrame !== playback.currentFrame
+) {
   playback.seek(state.currentFrame)
 }
 ```
@@ -211,9 +226,9 @@ console.log('[bridge] engine→store', snapshot.currentFrame)
 console.log('[bridge] store→engine seek', state.currentFrame)
 ```
 
-**Checkpoint:** *Click the ruler — why doesn't play/pause loop forever?* Point to the epoch + equality guards in `EditorProvider.tsx`.
+**Checkpoint:** _Click the ruler — why doesn't play/pause loop forever?_ Point to the epoch + equality guards in `EditorProvider.tsx`.
 
-**Checkpoint:** *What does the clock emit that nothing consumes for pixels?* `currentFrame` + `resolveTimeline` → `Scene` with no renderer.
+**Checkpoint:** _What does the clock emit that nothing consumes for pixels?_ `currentFrame` + `resolveTimeline` → `Scene` with no renderer.
 
 **Deep dive (optional):** `01-playback-clock-architecture.md`, `docs/backlog/update-clock-fucntion.md`.
 
@@ -223,12 +238,12 @@ console.log('[bridge] store→engine seek', state.currentFrame)
 
 **Read:**
 
-| File | What to find |
-|---|---|
-| `packages/editor/src/core/resolver/scene.ts` | `Scene`, `ActiveVideoClip`, `ActiveAudioClip`, … |
-| `packages/editor/src/core/resolver/resolveTimeline.ts` | rules: inclusion, source mapping, mute/solo, zIndex |
-| `packages/editor/src/core/resolver/resolveTimeline.test.ts` | executable spec — read the cases |
-| `packages/editor/src/editor/useResolvedScene.ts` | `useMemo` + `resolveTimeline(frame, project)` |
+| File                                                        | What to find                                        |
+| ----------------------------------------------------------- | --------------------------------------------------- |
+| `packages/editor/src/core/resolver/scene.ts`                | `Scene`, `ActiveVideoClip`, `ActiveAudioClip`, …    |
+| `packages/editor/src/core/resolver/resolveTimeline.ts`      | rules: inclusion, source mapping, mute/solo, zIndex |
+| `packages/editor/src/core/resolver/resolveTimeline.test.ts` | executable spec — read the cases                    |
+| `packages/editor/src/editor/useResolvedScene.ts`            | `useMemo` + `resolveTimeline(frame, project)`       |
 
 **`Scene` at frame F tells you:**
 
@@ -268,7 +283,7 @@ const scene = useResolvedScene()
 
 Press Play and watch `scene.videos[0].sourceFrame` increment. **This is the renderer's input contract.**
 
-**Checkpoint:** *At frame 142, what does the Scene say?* Example: "Show clip `c1` at `sourceFrame` 12, `zIndex` 1000."
+**Checkpoint:** _At frame 142, what does the Scene say?_ Example: "Show clip `c1` at `sourceFrame` 12, `zIndex` 1000."
 
 ---
 
@@ -276,10 +291,10 @@ Press Play and watch `scene.videos[0].sourceFrame` increment. **This is the rend
 
 **Read:**
 
-| File | What to find |
-|---|---|
+| File                                         | What to find                                               |
+| -------------------------------------------- | ---------------------------------------------------------- |
 | `packages/editor/src/core/renderer/types.ts` | `Renderer { mount, render, dispose }` — **interface only** |
-| `packages/editor/src/index.ts` | exports `useResolvedScene`, no `Preview`, no `DomRenderer` |
+| `packages/editor/src/index.ts`               | exports `useResolvedScene`, no `Preview`, no `DomRenderer` |
 
 **Planned contract:**
 
@@ -291,12 +306,12 @@ interface Renderer {
 }
 ```
 
-**Checkpoint:** *If I had a `DomRenderer` today, who calls `render(scene)` 60×/sec?*
+**Checkpoint:** _If I had a `DomRenderer` today, who calls `render(scene)` 60×/sec?_
 
-| Path | Pros | Cons |
-|---|---|---|
-| **A.** `<Preview>` uses `useResolvedScene()` in `useEffect` | Easy to wire in React | React may coalesce updates; not frame-accurate |
-| **B.** Renderer subscribes to `playback.subscribe()`, calls `resolveTimeline` itself | Frame-accurate, bypasses React | More wiring in `Preview` mount |
+| Path                                                                                 | Pros                           | Cons                                           |
+| ------------------------------------------------------------------------------------ | ------------------------------ | ---------------------------------------------- |
+| **A.** `<Preview>` uses `useResolvedScene()` in `useEffect`                          | Easy to wire in React          | React may coalesce updates; not frame-accurate |
+| **B.** Renderer subscribes to `playback.subscribe()`, calls `resolveTimeline` itself | Frame-accurate, bypasses React | More wiring in `Preview` mount                 |
 
 `ARCHITECTURE.md` §6 recommends **B** for the DomRenderer MVP. Start with A if you need to see pixels fast; migrate to B when you notice stutter.
 
@@ -343,12 +358,12 @@ Create `video-editor/docs/notes/renderer-design.md` (or a section in this file) 
 
 ### 8.1 Scene → DOM mapping
 
-| `Scene` field | DOM action |
-|---|---|
-| `videos[]` | `<video>` per active clip, `currentTime = sourceFrame / fps` |
-| `audios[]` | `<audio>` or Web Audio graph (later) |
-| `texts[]` | `<div>` with `content`, positioned with transform |
-| `images[]` | `<img src=…>` |
+| `Scene` field | DOM action                                                   |
+| ------------- | ------------------------------------------------------------ |
+| `videos[]`    | `<video>` per active clip, `currentTime = sourceFrame / fps` |
+| `audios[]`    | `<audio>` or Web Audio graph (later)                         |
+| `texts[]`     | `<div>` with `content`, positioned with transform            |
+| `images[]`    | `<img src=…>`                                                |
 
 Renderer reads **only** `Scene`. Never `Project`, `Clip`, or `Track`. See `05-dom-renderer-design.md` and `07-video-element-pooling.md`.
 
@@ -382,12 +397,12 @@ Choose A or B from Step 6. Write down which you'll build first and what triggers
 
 Only after Steps 0–8:
 
-| Order | File | Role |
-|---|---|---|
-| 1 | `core/renderer/DomRenderer.ts` | Implements `Renderer`, no React |
-| 2 | `core/renderer/VideoPool.ts` | Reuse `<video>` elements |
-| 3 | `editor/Preview/Preview.tsx` | Mounts renderer, feeds scenes |
-| 4 | `apps/playground/src/App.tsx` | `<Preview>` sibling of AssetPanel + Timeline |
+| Order | File                           | Role                                         |
+| ----- | ------------------------------ | -------------------------------------------- |
+| 1     | `core/renderer/DomRenderer.ts` | Implements `Renderer`, no React              |
+| 2     | `core/renderer/VideoPool.ts`   | Reuse `<video>` elements                     |
+| 3     | `editor/Preview/Preview.tsx`   | Mounts renderer, feeds scenes                |
+| 4     | `apps/playground/src/App.tsx`  | `<Preview>` sibling of AssetPanel + Timeline |
 
 **Read first:** `05-dom-renderer-design.md`, `07-video-element-pooling.md`, `video-editor/ARCHITECTURE.md` §§5–7.
 
@@ -423,12 +438,12 @@ core/
 
 ## Study-plan mapping
 
-| study-plan.md afternoon focus | Covered in step |
-|---|---|
-| Scene | Step 5 |
-| Renderer | Steps 6, 8 |
-| Pool | Step 8.2 → implement Step 9.2 |
-| DOM lifecycle | Step 8.3 → implement Step 9.1 |
+| study-plan.md afternoon focus | Covered in step               |
+| ----------------------------- | ----------------------------- |
+| Scene                         | Step 5                        |
+| Renderer                      | Steps 6, 8                    |
+| Pool                          | Step 8.2 → implement Step 9.2 |
+| DOM lifecycle                 | Step 8.3 → implement Step 9.1 |
 
 ---
 

@@ -13,7 +13,7 @@ tick never blocks on decode.
 
 ## Purpose
 
-- Decode video ahead of the playhead and hand the renderer a frame *now*, or
+- Decode video ahead of the playhead and hand the renderer a frame _now_, or
   `null` on a miss — never an `await` inside `render()`.
 - Survive a GPU context loss without re-decoding (cached frames are plain memory,
   not GL textures).
@@ -23,8 +23,8 @@ tick never blocks on decode.
 
 ```ts
 interface VideoFrameProvider {
-  getCurrent(sourceFrame): VideoFrame | ImageBitmap | null  // sync; borrowed ref or null
-  setPlayhead(sourceFrame, opts?): void                     // fire-and-forget; drives decode
+  getCurrent(sourceFrame): VideoFrame | ImageBitmap | null // sync; borrowed ref or null
+  setPlayhead(sourceFrame, opts?): void // fire-and-forget; drives decode
   markIdle(): void
   markActive(): void
   dispose(): void
@@ -36,15 +36,15 @@ decodes forward internally; the render path issues no individual frame requests.
 
 ## Modules
 
-| File | Role |
-|---|---|
-| `VideoFrameProvider.ts` | The interface + `createVideoFrameProvider()` factory + `Mock` / `Synthetic` dev providers |
-| `StreamingFrameProducer.ts` | **The production provider.** Push-based; owns a `VideoDecoderManager` + `FrameCache<ImageBitmap>` |
-| `VideoDecoderManager.ts` | One `VideoDecoder` + demuxer per source. State machine: `Idle → Opening → Ready ⇄ Decoding ⇄ Resetting → Draining`. API: `feed(rangeUs)`, `reset(keyframeUs)`, `drain()`, `onFrame` |
-| `FrameCache.ts` | LRU cache keyed by source frame, pivot-relative eviction. **Owns** every stored frame; `get()` returns a borrowed reference |
-| `demuxer/MediabunnyDemuxer.ts` | `DemuxerBackend` / `DemuxerFactory` types + adapter |
-| `demuxer/createMediabunnyBackend.ts` | Bridges `open(src)` to mediabunny `Input + BlobSource`; `isMediabunnyCompatible` |
-| `DecoderBackedVideoFrameProvider.ts` | **Deprecated** (pull-based predecessor). Kept one release cycle; not returned by the factory |
+| File                                 | Role                                                                                                                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VideoFrameProvider.ts`              | The interface + `createVideoFrameProvider()` factory + `Mock` / `Synthetic` dev providers                                                                                           |
+| `StreamingFrameProducer.ts`          | **The production provider.** Push-based; owns a `VideoDecoderManager` + `FrameCache<ImageBitmap>`                                                                                   |
+| `VideoDecoderManager.ts`             | One `VideoDecoder` + demuxer per source. State machine: `Idle → Opening → Ready ⇄ Decoding ⇄ Resetting → Draining`. API: `feed(rangeUs)`, `reset(keyframeUs)`, `drain()`, `onFrame` |
+| `FrameCache.ts`                      | LRU cache keyed by source frame, pivot-relative eviction. **Owns** every stored frame; `get()` returns a borrowed reference                                                         |
+| `demuxer/MediabunnyDemuxer.ts`       | `DemuxerBackend` / `DemuxerFactory` types + adapter                                                                                                                                 |
+| `demuxer/createMediabunnyBackend.ts` | Bridges `open(src)` to mediabunny `Input + BlobSource`; `isMediabunnyCompatible`                                                                                                    |
+| `DecoderBackedVideoFrameProvider.ts` | **Deprecated** (pull-based predecessor). Kept one release cycle; not returned by the factory                                                                                        |
 
 ## Provider selection (`createVideoFrameProvider`)
 
@@ -57,7 +57,7 @@ otherwise (jsdom / tests)            → MockVideoFrameProvider
 ## How `StreamingFrameProducer` works
 
 - **Copy-and-close.** Each decoded `VideoFrame` is copied to an `ImageBitmap` and
-  closed *immediately* (returning its slot in the decoder's ~16-slot output pool);
+  closed _immediately_ (returning its slot in the decoder's ~16-slot output pool);
   the cache holds the bitmap. This is the invariant that keeps playback from
   freezing. The `flipY` on copy cancels the GL upload flip — load-bearing.
 - **Lookahead with hysteresis.** Feeds the decoder in bursts up to a high-water

@@ -48,7 +48,9 @@ for (const root of ROOTS) {
 }
 
 if (violations.length) {
-  console.error(`\n✖ Raw color literal(s) found in package components — use a token class or var(--elah-*):\n`)
+  console.error(
+    `\n✖ Raw color literal(s) found in package components — use a token class or var(--elah-*):\n`,
+  )
   for (const v of violations) console.error('  ' + v)
   console.error(`\n${violations.length} violation(s).\n`)
   process.exit(1)

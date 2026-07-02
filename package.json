@@ -10,14 +10,25 @@
     "build:packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor",
     "build": "npm run build --workspace=apps/web",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint:tokens": "node scripts/check-tokens.mjs",
     "test": "npm run test --workspace=packages/core --workspace=packages/timeline"
   },
   "devDependencies": {
-    "rollup-plugin-visualizer": "^7.0.1"
+    "@eslint/js": "^9.39.4",
+    "@next/eslint-plugin-next": "^16.2.9",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.4",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "typescript-eslint": "^8.62.1"
   },
   "dependencies": {
     "react-router-dom": "^7.17.0"
   }
 }
-

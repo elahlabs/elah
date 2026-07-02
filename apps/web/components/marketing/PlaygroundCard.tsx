@@ -16,9 +16,10 @@ interface PlaygroundCardProps {
 }
 
 const statusStyles = {
-  live:    'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/50',
-  beta:    'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/50',
-  preview: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900/50',
+  live: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/50',
+  beta: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/50',
+  preview:
+    'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900/50',
 }
 
 const variantIcons = {
@@ -66,7 +67,12 @@ export function PlaygroundCard({
         </div>
 
         {/* Status badge */}
-        <div className={cn('absolute right-3 top-3 rounded border px-2 py-0.5 text-2xs font-medium', statusStyles[status])}>
+        <div
+          className={cn(
+            'absolute right-3 top-3 rounded border px-2 py-0.5 text-2xs font-medium',
+            statusStyles[status],
+          )}
+        >
           {status}
         </div>
       </div>

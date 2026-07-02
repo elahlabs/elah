@@ -28,14 +28,21 @@ export function CodeBlock({
   }
 
   return (
-    <div className={cn('group relative rounded-md border border-outline-variant bg-surface-low overflow-hidden', className)}>
+    <div
+      className={cn(
+        'group relative rounded-md border border-outline-variant bg-surface-low overflow-hidden',
+        className,
+      )}
+    >
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container px-4 py-2">
         <div className="flex items-center gap-2">
           {filename ? (
             <span className="font-mono text-xs text-on-surface-variant">{filename}</span>
           ) : (
-            <span className="label-mono text-2xs text-on-surface-variant opacity-60">{language}</span>
+            <span className="label-mono text-2xs text-on-surface-variant opacity-60">
+              {language}
+            </span>
           )}
         </div>
         <button
@@ -59,10 +66,7 @@ export function CodeBlock({
 
       {/* Code content */}
       <pre
-        className={cn(
-          'overflow-x-auto p-4 text-xs leading-relaxed',
-          showLineNumbers && 'pl-0'
-        )}
+        className={cn('overflow-x-auto p-4 text-xs leading-relaxed', showLineNumbers && 'pl-0')}
         style={{ fontFamily: 'var(--font-geist-mono), JetBrains Mono, monospace' }}
       >
         <code className={`language-${language} text-on-surface`}>
@@ -95,7 +99,7 @@ export function InlineCode({ children, className }: InlineCodeProps) {
     <code
       className={cn(
         'rounded bg-surface-container px-1.5 py-0.5 text-xs text-on-surface',
-        className
+        className,
       )}
       style={{ fontFamily: 'var(--font-geist-mono), monospace' }}
     >

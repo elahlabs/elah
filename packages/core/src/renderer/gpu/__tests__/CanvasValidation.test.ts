@@ -59,8 +59,7 @@ describe('canvasValidation helpers', () => {
       width: 2,
       height: 2,
       getContext: () => ({
-        getImageData: (_x: number, _y: number, w: number, h: number) =>
-          makeImageData(w, h),
+        getImageData: (_x: number, _y: number, w: number, h: number) => makeImageData(w, h),
       }),
     } as unknown as HTMLCanvasElement
 

@@ -76,6 +76,7 @@ docs: sync renderer architecture with shipped layers
 When you open a PR, GitHub will load the [PR template](./.github/PULL_REQUEST_TEMPLATE.md) automatically — fill in every section, don't delete any.
 
 When you open an issue, choose the right template:
+
 - [Bug report](./.github/ISSUE_TEMPLATE/bug_report.md) — reproduction steps + environment
 - [Feature request](./.github/ISSUE_TEMPLATE/feature_request.md) — problem + proposed solution + acceptance criteria
 
@@ -128,7 +129,7 @@ The renderer subsystem additionally documents agent-facing guardrails in
 
 - TypeScript strict mode is required.
 - `interface` for object shapes that may be extended; `type` for unions and aliases.
-- JSDoc the *why*, never the *what*. `// increments counter` on `counter++` is noise.
+- JSDoc the _why_, never the _what_. `// increments counter` on `counter++` is noise.
 - Don't add comments that narrate the change you just made — that's the commit message's job.
 - 2-space indent. Single quotes. No semicolons (match the surrounding code).
 

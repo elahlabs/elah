@@ -14,12 +14,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FrameCache } from '../FrameCache'
 import { StreamingFrameProducer } from '../StreamingFrameProducer'
 import { GpuDebugCounters } from '../../../renderer/gpu/debug/GpuDebugCounters'
+import { createMockChunk, createMockDecoder, createMockDemuxerBackend } from './helpers/mockDemuxer'
 import {
-  createMockChunk,
-  createMockDecoder,
-  createMockDemuxerBackend,
-} from './helpers/mockDemuxer'
-import { createTrackingFrame, resetTrackingFrameCounter } from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
+  createTrackingFrame,
+  resetTrackingFrameCounter,
+} from '../../../renderer/gpu/__tests__/helpers/trackingFrame'
 
 describe('FrameOwnership', () => {
   beforeEach(() => {
@@ -130,7 +129,7 @@ describe('FrameOwnership', () => {
 
       await producer.openPromise
       producer.setPlayhead(0)
-      await new Promise(r => setTimeout(r, 20))
+      await new Promise((r) => setTimeout(r, 20))
 
       // Dispose should not double-close anything
       expect(() => producer.dispose()).not.toThrow()
@@ -147,10 +146,12 @@ describe('FrameOwnership', () => {
 
       // Wrap the factory to intercept the output callback
       const captured: { output: ((f: VideoFrame) => void) | null } = { output: null }
-      const wrappedFactory = vi.fn((output: (f: VideoFrame) => void, error: (e: DOMException) => void) => {
-        captured.output = output
-        return baseDecoder.factory(output, error)
-      })
+      const wrappedFactory = vi.fn(
+        (output: (f: VideoFrame) => void, error: (e: DOMException) => void) => {
+          captured.output = output
+          return baseDecoder.factory(output, error)
+        },
+      )
 
       const producer = new StreamingFrameProducer({
         src: 'video://postdispose.mp4',
@@ -172,7 +173,9 @@ describe('FrameOwnership', () => {
           timestamp: 0,
           displayWidth: 640,
           displayHeight: 360,
-          close: vi.fn(() => { frameReceivedAfterDispose = true }),
+          close: vi.fn(() => {
+            frameReceivedAfterDispose = true
+          }),
           clone: vi.fn(),
         } as unknown as VideoFrame
         captured.output(lateFrame)

@@ -54,11 +54,22 @@ export const Ruler = memo(function Ruler({
     // Aim for a label every ~80px — pick the nearest clean interval
     const rawSeconds = 80 / pixelsPerSecond
     const intervals = [
-      1 / fps,  // every frame
-      0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800,
+      1 / fps, // every frame
+      0.5,
+      1,
+      2,
+      5,
+      10,
+      15,
+      30,
+      60,
+      120,
+      300,
+      600,
+      1200,
+      1800,
     ]
-    const secondsPerTick =
-      intervals.find((i) => i >= rawSeconds) ?? intervals[intervals.length - 1]
+    const secondsPerTick = intervals.find((i) => i >= rawSeconds) ?? intervals[intervals.length - 1]
 
     const framesPerTick = Math.max(1, Math.round(secondsPerTick * fps))
     const result: { frame: number; label: string }[] = []

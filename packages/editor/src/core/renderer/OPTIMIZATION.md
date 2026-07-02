@@ -25,15 +25,15 @@ A **triage and study workbench** for the GPU renderer. Use this when video does 
 
 **Canonical companions (current source of truth — all in `@elah/core`):**
 
-| Doc | Role |
-|-----|------|
-| [`renderer/architecture.md`](../../../../core/src/renderer/architecture.md) | Diagrams and contracts (push-based) |
-| [`renderer/EVOLUTION.md`](../../../../core/src/renderer/EVOLUTION.md) | History and reasoning |
-| [`renderer/README.md`](../../../../core/src/renderer/README.md) | Public API and wiring |
-| [`renderer/AI-Rules.md`](../../../../core/src/renderer/AI-Rules.md) | Invariants agents must preserve |
-| [`renderer/gpu/IMPLEMENTATION_NOTES.md`](../../../../core/src/renderer/gpu/IMPLEMENTATION_NOTES.md) | Why decisions were made |
-| [`renderer/gpu/README.md`](../../../../core/src/renderer/gpu/README.md) | GPU module map |
-| [`media/video/README.md`](../../../../core/src/media/video/README.md) | Decode pipeline contract |
+| Doc                                                                                                 | Role                                |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| [`renderer/architecture.md`](../../../../core/src/renderer/architecture.md)                         | Diagrams and contracts (push-based) |
+| [`renderer/EVOLUTION.md`](../../../../core/src/renderer/EVOLUTION.md)                               | History and reasoning               |
+| [`renderer/README.md`](../../../../core/src/renderer/README.md)                                     | Public API and wiring               |
+| [`renderer/AI-Rules.md`](../../../../core/src/renderer/AI-Rules.md)                                 | Invariants agents must preserve     |
+| [`renderer/gpu/IMPLEMENTATION_NOTES.md`](../../../../core/src/renderer/gpu/IMPLEMENTATION_NOTES.md) | Why decisions were made             |
+| [`renderer/gpu/README.md`](../../../../core/src/renderer/gpu/README.md)                             | GPU module map                      |
+| [`media/video/README.md`](../../../../core/src/media/video/README.md)                               | Decode pipeline contract            |
 
 ---
 
@@ -64,19 +64,19 @@ These compose; fixing only one often leaves the symptom:
 > are resolved in the current push-based pipeline; the file/method names reflect
 > the **old** code and are kept for historical traceability.
 
-| # | Bug | Status | Where (then → now) |
-|---|-----|--------|--------------------|
-| 1 | **FrameCache evicted the seek anchor** — lowest-key eviction removed backward-seek targets while prefetch siblings filled the cache | **Fixed** — pivot-relative `_evictFurthest()` | `FrameCache.ts` (now `packages/core/src/media/video/FrameCache.ts`) |
-| 2 | **No seek on discontinuity** — stale in-flight decodes could land after a scrub | **Fixed** — push-based `setPlayhead` now triggers `manager.reset(keyframeUs)` on `\|Δframe\| > 1` (was `requestFrame` → `manager.seek()`) | `StreamingFrameProducer.ts` (was `DecoderBackedVideoFrameProvider.ts`) |
-| 3 | **Per-frame `decoder.flush()`** — after flush, WebCodecs needs a keyframe again; every tick re-decodes the whole GOP | **Fixed by PR-02** — `feed()` never flushes mid-stream; the decoder stays warm across contiguous ranges; `flush()` runs once in `drain()` | `VideoDecoderManager.ts` |
+| #   | Bug                                                                                                                                 | Status                                                                                                                                    | Where (then → now)                                                     |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1   | **FrameCache evicted the seek anchor** — lowest-key eviction removed backward-seek targets while prefetch siblings filled the cache | **Fixed** — pivot-relative `_evictFurthest()`                                                                                             | `FrameCache.ts` (now `packages/core/src/media/video/FrameCache.ts`)    |
+| 2   | **No seek on discontinuity** — stale in-flight decodes could land after a scrub                                                     | **Fixed** — push-based `setPlayhead` now triggers `manager.reset(keyframeUs)` on `\|Δframe\| > 1` (was `requestFrame` → `manager.seek()`) | `StreamingFrameProducer.ts` (was `DecoderBackedVideoFrameProvider.ts`) |
+| 3   | **Per-frame `decoder.flush()`** — after flush, WebCodecs needs a keyframe again; every tick re-decodes the whole GOP                | **Fixed by PR-02** — `feed()` never flushes mid-stream; the decoder stays warm across contiguous ranges; `flush()` runs once in `drain()` | `VideoDecoderManager.ts`                                               |
 
 ### Other fixes already landed
 
-| Fix | Why it mattered |
-|-----|-----------------|
+| Fix                                                                     | Why it mattered                                                                                                                                                                                                                                        |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Copy-and-close** (`createImageBitmap` + `frame.close()` in `onFrame`) | Replaced the old `frame.clone()`-before-upload hack. The cache now owns `ImageBitmap` copies and is the **sole closer**; `VideoTexture.upload` borrows and never closes. Holding raw `VideoFrame`s used to drain the decoder's ~16-slot pool → freeze. |
-| Stall watchdog (progress-based reset) | A decoder that goes silent while fed ahead of the playhead triggers one reset (replaced the old per-request `decodeTimeoutMs` slot timeout). |
-| `UNPACK_FLIP_Y_WEBGL` in `_initGLState` | Upside-down video; easy to misread as "wrong frame" |
+| Stall watchdog (progress-based reset)                                   | A decoder that goes silent while fed ahead of the playhead triggers one reset (replaced the old per-request `decodeTimeoutMs` slot timeout).                                                                                                           |
+| `UNPACK_FLIP_Y_WEBGL` in `_initGLState`                                 | Upside-down video; easy to misread as "wrong frame"                                                                                                                                                                                                    |
 
 ### Decision tree — "is it working?"
 
@@ -138,20 +138,20 @@ flowchart TB
   VL --> VT --> GR
 ```
 
-| Layer | File | Owner state | Blast radius if broken |
-|-------|------|-------------|------------------------|
-| `GpuRenderer` | [`gpu/GpuRenderer.ts`](./gpu/GpuRenderer.ts) | `_lastScene`, viewport, FPS | Nothing draws; or no-op forever if scene ref stable |
-| `RenderGraph` | [`gpu/RenderGraph.ts`](./gpu/RenderGraph.ts) | `activeItems` per layer | Leaked textures; clips never acquired |
-| `VideoLayer` | [`gpu/layers/VideoLayer.ts`](./gpu/layers/VideoLayer.ts) | `_providers`, `_textures` | No upload; wrong src sharing |
-| `VideoFrameProvider` | [`gpu/VideoFrameProvider.ts`](./gpu/VideoFrameProvider.ts) | (interface) | Wrong backend selected |
-| `DecoderBackedVideoFrameProvider` | [`gpu/DecoderBackedVideoFrameProvider.ts`](./gpu/DecoderBackedVideoFrameProvider.ts) | `_pending`, `_cache`, `_manager` | Cache never fills; seek stuck |
-| `FrameCache` | [`gpu/FrameCache.ts`](./gpu/FrameCache.ts) | `_frames`, `_pivot` | Wrong frame evicted; memory leak |
-| `VideoDecoderManager` | [`gpu/VideoDecoderManager.ts`](./gpu/VideoDecoderManager.ts) | state machine, decode queue | Errored decoder; no frames |
-| `MediabunnyDemuxer` | [`gpu/demuxer/MediabunnyDemuxer.ts`](./gpu/demuxer/MediabunnyDemuxer.ts) | `_backend` | open() fails; no packets |
-| `createMediabunnyBackend` | [`gpu/demuxer/createMediabunnyBackend.ts`](./gpu/demuxer/createMediabunnyBackend.ts) | per-backend blob/input | fetch/blob failures |
-| `VideoTexture` | [`gpu/VideoTexture.ts`](./gpu/VideoTexture.ts) | `_entry`, `_hasContent` | texImage2D fails; stale pixels |
-| `TexturePool` | [`gpu/TexturePool.ts`](./gpu/TexturePool.ts) | free list (cap 16) | upload returns false |
-| `WebGLContext` | [`gpu/WebGLContext.ts`](./gpu/WebGLContext.ts) | canvas, `_gl`, `_lost` | Context loss; no GL |
+| Layer                             | File                                                                                 | Owner state                      | Blast radius if broken                              |
+| --------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------- | --------------------------------------------------- |
+| `GpuRenderer`                     | [`gpu/GpuRenderer.ts`](./gpu/GpuRenderer.ts)                                         | `_lastScene`, viewport, FPS      | Nothing draws; or no-op forever if scene ref stable |
+| `RenderGraph`                     | [`gpu/RenderGraph.ts`](./gpu/RenderGraph.ts)                                         | `activeItems` per layer          | Leaked textures; clips never acquired               |
+| `VideoLayer`                      | [`gpu/layers/VideoLayer.ts`](./gpu/layers/VideoLayer.ts)                             | `_providers`, `_textures`        | No upload; wrong src sharing                        |
+| `VideoFrameProvider`              | [`gpu/VideoFrameProvider.ts`](./gpu/VideoFrameProvider.ts)                           | (interface)                      | Wrong backend selected                              |
+| `DecoderBackedVideoFrameProvider` | [`gpu/DecoderBackedVideoFrameProvider.ts`](./gpu/DecoderBackedVideoFrameProvider.ts) | `_pending`, `_cache`, `_manager` | Cache never fills; seek stuck                       |
+| `FrameCache`                      | [`gpu/FrameCache.ts`](./gpu/FrameCache.ts)                                           | `_frames`, `_pivot`              | Wrong frame evicted; memory leak                    |
+| `VideoDecoderManager`             | [`gpu/VideoDecoderManager.ts`](./gpu/VideoDecoderManager.ts)                         | state machine, decode queue      | Errored decoder; no frames                          |
+| `MediabunnyDemuxer`               | [`gpu/demuxer/MediabunnyDemuxer.ts`](./gpu/demuxer/MediabunnyDemuxer.ts)             | `_backend`                       | open() fails; no packets                            |
+| `createMediabunnyBackend`         | [`gpu/demuxer/createMediabunnyBackend.ts`](./gpu/demuxer/createMediabunnyBackend.ts) | per-backend blob/input           | fetch/blob failures                                 |
+| `VideoTexture`                    | [`gpu/VideoTexture.ts`](./gpu/VideoTexture.ts)                                       | `_entry`, `_hasContent`          | texImage2D fails; stale pixels                      |
+| `TexturePool`                     | [`gpu/TexturePool.ts`](./gpu/TexturePool.ts)                                         | free list (cap 16)               | upload returns false                                |
+| `WebGLContext`                    | [`gpu/WebGLContext.ts`](./gpu/WebGLContext.ts)                                       | canvas, `_gl`, `_lost`           | Context loss; no GL                                 |
 
 ---
 
@@ -187,10 +187,10 @@ npm test -- --run -t "evicts the entry furthest from pivot"
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                                           | Command                                                         |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | [`gpu/__tests__/RenderSynchronization.test.ts`](./gpu/__tests__/RenderSynchronization.test.ts) | `npm test -- --run gpu/__tests__/RenderSynchronization.test.ts` |
-| [`gpu/__tests__/PerformanceMetrics.test.ts`](./gpu/__tests__/PerformanceMetrics.test.ts) | `npm test -- --run gpu/__tests__/PerformanceMetrics.test.ts` |
+| [`gpu/__tests__/PerformanceMetrics.test.ts`](./gpu/__tests__/PerformanceMetrics.test.ts)       | `npm test -- --run gpu/__tests__/PerformanceMetrics.test.ts`    |
 
 **Live debug hooks:** `renderer.setDebug(true)` → `GpuRendererDebugPanel`: FPS, `renderDurationMs`, `noOpTicks`, `decoderStates`, `outstandingDecodes`, `cacheHitRatio`.
 
@@ -214,8 +214,8 @@ npm test -- --run -t "evicts the entry furthest from pivot"
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                       | Command                                               |
+| -------------------------------------------------------------------------- | ----------------------------------------------------- |
 | [`gpu/__tests__/RenderGraph.test.ts`](./gpu/__tests__/RenderGraph.test.ts) | `npm test -- --run gpu/__tests__/RenderGraph.test.ts` |
 
 **Live debug hooks:** `activeClipCount` in debug panel; `videoLayer.getTextureCount()`.
@@ -241,10 +241,10 @@ npm test -- --run -t "evicts the entry furthest from pivot"
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
-| [`gpu/__tests__/VideoLayer.test.ts`](./gpu/__tests__/VideoLayer.test.ts) | `npm test -- --run gpu/__tests__/VideoLayer.test.ts` |
-| [`gpu/__tests__/VideoFrameOwnership.test.ts`](./gpu/__tests__/VideoFrameOwnership.test.ts) | `npm test -- --run gpu/__tests__/VideoFrameOwnership.test.ts` |
+| Test                                                                                                   | Command                                                             |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| [`gpu/__tests__/VideoLayer.test.ts`](./gpu/__tests__/VideoLayer.test.ts)                               | `npm test -- --run gpu/__tests__/VideoLayer.test.ts`                |
+| [`gpu/__tests__/VideoFrameOwnership.test.ts`](./gpu/__tests__/VideoFrameOwnership.test.ts)             | `npm test -- --run gpu/__tests__/VideoFrameOwnership.test.ts`       |
 | [`gpu/__tests__/MultiClipOverlap.playback.test.ts`](./gpu/__tests__/MultiClipOverlap.playback.test.ts) | `npm test -- --run gpu/__tests__/MultiClipOverlap.playback.test.ts` |
 
 **Live debug hooks:** `[GPU-TRACE] videoLayer.draw` — `gotFrame`, `pendingCount`, `cacheSize`; debug panel `textureCount`, `activeProviders`.
@@ -270,10 +270,10 @@ else → MockVideoFrameProvider (jsdom)
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                                     | Command                                                      |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [`gpu/__tests__/VideoFrameProvider.test.ts`](./gpu/__tests__/VideoFrameProvider.test.ts) | `npm test -- --run gpu/__tests__/VideoFrameProvider.test.ts` |
-| [`gpu/__tests__/GoldenFrameHash.test.ts`](./gpu/__tests__/GoldenFrameHash.test.ts) | `npm test -- --run gpu/__tests__/GoldenFrameHash.test.ts` |
+| [`gpu/__tests__/GoldenFrameHash.test.ts`](./gpu/__tests__/GoldenFrameHash.test.ts)       | `npm test -- --run gpu/__tests__/GoldenFrameHash.test.ts`    |
 
 **Call sites:** `VideoLayer` constructor / `acquire`; tests inject `providerFactory` override.
 
@@ -307,13 +307,13 @@ requestFrame(N) where |N - lastRequested| > 1
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                                                               | Command                                                                   |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | [`gpu/__tests__/DecoderBackedVideoFrameProvider.test.ts`](./gpu/__tests__/DecoderBackedVideoFrameProvider.test.ts) | `npm test -- --run gpu/__tests__/DecoderBackedVideoFrameProvider.test.ts` |
-| [`gpu/__tests__/BackwardSeekStability.test.ts`](./gpu/__tests__/BackwardSeekStability.test.ts) | `npm test -- --run gpu/__tests__/BackwardSeekStability.test.ts` |
-| [`gpu/__tests__/RapidSeekStress.test.ts`](./gpu/__tests__/RapidSeekStress.test.ts) | `npm test -- --run gpu/__tests__/RapidSeekStress.test.ts` |
-| [`gpu/__tests__/StuckDecodeRecovery.test.ts`](./gpu/__tests__/StuckDecodeRecovery.test.ts) | `npm test -- --run gpu/__tests__/StuckDecodeRecovery.test.ts` |
-| [`gpu/__tests__/NoOutputDecode.test.ts`](./gpu/__tests__/NoOutputDecode.test.ts) | `npm test -- --run gpu/__tests__/NoOutputDecode.test.ts` |
+| [`gpu/__tests__/BackwardSeekStability.test.ts`](./gpu/__tests__/BackwardSeekStability.test.ts)                     | `npm test -- --run gpu/__tests__/BackwardSeekStability.test.ts`           |
+| [`gpu/__tests__/RapidSeekStress.test.ts`](./gpu/__tests__/RapidSeekStress.test.ts)                                 | `npm test -- --run gpu/__tests__/RapidSeekStress.test.ts`                 |
+| [`gpu/__tests__/StuckDecodeRecovery.test.ts`](./gpu/__tests__/StuckDecodeRecovery.test.ts)                         | `npm test -- --run gpu/__tests__/StuckDecodeRecovery.test.ts`             |
+| [`gpu/__tests__/NoOutputDecode.test.ts`](./gpu/__tests__/NoOutputDecode.test.ts)                                   | `npm test -- --run gpu/__tests__/NoOutputDecode.test.ts`                  |
 
 **Live debug hooks:** `[GPU-TRACE] provider.requestFrame`, `provider.decode.done`; `GpuDebugCounters.pendingDecodeRequests`, `droppedFrames`, `cacheSize`.
 
@@ -333,11 +333,11 @@ requestFrame(N) where |N - lastRequested| > 1
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
-| [`gpu/__tests__/FrameCache.test.ts`](./gpu/__tests__/FrameCache.test.ts) | `npm test -- --run gpu/__tests__/FrameCache.test.ts` |
+| Test                                                                                 | Command                                                    |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| [`gpu/__tests__/FrameCache.test.ts`](./gpu/__tests__/FrameCache.test.ts)             | `npm test -- --run gpu/__tests__/FrameCache.test.ts`       |
 | [`gpu/__tests__/FrameCache.pivot.test.ts`](./gpu/__tests__/FrameCache.pivot.test.ts) | `npm test -- --run gpu/__tests__/FrameCache.pivot.test.ts` |
-| [`gpu/__tests__/FrameOwnership.test.ts`](./gpu/__tests__/FrameOwnership.test.ts) | `npm test -- --run gpu/__tests__/FrameOwnership.test.ts` |
+| [`gpu/__tests__/FrameOwnership.test.ts`](./gpu/__tests__/FrameOwnership.test.ts)     | `npm test -- --run gpu/__tests__/FrameOwnership.test.ts`   |
 
 **Live debug hooks:** `cacheHitRatio`, `cacheSize` in debug panel and `window.__GPU__.counters()`.
 
@@ -358,12 +358,12 @@ requestFrame(N) where |N - lastRequested| > 1
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                                       | Command                                                       |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
 | [`gpu/__tests__/VideoDecoderManager.test.ts`](./gpu/__tests__/VideoDecoderManager.test.ts) | `npm test -- --run gpu/__tests__/VideoDecoderManager.test.ts` |
-| [`gpu/__tests__/DecodeScheduling.test.ts`](./gpu/__tests__/DecodeScheduling.test.ts) | `npm test -- --run gpu/__tests__/DecodeScheduling.test.ts` |
-| [`gpu/__tests__/PlaybackStress.test.ts`](./gpu/__tests__/PlaybackStress.test.ts) | `npm test -- --run gpu/__tests__/PlaybackStress.test.ts` |
-| [`gpu/__tests__/ErrorHandling.test.ts`](./gpu/__tests__/ErrorHandling.test.ts) | `npm test -- --run gpu/__tests__/ErrorHandling.test.ts` |
+| [`gpu/__tests__/DecodeScheduling.test.ts`](./gpu/__tests__/DecodeScheduling.test.ts)       | `npm test -- --run gpu/__tests__/DecodeScheduling.test.ts`    |
+| [`gpu/__tests__/PlaybackStress.test.ts`](./gpu/__tests__/PlaybackStress.test.ts)           | `npm test -- --run gpu/__tests__/PlaybackStress.test.ts`      |
+| [`gpu/__tests__/ErrorHandling.test.ts`](./gpu/__tests__/ErrorHandling.test.ts)             | `npm test -- --run gpu/__tests__/ErrorHandling.test.ts`       |
 
 **Live debug hooks:** `decoderStates[src]` in debug panel; `[GPU-TRACE] manager.requestFrame`, `manager.decodeFrame.done`.
 
@@ -389,10 +389,10 @@ packets([startµs, endµs]) → getNextPacket chain → EncodedVideoChunk
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
-| [`gpu/__tests__/MediabunnyBackend.test.ts`](./gpu/__tests__/MediabunnyBackend.test.ts) | `npm test -- --run gpu/__tests__/MediabunnyBackend.test.ts` |
-| [`gpu/__tests__/MediabunnyDemuxer.test.ts`](./gpu/__tests__/MediabunnyDemuxer.test.ts) | `npm test -- --run gpu/__tests__/MediabunnyDemuxer.test.ts` |
+| Test                                                                                                 | Command                                                            |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [`gpu/__tests__/MediabunnyBackend.test.ts`](./gpu/__tests__/MediabunnyBackend.test.ts)               | `npm test -- --run gpu/__tests__/MediabunnyBackend.test.ts`        |
+| [`gpu/__tests__/MediabunnyDemuxer.test.ts`](./gpu/__tests__/MediabunnyDemuxer.test.ts)               | `npm test -- --run gpu/__tests__/MediabunnyDemuxer.test.ts`        |
 | [`gpu/__tests__/ProviderObjectUrlCleanup.test.ts`](./gpu/__tests__/ProviderObjectUrlCleanup.test.ts) | `npm test -- --run gpu/__tests__/ProviderObjectUrlCleanup.test.ts` |
 
 **Live debug hooks:** Network tab for blob fetch; console errors from `createMediabunnyBackend` open path.
@@ -413,8 +413,8 @@ packets([startµs, endµs]) → getNextPacket chain → EncodedVideoChunk
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                                 | Command                                                    |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | [`gpu/__tests__/CanvasValidation.test.ts`](./gpu/__tests__/CanvasValidation.test.ts) | `npm test -- --run gpu/__tests__/CanvasValidation.test.ts` |
 | [`gpu/__tests__/ProviderDisposal.test.ts`](./gpu/__tests__/ProviderDisposal.test.ts) | `npm test -- --run gpu/__tests__/ProviderDisposal.test.ts` |
 
@@ -436,10 +436,10 @@ packets([startµs, endµs]) → getNextPacket chain → EncodedVideoChunk
 
 **Isolation oracle:**
 
-| Test | Command |
-|------|---------|
+| Test                                                                                 | Command                                                    |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | [`gpu/__tests__/DebugGpuRenderer.test.ts`](./gpu/__tests__/DebugGpuRenderer.test.ts) | `npm test -- --run gpu/__tests__/DebugGpuRenderer.test.ts` |
-| Context lost mid-seek | **TODO: add test** |
+| Context lost mid-seek                                                                | **TODO: add test**                                         |
 
 **Live debug hooks:** `webglcontextlost` / `webglcontextrestored` events in DevTools.
 
@@ -540,12 +540,12 @@ No `@elah/editor/runtime` or `@elah/editor/testing` package yet — SDK extracti
 
 ### 5.2 One authority per concern
 
-| Concern | Authority | Renderer rule |
-|---------|-----------|---------------|
-| Authoring | `TimelineEngine` | Never reads `Project` |
-| Transport | `PlaybackEngine` | Never imported in renderer |
+| Concern            | Authority                     | Renderer rule                             |
+| ------------------ | ----------------------------- | ----------------------------------------- |
+| Authoring          | `TimelineEngine`              | Never reads `Project`                     |
+| Transport          | `PlaybackEngine`              | Never imported in renderer                |
 | Time / frame index | `PlaybackEngine.getFrameAt()` | Shell reads; passes via `resolveTimeline` |
-| Pixels | `GpuRenderer.render(Scene)` | Sync only |
+| Pixels             | `GpuRenderer.render(Scene)`   | Sync only                                 |
 
 **Borderline (known):** [`GpuPreview.tsx`](../../../apps/playground/src/GpuPreview.tsx) calls `engine.getProject()` every RAF tick. Acceptable in the **app shell**; would be a violation inside `core/renderer`. Prefer caching project snapshot on engine `change` event if this becomes hot.
 
@@ -564,13 +564,13 @@ flowchart LR
   put -->|evict dispose| done2[ImageBitmap closed]
 ```
 
-| Handoff | Who closes |
-|---------|------------|
-| Decode → `onFrame` | `onFrame` closes the raw `VideoFrame` immediately after copying it |
-| `onFrame` → cache.put (`ImageBitmap`) | Cache owns the copy |
-| getCurrent → VideoLayer | Nobody (borrowed) |
-| VideoLayer → VideoTexture.upload | Nobody — `upload` borrows and never closes |
-| Cache evict / dispose | Cache closes the stored `ImageBitmap` |
+| Handoff                               | Who closes                                                         |
+| ------------------------------------- | ------------------------------------------------------------------ |
+| Decode → `onFrame`                    | `onFrame` closes the raw `VideoFrame` immediately after copying it |
+| `onFrame` → cache.put (`ImageBitmap`) | Cache owns the copy                                                |
+| getCurrent → VideoLayer               | Nobody (borrowed)                                                  |
+| VideoLayer → VideoTexture.upload      | Nobody — `upload` borrows and never closes                         |
+| Cache evict / dispose                 | Cache closes the stored `ImageBitmap`                              |
 
 ### 5.4 Scene immutability
 
@@ -582,12 +582,12 @@ flowchart LR
 
 Single fork: `createVideoFrameProvider()`. All production decode flows through `DecoderBackedVideoFrameProvider` when playground/app passes `demuxerFactory` into `GpuRenderer`.
 
-| Environment | Provider |
-|-------------|----------|
-| Playground + factory | DecoderBacked |
-| Playground without factory | Synthetic |
-| Vitest jsdom | Mock |
-| Vitest + injected factory | DecoderBacked (tests) |
+| Environment                | Provider              |
+| -------------------------- | --------------------- |
+| Playground + factory       | DecoderBacked         |
+| Playground without factory | Synthetic             |
+| Vitest jsdom               | Mock                  |
+| Vitest + injected factory  | DecoderBacked (tests) |
 
 ---
 
@@ -597,15 +597,15 @@ Location: [`freecut/src/features/player/`](../../../../freecut/src/features/play
 
 ### Borrow (patterns, not files)
 
-| Pattern | Freecut | Ours | When to adopt |
-|---------|---------|------|---------------|
-| Per-source media pool | `VideoSourcePool` + `SourceController` | `VideoLayer._providers` keyed by `src` | **Already mirrored** for decode providers |
-| Overflow lanes | Up to 3 overflow `<video>` elements | One decoder per src today | When same-src transitions / PIP need simultaneous frames |
-| Single clock | `Clock.ts` + `framechange` | `PlaybackEngine` | **Aligned** — do not add `ClockBridge`-style shims |
-| Sync planner | `video-sync-plan.ts` (pure) | Planned Phase 2 audio | When audio + video drift matters |
-| Background work queue | `background-media-work` | Inline prefetch in `requestFrame` | Replace coalescer when decode scheduling gets complex |
-| Pre-warm decode | Muted play/pause on `<video>` | N/A (WebCodecs) | Only if we add DomRenderer fallback |
-| Debug overlay | Dev diagnostics | `GpuRendererDebugPanel` | **Already have** |
+| Pattern               | Freecut                                | Ours                                   | When to adopt                                            |
+| --------------------- | -------------------------------------- | -------------------------------------- | -------------------------------------------------------- |
+| Per-source media pool | `VideoSourcePool` + `SourceController` | `VideoLayer._providers` keyed by `src` | **Already mirrored** for decode providers                |
+| Overflow lanes        | Up to 3 overflow `<video>` elements    | One decoder per src today              | When same-src transitions / PIP need simultaneous frames |
+| Single clock          | `Clock.ts` + `framechange`             | `PlaybackEngine`                       | **Aligned** — do not add `ClockBridge`-style shims       |
+| Sync planner          | `video-sync-plan.ts` (pure)            | Planned Phase 2 audio                  | When audio + video drift matters                         |
+| Background work queue | `background-media-work`                | Inline prefetch in `requestFrame`      | Replace coalescer when decode scheduling gets complex    |
+| Pre-warm decode       | Muted play/pause on `<video>`          | N/A (WebCodecs)                        | Only if we add DomRenderer fallback                      |
+| Debug overlay         | Dev diagnostics                        | `GpuRendererDebugPanel`                | **Already have**                                         |
 
 ### Avoid
 
@@ -639,17 +639,17 @@ See also: [`09-freecut-architecture-lessons.md`](../../../../09-freecut-architec
 
 Concrete regressions from this codebase mapped to [`AI-Rules.md`](./AI-Rules.md) §7.
 
-| Anti-pattern | Symptom | Fix / location |
-|--------------|---------|----------------|
-| Close borrowed cache frame in `VideoLayer.draw` | Black canvas after frame 1; `closed VideoFrame` | `frame.clone()` before upload — [`VideoLayer.ts:245`](./gpu/layers/VideoLayer.ts) |
-| Fabricate fallback object when decode emits nothing | `texImage2D` Overload failed | `strictNoOutput: true` — [`VideoDecoderManager.ts:489`](./gpu/VideoDecoderManager.ts) |
-| Lowest-key cache eviction on backward seek | Seek target evicted by prefetch | Pivot eviction — [`FrameCache.ts:107`](./gpu/FrameCache.ts) |
-| `requestFrame` blocked when `_pending` full during seek | Stuck after scrub | Discontinuity before back-pressure — [`DecoderBackedVideoFrameProvider.ts:207`](./gpu/DecoderBackedVideoFrameProvider.ts) |
-| Async inside `render()` | Jank, broken export stepping | Fire-and-forget `requestFrame` — [`IMPLEMENTATION_NOTES.md`](./gpu/IMPLEMENTATION_NOTES.md) |
-| Renderer reads Zustand / Project | Hidden coupling, untestable renderer | Scene-only boundary — [`types.ts`](./types.ts) |
-| Multiple clock authorities | Audio/video drift (future) | Single `PlaybackEngine` |
-| Stuck decode promises | `{pendingCount:4, cacheSize:0}` forever | `decodeTimeoutMs` watchdog |
-| Skip `preserveDrawingBuffer` in tests | Golden hash all zeros | GpuPreview option — [`GpuPreview.tsx`](../../../apps/playground/src/GpuPreview.tsx) |
+| Anti-pattern                                            | Symptom                                         | Fix / location                                                                                                            |
+| ------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Close borrowed cache frame in `VideoLayer.draw`         | Black canvas after frame 1; `closed VideoFrame` | `frame.clone()` before upload — [`VideoLayer.ts:245`](./gpu/layers/VideoLayer.ts)                                         |
+| Fabricate fallback object when decode emits nothing     | `texImage2D` Overload failed                    | `strictNoOutput: true` — [`VideoDecoderManager.ts:489`](./gpu/VideoDecoderManager.ts)                                     |
+| Lowest-key cache eviction on backward seek              | Seek target evicted by prefetch                 | Pivot eviction — [`FrameCache.ts:107`](./gpu/FrameCache.ts)                                                               |
+| `requestFrame` blocked when `_pending` full during seek | Stuck after scrub                               | Discontinuity before back-pressure — [`DecoderBackedVideoFrameProvider.ts:207`](./gpu/DecoderBackedVideoFrameProvider.ts) |
+| Async inside `render()`                                 | Jank, broken export stepping                    | Fire-and-forget `requestFrame` — [`IMPLEMENTATION_NOTES.md`](./gpu/IMPLEMENTATION_NOTES.md)                               |
+| Renderer reads Zustand / Project                        | Hidden coupling, untestable renderer            | Scene-only boundary — [`types.ts`](./types.ts)                                                                            |
+| Multiple clock authorities                              | Audio/video drift (future)                      | Single `PlaybackEngine`                                                                                                   |
+| Stuck decode promises                                   | `{pendingCount:4, cacheSize:0}` forever         | `decodeTimeoutMs` watchdog                                                                                                |
+| Skip `preserveDrawingBuffer` in tests                   | Golden hash all zeros                           | GpuPreview option — [`GpuPreview.tsx`](../../../apps/playground/src/GpuPreview.tsx)                                       |
 
 ---
 
@@ -715,12 +715,12 @@ If playback is **still** broken after pivot seek + clone + timeout, check these 
 
 ### Pairing with other docs
 
-| Question | Read |
-|----------|------|
-| Why this shape? | [`EVOLUTION.md`](./EVOLUTION.md) |
-| Sequence diagrams? | [`architecture.md`](./architecture.md) |
-| Wire mediabunny? | [`README.md`](./README.md) § "Wiring a real decoder" |
-| Agent implementation rules? | [`AI-Rules.md`](./AI-Rules.md) |
+| Question                    | Read                                                 |
+| --------------------------- | ---------------------------------------------------- |
+| Why this shape?             | [`EVOLUTION.md`](./EVOLUTION.md)                     |
+| Sequence diagrams?          | [`architecture.md`](./architecture.md)               |
+| Wire mediabunny?            | [`README.md`](./README.md) § "Wiring a real decoder" |
+| Agent implementation rules? | [`AI-Rules.md`](./AI-Rules.md)                       |
 
 ### Maintenance rule
 
@@ -728,8 +728,8 @@ When you change a layer's contract, update **§3 for that layer** in the same PR
 
 ---
 
-*Originally aligned 2026-05-24 (pull-based pipeline). Top banner, §1, and §5.3
+_Originally aligned 2026-05-24 (pull-based pipeline). Top banner, §1, and §5.3
 updated for the PR-02 push-based pipeline and the package split; the §3 per-layer
 drill-downs still describe the older pull-based internals (see banner). Renderer
 and decode suites now live under `packages/core/src/renderer/gpu/__tests__/` and
-`packages/core/src/media/video/__tests__/`.*
+`packages/core/src/media/video/__tests__/`._

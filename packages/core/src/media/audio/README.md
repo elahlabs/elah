@@ -86,11 +86,11 @@ controller.destroy() // stops all audio, detaches clock, closes context
 
 ### Mixer methods
 
-| Method | Description |
-|--------|-------------|
-| `setMasterGain(value)` | Ramp master output to `value` (linear, 0..2). Click-free. |
-| `setTrackGain(trackId, value)` | Ramp per-track fader to `value`. No-op if track has no active clips. |
-| `getTrackLevels()` | Returns `Map<trackId, { left, right }>` RMS levels from AnalyserNodes. Mono-summed (L=R) in v1. |
+| Method                         | Description                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `setMasterGain(value)`         | Ramp master output to `value` (linear, 0..2). Click-free.                                       |
+| `setTrackGain(trackId, value)` | Ramp per-track fader to `value`. No-op if track has no active clips.                            |
+| `getTrackLevels()`             | Returns `Map<trackId, { left, right }>` RMS levels from AnalyserNodes. Mono-summed (L=R) in v1. |
 
 ---
 
@@ -122,6 +122,7 @@ const { masterVolume, setMasterVolume } = useMasterVolume(controller, engine)
 ```
 
 Reads `project.masterVolume` and exposes `setMasterVolume(v)` which:
+
 1. Immediately ramps the audio graph (click-free).
 2. Persists the value to the project model via `engine.setMasterVolume()`.
 

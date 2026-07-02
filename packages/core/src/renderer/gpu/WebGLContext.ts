@@ -97,9 +97,7 @@ export class WebGLContext {
     }
 
     if (!this._gl) {
-      throw new Error(
-        'WebGLContext: WebGL is not supported or has been disabled in this browser.',
-      )
+      throw new Error('WebGLContext: WebGL is not supported or has been disabled in this browser.')
     }
 
     this._handleLost = (e: Event) => {
@@ -112,8 +110,9 @@ export class WebGLContext {
     this._handleRestored = () => {
       this._lost = false
       // Re-acquire the context object — it's the same canvas, same attribute bag.
-      const restored = this.canvas.getContext('webgl2', ctxAttribs)
-        ?? this.canvas.getContext('webgl', ctxAttribs) as unknown as WebGL2RenderingContext | null
+      const restored =
+        this.canvas.getContext('webgl2', ctxAttribs) ??
+        (this.canvas.getContext('webgl', ctxAttribs) as unknown as WebGL2RenderingContext | null)
       if (restored) {
         this._gl = restored as WebGL2RenderingContext
         this._initGLState()

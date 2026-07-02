@@ -6,10 +6,11 @@
 
 ## Current state
 
-The engine half is already strong; the gaps are the *consumer-facing API* and the
-*source-lane segregation*.
+The engine half is already strong; the gaps are the _consumer-facing API_ and the
+_source-lane segregation_.
 
 What exists:
+
 - [`importUrl(url, opts?)`](../../packages/core/src/assets/importFiles.ts) takes a
   URL **as-is** (it becomes the asset `src` — no download/copy), infers kind via
   extension → HEAD `content-type`, dedupes on `src`, funnels through the shared
@@ -20,13 +21,14 @@ What exists:
   already does search / sort / kind-filter chips / grid+list view modes.
 
 What's missing:
+
 1. **No declarative consumer API.** To seed the library a consumer must imperatively
    call `importUrl` per URL after mount. There is no "here are my media URLs, you
    sort it out" entry point on `EditorProvider`.
-2. **Segregation is by *kind* only, not by *source*.** The skill's information
-   architecture wants **Axis A = lane (where it came from)** as the *primary*
+2. **Segregation is by _kind_ only, not by _source_.** The skill's information
+   architecture wants **Axis A = lane (where it came from)** as the _primary_
    grouping (Imported file / URL-remote / Generated element), with **Axis B = kind**
-   as a filter *within* imported media. Today `MediaAsset` has no field recording
+   as a filter _within_ imported media. Today `MediaAsset` has no field recording
    its origin, so source-lane segregation isn't even data-driven.
 3. **Two overlapping panels.** `AssetPanel` (older, simple list) and `SourcePanel`
    (newer, lanes + view modes) both exist and are both exported. This must be
@@ -42,7 +44,7 @@ data-driven, not guessed in the UI:
 
 ```ts
 // packages/core/src/assets/types.ts
-export type MediaOrigin = 'file' | 'url' | 'blob'   // 'generated' stays NON-asset
+export type MediaOrigin = 'file' | 'url' | 'blob' // 'generated' stays NON-asset
 
 export interface MediaAsset {
   // …existing…
@@ -78,7 +80,7 @@ Expose an imperative twin for runtime adds: `useMediaLibrary().importUrls(urls)`
 
 Accept a permissive union so the developer truly passes things "as-is":
 `string | { url; kind?; name? }`, and (stretch) raw `File`/`Blob` routed to
-`importFiles`/`importBlob`. The point is the developer hands us *sources*; we own
+`importFiles`/`importBlob`. The point is the developer hands us _sources_; we own
 classification.
 
 ### C. Panel: lane segregation on the fly

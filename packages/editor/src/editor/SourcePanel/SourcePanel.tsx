@@ -20,12 +20,14 @@ import {
   type MediaKind,
   type DragMediaPayload,
 } from '@elah/core'
-import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind, type ShapeVariant } from '@elah/timeline'
 import {
-  isActivationKey,
-  useAssetActivation,
-  type AssetActivationHandler,
-} from '../activation'
+  ELEMENT_DRAG_MIME,
+  cn,
+  type DragElementPayload,
+  type ElementKind,
+  type ShapeVariant,
+} from '@elah/timeline'
+import { isActivationKey, useAssetActivation, type AssetActivationHandler } from '../activation'
 
 /**
  * Per-slot className overrides for SourcePanel.
@@ -119,7 +121,10 @@ const BADGE_CLASS: Record<MediaKind, string> = {
 const TOAST_DISMISS_MS = 3000
 const THUMB_SIZE = 52
 
-interface ImportToast { message: string; tone: 'info' | 'warn' }
+interface ImportToast {
+  message: string
+  tone: 'info' | 'warn'
+}
 
 function formatDuration(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return '—'
@@ -166,7 +171,13 @@ function filterSort(
 
 // ── Palette tiles (Elements lane) ──────────────────────────────────────────
 
-interface PaletteTile { element: ElementKind; shapeVariant?: ShapeVariant; label: string; icon: React.ReactNode; iconStyle?: CSSProperties }
+interface PaletteTile {
+  element: ElementKind
+  shapeVariant?: ShapeVariant
+  label: string
+  icon: React.ReactNode
+  iconStyle?: CSSProperties
+}
 
 const ShapeRect = () => (
   <svg viewBox="0 0 24 24" width={20} height={20} fill="currentColor">
@@ -187,7 +198,16 @@ const ShapeTriangle = () => (
 )
 
 const FreehandIcon = () => (
-  <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 24 24"
+    width={20}
+    height={20}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M3 17c3-3 5-7 8-7s4 4 7 1" />
     <path d="M17 11l2 2-2 2" />
   </svg>
@@ -303,7 +323,10 @@ function ClipCard({
   )
 
   const closeCtx = useCallback(() => setCtxMenu(null), [])
-  const handleDelete = useCallback(() => { onDelete(asset.id); setCtxMenu(null) }, [asset.id, onDelete])
+  const handleDelete = useCallback(() => {
+    onDelete(asset.id)
+    setCtxMenu(null)
+  }, [asset.id, onDelete])
   const handleActivate = useCallback(() => onActivate?.(asset), [asset, onActivate])
   const handleActivateKey = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -328,13 +351,21 @@ function ClipCard({
           onDragStart={onDragStart}
           onClick={onActivate ? handleActivate : undefined}
           onKeyDown={onActivate ? handleActivateKey : undefined}
-          onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            setCtxMenu({ x: e.clientX, y: e.clientY })
+          }}
           title={asset.name}
         >
           <span className="text-sm text-ed-text-muted shrink-0 w-[18px] text-center">
             {KIND_ICONS[asset.kind]}
           </span>
-          <span className={cn('flex-1 text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap', slots?.cardTitle)}>
+          <span
+            className={cn(
+              'flex-1 text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap',
+              slots?.cardTitle,
+            )}
+          >
             {asset.name}
           </span>
           {/* Badge: color moved from inline style to BADGE_CLASS so slot overrides land */}
@@ -348,11 +379,21 @@ function ClipCard({
           >
             {tag.label}
           </span>
-          <span className={cn('text-[10px] text-ed-text-muted font-mono shrink-0', slots?.cardMeta)}>
+          <span
+            className={cn('text-[10px] text-ed-text-muted font-mono shrink-0', slots?.cardMeta)}
+          >
             {formatDuration(asset.durationSec)}
           </span>
         </div>
-        {ctxMenu && <CtxMenu x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} onDelete={handleDelete} errorClassName={slots?.error} />}
+        {ctxMenu && (
+          <CtxMenu
+            x={ctxMenu.x}
+            y={ctxMenu.y}
+            onClose={closeCtx}
+            onDelete={handleDelete}
+            errorClassName={slots?.error}
+          />
+        )}
       </>
     )
   }
@@ -371,7 +412,10 @@ function ClipCard({
         onDragStart={onDragStart}
         onClick={onActivate ? handleActivate : undefined}
         onKeyDown={onActivate ? handleActivateKey : undefined}
-        onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          setCtxMenu({ x: e.clientX, y: e.clientY })
+        }}
         title={asset.name}
       >
         <div
@@ -382,7 +426,12 @@ function ClipCard({
           style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
         >
           {asset.thumbnailUrl ? (
-            <img src={asset.thumbnailUrl} alt="" draggable={false} className="w-full h-full object-cover block" />
+            <img
+              src={asset.thumbnailUrl}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover block"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-xl text-ed-text-muted">
               {KIND_ICONS[asset.kind]}
@@ -390,7 +439,12 @@ function ClipCard({
           )}
         </div>
         <div className="flex flex-col gap-[3px] min-w-0">
-          <span className={cn('text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap', slots?.cardTitle)}>
+          <span
+            className={cn(
+              'text-[11px] text-ed-text overflow-hidden text-ellipsis whitespace-nowrap',
+              slots?.cardTitle,
+            )}
+          >
             {asset.name}
           </span>
           <div className="flex items-center gap-[6px]">
@@ -411,7 +465,15 @@ function ClipCard({
           </div>
         </div>
       </div>
-      {ctxMenu && <CtxMenu x={ctxMenu.x} y={ctxMenu.y} onClose={closeCtx} onDelete={handleDelete} errorClassName={slots?.error} />}
+      {ctxMenu && (
+        <CtxMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={closeCtx}
+          onDelete={handleDelete}
+          errorClassName={slots?.error}
+        />
+      )}
     </>
   )
 }
@@ -451,9 +513,17 @@ function CtxMenu({
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={onDelete}
-          className={cn('block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer', errorClassName)}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)' }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+          className={cn(
+            'block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer',
+            errorClassName,
+          )}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.background =
+              'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+          }}
         >
           Delete
         </button>
@@ -550,20 +620,33 @@ export function SourcePanel({
       setUrlValue('')
       setUrlInputOpen(false)
     } catch (err) {
-      setToast({ message: `Failed: ${err instanceof Error ? err.message : String(err)}`, tone: 'warn' })
+      setToast({
+        message: `Failed: ${err instanceof Error ? err.message : String(err)}`,
+        tone: 'warn',
+      })
     } finally {
       setImporting(false)
     }
   }, [urlValue])
 
-  const onUrlKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { e.preventDefault(); void handleImportUrl() }
-    else if (e.key === 'Escape') { setUrlInputOpen(false); setUrlValue('') }
-  }, [handleImportUrl])
+  const onUrlKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        void handleImportUrl()
+      } else if (e.key === 'Escape') {
+        setUrlInputOpen(false)
+        setUrlValue('')
+      }
+    },
+    [handleImportUrl],
+  )
 
   const onDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOver(true)
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+      setIsDragOver(true)
     }
   }, [])
 
@@ -571,15 +654,22 @@ export function SourcePanel({
     if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false)
   }, [])
 
-  const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); setIsDragOver(false)
-    if (e.dataTransfer.files.length) void handleFiles(e.dataTransfer.files)
-  }, [handleFiles])
+  const onDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      setIsDragOver(false)
+      if (e.dataTransfer.files.length) void handleFiles(e.dataTransfer.files)
+    },
+    [handleFiles],
+  )
 
-  const onFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) void handleFiles(e.target.files)
-    e.target.value = ''
-  }, [handleFiles])
+  const onFileChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files?.length) void handleFiles(e.target.files)
+      e.target.value = ''
+    },
+    [handleFiles],
+  )
 
   // ── Element drag helper
   const makeDragStart = useCallback(
@@ -621,7 +711,12 @@ export function SourcePanel({
       style={style}
     >
       {/* ── Lane selector ─────────────────────────────────────────────────── */}
-      <div className={cn('flex items-center px-2 py-[6px] border-b border-ed-border gap-1 shrink-0', classNames?.tabBar)}>
+      <div
+        className={cn(
+          'flex items-center px-2 py-[6px] border-b border-ed-border gap-1 shrink-0',
+          classNames?.tabBar,
+        )}
+      >
         {(['media', 'elements'] as Lane[]).map((l) => (
           <button
             key={l}
@@ -630,8 +725,14 @@ export function SourcePanel({
             className={cn(
               // inactive tab base — explicit ternary for the active variant (no dynamic key access)
               lane === l
-                ? cn('flex-1 py-[5px] text-[11px] font-semibold capitalize cursor-pointer transition-all duration-[120ms] rounded-sm bg-ed-elevated border border-ed-border text-ed-text', classNames?.tabActive)
-                : cn('flex-1 py-[5px] text-[11px] font-medium capitalize cursor-pointer transition-all duration-[120ms] rounded-sm bg-transparent border border-transparent text-ed-text-muted', classNames?.tab),
+                ? cn(
+                    'flex-1 py-[5px] text-[11px] font-semibold capitalize cursor-pointer transition-all duration-[120ms] rounded-sm bg-ed-elevated border border-ed-border text-ed-text',
+                    classNames?.tabActive,
+                  )
+                : cn(
+                    'flex-1 py-[5px] text-[11px] font-medium capitalize cursor-pointer transition-all duration-[120ms] rounded-sm bg-transparent border border-transparent text-ed-text-muted',
+                    classNames?.tab,
+                  ),
             )}
             style={{
               fontFamily: 'var(--elah-font-ui)',
@@ -650,10 +751,23 @@ export function SourcePanel({
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <input ref={fileInputRef} type="file" multiple accept="video/*,audio/*,image/*" className="hidden" onChange={onFileChange} data-testid="source-file-input" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="video/*,audio/*,image/*"
+            className="hidden"
+            onChange={onFileChange}
+            data-testid="source-file-input"
+          />
 
           {/* Ingestion bar */}
-          <div className={cn('flex items-center gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0', classNames?.toolbar)}>
+          <div
+            className={cn(
+              'flex items-center gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0',
+              classNames?.toolbar,
+            )}
+          >
             <button
               type="button"
               onClick={() => setUrlInputOpen((o) => !o)}
@@ -702,7 +816,12 @@ export function SourcePanel({
 
           {/* URL input */}
           {urlInputOpen && (
-            <div className={cn('flex gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0', classNames?.toolbar)}>
+            <div
+              className={cn(
+                'flex gap-[6px] px-[10px] py-2 border-b border-ed-border shrink-0',
+                classNames?.toolbar,
+              )}
+            >
               <input
                 type="url"
                 value={urlValue}
@@ -728,7 +847,11 @@ export function SourcePanel({
                 type="button"
                 onClick={() => void handleImportUrl()}
                 disabled={importing || !urlValue.trim()}
-                className={ingestBtnClass(false, importing || !urlValue.trim(), classNames?.ingestButton)}
+                className={ingestBtnClass(
+                  false,
+                  importing || !urlValue.trim(),
+                  classNames?.ingestButton,
+                )}
                 style={ingestBtnStyle(importing || !urlValue.trim())}
               >
                 Add
@@ -737,7 +860,12 @@ export function SourcePanel({
           )}
 
           {/* Search + sort toolbar */}
-          <div className={cn('flex items-center gap-[6px] px-[10px] py-[6px] border-b border-ed-border shrink-0', classNames?.toolbar)}>
+          <div
+            className={cn(
+              'flex items-center gap-[6px] px-[10px] py-[6px] border-b border-ed-border shrink-0',
+              classNames?.toolbar,
+            )}
+          >
             <input
               type="search"
               value={search}
@@ -779,7 +907,12 @@ export function SourcePanel({
           </div>
 
           {/* Kind chips */}
-          <div className={cn('flex gap-1 px-[10px] py-[6px] border-b border-ed-border shrink-0 overflow-x-auto', classNames?.toolbar)}>
+          <div
+            className={cn(
+              'flex gap-1 px-[10px] py-[6px] border-b border-ed-border shrink-0 overflow-x-auto',
+              classNames?.toolbar,
+            )}
+          >
             {KIND_CHIPS.map(({ value, label }) => (
               <button
                 key={value}
@@ -787,8 +920,14 @@ export function SourcePanel({
                 onClick={() => setKindFilter(value)}
                 className={cn(
                   kindFilter === value
-                    ? cn('px-2 py-px text-[10px] font-bold rounded-full whitespace-nowrap cursor-pointer transition-all duration-[120ms] border bg-ed-accent-soft text-ed-accent-dim border-ed-accent', classNames?.sortChipActive)
-                    : cn('px-2 py-px text-[10px] font-medium rounded-full whitespace-nowrap cursor-pointer transition-all duration-[120ms] border bg-ed-card text-ed-text-muted border-ed-border', classNames?.sortChip),
+                    ? cn(
+                        'px-2 py-px text-[10px] font-bold rounded-full whitespace-nowrap cursor-pointer transition-all duration-[120ms] border bg-ed-accent-soft text-ed-accent-dim border-ed-accent',
+                        classNames?.sortChipActive,
+                      )
+                    : cn(
+                        'px-2 py-px text-[10px] font-medium rounded-full whitespace-nowrap cursor-pointer transition-all duration-[120ms] border bg-ed-card text-ed-text-muted border-ed-border',
+                        classNames?.sortChip,
+                      ),
                 )}
                 style={{
                   // keep custom sizing via inline for backward-compat (spacing already in className above)
@@ -811,10 +950,19 @@ export function SourcePanel({
             {toast && (
               <div
                 role="status"
-                className={cn('absolute top-2 left-2 right-2 z-[2] px-[10px] py-2 rounded-sm text-[10px] font-mono leading-[1.4] whitespace-pre-line', classNames?.toast)}
+                className={cn(
+                  'absolute top-2 left-2 right-2 z-[2] px-[10px] py-2 rounded-sm text-[10px] font-mono leading-[1.4] whitespace-pre-line',
+                  classNames?.toast,
+                )}
                 style={{
-                  color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
-                  background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+                  color:
+                    toast.tone === 'warn'
+                      ? 'var(--elah-danger-text, #f5d0a9)'
+                      : 'var(--elah-info-text, #c8d8f0)',
+                  background:
+                    toast.tone === 'warn'
+                      ? 'var(--elah-danger-bg, #3a2418)'
+                      : 'var(--elah-info-bg, #1a2433)',
                   border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
                 }}
@@ -826,12 +974,12 @@ export function SourcePanel({
             {assets.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[120px] p-4 text-center text-ed-text-muted text-[11px] border border-dashed border-ed-border rounded-md">
                 <span className="mb-2 text-2xl opacity-50">↓</span>
-                Drop files here<br />or click Add
+                Drop files here
+                <br />
+                or click Add
               </div>
             ) : visibleAssets.length === 0 ? (
-              <div className="text-center text-ed-text-muted text-[11px] pt-8">
-                No matches
-              </div>
+              <div className="text-center text-ed-text-muted text-[11px] pt-8">No matches</div>
             ) : (
               <div className="flex flex-col gap-[6px]">
                 {visibleAssets.map((asset) => (
@@ -854,7 +1002,12 @@ export function SourcePanel({
       {lane === 'elements' && (
         <div className="flex flex-col flex-1 min-h-0 overflow-auto">
           {/* Elements search (no chips, no filmstrip) */}
-          <div className={cn('px-[10px] py-[6px] border-b border-ed-border shrink-0', classNames?.toolbar)}>
+          <div
+            className={cn(
+              'px-[10px] py-[6px] border-b border-ed-border shrink-0',
+              classNames?.toolbar,
+            )}
+          >
             <input
               type="search"
               placeholder="Search elements…"
@@ -887,7 +1040,11 @@ export function SourcePanel({
                   classNames?.tile,
                 )}
                 onDragStart={makeDragStart(element, shapeVariant)}
-                onClick={activationEnabled ? () => handleElementActivate(element, shapeVariant, label) : undefined}
+                onClick={
+                  activationEnabled
+                    ? () => handleElementActivate(element, shapeVariant, label)
+                    : undefined
+                }
                 onKeyDown={
                   activationEnabled
                     ? (e) => {
@@ -905,7 +1062,9 @@ export function SourcePanel({
                 >
                   {icon}
                 </span>
-                <span className={cn('text-[11px] text-ed-text font-medium', classNames?.tileLabel)}>{label}</span>
+                <span className={cn('text-[11px] text-ed-text font-medium', classNames?.tileLabel)}>
+                  {label}
+                </span>
               </div>
             ))}
           </div>

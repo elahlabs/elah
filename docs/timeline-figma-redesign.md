@@ -28,6 +28,7 @@ node (no style/Code Connect data). Geometry is exact from Figma metadata.
 > colors faithfully (no preserving crimson).
 >
 > Files changed:
+>
 > - `apps/web/styles/globals.css` — `.elah-root` token values (accent, playhead, ticks, text/audio
 >   clips, transition, selection, stage border) + two audio `data-*` retint rules.
 > - `packages/editor/src/styles/tokens.css` — synced standalone defaults to match + same rules.
@@ -70,36 +71,39 @@ Timeline Section            1368 × 344
 
 `[type icon] [name] … [visibility] [lock]`
 
-| Row | Type icon | Visibility control |
-|-----|-----------|--------------------|
-| Text Track 2 / 1 | `T` glyph | eye + lock |
-| Video Track 3 / 2 / 1 | film/clapper | eye + lock |
-| Audio Track 1 / 2 / 3 | music note | **speaker (volume)** + lock |
+| Row                   | Type icon    | Visibility control          |
+| --------------------- | ------------ | --------------------------- |
+| Text Track 2 / 1      | `T` glyph    | eye + lock                  |
+| Video Track 3 / 2 / 1 | film/clapper | eye + lock                  |
+| Audio Track 1 / 2 / 3 | music note   | **speaker (volume)** + lock |
 
 ## Exact colors (sampled, srgb hex)
 
 ### Surfaces — cool near-black navy
-| Region | Sampled | rgb |
-|--------|---------|-----|
-| Lane / track area | `#101217` | 16,18,23 |
-| Toolbar | `#111318` | 17,19,24 |
+
+| Region               | Sampled   | rgb      |
+| -------------------- | --------- | -------- |
+| Lane / track area    | `#101217` | 16,18,23 |
+| Toolbar              | `#111318` | 17,19,24 |
 | Ruler / header strip | `#0E1418` | 14,20,24 |
 
 ### Ruler / playhead
-| Part | Sampled |
-|------|---------|
+
+| Part                  | Sampled   |
+| --------------------- | --------- |
 | Timecode label (gray) | `#7A858B` |
-| Tick mark | `#394146` |
-| **Playhead needle** | `#FFFFFF` |
+| Tick mark             | `#394146` |
+| **Playhead needle**   | `#FFFFFF` |
 
 ### Clips
-| Clip | Body | Waveform / accent / border |
-|------|------|----------------------------|
-| **Text** (orange/rust) | `#7A2E10` | top highlight `#AD5621` |
-| **Video — effect** ("Chrom…room", indigo) | `#232356` | border/accent `#3C3E94`, lighter `#525480` |
-| **Video — media** (Tracks 1/2) | thumbnail filmstrip (no solid fill) | thin hairline frame |
-| **Audio — green** (Tracks 1/3) | `#0C2A26` | waveform `#248F6C` |
-| **Audio — blue** (Track 2) | `#162245` | waveform `#4370B2` |
+
+| Clip                                      | Body                                | Waveform / accent / border                 |
+| ----------------------------------------- | ----------------------------------- | ------------------------------------------ |
+| **Text** (orange/rust)                    | `#7A2E10`                           | top highlight `#AD5621`                    |
+| **Video — effect** ("Chrom…room", indigo) | `#232356`                           | border/accent `#3C3E94`, lighter `#525480` |
+| **Video — media** (Tracks 1/2)            | thumbnail filmstrip (no solid fill) | thin hairline frame                        |
+| **Audio — green** (Tracks 1/3)            | `#0C2A26`                           | waveform `#248F6C`                         |
+| **Audio — blue** (Track 2)                | `#162245`                           | waveform `#4370B2`                         |
 
 - Clip corners ~4px, white labels top-left, left accent edge. Lighter same-hue border = selected.
 
@@ -111,57 +115,63 @@ Current values from `packages/editor/src/styles/tokens.css`. Apply the same shif
 `globals.css`. **`[confirm]`** = not directly evidenced by the timeline node; needs your call.
 
 ### Surfaces (warm-charcoal → cool-navy)
-| Token | Current | Target |
-|-------|---------|--------|
-| `--elah-bg` | `#0a0909` | `#0a0c10` |
+
+| Token                 | Current   | Target    |
+| --------------------- | --------- | --------- |
+| `--elah-bg`           | `#0a0909` | `#0a0c10` |
 | `--elah-bg-secondary` | `#0d0c0c` | `#101217` |
-| `--elah-bg-panel` | `#181616` | `#0e1319` |
-| `--elah-bg-card` | `#201d1d` | `#15191f` |
-| `--elah-bg-elevated` | `#282424` | `#1b2028` |
-| `--elah-bg-highest` | `#312d2d` | `#232a33` |
+| `--elah-bg-panel`     | `#181616` | `#0e1319` |
+| `--elah-bg-card`      | `#201d1d` | `#15191f` |
+| `--elah-bg-elevated`  | `#282424` | `#1b2028` |
+| `--elah-bg-highest`   | `#312d2d` | `#232a33` |
 
 ### Borders / text
-| Token | Current | Target |
-|-------|---------|--------|
-| `--elah-border` | `#302828` | `#283040` |
+
+| Token                  | Current   | Target    |
+| ---------------------- | --------- | --------- |
+| `--elah-border`        | `#302828` | `#283040` |
 | `--elah-border-subtle` | `#231f1f` | `#1b212c` |
-| `--elah-outline` | `#564848` | `#3a4150` |
-| `--elah-text` | `#f0ecea` | `#e9edf3` |
-| `--elah-text-muted` | `#9e918f` | `#8a909c` |
+| `--elah-outline`       | `#564848` | `#3a4150` |
+| `--elah-text`          | `#f0ecea` | `#e9edf3` |
+| `--elah-text-muted`    | `#9e918f` | `#8a909c` |
 
 ### Timeline / playhead
-| Token | Current | Target |
-|-------|---------|--------|
-| `--elah-playhead` | `#ff2d55` | `#ffffff` |
-| `--elah-tick-color` | `#302828` | `#394146` |
-| `--elah-tick-label` | `#9e918f` | `#7a858b` |
-| `--elah-selection-border` | `#ff2d55` | **keep `#ff2d55`** (decision: ring stays crimson vs white playhead) |
-| `--elah-selection-glow` | `rgba(255,45,85,.4)` | **keep** |
+
+| Token                     | Current              | Target                                                              |
+| ------------------------- | -------------------- | ------------------------------------------------------------------- |
+| `--elah-playhead`         | `#ff2d55`            | `#ffffff`                                                           |
+| `--elah-tick-color`       | `#302828`            | `#394146`                                                           |
+| `--elah-tick-label`       | `#9e918f`            | `#7a858b`                                                           |
+| `--elah-selection-border` | `#ff2d55`            | **keep `#ff2d55`** (decision: ring stays crimson vs white playhead) |
+| `--elah-selection-glow`   | `rgba(255,45,85,.4)` | **keep**                                                            |
 
 ### Accent — DECISION: keep crimson app-wide
+
 `--elah-accent*` tokens are **unchanged**. The blue is applied **only** to the timeline zoom
 slider thumb via a local class/token (`--elah-zoom-thumb: #3b82f6`), not the global accent.
 
 ### Clip — text (purple → orange)
-| Token | Current | Target |
-|-------|---------|--------|
-| `--elah-clip-text-top` | `#a855f7` | `#ad5621` |
-| `--elah-clip-text-mid` | `#9333ea` | `#8f3f18` |
-| `--elah-clip-text-bottom` | `#7e22ce` | `#7a2e10` |
-| `--elah-clip-text-accent` | `#c084fc` | `#c9763f` |
-| `--elah-tag-text-fg` | `#c4b5fd` | `#f0b483` |
-| `--elah-tag-text-bg` | `rgba(147,51,234,.25)` | `rgba(173,86,33,.25)` |
-| `--elah-tag-text-border` | `rgba(147,51,234,.4)` | `rgba(173,86,33,.4)` |
+
+| Token                     | Current                | Target                |
+| ------------------------- | ---------------------- | --------------------- |
+| `--elah-clip-text-top`    | `#a855f7`              | `#ad5621`             |
+| `--elah-clip-text-mid`    | `#9333ea`              | `#8f3f18`             |
+| `--elah-clip-text-bottom` | `#7e22ce`              | `#7a2e10`             |
+| `--elah-clip-text-accent` | `#c084fc`              | `#c9763f`             |
+| `--elah-tag-text-fg`      | `#c4b5fd`              | `#f0b483`             |
+| `--elah-tag-text-bg`      | `rgba(147,51,234,.25)` | `rgba(173,86,33,.25)` |
+| `--elah-tag-text-border`  | `rgba(147,51,234,.4)`  | `rgba(173,86,33,.4)`  |
 
 ### Clip — audio (green at rest; blue = selected/active state)
-| Token | Current | Target |
-|-------|---------|--------|
-| `--elah-clip-audio-top` | `#22c55e` | `#2f9e74` |
-| `--elah-clip-audio-mid` | `#16a34a` | `#1f7d5c` |
-| `--elah-clip-audio-bottom` | `#15803d` | `#0c2a26` |
-| `--elah-clip-audio-accent` | `#4ade80` | `#34d39e` |
-| `--elah-clip-audio-sel-top` _(new)_ | — | `#4370b2` |
-| `--elah-clip-audio-sel-bottom` _(new)_ | — | `#162245` |
+
+| Token                                  | Current   | Target    |
+| -------------------------------------- | --------- | --------- |
+| `--elah-clip-audio-top`                | `#22c55e` | `#2f9e74` |
+| `--elah-clip-audio-mid`                | `#16a34a` | `#1f7d5c` |
+| `--elah-clip-audio-bottom`             | `#15803d` | `#0c2a26` |
+| `--elah-clip-audio-accent`             | `#4ade80` | `#34d39e` |
+| `--elah-clip-audio-sel-top` _(new)_    | —         | `#4370b2` |
+| `--elah-clip-audio-sel-bottom` _(new)_ | —         | `#162245` |
 
 > **Decision:** blue audio clip = **selected/active state**. Resting audio is teal-green; the
 > selected audio clip tints blue (`#162245`→`#4370b2`). The crimson selection ring still applies
@@ -169,11 +179,12 @@ slider thumb via a local class/token (`--elah-zoom-thumb: #3b82f6`), not the glo
 > ramp when selected.
 
 ### Clip — video / effect (indigo effect clip)
-| Token | Current | Target |
-|-------|---------|--------|
-| `--elah-clip-video-*` | blue `#3b82f6`→`#1d4ed8` | keep blue (media clips show thumbnails); align top to `#3b82f6` |
-| `--elah-transition-fill` | `#6b8cff` | `#3c3e94` `[confirm]` (matches "Chrom…room" effect clip) |
-| `--elah-transition-stroke` | `#a5b4fc` | `#525480` `[confirm]` |
+
+| Token                      | Current                  | Target                                                          |
+| -------------------------- | ------------------------ | --------------------------------------------------------------- |
+| `--elah-clip-video-*`      | blue `#3b82f6`→`#1d4ed8` | keep blue (media clips show thumbnails); align top to `#3b82f6` |
+| `--elah-transition-fill`   | `#6b8cff`                | `#3c3e94` `[confirm]` (matches "Chrom…room" effect clip)        |
+| `--elah-transition-stroke` | `#a5b4fc`                | `#525480` `[confirm]`                                           |
 
 ## Needs a rendering change, not just a token (flag)
 

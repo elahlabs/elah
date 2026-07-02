@@ -26,11 +26,7 @@ export class ShaderProgram {
    * Compile both shaders, link them, and return a new ShaderProgram.
    * Throws a descriptive error on any GL failure so bugs surface early.
    */
-  static create(
-    gl: WebGL2RenderingContext,
-    vertSrc: string,
-    fragSrc: string,
-  ): ShaderProgram {
+  static create(gl: WebGL2RenderingContext, vertSrc: string, fragSrc: string): ShaderProgram {
     const vert = ShaderProgram.compileShader(gl, gl.VERTEX_SHADER, vertSrc)
     const frag = ShaderProgram.compileShader(gl, gl.FRAGMENT_SHADER, fragSrc)
 
@@ -112,11 +108,7 @@ export class ShaderProgram {
     return loc
   }
 
-  private static compileShader(
-    gl: WebGL2RenderingContext,
-    type: number,
-    src: string,
-  ): WebGLShader {
+  private static compileShader(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
     const shader = gl.createShader(type)
     if (!shader) {
       throw new Error(`ShaderProgram: gl.createShader(${type}) returned null`)

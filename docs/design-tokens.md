@@ -12,10 +12,10 @@
 
 There are two variable families:
 
-| Family | Defined in | Used by |
-| --- | --- | --- |
-| `--color-*` | `apps/web/styles/globals.css` (`:root` / `.dark`) | the website's own chrome (marketing, docs) |
-| `--elah-*` | `@elah/editor/styles/tokens.css` (standalone) **or** the `.elah-root` block in `globals.css` (this repo's app) | the editor + timeline packages |
+| Family      | Defined in                                                                                                     | Used by                                    |
+| ----------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `--color-*` | `apps/web/styles/globals.css` (`:root` / `.dark`)                                                              | the website's own chrome (marketing, docs) |
+| `--elah-*`  | `@elah/editor/styles/tokens.css` (standalone) **or** the `.elah-root` block in `globals.css` (this repo's app) | the editor + timeline packages             |
 
 Whoever defines `--elah-*` decides the editor's look. There are three ways to do it:
 
@@ -43,7 +43,7 @@ no global reset leaks into a consumer).
 
 ```ts
 // 1. token values — pick ONE source:
-import '@elah/editor/styles/tokens.css'   // standalone dark defaults, OR
+import '@elah/editor/styles/tokens.css' // standalone dark defaults, OR
 // (when embedding in an app that already defines .elah-root, skip this)
 
 // 2. compiled component styles — always import both:
@@ -60,7 +60,7 @@ Override any `--elah-*` variable in your own `.elah-root` scope:
 
 ```css
 .elah-root {
-  --elah-accent:   #6366f1;   /* indigo brand */
+  --elah-accent: #6366f1; /* indigo brand */
   --elah-bg-panel: #1e1e2e;
   --elah-playhead: #f43f5e;
 }
@@ -71,7 +71,7 @@ The full variable list is the public theming surface — see
 
 ### Per-instance: the `classNames` prop
 
-Tokens recolor every editor instance globally. For a *single* component, pass a
+Tokens recolor every editor instance globally. For a _single_ component, pass a
 `classNames` prop — a per-slot map of Tailwind classes that wins over the
 defaults (via `tailwind-merge`). Two components expose one:
 
@@ -88,22 +88,22 @@ from `currentColor`.
 
 ## Token groups
 
-| Group (`--elah-…`) | Purpose |
-| --- | --- |
-| `bg`, `bg-secondary`, `bg-panel`, `bg-card`, `bg-elevated`, `bg-highest` | Structural surfaces (canvas, lanes, panels, cards, menus, chips) |
-| `border`, `border-subtle`, `outline` | Hairlines and interactive/focus edges |
-| `text`, `text-muted`, `text-on-clip` | Foreground text + label on a colored clip |
-| `accent*` | Primary accent (hover/dim/glow/soft/text variants) |
-| `clip-{video,audio,text,image}-{top,mid,bottom,accent}` | Per-clip-type gradient ramp + accent |
-| `tag-*` | Asset/element kind chips (fg/bg per kind) |
-| `playhead`, `tick-color`, `tick-label` | Playhead needle, ruler ticks and labels |
-| `selection-{border,glow}` | Selected-clip highlight |
-| `transition-*` | Cut-line + diamond marker states (line/hover/idle/fill/stroke/add) |
-| `menu-*`, `popover-*`, `dialog-*` | Context menu, transition picker popover, blocking dialog |
-| `danger-*`, `color-error` | Destructive actions (delete / remove) + generic error text |
-| `info-{bg,border,text}` | Informational toast (e.g. "skipped N duplicates") |
-| `effect-*` | Reusable overlays — glosses, inset highlights, scrims, drop shadows |
-| `preview-bg`, `stage-{border,glow}`, `selection-{color,handle}` | Preview canvas + media-transform overlay affordances |
+| Group (`--elah-…`)                                                       | Purpose                                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `bg`, `bg-secondary`, `bg-panel`, `bg-card`, `bg-elevated`, `bg-highest` | Structural surfaces (canvas, lanes, panels, cards, menus, chips)    |
+| `border`, `border-subtle`, `outline`                                     | Hairlines and interactive/focus edges                               |
+| `text`, `text-muted`, `text-on-clip`                                     | Foreground text + label on a colored clip                           |
+| `accent*`                                                                | Primary accent (hover/dim/glow/soft/text variants)                  |
+| `clip-{video,audio,text,image}-{top,mid,bottom,accent}`                  | Per-clip-type gradient ramp + accent                                |
+| `tag-*`                                                                  | Asset/element kind chips (fg/bg per kind)                           |
+| `playhead`, `tick-color`, `tick-label`                                   | Playhead needle, ruler ticks and labels                             |
+| `selection-{border,glow}`                                                | Selected-clip highlight                                             |
+| `transition-*`                                                           | Cut-line + diamond marker states (line/hover/idle/fill/stroke/add)  |
+| `menu-*`, `popover-*`, `dialog-*`                                        | Context menu, transition picker popover, blocking dialog            |
+| `danger-*`, `color-error`                                                | Destructive actions (delete / remove) + generic error text          |
+| `info-{bg,border,text}`                                                  | Informational toast (e.g. "skipped N duplicates")                   |
+| `effect-*`                                                               | Reusable overlays — glosses, inset highlights, scrims, drop shadows |
+| `preview-bg`, `stage-{border,glow}`, `selection-{color,handle}`          | Preview canvas + media-transform overlay affordances                |
 
 ## Adding or changing a token
 

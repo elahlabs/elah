@@ -16,7 +16,10 @@ export default function PluginsPage() {
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Plugins</div>
-          <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h1
+            className="text-3xl font-semibold tracking-tight text-on-surface"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Plugins & Custom Renderers
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
@@ -25,11 +28,27 @@ export default function PluginsPage() {
         </div>
 
         <section className="mb-10">
-          <h2 id="custom-renderers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="custom-renderers"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Custom Renderers
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Any object that implements the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Renderer</code> interface can replace the built-in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">GpuRenderer</code>. The renderer receives a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> each tick and is responsible for writing pixels:
+            Any object that implements the{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Renderer
+            </code>{' '}
+            interface can replace the built-in{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              GpuRenderer
+            </code>
+            . The renderer receives a{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              Scene
+            </code>{' '}
+            each tick and is responsible for writing pixels:
           </p>
           <CodeBlock
             language="typescript"
@@ -76,11 +95,20 @@ export class CanvasRenderer implements Renderer {
         </section>
 
         <section className="mb-10">
-          <h2 id="custom-layers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="custom-layers"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Custom GPU Layers
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">GpuRenderer</code> uses a layer registry. Each layer type (VideoLayer, ImageLayer, TextLayer) is a class that handles setup, texture upload, and draw calls for its clip type.
+            The{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              GpuRenderer
+            </code>{' '}
+            uses a layer registry. Each layer type (VideoLayer, ImageLayer, TextLayer) is a class
+            that handles setup, texture upload, and draw calls for its clip type.
           </p>
           <CodeBlock
             language="typescript"
@@ -102,11 +130,20 @@ renderer.registerLayer('gradient', GradientLayer)
         </section>
 
         <section className="mb-10">
-          <h2 id="custom-demuxers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2
+            id="custom-demuxers"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            style={{ fontFamily: 'var(--font-inter), sans-serif' }}
+          >
             Custom Demuxers
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The decode pipeline is fully pluggable via the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">DemuxerFactory</code> interface. The built-in implementation uses mediabunny, but you can swap in any demuxer that implements the interface:
+            The decode pipeline is fully pluggable via the{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">
+              DemuxerFactory
+            </code>{' '}
+            interface. The built-in implementation uses mediabunny, but you can swap in any demuxer
+            that implements the interface:
           </p>
           <CodeBlock
             language="typescript"

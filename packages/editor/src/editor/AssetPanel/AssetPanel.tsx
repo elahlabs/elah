@@ -21,11 +21,7 @@ import {
   type DragMediaPayload,
 } from '@elah/core'
 import { cn } from '@elah/timeline'
-import {
-  isActivationKey,
-  useAssetActivation,
-  type AssetActivationHandler,
-} from '../activation'
+import { isActivationKey, useAssetActivation, type AssetActivationHandler } from '../activation'
 
 export interface AssetPanelProps {
   style?: CSSProperties
@@ -187,45 +183,44 @@ function AssetThumbnail({
         </div>
       </div>
 
-      {ctxMenu && createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-[9998]"
-            onMouseDown={closeCtxMenu}
-          />
-          <div
-            style={{
-              position: 'fixed',
-              top: ctxMenu.y,
-              left: ctxMenu.x,
-              zIndex: 9999,
-              background: 'var(--elah-bg-elevated)',
-              border: '1px solid var(--elah-outline)',
-              borderRadius: 'var(--elah-radius-sm)',
-              padding: '4px 0',
-              minWidth: 140,
-              boxShadow: 'var(--elah-menu-shadow, 0 8px 24px rgba(0,0,0,0.5))',
-              fontFamily: 'var(--elah-font-ui)',
-            }}
-          >
-            <button
-              type="button"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={handleDelete}
-              className="block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer tracking-[0.01em]"
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+      {ctxMenu &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[9998]" onMouseDown={closeCtxMenu} />
+            <div
+              style={{
+                position: 'fixed',
+                top: ctxMenu.y,
+                left: ctxMenu.x,
+                zIndex: 9999,
+                background: 'var(--elah-bg-elevated)',
+                border: '1px solid var(--elah-outline)',
+                borderRadius: 'var(--elah-radius-sm)',
+                padding: '4px 0',
+                minWidth: 140,
+                boxShadow: 'var(--elah-menu-shadow, 0 8px 24px rgba(0,0,0,0.5))',
+                fontFamily: 'var(--elah-font-ui)',
               }}
             >
-              Delete
-            </button>
-          </div>
-        </>,
-        document.body,
-      )}
+              <button
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={handleDelete}
+                className="block w-full px-[14px] py-[7px] text-left bg-transparent border-none text-ed-error text-[13px] cursor-pointer tracking-[0.01em]"
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.background =
+                    'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
     </>
   )
 }
@@ -236,12 +231,7 @@ function AssetThumbnail({
  *
  * Must be rendered inside `<EditorProvider>`.
  */
-export function AssetPanel({
-  style,
-  className,
-  activateOnTap,
-  onAssetActivate,
-}: AssetPanelProps) {
+export function AssetPanel({ style, className, activateOnTap, onAssetActivate }: AssetPanelProps) {
   const { assets } = useMediaLibrary()
   const removeAsset = useMediaLibraryStore((s) => s.removeAsset)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -257,9 +247,12 @@ export function AssetPanel({
     setToast,
   })
 
-  const handleDeleteAsset = useCallback((id: string) => {
-    removeAsset(id)
-  }, [removeAsset])
+  const handleDeleteAsset = useCallback(
+    (id: string) => {
+      removeAsset(id)
+    },
+    [removeAsset],
+  )
   const handleAssetActivate = useCallback(
     (asset: MediaAsset) => {
       void activateAsset({ kind: 'media-asset', asset })
@@ -376,9 +369,7 @@ export function AssetPanel({
       />
 
       <div className="flex items-center justify-between px-3 py-[10px] border-b border-ed-border shrink-0">
-        <span className="text-[10px] font-bold text-ed-text-muted tracking-[0.08em]">
-          MEDIA
-        </span>
+        <span className="text-[10px] font-bold text-ed-text-muted tracking-[0.08em]">MEDIA</span>
         <div className="flex gap-[6px]">
           <button
             type="button"
@@ -450,7 +441,10 @@ export function AssetPanel({
               fontSize: 11,
               fontWeight: 600,
               background: 'var(--elah-bg-card)',
-              color: importing || urlValue.trim().length === 0 ? 'var(--elah-text-muted)' : 'var(--elah-accent)',
+              color:
+                importing || urlValue.trim().length === 0
+                  ? 'var(--elah-text-muted)'
+                  : 'var(--elah-accent)',
               border: '1px solid var(--elah-border)',
               borderRadius: 'var(--elah-radius-sm)',
               cursor: importing ? 'wait' : 'pointer',
@@ -473,8 +467,14 @@ export function AssetPanel({
             role="status"
             className="absolute top-2 left-2 right-2 z-[2] px-[10px] py-2 rounded-sm text-[10px] font-mono leading-[1.4] whitespace-pre-line"
             style={{
-              color: toast.tone === 'warn' ? 'var(--elah-danger-text, #f5d0a9)' : 'var(--elah-info-text, #c8d8f0)',
-              background: toast.tone === 'warn' ? 'var(--elah-danger-bg, #3a2418)' : 'var(--elah-info-bg, #1a2433)',
+              color:
+                toast.tone === 'warn'
+                  ? 'var(--elah-danger-text, #f5d0a9)'
+                  : 'var(--elah-info-text, #c8d8f0)',
+              background:
+                toast.tone === 'warn'
+                  ? 'var(--elah-danger-bg, #3a2418)'
+                  : 'var(--elah-info-bg, #1a2433)',
               border: `1px solid ${toast.tone === 'warn' ? 'var(--elah-danger-border, #7a4a2a)' : 'var(--elah-info-border, #355070)'}`,
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
             }}

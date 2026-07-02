@@ -1,11 +1,4 @@
-import {
-  forwardRef,
-  memo,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from 'react'
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef } from 'react'
 import type { TimelineEngine } from '@elah/core'
 import type { PlaybackEngine } from '@elah/core'
 import type { Clip } from '@elah/core'
@@ -106,7 +99,14 @@ export interface TimelineProps {
  */
 export const Timeline = memo(
   forwardRef<TimelineRef, TimelineProps>(function Timeline(
-    { fps = 30, className, style, classNames, sidebarWidth = SIDEBAR_WIDTH, compactSidebar = false },
+    {
+      fps = 30,
+      className,
+      style,
+      classNames,
+      sidebarWidth = SIDEBAR_WIDTH,
+      compactSidebar = false,
+    },
     ref,
   ) {
     const { engine, playback } = useEditor()
@@ -127,11 +127,11 @@ export const Timeline = memo(
       usePlaybackStore.getState().setZoom(available / frames)
     }, [fps, sidebarWidth])
 
-    useImperativeHandle(
-      ref,
-      () => ({ engine, playback, fitToWindow }),
-      [engine, playback, fitToWindow],
-    )
+    useImperativeHandle(ref, () => ({ engine, playback, fitToWindow }), [
+      engine,
+      playback,
+      fitToWindow,
+    ])
 
     const tracks = useTracksStore((s) => s.tracks)
     const totalFrames = useTracksStore((s) => s.totalFrames)
@@ -190,8 +190,7 @@ export const Timeline = memo(
         e.preventDefault()
         const rect = el.getBoundingClientRect()
         // Lane x of the pinch midpoint (content coords minus the sticky sidebar).
-        const midX =
-          (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left - sidebarWidth
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left - sidebarWidth
         const prevZoom = usePlaybackStore.getState().zoom
         const anchorFrame = (el.scrollLeft + midX) / prevZoom
         usePlaybackStore.getState().setZoom((startZoom * dist(e.touches)) / startDist)
@@ -219,11 +218,7 @@ export const Timeline = memo(
     useEffect(() => {
       const handleKey = (e: KeyboardEvent) => {
         const target = e.target as HTMLElement
-        if (
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable
-        )
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
           return
 
         if (e.code === 'Space') {
@@ -236,21 +231,12 @@ export const Timeline = memo(
           engine.undo()
         }
 
-        if (
-          (e.ctrlKey || e.metaKey) &&
-          (e.key === 'y' || (e.key === 'z' && e.shiftKey))
-        ) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
           e.preventDefault()
           engine.redo()
         }
 
-        if (
-          e.key === 's' &&
-          !e.ctrlKey &&
-          !e.metaKey &&
-          !e.shiftKey &&
-          !e.altKey
-        ) {
+        if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
           e.preventDefault()
           const result = splitClipAtPlayhead(engine)
           if (!result.ok) {
@@ -441,5 +427,3 @@ export const Timeline = memo(
     )
   }),
 )
-
-

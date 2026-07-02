@@ -35,10 +35,7 @@ export function StageBorder() {
   )
 
   return (
-    <div
-      ref={rootRef}
-      className="absolute inset-0 z-[1] pointer-events-none overflow-hidden"
-    >
+    <div ref={rootRef} className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
       {fit.width > 0 && fit.height > 0 && (
         <div
           style={{

@@ -12,13 +12,23 @@ function makeFakeEngine() {
   const state = { currentFrame: 0, isPlaying: false, playbackRate: 1, loop: false }
 
   const engine = {
-    get currentFrame() { return state.currentFrame },
-    get isPlaying() { return state.isPlaying },
-    get playbackRate() { return state.playbackRate },
-    get loop() { return state.loop },
+    get currentFrame() {
+      return state.currentFrame
+    },
+    get isPlaying() {
+      return state.isPlaying
+    },
+    get playbackRate() {
+      return state.playbackRate
+    },
+    get loop() {
+      return state.loop
+    },
     subscribe(fn: (snap: PlaybackSnapshot) => void) {
       listener = fn
-      return () => { listener = null }
+      return () => {
+        listener = null
+      }
     },
     // setAudioContext / reanchor are called by the controller — accept silently.
     setAudioContext: vi.fn(),
@@ -60,16 +70,15 @@ function makeMockAudioContext() {
   }
 
   function makeGain(initialValue = 1) {
-    const gains: ReturnType<typeof makeGainParam>[] = []
-
     function makeGainParam(v: number) {
       const param = {
         value: v,
         cancelScheduledValues: vi.fn(),
         setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn((target: number) => { param.value = target }),
+        linearRampToValueAtTime: vi.fn((target: number) => {
+          param.value = target
+        }),
       }
-      gains.push(param)
       return param
     }
 
@@ -443,7 +452,7 @@ describe('AudioPlaybackController', () => {
 
     // Grab the statechange handler registered on the mock context.
     const stateChangeCall = raw.addEventListener.mock.calls.find(
-      ([event]: [string]) => event === 'statechange',
+      ([event]: string[]) => event === 'statechange',
     )
     expect(stateChangeCall).toBeDefined()
     const stateChangeHandler = stateChangeCall![1] as () => void
@@ -523,11 +532,9 @@ describe('AudioPlaybackController', () => {
   it('uses gain ramp (linearRampToValueAtTime) instead of direct value write', async () => {
     const { engine, emit } = makeFakeEngine()
     const { ctx, gainInstances } = makeMockAudioContext()
-    const controller = new AudioPlaybackController(
-      engine,
-      () => makeProject({ volume: 0.75 }),
-      { audioContextFactory: () => ctx },
-    )
+    const controller = new AudioPlaybackController(engine, () => makeProject({ volume: 0.75 }), {
+      audioContextFactory: () => ctx,
+    })
     controller.start()
 
     emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
@@ -536,9 +543,7 @@ describe('AudioPlaybackController', () => {
     emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
 
     // clipGain's gain param should have used linearRampToValueAtTime.
-    const clipGain = gainInstances.find(
-      (g) => g.gain.linearRampToValueAtTime.mock.calls.length > 0,
-    )
+    const clipGain = gainInstances.find((g) => g.gain.linearRampToValueAtTime.mock.calls.length > 0)
     expect(clipGain).toBeDefined()
     expect(clipGain!.gain.linearRampToValueAtTime).toHaveBeenCalled()
   })
@@ -612,10 +617,7 @@ describe('AudioPlaybackController', () => {
     const masterGain = gainInstances[0]!
     controller.setMasterGain(0.5)
 
-    expect(masterGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      0.5,
-      expect.any(Number),
-    )
+    expect(masterGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0.5, expect.any(Number))
   })
 
   it('setTrackGain() ramps the per-track gain node', async () => {
@@ -632,8 +634,8 @@ describe('AudioPlaybackController', () => {
     controller.setTrackGain('audio-track', 0.3)
 
     // trackGain is created after masterGain and clipGain → it's the 3rd gain.
-    const rampedGains = gainInstances.filter(
-      (g) => g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0.3),
+    const rampedGains = gainInstances.filter((g) =>
+      g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0.3),
     )
     expect(rampedGains.length).toBeGreaterThan(0)
   })
@@ -649,10 +651,7 @@ describe('AudioPlaybackController', () => {
     controller.setMasterGain(-1)
 
     const masterGain = gainInstances[0]!
-    expect(masterGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      0,
-      expect.any(Number),
-    )
+    expect(masterGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, expect.any(Number))
   })
 
   // ── Mute / track volume via resolver ───────────────────────────────────────

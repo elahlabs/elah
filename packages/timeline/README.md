@@ -24,13 +24,13 @@ Peer dependencies: `react`, `react-dom` >= 18.
 
 ## Components
 
-| Component | Description |
-|---|---|
-| `Timeline` | Root surface — tracks, ruler, playhead, gesture wiring |
-| `Ruler` | Time ruler — click or drag to scrub |
-| `TrackRow` | Single track lane with clip blocks and drop target |
-| `ClipBlock` | Individual clip — drag to move, edge-drag to trim |
-| `Playhead` | Playhead needle driven by `usePlaybackStore` |
+| Component   | Description                                            |
+| ----------- | ------------------------------------------------------ |
+| `Timeline`  | Root surface — tracks, ruler, playhead, gesture wiring |
+| `Ruler`     | Time ruler — click or drag to scrub                    |
+| `TrackRow`  | Single track lane with clip blocks and drop target     |
+| `ClipBlock` | Individual clip — drag to move, edge-drag to trim      |
+| `Playhead`  | Playhead needle driven by `usePlaybackStore`           |
 
 ---
 
@@ -79,17 +79,17 @@ Tailwind classes. Whatever you pass wins over the built-in classes (`tailwind-me
 ```tsx
 <Timeline
   classNames={{
-    root:       'rounded-xl',
-    ruler:      'bg-zinc-900',
-    rulerTick:  'bg-zinc-700',
+    root: 'rounded-xl',
+    ruler: 'bg-zinc-900',
+    rulerTick: 'bg-zinc-700',
     rulerLabel: 'text-zinc-500',
     trackLabel: 'bg-zinc-900',
-    lane:       'bg-zinc-950',
-    clip:       'rounded-lg shadow-lg',   // shape/shadow (all clip types)
+    lane: 'bg-zinc-950',
+    clip: 'rounded-lg shadow-lg', // shape/shadow (all clip types)
     // per-type clip color — body + accent are separate slots:
-    clipVideo:       'from-sky-400 to-sky-600',  // body (gradient or solid bg-*)
-    clipVideoAccent: 'text-sky-300',              // stripe + selection + track bar
-    playhead:   'text-rose-500',
+    clipVideo: 'from-sky-400 to-sky-600', // body (gradient or solid bg-*)
+    clipVideoAccent: 'text-sky-300', // stripe + selection + track bar
+    playhead: 'text-rose-500',
   }}
 />
 ```
@@ -112,9 +112,9 @@ Slots: `root`, `ruler`, `rulerTick`, `rulerLabel`, `track`, `trackLabel`, `lane`
 ```ts
 import { useTracks, usePlayback, useSelection } from '@elah/timeline'
 
-const tracks = useTracks(s => s.tracks)
-const { currentFrame, isPlaying } = usePlayback(s => s)
-const { selectedClipIds } = useSelection(s => s)
+const tracks = useTracks((s) => s.tracks)
+const { currentFrame, isPlaying } = usePlayback((s) => s)
+const { selectedClipIds } = useSelection((s) => s)
 ```
 
 ---

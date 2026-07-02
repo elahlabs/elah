@@ -8,11 +8,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import type {
-  Transform,
-  ActiveTextClip,
-  TextLayout,
-} from '@elah/core'
+import type { Transform, ActiveTextClip, TextLayout } from '@elah/core'
 import {
   computeTextLayout,
   computeContainViewport,
@@ -107,8 +103,7 @@ export function TextOverlay() {
   useLayoutEffect(() => {
     const el = rootRef.current
     if (!el) return
-    const apply = () =>
-      setSize({ width: el.clientWidth, height: el.clientHeight })
+    const apply = () => setSize({ width: el.clientWidth, height: el.clientHeight })
     apply()
     const obs = new ResizeObserver(apply)
     obs.observe(el)
@@ -233,11 +228,14 @@ export function TextOverlay() {
     [selectedClipIds, selectClip, fit.y, stage.height, scale],
   )
 
-  const startEditing = useCallback((clip: ActiveTextClip) => {
-    selectClip(clip.id)
-    setEditText(clip.content)
-    setEditingId(clip.id)
-  }, [selectClip])
+  const startEditing = useCallback(
+    (clip: ActiveTextClip) => {
+      selectClip(clip.id)
+      setEditText(clip.content)
+      setEditingId(clip.id)
+    },
+    [selectClip],
+  )
 
   const commitEditing = useCallback(() => {
     // Content was streamed live via previewClip(); fold the session into one
@@ -293,7 +291,9 @@ export function TextOverlay() {
             width: rect.width + BOX_PAD * 2,
             height: rect.height + BOX_PAD * 2,
             boxSizing: 'border-box',
-            border: selected ? '1px solid var(--elah-selection-color, #4c9aff)' : '1px solid transparent',
+            border: selected
+              ? '1px solid var(--elah-selection-color, #4c9aff)'
+              : '1px solid transparent',
             borderRadius: 2,
             cursor: isEditing ? 'text' : 'move',
             pointerEvents: isEditing ? 'none' : 'auto',
@@ -312,27 +312,29 @@ export function TextOverlay() {
                 startEditing(clip)
               }}
             >
-              {selected && !isEditing && CORNERS.map((corner) => (
-                <div
-                  key={corner.key}
-                  onPointerDown={(e) => beginResize(e, item)}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={endGesture}
-                  onPointerCancel={endGesture}
-                  style={{
-                    position: 'absolute',
-                    ...corner.pos,
-                    width: 10,
-                    height: 10,
-                    background: 'var(--elah-selection-handle, #fff)',
-                    border: '1px solid var(--elah-selection-color, #4c9aff)',
-                    borderRadius: 2,
-                    cursor: corner.cursor,
-                    pointerEvents: 'auto',
-                    touchAction: 'none',
-                  }}
-                />
-              ))}
+              {selected &&
+                !isEditing &&
+                CORNERS.map((corner) => (
+                  <div
+                    key={corner.key}
+                    onPointerDown={(e) => beginResize(e, item)}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={endGesture}
+                    onPointerCancel={endGesture}
+                    style={{
+                      position: 'absolute',
+                      ...corner.pos,
+                      width: 10,
+                      height: 10,
+                      background: 'var(--elah-selection-handle, #fff)',
+                      border: '1px solid var(--elah-selection-color, #4c9aff)',
+                      borderRadius: 2,
+                      cursor: corner.cursor,
+                      pointerEvents: 'auto',
+                      touchAction: 'none',
+                    }}
+                  />
+                ))}
             </div>
           )
         })}

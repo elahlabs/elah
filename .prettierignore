@@ -1,0 +1,13 @@
+# Build output & deps
+node_modules
+**/dist
+**/.next
+**/coverage
+
+# Lockfiles & generated
+package-lock.json
+**/*.min.*
+apps/web/next-env.d.ts
+
+# Out-of-workspace playgrounds manage their own formatting
+playground

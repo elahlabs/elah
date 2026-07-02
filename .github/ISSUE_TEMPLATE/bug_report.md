@@ -10,9 +10,9 @@ labels: bug
 
 ## Steps to reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected behavior
 
@@ -27,4 +27,5 @@ labels: bug
 ## Relevant code or error output
 
 ```
+
 ```

@@ -30,7 +30,7 @@ export function DocsSidebar() {
                       'flex items-center justify-between rounded px-2.5 py-1.5 text-sm transition-colors',
                       isActive(item.href)
                         ? 'bg-surface-high text-on-surface font-medium'
-                        : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                        : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
                     )}
                   >
                     <span>{item.title}</span>
