@@ -1,17 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { searchVideos } from '@/lib/pexels/client'
+import { popularVideos, searchVideos } from '@/lib/pexels/client'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('query')?.trim()
-  if (!query) {
-    return NextResponse.json({ error: 'Missing "query" parameter.' }, { status: 400 })
-  }
   const page = Number(searchParams.get('page') ?? '1') || 1
   const perPage = Number(searchParams.get('per_page') ?? '20') || 20
 
   try {
-    const data = await searchVideos({ query, page, perPage }, req.signal)
+    const data = query
+      ? await searchVideos({ query, page, perPage }, req.signal)
+      : await popularVideos({ page, perPage }, req.signal)
     return NextResponse.json(data)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Pexels video search failed.'

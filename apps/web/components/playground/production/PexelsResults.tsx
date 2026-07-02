@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useCallback, useEffect, useRef, type DragEvent } from 'react'
-import { Search, Loader2, ImageOff } from 'lucide-react'
+import { Loader2, ImageOff } from 'lucide-react'
 import { MEDIA_DRAG_MIME, mediaDragKindMime, type DragMediaPayload } from '@elah/editor'
 import { usePexelsSearch } from '@/hooks/usePexelsSearch'
 import { importPexelsPhoto, importPexelsVideo } from '@/lib/pexels/importPexelsAsset'
@@ -88,9 +88,9 @@ const VideoCard = memo(function VideoCard({ video }: { video: PexelsVideo }) {
   )
 })
 
-export function PexelsResults({ kind }: { kind: 'photos' | 'videos' }) {
-  const { query, setQuery, items, loading, loadingMore, error, hasMore, loadMore } =
-    usePexelsSearch(kind)
+export function PexelsResults({ kind, query }: { kind: 'photos' | 'videos'; query: string }) {
+  const { items, loading, loadingMore, error, hasMore, loadMore, isDefaultFeed } =
+    usePexelsSearch(kind, query)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -109,35 +109,23 @@ export function PexelsResults({ kind }: { kind: 'photos' | 'videos' }) {
 
   return (
     <div className="flex flex-col">
-      <div className="relative">
-        <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ed-text-muted" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={kind === 'photos' ? 'Search Pexels photos…' : 'Search Pexels videos…'}
-          className="w-full rounded-md border border-ed-border bg-ed-bg-2 py-1.5 pl-7 pr-2.5 text-[12px] text-ed-text placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none"
-        />
-      </div>
+      {error && <p className="text-[11px] text-ed-error">{error}</p>}
 
-      {error && <p className="mt-2 text-[11px] text-ed-error">{error}</p>}
-
-      {!query.trim() ? (
-        <p className="mt-3 text-center text-[11px] text-ed-text-muted">
-          Search royalty-free {kind === 'photos' ? 'photos' : 'videos'} from Pexels.
-        </p>
-      ) : loading ? (
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-ed-text-muted">
+      {loading ? (
+        <div className="mt-1 flex items-center justify-center gap-1.5 py-6 text-ed-text-muted">
           <Loader2 size={13} className="animate-spin" />
-          <span className="text-[11px]">Searching…</span>
+          <span className="text-[11px]">{isDefaultFeed ? 'Loading…' : 'Searching…'}</span>
         </div>
       ) : items.length === 0 ? (
-        <div className="mt-4 flex flex-col items-center gap-1.5 text-center text-ed-text-muted">
+        <div className="mt-1 flex flex-col items-center gap-1.5 py-6 text-center text-ed-text-muted">
           <ImageOff size={18} />
-          <span className="text-[11px]">No results for &quot;{query.trim()}&quot;</span>
+          <span className="text-[11px]">
+            {isDefaultFeed ? 'No Pexels results available.' : `No results for "${query.trim()}"`}
+          </span>
         </div>
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5">
             {kind === 'photos'
               ? (items as PexelsPhoto[]).map((p) => <PhotoCard key={p.id} photo={p} />)
               : (items as PexelsVideo[]).map((v) => <VideoCard key={v.id} video={v} />)}

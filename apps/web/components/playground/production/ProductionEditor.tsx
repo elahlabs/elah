@@ -10,7 +10,6 @@ import {
   Maximize2,
   ChevronDown,
   RectangleHorizontal,
-  UploadCloud,
   Film,
   Image as ImageIcon,
   Music,
@@ -247,8 +246,7 @@ const AppHeader = memo(function AppHeader({
 // Left icon rail — far-left vertical nav (Figma). UI-only for now: clicking
 // moves the active highlight but doesn't switch panels yet.
 const RAIL_ITEMS = [
-  { id: 'media', label: 'Media', Icon: UploadCloud },
-  { id: 'stock', label: 'Stock', Icon: Film },
+  { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
@@ -447,7 +445,7 @@ export default function ProductionEditor() {
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  const [activePanel, setActivePanel] = useState('media')
+  const [activePanel, setActivePanel] = useState('stock')
 
   // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
   // clamped to [MIN, available − reserved] so the editor's top section (panels,

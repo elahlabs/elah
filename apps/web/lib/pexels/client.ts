@@ -11,6 +11,11 @@ export interface PexelsSearchParams {
   perPage: number
 }
 
+export interface PexelsListParams {
+  page: number
+  perPage: number
+}
+
 function getApiKey(): string {
   const key = process.env.PEXELS_API_KEY
   if (!key) {
@@ -19,11 +24,9 @@ function getApiKey(): string {
   return key
 }
 
-async function pexelsFetch<T>(path: string, params: PexelsSearchParams, signal?: AbortSignal): Promise<T> {
+async function pexelsFetch<T>(path: string, params: Record<string, string>, signal?: AbortSignal): Promise<T> {
   const url = new URL(path, BASE_URL)
-  url.searchParams.set('query', params.query)
-  url.searchParams.set('page', String(params.page))
-  url.searchParams.set('per_page', String(params.perPage))
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
 
   const res = await fetch(url, {
     headers: { Authorization: getApiKey() },
@@ -41,12 +44,42 @@ export function searchPhotos(
   params: PexelsSearchParams,
   signal?: AbortSignal,
 ): Promise<PexelsPhotoSearchResponse> {
-  return pexelsFetch<PexelsPhotoSearchResponse>('/v1/search', params, signal)
+  return pexelsFetch<PexelsPhotoSearchResponse>('/v1/search', {
+    query: params.query,
+    page: String(params.page),
+    per_page: String(params.perPage),
+  }, signal)
 }
 
 export function searchVideos(
   params: PexelsSearchParams,
   signal?: AbortSignal,
 ): Promise<PexelsVideoSearchResponse> {
-  return pexelsFetch<PexelsVideoSearchResponse>('/videos/search', params, signal)
+  return pexelsFetch<PexelsVideoSearchResponse>('/videos/search', {
+    query: params.query,
+    page: String(params.page),
+    per_page: String(params.perPage),
+  }, signal)
+}
+
+/** Curated photo feed — shown by default before the user searches. */
+export function curatedPhotos(
+  params: PexelsListParams,
+  signal?: AbortSignal,
+): Promise<PexelsPhotoSearchResponse> {
+  return pexelsFetch<PexelsPhotoSearchResponse>('/v1/curated', {
+    page: String(params.page),
+    per_page: String(params.perPage),
+  }, signal)
+}
+
+/** Popular video feed — shown by default before the user searches. */
+export function popularVideos(
+  params: PexelsListParams,
+  signal?: AbortSignal,
+): Promise<PexelsVideoSearchResponse> {
+  return pexelsFetch<PexelsVideoSearchResponse>('/videos/popular', {
+    page: String(params.page),
+    per_page: String(params.perPage),
+  }, signal)
 }

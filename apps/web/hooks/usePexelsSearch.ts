@@ -10,24 +10,24 @@ type ItemFor<K extends PexelsKind> = K extends 'photos' ? PexelsPhoto : PexelsVi
 type ResponseFor<K extends PexelsKind> = K extends 'photos' ? PexelsPhotoSearchResponse : PexelsVideoSearchResponse
 
 export interface UsePexelsSearchResult<K extends PexelsKind> {
-  query: string
-  setQuery: (q: string) => void
   items: ItemFor<K>[]
   loading: boolean
   loadingMore: boolean
   error: string | null
   hasMore: boolean
   loadMore: () => void
+  /** True while showing the default (query-less) popular/curated feed. */
+  isDefaultFeed: boolean
 }
 
 /**
  * Debounced, paginated, cancellable Pexels search over our own `/api/pexels/*`
  * proxy routes (keeps the API key server-side). Shared by the Photos and
  * Stock panels — only the `kind` (and therefore the endpoint + item type)
- * differs between them.
+ * differs between them. When `query` is empty, falls back to Pexels' popular
+ * (videos) / curated (photos) feed so the panel never starts out empty.
  */
-export function usePexelsSearch<K extends PexelsKind>(kind: K): UsePexelsSearchResult<K> {
-  const [query, setQuery] = useState('')
+export function usePexelsSearch<K extends PexelsKind>(kind: K, query: string): UsePexelsSearchResult<K> {
   const [items, setItems] = useState<ItemFor<K>[]>([])
   const [page, setPage] = useState(1)
   const [totalResults, setTotalResults] = useState(0)
@@ -48,7 +48,8 @@ export function usePexelsSearch<K extends PexelsKind>(kind: K): UsePexelsSearchR
       setError(null)
 
       try {
-        const url = `/api/pexels/${kind}?query=${encodeURIComponent(q)}&page=${pageToFetch}&per_page=${PER_PAGE}`
+        const queryPart = q ? `query=${encodeURIComponent(q)}&` : ''
+        const url = `/api/pexels/${kind}?${queryPart}page=${pageToFetch}&per_page=${PER_PAGE}`
         const res = await fetch(url, { signal: controller.signal })
         const data = (await res.json()) as ResponseFor<K> & { error?: string }
         if (!res.ok) throw new Error(data.error ?? 'Pexels search failed.')
@@ -69,21 +70,15 @@ export function usePexelsSearch<K extends PexelsKind>(kind: K): UsePexelsSearchR
     [kind],
   )
 
-  // Debounced search on query change.
+  // Debounced search on query change; empty query loads the default feed immediately.
   useEffect(() => {
     const trimmed = query.trim()
-    if (!trimmed) {
-      abortRef.current?.abort()
-      setItems([])
-      setTotalResults(0)
-      setError(null)
-      setLoading(false)
-      return
-    }
-
-    const timer = setTimeout(() => {
-      void runSearch(trimmed, 1, true)
-    }, DEBOUNCE_MS)
+    const timer = setTimeout(
+      () => {
+        void runSearch(trimmed, 1, true)
+      },
+      trimmed ? DEBOUNCE_MS : 0,
+    )
 
     return () => clearTimeout(timer)
   }, [query, runSearch])
@@ -91,20 +86,18 @@ export function usePexelsSearch<K extends PexelsKind>(kind: K): UsePexelsSearchR
   useEffect(() => () => abortRef.current?.abort(), [])
 
   const loadMore = useCallback(() => {
-    const trimmed = query.trim()
-    if (!trimmed || loading || loadingMore) return
+    if (loading || loadingMore) return
     if (items.length >= totalResults) return
-    void runSearch(trimmed, page + 1, false)
+    void runSearch(query.trim(), page + 1, false)
   }, [query, loading, loadingMore, items.length, totalResults, page, runSearch])
 
   return {
-    query,
-    setQuery,
     items,
     loading,
     loadingMore,
     error,
     hasMore: items.length < totalResults,
     loadMore,
+    isDefaultFeed: !query.trim(),
   }
 }
