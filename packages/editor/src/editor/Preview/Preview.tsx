@@ -9,7 +9,8 @@ import { GpuRenderer } from '@elah/core'
 import { resolveTimeline } from '@elah/core'
 import { useTimelineEngine, usePlaybackEngine } from '@elah/core'
 import type { DemuxerFactory } from '@elah/core'
-import { AudioPlaybackController } from '@elah/core'
+import { AudioPlaybackController, useMediaLibraryStore } from '@elah/core'
+import type { AudioResolver } from '@elah/core'
 import { cn } from '@elah/timeline'
 import { TextOverlay } from './TextOverlay'
 import { ShapeOverlay } from './ShapeOverlay'
@@ -57,6 +58,8 @@ export interface PreviewProps {
    * AudioContext at all).
    */
   enableAudio?: boolean
+  /** Injectable URL→bytes seam for the audio decode cache (CDN/auth/proxy overrides). Defaults to fetch(src).arrayBuffer(). */
+  audioResolver?: AudioResolver
   style?: CSSProperties
   className?: string
 }
@@ -80,6 +83,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     clearColor,
     preserveDrawingBuffer,
     enableAudio = true,
+    audioResolver,
     style,
     className,
   },
@@ -125,17 +129,32 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     // Audio runs beside the renderer on the same playback clock — it self-drives
     // off playback.subscribe(), so there is nothing to call per RAF tick.
     const audio = enableAudio
-      ? new AudioPlaybackController(playback, () => engine.getProject())
+      ? new AudioPlaybackController(playback, () => engine.getProject(), { audioResolver })
       : null
     audio?.start()
 
     // Warm the decode cache for remote audio (e.g. Freesound previews) as soon
     // as clips land on the timeline, instead of waiting for first play.
     let warmAudio: (() => void) | null = null
+    let unsubMediaLibrary: (() => void) | null = null
     if (audio) {
       warmAudio = () => audio.preloadProjectAudio()
       warmAudio()
       engine.on('change', warmAudio)
+
+      // Also warm as soon as an audio asset is *registered* (e.g. clicked into
+      // the library from a stock panel), not only once it lands on the timeline
+      // as a clip — otherwise the first play after drag-drop still races a cold
+      // decode of an asset that could have been warming for minutes already.
+      const warmedAssetIds = new Set<string>()
+      unsubMediaLibrary = useMediaLibraryStore.subscribe((state) => {
+        for (const id of state.order) {
+          if (warmedAssetIds.has(id)) continue
+          warmedAssetIds.add(id)
+          const asset = state.assets[id]
+          if (asset?.kind === 'audio') audio.warmAudioSrc(asset.src)
+        }
+      })
     }
 
     let rafId = 0
@@ -155,12 +174,13 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       cancelAnimationFrame(rafId)
       observer.disconnect()
       if (warmAudio) engine.off('change', warmAudio)
+      unsubMediaLibrary?.()
       audio?.destroy()
       renderer.dispose()
       rendererRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, playback, demuxerFactory, debug, probeLayer, preserveDrawingBuffer, enableAudio])
+  }, [engine, playback, demuxerFactory, debug, probeLayer, preserveDrawingBuffer, enableAudio, audioResolver])
 
   return (
     <div

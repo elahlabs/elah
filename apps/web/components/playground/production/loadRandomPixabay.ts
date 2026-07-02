@@ -5,8 +5,7 @@
  * from our `/api/pixabay/*` proxy for that topic's tags, and composes a
  * timeline at the project's current stage aspect ratio: alternating
  * video/image clips with fade transitions on the video lane, and
- * topic-relevant captions spread across all 4 elements (text) lanes. Audio
- * is not auto-populated — users add audio manually from the audio panel.
+ * topic-relevant captions spread across all 4 elements (text) lanes.
  */
 import {
   type TimelineEngine,
@@ -38,6 +37,8 @@ interface PixabayTopic {
   videotags: string[]
   imagetags: string[]
   captions: string[]
+  /** Freesound search term for a topic-matched ambient/background track. */
+  musicQuery: string
 }
 
 const PIXABAY_TOPICS: Record<string, PixabayTopic> = {
@@ -45,91 +46,109 @@ const PIXABAY_TOPICS: Record<string, PixabayTopic> = {
     videotags: ['ocean waves', 'underwater', 'scuba diving', 'surfing'],
     imagetags: ['ocean', 'coral reef', 'beach sunset', 'sea turtle'],
     captions: ['Dive into the deep.', 'WAVES OF WONDER', 'OCEAN', 'Explore below the surface.', '— BLUE PLANET —', 'SALT AIR'],
+    musicQuery: 'ocean ambient',
   },
   mountains: {
     videotags: ['mountain hiking', 'alps drone', 'snow peak', 'rock climbing'],
     imagetags: ['mountain range', 'summit', 'alpine lake', 'hiking trail'],
     captions: ['Chase the summit.', 'HIGH ALTITUDE', 'PEAKS', 'Where the air runs thin.', '— ABOVE THE CLOUDS —', 'TRAILHEAD'],
+    musicQuery: 'cinematic ambient wind',
   },
   'city-life': {
     videotags: ['city timelapse', 'street traffic', 'downtown night', 'subway'],
     imagetags: ['city skyline', 'urban street', 'neon lights', 'crosswalk'],
     captions: ['The city never sleeps.', 'URBAN PULSE', 'DOWNTOWN', 'Every street has a story.', '— METROPOLIS —', 'RUSH HOUR'],
+    musicQuery: 'urban lofi beat',
   },
   forest: {
     videotags: ['forest walk', 'rainforest', 'misty woods', 'waterfall'],
     imagetags: ['forest path', 'sunlight through trees', 'moss', 'redwood'],
     captions: ['Lose yourself in green.', 'DEEP WOODS', 'CANOPY', 'Quiet lives here.', '— OLD GROWTH —', 'UNDERGROWTH'],
+    musicQuery: 'forest ambient birds',
   },
   space: {
     videotags: ['galaxy timelapse', 'rocket launch', 'nebula', 'stars night sky'],
     imagetags: ['starry sky', 'milky way', 'planet', 'astronaut'],
     captions: ['Look up.', 'DEEP SPACE', 'COSMOS', 'We are made of stardust.', '— BEYOND EARTH —', 'ORBIT'],
+    musicQuery: 'space ambient drone',
   },
   desert: {
     videotags: ['desert dunes', 'sandstorm', 'desert road', 'camel caravan'],
     imagetags: ['sand dunes', 'desert sunset', 'cactus', 'oasis'],
     captions: ['Silence, for miles.', 'DUNE FIELDS', 'DESERT', 'The heat writes its own rules.', '— OPEN HORIZON —', 'MIRAGE'],
+    musicQuery: 'desert ambient drone',
   },
   wildlife: {
     videotags: ['wild animals', 'lion pride', 'birds flying', 'safari'],
     imagetags: ['wildlife portrait', 'elephant herd', 'eagle', 'zebra'],
     captions: ['Nature, unscripted.', 'WILD AT HEART', 'SAFARI', 'Every species has a role.', '— THE WILD —', 'INSTINCT'],
+    musicQuery: 'african tribal ambient',
   },
   food: {
     videotags: ['cooking food', 'chef kitchen', 'street food', 'coffee pour'],
     imagetags: ['gourmet dish', 'fresh ingredients', 'bakery', 'coffee cup'],
     captions: ['Made from scratch.', 'FARM TO TABLE', 'FLAVOR', 'Good food, slow down.', '— THE KITCHEN —', 'FRESH DAILY'],
+    musicQuery: 'kitchen lofi chill',
   },
   fitness: {
     videotags: ['gym workout', 'running training', 'yoga flow', 'boxing'],
     imagetags: ['weightlifting', 'yoga pose', 'running shoes', 'stretching'],
     captions: ['Show up anyway.', 'TRAIN HARD', 'DISCIPLINE', 'Strength is built, not born.', '— NO SHORTCUTS —', 'REPS'],
+    musicQuery: 'energetic workout beat',
   },
   technology: {
     videotags: ['coding programmer', 'data center', 'robotics', 'circuit board'],
     imagetags: ['laptop code', 'server room', 'microchip', 'workspace desk'],
     captions: ['Built for what\'s next.', 'THE FUTURE, NOW', 'TECH', 'Every line of code counts.', '— SYSTEM ONLINE —', 'v1.0'],
+    musicQuery: 'tech corporate ambient',
   },
   travel: {
     videotags: ['travel vlog', 'airport departure', 'road trip', 'backpacking'],
     imagetags: ['passport map', 'suitcase', 'airplane window', 'scenic overlook'],
     captions: ['Somewhere, else.', 'WANDERLUST', 'TRAVEL', 'Collect moments, not things.', '— NEXT STOP —', 'ONE WAY'],
+    musicQuery: 'travel upbeat acoustic',
   },
   business: {
     videotags: ['office meeting', 'startup team', 'handshake deal', 'presentation'],
     imagetags: ['office workspace', 'business meeting', 'skyscraper', 'whiteboard'],
     captions: ['Ideas into motion.', 'GROWTH MINDSET', 'BUSINESS', 'Built by the team, for the team.', '— NEXT QUARTER —', 'LAUNCH'],
+    musicQuery: 'corporate motivational ambient',
   },
   music: {
     videotags: ['concert crowd', 'musician playing', 'dj set', 'vinyl record'],
     imagetags: ['guitar closeup', 'concert lights', 'headphones', 'studio mixer'],
     captions: ['Feel the drop.', 'LIVE SOUND', 'MUSIC', 'Every beat tells a story.', '— ON STAGE —', 'ENCORE'],
+    musicQuery: 'electronic beat energetic',
   },
   fashion: {
     videotags: ['fashion runway', 'street style', 'fashion shoot', 'designer studio'],
     imagetags: ['fashion model', 'clothing rack', 'sneakers', 'runway show'],
     captions: ['Wear it your way.', 'NEW COLLECTION', 'STYLE', 'Fashion is a language.', '— RUNWAY —', 'SS26'],
+    musicQuery: 'runway electronic stylish',
   },
   autumn: {
     videotags: ['autumn leaves', 'fall forest', 'windy trees', 'harvest field'],
     imagetags: ['fall foliage', 'pumpkin patch', 'autumn park', 'maple leaf'],
     captions: ['Everything changes color.', 'FALL SEASON', 'AUTUMN', 'The quiet turn of the year.', '— HARVEST —', 'COZY'],
+    musicQuery: 'autumn acoustic ambient',
   },
   'winter-sports': {
     videotags: ['snowboarding', 'ski slope', 'ice skating', 'snowfall'],
     imagetags: ['ski resort', 'snowy mountain', 'ice rink', 'snowboard'],
     captions: ['Chase the powder.', 'WINTER SEASON', 'SNOW', 'Cold air, clear mind.', '— FRESH TRACKS —', 'SUB-ZERO'],
+    musicQuery: 'winter cinematic ambient',
   },
   'coffee-culture': {
     videotags: ['coffee shop', 'barista pour', 'espresso machine', 'roasting beans'],
     imagetags: ['latte art', 'coffee beans', 'cafe interior', 'coffee cup steam'],
     captions: ['One cup at a time.', 'THIRD WAVE', 'COFFEE', 'Slow mornings, strong brew.', '— ROASTED FRESH —', 'ESPRESSO'],
+    musicQuery: 'coffee shop lofi chill',
   },
   'startup-hustle': {
     videotags: ['startup office', 'coding team', 'brainstorm session', 'pitch meeting'],
     imagetags: ['whiteboard sketch', 'open workspace', 'laptop coffee', 'sticky notes'],
     captions: ['Ship it anyway.', 'MOVE FAST', 'STARTUP', 'Built at 2am, shipped at 9.', '— DAY ONE —', 'ITERATE'],
+    musicQuery: 'startup corporate lofi',
   },
 }
 
@@ -212,8 +231,7 @@ export interface LoadRandomPixabayDeps {
 /**
  * Build a random-topic Pixabay project: fetches alternating video/image clips
  * for a random topic, lays them on the video lane with fade transitions, and
- * spreads that topic's captions across all 4 elements (text) lanes. Audio is
- * left for the user to add manually from the audio panel.
+ * spreads that topic's captions across all 4 elements (text) lanes.
  */
 export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixabayDeps): Promise<string> {
   const [topicName, topic] = pickTopic()

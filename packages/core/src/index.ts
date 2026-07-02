@@ -78,6 +78,8 @@ export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFramePr
 // --- Media: audio playback ---
 export { AudioPlaybackController } from './media/audio/AudioPlaybackController'
 export type { AudioPlaybackControllerOptions } from './media/audio/AudioPlaybackController'
+export { defaultAudioResolver } from './media/audio/audioResolver'
+export type { AudioResolver } from './media/audio/audioResolver'
 
 // --- Audio mixer hooks ---
 export { useAudioMixer } from './media/audio/useAudioMixer'

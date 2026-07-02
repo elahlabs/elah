@@ -1,6 +1,7 @@
 import type { Project } from '../types'
 import { getTotalFrames } from '../utils/frames'
 import { trace, traceEnabled, getEnabledChannels, type TraceChannel } from '../debug/trace'
+import { defaultAudioResolver, type AudioResolver } from '../media/audio/audioResolver'
 import type { ExportOptions, ExportProgress, RenderedAudio, WorkerOutMessage } from './types'
 
 /**
@@ -33,7 +34,11 @@ let exportInFlight = false
  * Returns `null` when there is nothing to mix (no active audio clips) or when
  * the Web Audio API is unavailable, in which case export proceeds video-only.
  */
-async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
+async function renderAudioMix(
+  project: Project,
+  audioResolver: AudioResolver,
+  onAudioIssue?: (message: string, src: string | undefined) => void,
+): Promise<RenderedAudio | null> {
   const fps = project.fps
   const totalFrames = getTotalFrames(project.clips)
   if (totalFrames === 0) return null
@@ -55,6 +60,7 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
       : (globalThis as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext
   if (!OAC) {
     console.warn('[export:main] OfflineAudioContext unavailable — audio will be skipped')
+    onAudioIssue?.('OfflineAudioContext unavailable — audio will be skipped', undefined)
     return null
   }
 
@@ -63,13 +69,25 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
   mlog('EXPORT_AUDIO', `mixing ${audioClips.length} audio clip(s) — ${totalSec.toFixed(2)}s @ ${sampleRate}Hz`)
   const ctx = new OAC(2, Math.ceil(sampleRate * totalSec), sampleRate)
 
+  // Fetch+decode once per unique src (mirrors the video export worker's
+  // per-src CanvasSink dedupe) — multiple clips referencing the same CDN
+  // audio URL share a single download and decode.
+  const decodedBySrc = new Map<string, Promise<AudioBuffer>>()
+  const decodeOnce = (src: string): Promise<AudioBuffer> => {
+    let promise = decodedBySrc.get(src)
+    if (!promise) {
+      promise = audioResolver(src).then((buf) => ctx.decodeAudioData(buf))
+      decodedBySrc.set(src, promise)
+    }
+    return promise
+  }
+
   for (let i = 0; i < audioClips.length; i++) {
     const clip = audioClips[i]
     try {
       mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] fetching+decoding "${clip.src?.slice(-40)}"`)
       const fetchStart = performance.now()
-      const buf = await fetch(clip.src!).then(r => r.arrayBuffer())
-      const decoded = await ctx.decodeAudioData(buf)
+      const decoded = await decodeOnce(clip.src!)
       const node = ctx.createBufferSource()
       node.buffer = decoded
       const gain = ctx.createGain()
@@ -84,8 +102,10 @@ async function renderAudioMix(project: Project): Promise<RenderedAudio | null> {
         `decodedSec=${decoded.duration.toFixed(3)} ` +
         `ms=${(performance.now() - fetchStart).toFixed(1)}`)
     } catch (err) {
+      const message = `audio clip "${clip.src?.slice(-40)}" skipped — decode error: ${String(err)}`
       mlog('EXPORT_AUDIO', `[${i + 1}/${audioClips.length}] skipped — decode error: ${String(err)}`)
-      console.warn(`[export:main] audio clip "${clip.src?.slice(-40)}" skipped — decode error: ${String(err)}`)
+      console.warn(`[export:main] ${message}`)
+      onAudioIssue?.(message, clip.src)
     }
   }
 
@@ -140,7 +160,7 @@ async function runExportVideo(project: Project, options: ExportOptions): Promise
   const totalClips = Object.values(project.clips).flat().length
   mlog('EXPORT', `exportVideo() called — stage=${project.stage.width}x${project.stage.height} fps=${project.fps} clips=${totalClips}`)
 
-  const audio = await renderAudioMix(project)
+  const audio = await renderAudioMix(project, options.audioResolver ?? defaultAudioResolver, options.onAudioIssue)
 
   const { signal } = options
   if (signal?.aborted) return Promise.reject(signal.reason ?? new DOMException('Export aborted', 'AbortError'))
@@ -197,7 +217,7 @@ async function runExportVideo(project: Project, options: ExportOptions): Promise
       {
         type: 'start',
         project,
-        options: { ...options, onProgress: undefined, signal: undefined },
+        options: { ...options, onProgress: undefined, signal: undefined, audioResolver: undefined, onAudioIssue: undefined },
         audio,
         // Forward the main thread's enabled channels so the Worker's tracer
         // mirrors them — it can't read `__trace`/localStorage on its own.
