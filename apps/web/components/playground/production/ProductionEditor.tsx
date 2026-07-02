@@ -577,6 +577,17 @@ const MobileAspectSelect = memo(function MobileAspectSelect() {
   )
 })
 
+/** Mobile timecode: MM:SS:FF — three fields instead of the desktop four
+ * (hours dropped), so the transport grid centers the play button without
+ * the timer running underneath it. */
+function framesToCompactTimecode(frame: number, fps: number): string {
+  const totalSec = Math.floor(frame / fps)
+  const ff = frame % fps
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(ff).padStart(2, '0')}`
+}
+
 // Video transport — lives under the Preview (not in the timeline toolbar),
 // matching the Figma. Play/pause, stop, and current | total time (cyan current).
 const TransportBar = memo(function TransportBar() {
@@ -593,23 +604,25 @@ const TransportBar = memo(function TransportBar() {
   const totalTimeRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
+    const fmt = isMobile ? framesToCompactTimecode : framesToTimecode
     return usePlaybackStore.subscribe((state) => {
       if (currentTimeRef.current) {
-        currentTimeRef.current.textContent = framesToTimecode(state.currentFrame, FPS)
+        currentTimeRef.current.textContent = fmt(state.currentFrame, FPS)
       }
     })
-  }, [])
+  }, [isMobile])
 
   useEffect(() => {
+    const fmt = isMobile ? framesToCompactTimecode : framesToTimecode
     const dur = Math.max(totalFrames, 1)
-    if (totalTimeRef.current) totalTimeRef.current.textContent = framesToTimecode(dur, FPS)
+    if (totalTimeRef.current) totalTimeRef.current.textContent = fmt(dur, FPS)
     if (currentTimeRef.current) {
-      currentTimeRef.current.textContent = framesToTimecode(
+      currentTimeRef.current.textContent = fmt(
         usePlaybackStore.getState().currentFrame,
         FPS,
       )
     }
-  }, [totalFrames])
+  }, [totalFrames, isMobile])
 
   const handleStop = useCallback(() => {
     usePlaybackStore.getState().pause()
@@ -622,17 +635,21 @@ const TransportBar = memo(function TransportBar() {
   return (
     <div
       className={cn(
-        'items-center h-11 bg-ed-bg-2 border-t border-ed-border shrink-0',
-        // Desktop hard-centers the transport via grid; on narrow screens the
-        // timecode runs under it, so mobile uses justify-between instead.
-        isMobile ? 'flex justify-between gap-2 px-3' : 'grid grid-cols-[1fr_auto_1fr] px-4',
+        'grid grid-cols-[1fr_auto_1fr] items-center h-11 bg-ed-bg-2 border-t border-ed-border shrink-0',
+        // Same centering grid on both; mobile fits because the timecode drops
+        // to three fields (MM:SS:FF) via framesToCompactTimecode.
+        isMobile ? 'px-3' : 'px-4',
       )}
     >
       {/* Left — current | total time (current in accent) */}
       <span className="font-mono text-[11px] tracking-[0.02em] tabular-nums whitespace-nowrap">
-        <span ref={currentTimeRef} style={{ color: 'var(--elah-accent)' }}>00:00:00:00</span>
+        <span ref={currentTimeRef} style={{ color: 'var(--elah-accent)' }}>
+          {isMobile ? '00:00:00' : '00:00:00:00'}
+        </span>
         <span className="text-ed-text-muted mx-1.5">|</span>
-        <span ref={totalTimeRef} className="text-ed-text-muted">00:00:00:00</span>
+        <span ref={totalTimeRef} className="text-ed-text-muted">
+          {isMobile ? '00:00:00' : '00:00:00:00'}
+        </span>
       </span>
 
       {/* Center — video controls */}
