@@ -36,10 +36,11 @@ import {
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
 import { PexelsResults } from './PexelsResults'
+import { FreesoundResults } from './FreesoundResults'
 
 export type PanelMode = 'stock' | 'photos' | 'audio'
 
-type MediaSource = 'pexel' | 'uploads'
+type MediaSource = 'pexel' | 'freesound' | 'uploads'
 
 function fmtDuration(sec: number | undefined): string {
   if (!sec || !Number.isFinite(sec)) return ''
@@ -214,17 +215,27 @@ const PANEL_CONFIG: Record<
     title: 'Audio',
     accept: 'audio/*',
     hasUrlImport: true,
-    hasStockSearch: false,
+    hasStockSearch: true,
     expectedKind: 'audio',
     emptyLabel: 'No audio yet',
     emptyHint: 'Upload or add an audio URL',
   },
 }
 
-const SOURCE_OPTIONS: { value: MediaSource; label: string }[] = [
-  { value: 'pexel', label: 'Pexel' },
-  { value: 'uploads', label: 'Uploads' },
-]
+const SOURCE_OPTIONS: Record<PanelMode, { value: MediaSource; label: string }[]> = {
+  stock: [
+    { value: 'pexel', label: 'Pexel' },
+    { value: 'uploads', label: 'Uploads' },
+  ],
+  photos: [
+    { value: 'pexel', label: 'Pexel' },
+    { value: 'uploads', label: 'Uploads' },
+  ],
+  audio: [
+    { value: 'freesound', label: 'Freesound' },
+    { value: 'uploads', label: 'Uploads' },
+  ],
+}
 
 const PANEL_LABEL: Record<MediaKind, string> = {
   video: 'Stock',
@@ -251,7 +262,8 @@ export function MediaPanel({ style, mode = 'stock' }: { style?: React.CSSPropert
   const [urlFallback, setUrlFallback] = useState<string | null>(null)
 
   const cfg = PANEL_CONFIG[mode]
-  const [source, setSource] = useState<MediaSource>(cfg.hasStockSearch ? 'pexel' : 'uploads')
+  const sourceOptions = SOURCE_OPTIONS[mode]
+  const [source, setSource] = useState<MediaSource>(cfg.hasStockSearch ? sourceOptions[0].value : 'uploads')
 
   const onPick = useCallback(async (files: FileList | File[] | null) => {
     if (!files || ('length' in files && files.length === 0)) return
@@ -336,7 +348,7 @@ export function MediaPanel({ style, mode = 'stock' }: { style?: React.CSSPropert
           {cfg.hasStockSearch && (
             <Dropdown
               value={source}
-              options={SOURCE_OPTIONS}
+              options={sourceOptions}
               onChange={(v) => setSource(v as MediaSource)}
               align="right"
             />
@@ -399,11 +411,15 @@ export function MediaPanel({ style, mode = 'stock' }: { style?: React.CSSPropert
           onDrop={onDrop}
         >
           {!showUploads ? (
-            <PexelsResults
-              key={mode === 'stock' ? 'videos' : 'photos'}
-              kind={mode === 'stock' ? 'videos' : 'photos'}
-              query={search}
-            />
+            mode === 'audio' ? (
+              <FreesoundResults query={search} />
+            ) : (
+              <PexelsResults
+                key={mode === 'stock' ? 'videos' : 'photos'}
+                kind={mode === 'stock' ? 'videos' : 'photos'}
+                query={search}
+              />
+            )
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-1 py-6 text-center text-ed-text-muted">
               <span className="text-[12px]">{search ? 'No matches' : cfg.emptyLabel}</span>
