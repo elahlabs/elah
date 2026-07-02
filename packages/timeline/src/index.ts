@@ -17,6 +17,7 @@ export { useTracks } from './hooks/useTracks'
 export { usePlayback } from './hooks/usePlayback'
 export { useSelection } from './hooks/useSelection'
 export { useTimelineDrop } from './useTimelineDrop'
+export type { TimelineDropState } from './useTimelineDrop'
 
 // --- Element drag infrastructure (public API) ---
 export { ELEMENT_DRAG_MIME } from './elementDrag'

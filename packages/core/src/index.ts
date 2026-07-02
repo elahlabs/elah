@@ -93,6 +93,7 @@ export {
   useAssets,
   useMediaLibraryStore,
   MEDIA_DRAG_MIME,
+  mediaDragKindMime,
   importFiles,
   importUrl,
   importBlob,

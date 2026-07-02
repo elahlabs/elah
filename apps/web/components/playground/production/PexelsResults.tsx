@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, type DragEvent } from 'react'
 import { Search, Loader2, ImageOff } from 'lucide-react'
-import { MEDIA_DRAG_MIME, type DragMediaPayload } from '@elah/editor'
+import { MEDIA_DRAG_MIME, mediaDragKindMime, type DragMediaPayload } from '@elah/editor'
 import { usePexelsSearch } from '@/hooks/usePexelsSearch'
 import { importPexelsPhoto, importPexelsVideo } from '@/lib/pexels/importPexelsAsset'
 import type { PexelsPhoto, PexelsVideo } from '@/lib/pexels/types'
@@ -21,6 +21,7 @@ const PhotoCard = memo(function PhotoCard({ photo }: { photo: PexelsPhoto }) {
       const asset = importPexelsPhoto(photo)
       const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
       e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
+      e.dataTransfer.setData(mediaDragKindMime('image'), '')
       e.dataTransfer.effectAllowed = 'copy'
     },
     [photo],
@@ -56,6 +57,7 @@ const VideoCard = memo(function VideoCard({ video }: { video: PexelsVideo }) {
       const asset = importPexelsVideo(video)
       const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
       e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
+      e.dataTransfer.setData(mediaDragKindMime('video'), '')
       e.dataTransfer.effectAllowed = 'copy'
     },
     [video],

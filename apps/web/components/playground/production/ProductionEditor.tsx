@@ -55,11 +55,11 @@ const FPS = 30
 // Order is top→bottom in the UI (lower index = higher zIndex, renders on top),
 // per resolveTimeline's track.order → zIndex mapping.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
+  { kind: 'video', name: 'Video' },
   { kind: 'elements', name: 'Elements' },
   { kind: 'elements', name: 'Elements 2' },
   { kind: 'elements', name: 'Elements 3' },
   { kind: 'elements', name: 'Elements 4' },
-  { kind: 'video', name: 'Video' },
   { kind: 'audio', name: 'Audio' },
   { kind: 'audio', name: 'Audio 2' },
   { kind: 'audio', name: 'Audio 3' },

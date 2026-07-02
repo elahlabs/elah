@@ -57,7 +57,7 @@ export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFramePr
 export { AudioPlaybackController } from '@elah/core'
 export type { AudioPlaybackControllerOptions } from '@elah/core'
 
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles, importUrl } from '@elah/core'
+export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, mediaDragKindMime, importFiles, importUrl } from '@elah/core'
 export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from '@elah/core'
 
 export { useTracksStore } from '@elah/core'
