@@ -1,8 +1,8 @@
 /**
- * loadRandomPexels — "Random Load from Pexels" one-click demo project.
+ * loadRandomPixabay — "Random Load from Pixabay" one-click demo project.
  *
- * Picks a random topic from `PEXELS_TOPICS`, pulls a handful of images/videos
- * from our `/api/pexels/*` proxy for that topic's tags, and composes a
+ * Picks a random topic from `PIXABAY_TOPICS`, pulls a handful of images/videos
+ * from our `/api/pixabay/*` proxy for that topic's tags, and composes a
  * portrait (9:16) timeline: alternating video/image clips with fade
  * transitions on the video lane, and topic-relevant captions spread across
  * all 4 elements (text) lanes. Audio is not auto-populated — users add audio
@@ -18,8 +18,8 @@ import {
   transformFromCoverRect,
 } from '@elah/editor'
 import type { RefObject } from 'react'
-import { importPexelsPhoto, importPexelsVideo } from '@/lib/pexels/importPexelsAsset'
-import type { PexelsPhoto, PexelsVideo } from '@/lib/pexels/types'
+import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
+import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
 
 /** Portrait 9:16 stage, matching the cinematic demo. */
 const STAGE = { width: 1080, height: 1920 }
@@ -34,16 +34,16 @@ const VISUAL_COUNT = 6
 const CLIP_SECONDS = 4
 
 /**
- * A topic pairs Pexels search tags for video/image lookups with caption copy
+ * A topic pairs Pixabay search tags for video/image lookups with caption copy
  * for the 4 text lanes.
  */
-interface PexelsTopic {
+interface PixabayTopic {
   videotags: string[]
   imagetags: string[]
   captions: string[]
 }
 
-const PEXELS_TOPICS: Record<string, PexelsTopic> = {
+const PIXABAY_TOPICS: Record<string, PixabayTopic> = {
   ocean: {
     videotags: ['ocean waves', 'underwater', 'scuba diving', 'surfing'],
     imagetags: ['ocean', 'coral reef', 'beach sunset', 'sea turtle'],
@@ -173,52 +173,52 @@ function pickRandom<T>(items: T[]): T | undefined {
   return items[Math.floor(Math.random() * items.length)]
 }
 
-function pickTopic(): [string, PexelsTopic] {
-  const keys = Object.keys(PEXELS_TOPICS)
+function pickTopic(): [string, PixabayTopic] {
+  const keys = Object.keys(PIXABAY_TOPICS)
   const key = keys[Math.floor(Math.random() * keys.length)]
-  return [key, PEXELS_TOPICS[key]]
+  return [key, PIXABAY_TOPICS[key]]
 }
 
-async function fetchPexels<T extends 'photos' | 'videos'>(
+async function fetchPixabay<T extends 'photos' | 'videos'>(
   kind: T,
   query: string,
   page: number,
-): Promise<T extends 'photos' ? PexelsPhoto[] : PexelsVideo[]> {
-  const url = `/api/pexels/${kind}?query=${encodeURIComponent(query)}&page=${page}&per_page=15`
+): Promise<T extends 'photos' ? PixabayPhoto[] : PixabayVideo[]> {
+  const url = `/api/pixabay/${kind}?query=${encodeURIComponent(query)}&page=${page}&per_page=15`
   const res = await fetch(url)
   if (!res.ok) return [] as never
   const data = await res.json()
-  return (kind === 'photos' ? data.photos : data.videos) ?? []
+  return data.hits ?? []
 }
 
-async function fetchRandomVideo(topic: PexelsTopic): Promise<PexelsVideo | undefined> {
+async function fetchRandomVideo(topic: PixabayTopic): Promise<PixabayVideo | undefined> {
   const tag = pickRandom(topic.videotags)
   if (!tag) return undefined
   const page = 1 + Math.floor(Math.random() * 3)
-  const results = await fetchPexels('videos', tag, page)
+  const results = await fetchPixabay('videos', tag, page)
   return pickRandom(results)
 }
 
-async function fetchRandomImage(topic: PexelsTopic): Promise<PexelsPhoto | undefined> {
+async function fetchRandomImage(topic: PixabayTopic): Promise<PixabayPhoto | undefined> {
   const tag = pickRandom(topic.imagetags)
   if (!tag) return undefined
   const page = 1 + Math.floor(Math.random() * 3)
-  const results = await fetchPexels('photos', tag, page)
+  const results = await fetchPixabay('photos', tag, page)
   return pickRandom(results)
 }
 
-export interface LoadRandomPexelsDeps {
+export interface LoadRandomPixabayDeps {
   engine: TimelineEngine
   timelineRef: RefObject<TimelineRef | null>
 }
 
 /**
- * Build a random-topic Pexels project: fetches alternating video/image clips
+ * Build a random-topic Pixabay project: fetches alternating video/image clips
  * for a random topic, lays them on the video lane with fade transitions, and
  * spreads that topic's captions across all 4 elements (text) lanes. Audio is
  * left for the user to add manually from the audio panel.
  */
-export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexelsDeps): Promise<string> {
+export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixabayDeps): Promise<string> {
   const [topicName, topic] = pickTopic()
 
   // Alternate video/image so the edit doesn't clump by kind.
@@ -227,12 +227,12 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
     const wantVideo = i % 2 === 0
     const item = wantVideo ? await fetchRandomVideo(topic) : await fetchRandomImage(topic)
     if (!item) continue
-    const asset = wantVideo ? importPexelsVideo(item as PexelsVideo) : importPexelsPhoto(item as PexelsPhoto)
+    const asset = wantVideo ? importPixabayVideo(item as PixabayVideo) : importPixabayPhoto(item as PixabayPhoto)
     fetched.push({ kind: wantVideo ? 'video' : 'image', asset })
   }
 
   if (fetched.length === 0) {
-    throw new Error(`No Pexels results for topic "${topicName}" — try again.`)
+    throw new Error(`No Pixabay results for topic "${topicName}" — try again.`)
   }
 
   const fps = engine.getProject().fps
@@ -324,7 +324,7 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
       const fontSize = i === 0 ? 76 : 44 + (i % 3) * 8
       addText(caption, clip, place, track.id, fontSize)
     })
-  }, `Random load from Pexels — ${topicName}`)
+  }, `Random load from Pixabay — ${topicName}`)
 
   // --- Post-load: clean playback state -------------------------------------
   const playback = usePlaybackStore.getState()
@@ -335,4 +335,4 @@ export async function loadRandomPexels({ engine, timelineRef }: LoadRandomPexels
   return topicName
 }
 
-export const PEXELS_TOPIC_NAMES = Object.keys(PEXELS_TOPICS)
+export const PIXABAY_TOPIC_NAMES = Object.keys(PIXABAY_TOPICS)

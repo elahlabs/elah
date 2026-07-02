@@ -22,7 +22,8 @@ import { ClipProperties } from './properties/ClipProperties'
 import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
-import { loadRandomPexels } from './loadRandomPexels'
+import { loadRandomPixabay } from './loadRandomPixabay'
+import { PixabayLogo } from './PixabayResults'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { TracePanel } from './TracePanel'
@@ -73,36 +74,36 @@ const AppHeader = memo(function AppHeader({
   onToggleCode,
   codeOpen,
   timelineRef,
-  loadingPexels,
-  setLoadingPexels,
+  loadingPixabay,
+  setLoadingPixabay,
 }: {
   onExport: () => void
   onToggleCode: () => void
   codeOpen: boolean
   timelineRef: React.RefObject<TimelineRef | null>
-  loadingPexels: boolean
-  setLoadingPexels: (loading: boolean) => void
+  loadingPixabay: boolean
+  setLoadingPixabay: (loading: boolean) => void
 }) {
   const [showTrace, setShowTrace] = useState(false)
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
 
-  const handleRandomPexels = useCallback(async () => {
-    setLoadingPexels(true)
+  const handleRandomPixabay = useCallback(async () => {
+    setLoadingPixabay(true)
     try {
-      const topic = await loadRandomPexels({ engine, timelineRef })
-      console.info(`[playground] Loaded random Pexels project — topic: ${topic}`)
+      const topic = await loadRandomPixabay({ engine, timelineRef })
+      console.info(`[playground] Loaded random Pixabay project — topic: ${topic}`)
     } catch (err) {
-      console.error('[playground] Failed to load random Pexels project:', err)
-      globalThis.alert?.('Could not load a random Pexels project — check the console for details.')
+      console.error('[playground] Failed to load random Pixabay project:', err)
+      globalThis.alert?.('Could not load a random Pixabay project — check the console for details.')
     } finally {
-      setLoadingPexels(false)
+      setLoadingPixabay(false)
     }
   }, [engine, timelineRef])
 
-  // Pexels button — gradient + glow are dynamic based on loadingPexels state
-  const pexelsBtnStyle: React.CSSProperties = loadingPexels
+  // Pixabay button — gradient + glow are dynamic based on loadingPixabay state
+  const pixabayBtnStyle: React.CSSProperties = loadingPixabay
     ? {
         background: 'var(--elah-bg-panel)',
         border: '1px solid var(--elah-border)',
@@ -147,13 +148,20 @@ const AppHeader = memo(function AppHeader({
         </span>
         <button
           type="button"
-          className="px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
-          style={pexelsBtnStyle}
-          disabled={loadingPexels}
-          onClick={handleRandomPexels}
-          title="Load a random topic from Pexels: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
+          style={pixabayBtnStyle}
+          disabled={loadingPixabay}
+          onClick={handleRandomPixabay}
+          title="Load a random topic from Pixabay: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
         >
-          {loadingPexels ? 'Loading…' : '✦ Random Load from Pexels'}
+          {loadingPixabay ? (
+            'Loading…'
+          ) : (
+            <>
+              ✦ Random Load from
+              <PixabayLogo size={12} className="text-white" />
+            </>
+          )}
         </button>
       </div>
 
@@ -450,7 +458,7 @@ export default function ProductionEditor() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
   const [activePanel, setActivePanel] = useState('stock')
-  const [loadingPexels, setLoadingPexels] = useState(false)
+  const [loadingPixabay, setLoadingPixabay] = useState(false)
 
   // Resizable timeline: drag the handle up/down to grow/shrink it. Height is
   // clamped to [MIN, available − reserved] so the editor's top section (panels,
@@ -506,7 +514,12 @@ export default function ProductionEditor() {
   }, [])
 
   return (
-    <EditorProvider fps={FPS} defaultTrackHeight={36} initialTracks={INITIAL_TRACKS}>
+    <EditorProvider
+      fps={FPS}
+      defaultTrackHeight={36}
+      initialTracks={INITIAL_TRACKS}
+      stage={{ width: 1920, height: 1080 }}
+    >
       <div
         className="elah-root flex flex-col h-full"
       >
@@ -515,8 +528,8 @@ export default function ProductionEditor() {
           onToggleCode={() => setShowCode((o) => !o)}
           codeOpen={showCode}
           timelineRef={timelineRef}
-          loadingPexels={loadingPexels}
-          setLoadingPexels={setLoadingPexels}
+          loadingPixabay={loadingPixabay}
+          setLoadingPixabay={setLoadingPixabay}
         />
         {showExportModal && (
           <ExportModal
@@ -585,7 +598,7 @@ export default function ProductionEditor() {
               style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
             />
 
-            {loadingPexels && (
+            {loadingPixabay && (
               <div
                 className="absolute inset-0 z-50 flex items-center justify-center gap-2 backdrop-blur-[1px]"
                 style={{ background: 'rgba(0, 0, 0, 0.55)' }}
@@ -595,7 +608,7 @@ export default function ProductionEditor() {
                   style={{ borderTopColor: '#fff' }}
                 />
                 <span className="text-xs font-medium text-white">
-                  Loading random Pexels project…
+                  Loading random Pixabay project…
                 </span>
               </div>
             )}

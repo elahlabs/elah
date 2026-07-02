@@ -18,7 +18,7 @@ export interface UseFreesoundSearchResult {
 /**
  * Debounced, paginated, cancellable Freesound search over our own
  * `/api/freesound` proxy route (keeps the API key server-side). Mirrors
- * usePexelsSearch — when `query` is empty, falls back to Freesound's
+ * usePixabaySearch — when `query` is empty, falls back to Freesound's
  * downloads-sorted feed so the panel never starts out empty.
  */
 export function useFreesoundSearch(query: string): UseFreesoundSearchResult {

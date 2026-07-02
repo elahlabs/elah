@@ -7,7 +7,7 @@ function findExisting(src: string): MediaAsset | undefined {
 
 /**
  * Registers a Freesound search result as a `MediaAsset` in the shared media
- * library, mirroring importPexelsAsset — Freesound already reports duration
+ * library, mirroring importPixabayAsset — Freesound already reports duration
  * and a waveform thumbnail, so we skip the probe pipeline. Synchronous so it
  * can run inside a native `dragstart` handler, which must call `setData`
  * before returning.

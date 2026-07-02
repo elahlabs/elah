@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PexelsPhoto, PexelsPhotoSearchResponse, PexelsVideo, PexelsVideoSearchResponse } from '@/lib/pexels/types'
+import type { PixabayPhoto, PixabayPhotoSearchResponse, PixabayVideo, PixabayVideoSearchResponse } from '@/lib/pixabay/types'
 
 const DEBOUNCE_MS = 400
 const PER_PAGE = 20
 
-type PexelsKind = 'photos' | 'videos'
+type PixabayKind = 'photos' | 'videos'
 
-type ItemFor<K extends PexelsKind> = K extends 'photos' ? PexelsPhoto : PexelsVideo
-type ResponseFor<K extends PexelsKind> = K extends 'photos' ? PexelsPhotoSearchResponse : PexelsVideoSearchResponse
+type ItemFor<K extends PixabayKind> = K extends 'photos' ? PixabayPhoto : PixabayVideo
+type ResponseFor<K extends PixabayKind> = K extends 'photos' ? PixabayPhotoSearchResponse : PixabayVideoSearchResponse
 
-export interface UsePexelsSearchResult<K extends PexelsKind> {
+export interface UsePixabaySearchResult<K extends PixabayKind> {
   items: ItemFor<K>[]
   loading: boolean
   loadingMore: boolean
@@ -21,13 +21,13 @@ export interface UsePexelsSearchResult<K extends PexelsKind> {
 }
 
 /**
- * Debounced, paginated, cancellable Pexels search over our own `/api/pexels/*`
+ * Debounced, paginated, cancellable Pixabay search over our own `/api/pixabay/*`
  * proxy routes (keeps the API key server-side). Shared by the Photos and
  * Stock panels — only the `kind` (and therefore the endpoint + item type)
- * differs between them. When `query` is empty, falls back to Pexels' popular
+ * differs between them. When `query` is empty, falls back to Pixabay's popular
  * (videos) / curated (photos) feed so the panel never starts out empty.
  */
-export function usePexelsSearch<K extends PexelsKind>(kind: K, query: string): UsePexelsSearchResult<K> {
+export function usePixabaySearch<K extends PixabayKind>(kind: K, query: string): UsePixabaySearchResult<K> {
   const [items, setItems] = useState<ItemFor<K>[]>([])
   const [page, setPage] = useState(1)
   const [totalResults, setTotalResults] = useState(0)
@@ -49,18 +49,18 @@ export function usePexelsSearch<K extends PexelsKind>(kind: K, query: string): U
 
       try {
         const queryPart = q ? `query=${encodeURIComponent(q)}&` : ''
-        const url = `/api/pexels/${kind}?${queryPart}page=${pageToFetch}&per_page=${PER_PAGE}`
+        const url = `/api/pixabay/${kind}?${queryPart}page=${pageToFetch}&per_page=${PER_PAGE}`
         const res = await fetch(url, { signal: controller.signal })
         const data = (await res.json()) as ResponseFor<K> & { error?: string }
-        if (!res.ok) throw new Error(data.error ?? 'Pexels search failed.')
+        if (!res.ok) throw new Error(data.error ?? 'Pixabay search failed.')
 
-        const results = (kind === 'photos' ? (data as PexelsPhotoSearchResponse).photos : (data as PexelsVideoSearchResponse).videos) as ItemFor<K>[]
-        setTotalResults(data.total_results)
+        const results = (kind === 'photos' ? (data as PixabayPhotoSearchResponse).hits : (data as PixabayVideoSearchResponse).hits) as ItemFor<K>[]
+        setTotalResults(data.totalHits)
         setPage(pageToFetch)
         setItems((prev) => (replace ? results : [...prev, ...results]))
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return
-        setError(err instanceof Error ? err.message : 'Pexels search failed.')
+        setError(err instanceof Error ? err.message : 'Pixabay search failed.')
         if (replace) setItems([])
       } finally {
         setLoading(false)

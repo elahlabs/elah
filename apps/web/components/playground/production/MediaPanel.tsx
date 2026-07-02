@@ -35,12 +35,12 @@ import {
   type DragMediaPayload,
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
-import { PexelsResults } from './PexelsResults'
+import { PixabayResults } from './PixabayResults'
 import { FreesoundResults } from './FreesoundResults'
 
 export type PanelMode = 'stock' | 'photos' | 'audio'
 
-type MediaSource = 'pexel' | 'freesound' | 'uploads'
+type MediaSource = 'pixabay' | 'freesound' | 'uploads'
 
 function fmtDuration(sec: number | undefined): string {
   if (!sec || !Number.isFinite(sec)) return ''
@@ -224,11 +224,11 @@ const PANEL_CONFIG: Record<
 
 const SOURCE_OPTIONS: Record<PanelMode, { value: MediaSource; label: string }[]> = {
   stock: [
-    { value: 'pexel', label: 'Pexel' },
+    { value: 'pixabay', label: 'Pixabay' },
     { value: 'uploads', label: 'Uploads' },
   ],
   photos: [
-    { value: 'pexel', label: 'Pexel' },
+    { value: 'pixabay', label: 'Pixabay' },
     { value: 'uploads', label: 'Uploads' },
   ],
   audio: [
@@ -414,7 +414,7 @@ export function MediaPanel({ style, mode = 'stock' }: { style?: React.CSSPropert
             mode === 'audio' ? (
               <FreesoundResults query={search} />
             ) : (
-              <PexelsResults
+              <PixabayResults
                 key={mode === 'stock' ? 'videos' : 'photos'}
                 kind={mode === 'stock' ? 'videos' : 'photos'}
                 query={search}

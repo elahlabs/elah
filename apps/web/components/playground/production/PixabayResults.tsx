@@ -3,9 +3,9 @@
 import { memo, useCallback, useEffect, useRef, type DragEvent } from 'react'
 import { Loader2, ImageOff } from 'lucide-react'
 import { MEDIA_DRAG_MIME, mediaDragKindMime, type DragMediaPayload } from '@elah/editor'
-import { usePexelsSearch } from '@/hooks/usePexelsSearch'
-import { importPexelsPhoto, importPexelsVideo } from '@/lib/pexels/importPexelsAsset'
-import type { PexelsPhoto, PexelsVideo } from '@/lib/pexels/types'
+import { usePixabaySearch } from '@/hooks/usePixabaySearch'
+import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
+import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
 import { cn } from '@/lib/utils'
 
 function fmtDuration(sec: number): string {
@@ -15,10 +15,56 @@ function fmtDuration(sec: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-const PhotoCard = memo(function PhotoCard({ photo }: { photo: PexelsPhoto }) {
+/** First tag in Pixabay's comma-separated `tags` string reads best as a caption. */
+function primaryTag(tags: string): string {
+  return tags.split(',')[0]?.trim() ?? ''
+}
+
+/**
+ * Pixabay wordmark — Pixabay's brand green with the two-tone "pixa/bay"
+ * treatment used on pixabay.com, drawn inline so the credit never depends on
+ * an external asset request (Pixabay's API terms require attributing the
+ * source; this keeps that link visible wherever results are shown).
+ */
+export function PixabayLogo({ size = 12, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 100 22"
+      height={size}
+      className={className}
+      role="img"
+      aria-label="Pixabay"
+    >
+      <rect x="0" y="3" width="16" height="16" rx="3.5" fill="#1a9c37" />
+      <path d="M8 6.5l4.2 2.4v4.8L8 16.1l-4.2-2.4V8.9L8 6.5z" fill="#fff" opacity="0.92" />
+      <text x="20" y="16.5" fontSize="15" fontFamily="Arial, sans-serif" fontWeight="700">
+        <tspan fill="currentColor">pixa</tspan>
+        <tspan fill="#1a9c37">bay</tspan>
+      </text>
+    </svg>
+  )
+}
+
+/** Small "powered by Pixabay" credit, linked back per Pixabay's API attribution terms. */
+function PixabayCredit() {
+  return (
+    <a
+      href="https://pixabay.com/"
+      target="_blank"
+      rel="noreferrer noopener"
+      className="mb-2 inline-flex items-center gap-1.5 self-start text-[10px] text-ed-text-muted transition-colors hover:text-ed-text"
+      title="Media provided by Pixabay"
+    >
+      <span>Powered by</span>
+      <PixabayLogo size={11} />
+    </a>
+  )
+}
+
+const PhotoCard = memo(function PhotoCard({ photo }: { photo: PixabayPhoto }) {
   const onDragStart = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      const asset = importPexelsPhoto(photo)
+      const asset = importPixabayPhoto(photo)
       const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
       e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
       e.dataTransfer.setData(mediaDragKindMime('image'), '')
@@ -31,13 +77,13 @@ const PhotoCard = memo(function PhotoCard({ photo }: { photo: PexelsPhoto }) {
     <div
       draggable
       onDragStart={onDragStart}
-      onClick={() => importPexelsPhoto(photo)}
-      title={photo.alt || 'Pexels photo'}
+      onClick={() => importPixabayPhoto(photo)}
+      title={primaryTag(photo.tags) || 'Pixabay photo'}
       className="group flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
     >
       <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
         <img
-          src={photo.src.medium}
+          src={photo.webformatURL}
           alt=""
           draggable={false}
           loading="lazy"
@@ -45,16 +91,16 @@ const PhotoCard = memo(function PhotoCard({ photo }: { photo: PexelsPhoto }) {
         />
       </div>
       <span className="truncate text-[11px] text-ed-text-muted">
-        {photo.alt || `Photo by ${photo.photographer}`}
+        {primaryTag(photo.tags) || `Photo by ${photo.user}`}
       </span>
     </div>
   )
 })
 
-const VideoCard = memo(function VideoCard({ video }: { video: PexelsVideo }) {
+const VideoCard = memo(function VideoCard({ video }: { video: PixabayVideo }) {
   const onDragStart = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      const asset = importPexelsVideo(video)
+      const asset = importPixabayVideo(video)
       const payload: DragMediaPayload = { kind: 'media-asset', assetId: asset.id }
       e.dataTransfer.setData(MEDIA_DRAG_MIME, JSON.stringify(payload))
       e.dataTransfer.setData(mediaDragKindMime('video'), '')
@@ -67,13 +113,13 @@ const VideoCard = memo(function VideoCard({ video }: { video: PexelsVideo }) {
     <div
       draggable
       onDragStart={onDragStart}
-      onClick={() => importPexelsVideo(video)}
-      title={`Video by ${video.user.name}`}
+      onClick={() => importPixabayVideo(video)}
+      title={`Video by ${video.user}`}
       className="group flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
     >
       <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
         <img
-          src={video.image}
+          src={video.videos.medium.thumbnail}
           alt=""
           draggable={false}
           loading="lazy"
@@ -83,14 +129,14 @@ const VideoCard = memo(function VideoCard({ video }: { video: PexelsVideo }) {
           {fmtDuration(video.duration)}
         </span>
       </div>
-      <span className="truncate text-[11px] text-ed-text-muted">by {video.user.name}</span>
+      <span className="truncate text-[11px] text-ed-text-muted">by {video.user}</span>
     </div>
   )
 })
 
-export function PexelsResults({ kind, query }: { kind: 'photos' | 'videos'; query: string }) {
+export function PixabayResults({ kind, query }: { kind: 'photos' | 'videos'; query: string }) {
   const { items, loading, loadingMore, error, hasMore, loadMore, isDefaultFeed } =
-    usePexelsSearch(kind, query)
+    usePixabaySearch(kind, query)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -109,6 +155,8 @@ export function PexelsResults({ kind, query }: { kind: 'photos' | 'videos'; quer
 
   return (
     <div className="flex flex-col">
+      <PixabayCredit />
+
       {error && <p className="text-[11px] text-ed-error">{error}</p>}
 
       {loading ? (
@@ -120,15 +168,15 @@ export function PexelsResults({ kind, query }: { kind: 'photos' | 'videos'; quer
         <div className="mt-1 flex flex-col items-center gap-1.5 py-6 text-center text-ed-text-muted">
           <ImageOff size={18} />
           <span className="text-[11px]">
-            {isDefaultFeed ? 'No Pexels results available.' : `No results for "${query.trim()}"`}
+            {isDefaultFeed ? 'No Pixabay results available.' : `No results for "${query.trim()}"`}
           </span>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2.5">
             {kind === 'photos'
-              ? (items as PexelsPhoto[]).map((p) => <PhotoCard key={p.id} photo={p} />)
-              : (items as PexelsVideo[]).map((v) => <VideoCard key={v.id} video={v} />)}
+              ? (items as PixabayPhoto[]).map((p) => <PhotoCard key={p.id} photo={p} />)
+              : (items as PixabayVideo[]).map((v) => <VideoCard key={v.id} video={v} />)}
           </div>
           {hasMore && (
             <div ref={sentinelRef} className="mt-3 flex items-center justify-center py-2">
@@ -141,4 +189,4 @@ export function PexelsResults({ kind, query }: { kind: 'photos' | 'videos'; quer
   )
 }
 
-export default PexelsResults
+export default PixabayResults

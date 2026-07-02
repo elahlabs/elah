@@ -1,11 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { curatedPhotos, searchPhotos } from '@/lib/pexels/client'
+import { curatedPhotos, searchPhotos } from '@/lib/pixabay/client'
+
+/** Pixabay rejects `per_page` outside [3, 200] with a 400. */
+function clampPerPage(n: number): number {
+  return Math.min(200, Math.max(3, n))
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('query')?.trim()
   const page = Number(searchParams.get('page') ?? '1') || 1
-  const perPage = Number(searchParams.get('per_page') ?? '20') || 20
+  const perPage = clampPerPage(Number(searchParams.get('per_page') ?? '20') || 20)
 
   try {
     const data = query
@@ -13,7 +18,7 @@ export async function GET(req: NextRequest) {
       : await curatedPhotos({ page, perPage }, req.signal)
     return NextResponse.json(data)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Pexels photo search failed.'
+    const message = err instanceof Error ? err.message : 'Pixabay photo search failed.'
     return NextResponse.json({ error: message }, { status: 502 })
   }
 }
