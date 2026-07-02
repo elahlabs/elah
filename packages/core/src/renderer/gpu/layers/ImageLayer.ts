@@ -40,6 +40,11 @@ export type ImageLoader = (src: string) => Promise<LoadedImage>
 const defaultImageLoader: ImageLoader = (src) =>
   new Promise<LoadedImage>((resolve, reject) => {
     const img = document.createElement('img')
+    // Required for texImage2D to read pixels from a cross-origin source (e.g.
+    // Pexels) without tainting the canvas. The <img> tags used for plain
+    // display (timeline thumbnails) don't need this since they never read
+    // pixel data back.
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       img.onload = null
       img.onerror = null

@@ -22,7 +22,7 @@ import { ClipProperties } from './properties/ClipProperties'
 import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
-import { loadElahDemo } from './loadElahDemo'
+import { loadRandomPexels } from './loadRandomPexels'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { TracePanel } from './TracePanel'
@@ -83,22 +83,23 @@ const AppHeader = memo(function AppHeader({
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
   const engine = useTimelineEngine()
-  const [loadingDemo, setLoadingDemo] = useState(false)
+  const [loadingPexels, setLoadingPexels] = useState(false)
 
-  const handleLoadDemo = useCallback(async () => {
-    setLoadingDemo(true)
+  const handleRandomPexels = useCallback(async () => {
+    setLoadingPexels(true)
     try {
-      await loadElahDemo({ engine, timelineRef })
+      const topic = await loadRandomPexels({ engine, timelineRef })
+      console.info(`[playground] Loaded random Pexels project — topic: ${topic}`)
     } catch (err) {
-      console.error('[playground] Failed to load Elah demo project:', err)
-      globalThis.alert?.('Could not load the demo project — check the console for details.')
+      console.error('[playground] Failed to load random Pexels project:', err)
+      globalThis.alert?.('Could not load a random Pexels project — check the console for details.')
     } finally {
-      setLoadingDemo(false)
+      setLoadingPexels(false)
     }
   }, [engine, timelineRef])
 
-  // Demo button — gradient + glow are dynamic based on loadingDemo state
-  const demoBtnStyle: React.CSSProperties = loadingDemo
+  // Pexels button — gradient + glow are dynamic based on loadingPexels state
+  const pexelsBtnStyle: React.CSSProperties = loadingPexels
     ? {
         background: 'var(--elah-bg-panel)',
         border: '1px solid var(--elah-border)',
@@ -144,12 +145,12 @@ const AppHeader = memo(function AppHeader({
         <button
           type="button"
           className="px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
-          style={demoBtnStyle}
-          disabled={loadingDemo}
-          onClick={handleLoadDemo}
-          title="Load a cinematic demo project: assets, fades, and text overlays"
+          style={pexelsBtnStyle}
+          disabled={loadingPexels}
+          onClick={handleRandomPexels}
+          title="Load a random topic from Pexels: images, videos, fades, and text overlays across 4 lanes"
         >
-          {loadingDemo ? 'Loading…' : '✦ Load Elah Demo Project'}
+          {loadingPexels ? 'Loading…' : '✦ Random Load from Pexels'}
         </button>
       </div>
 
