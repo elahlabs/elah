@@ -20,6 +20,11 @@ import {
   type DragMediaPayload,
 } from '@elah/core'
 import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind, type ShapeVariant } from '@elah/timeline'
+import {
+  isActivationKey,
+  useAssetActivation,
+  type AssetActivationHandler,
+} from '../activation'
 
 /**
  * Per-slot className overrides for SourcePanel.
@@ -80,6 +85,8 @@ export interface SourcePanelProps {
   className?: string
   defaultLane?: Lane
   classNames?: SourcePanelClassNames
+  activateOnTap?: boolean
+  onAssetActivate?: AssetActivationHandler
 }
 
 type Lane = 'media' | 'elements'
@@ -264,11 +271,13 @@ function ClipCard({
   asset,
   viewMode,
   onDelete,
+  onActivate,
   slots,
 }: {
   asset: MediaAsset
   viewMode: ViewMode
   onDelete: (id: string) => void
+  onActivate?: (asset: MediaAsset) => void
   slots?: ClipCardSlots
 }) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
@@ -293,17 +302,30 @@ function ClipCard({
 
   const closeCtx = useCallback(() => setCtxMenu(null), [])
   const handleDelete = useCallback(() => { onDelete(asset.id); setCtxMenu(null) }, [asset.id, onDelete])
+  const handleActivate = useCallback(() => onActivate?.(asset), [asset, onActivate])
+  const handleActivateKey = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!onActivate || !isActivationKey(e.key)) return
+      e.preventDefault()
+      onActivate(asset)
+    },
+    [asset, onActivate],
+  )
 
   if (viewMode === 'list') {
     return (
       <>
         <div
           draggable
+          role={onActivate ? 'button' : undefined}
+          tabIndex={onActivate ? 0 : undefined}
           className={cn(
             'elah-media-card flex items-center gap-2 px-[10px] py-[6px] rounded-sm cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[120ms]',
             slots?.card,
           )}
           onDragStart={onDragStart}
+          onClick={onActivate ? handleActivate : undefined}
+          onKeyDown={onActivate ? handleActivateKey : undefined}
           onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
           title={asset.name}
         >
@@ -338,11 +360,15 @@ function ClipCard({
     <>
       <div
         draggable
+        role={onActivate ? 'button' : undefined}
+        tabIndex={onActivate ? 0 : undefined}
         className={cn(
           'elah-media-card flex items-center gap-[10px] px-[10px] py-2 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms]',
           slots?.card,
         )}
         onDragStart={onDragStart}
+        onClick={onActivate ? handleActivate : undefined}
+        onKeyDown={onActivate ? handleActivateKey : undefined}
         onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
         title={asset.name}
       >
@@ -445,7 +471,14 @@ function CtxMenu({
  *
  * Must be rendered inside `<EditorProvider>`.
  */
-export function SourcePanel({ style, className, defaultLane = 'media', classNames }: SourcePanelProps) {
+export function SourcePanel({
+  style,
+  className,
+  defaultLane = 'media',
+  classNames,
+  activateOnTap,
+  onAssetActivate,
+}: SourcePanelProps) {
   // ── Lane state
   const [lane, setLane] = useState<Lane>(defaultLane)
 
@@ -466,6 +499,12 @@ export function SourcePanel({ style, className, defaultLane = 'media', className
   const [toast, setToast] = useState<ImportToast | null>(null)
   const [urlInputOpen, setUrlInputOpen] = useState(false)
   const [urlValue, setUrlValue] = useState('')
+  const activationEnabled = activateOnTap === true || Boolean(onAssetActivate)
+  const activateAsset = useAssetActivation({
+    activateOnTap,
+    onAssetActivate,
+    setToast,
+  })
 
   // ── Toast auto-dismiss
   useEffect(() => {
@@ -475,6 +514,18 @@ export function SourcePanel({ style, className, defaultLane = 'media', className
   }, [toast])
 
   const handleDeleteAsset = useCallback((id: string) => removeAsset(id), [removeAsset])
+  const handleAssetActivate = useCallback(
+    (asset: MediaAsset) => {
+      void activateAsset({ kind: 'media-asset', asset })
+    },
+    [activateAsset],
+  )
+  const handleElementActivate = useCallback(
+    (element: ElementKind, shapeVariant: ShapeVariant | undefined, label: string) => {
+      void activateAsset({ kind: 'element', element, shapeVariant, label })
+    },
+    [activateAsset],
+  )
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const list = Array.from(files)
@@ -787,6 +838,7 @@ export function SourcePanel({ style, className, defaultLane = 'media', className
                     asset={asset}
                     viewMode={viewMode}
                     onDelete={handleDeleteAsset}
+                    onActivate={activationEnabled ? handleAssetActivate : undefined}
                     slots={cardSlots}
                   />
                 ))}
@@ -826,11 +878,23 @@ export function SourcePanel({ style, className, defaultLane = 'media', className
               <div
                 key={shapeVariant ? `${element}-${shapeVariant}` : element}
                 draggable
+                role={activationEnabled ? 'button' : undefined}
+                tabIndex={activationEnabled ? 0 : undefined}
                 className={cn(
                   'elah-element-card flex flex-col items-center justify-center gap-[6px] px-2 py-3 rounded-md cursor-grab select-none bg-ed-card border border-ed-border transition-[background,border-color] duration-[150ms] min-h-[72px]',
                   classNames?.tile,
                 )}
                 onDragStart={makeDragStart(element, shapeVariant)}
+                onClick={activationEnabled ? () => handleElementActivate(element, shapeVariant, label) : undefined}
+                onKeyDown={
+                  activationEnabled
+                    ? (e) => {
+                        if (!isActivationKey(e.key)) return
+                        e.preventDefault()
+                        handleElementActivate(element, shapeVariant, label)
+                      }
+                    : undefined
+                }
                 title={`Drag ${label} onto the elements track`}
               >
                 <span

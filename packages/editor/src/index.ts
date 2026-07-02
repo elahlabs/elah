@@ -89,8 +89,17 @@ export { useTracks } from '@elah/timeline'
 export { usePlayback } from '@elah/timeline'
 export { useSelection } from '@elah/timeline'
 export { useTimelineDrop } from '@elah/timeline'
+export { insertMediaAsset, insertElement } from '@elah/timeline'
 export { ELEMENT_DRAG_MIME } from '@elah/timeline'
-export type { DragElementPayload, ElementKind } from '@elah/timeline'
+export type {
+  DragElementPayload,
+  ElementKind,
+  ShapeVariant,
+  InsertAssetOptions,
+  InsertAssetResult,
+  InsertAssetFailureReason,
+  InsertedKind,
+} from '@elah/timeline'
 
 // --- Editor composition layer ---
 export { EditorProvider } from './editor/EditorProvider'
@@ -108,6 +117,7 @@ export type { ElementsPanelProps } from './editor/ElementsPanel'
 
 export { SourcePanel } from './editor/SourcePanel'
 export type { SourcePanelProps, SourcePanelClassNames } from './editor/SourcePanel'
+export type { AssetActivationPayload, AssetActivationHandler } from './editor/activation'
 
 export { Preview } from './editor/Preview'
 export type { PreviewProps, PreviewHandle } from './editor/Preview'
