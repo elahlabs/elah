@@ -35,6 +35,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* Mobile Chrome: 100vh is the large viewport (URL bar retracted), which
+     pushes the bottom bar behind the toolbar. dvh tracks the visible height. */
+  height: 100dvh;
   overflow: hidden;
   background: var(--pg-bg);
   color: var(--pg-text);
