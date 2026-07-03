@@ -298,6 +298,7 @@ export default function ProductionEditor() {
 
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
+    outputHeight: number
     videoCodec: ExportVideoCodec
     audioCodec: ExportAudioCodec
     signal: AbortSignal
@@ -310,6 +311,7 @@ export default function ProductionEditor() {
     const { lazyExportVideo } = await import('@elah/editor')
     const blob = await lazyExportVideo(project, {
       videoBitrate: opts.videoBitrate,
+      outputHeight: opts.outputHeight,
       videoCodec: opts.videoCodec,
       audioCodec: opts.audioCodec,
       signal: opts.signal,
