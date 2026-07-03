@@ -314,6 +314,7 @@ export class GpuRenderer implements Renderer {
   ): LayerContext {
     return {
       gl,
+      frame: scene.frame,
       stage: scene.stage,
       viewport: this._viewport,
       fps: scene.fps,

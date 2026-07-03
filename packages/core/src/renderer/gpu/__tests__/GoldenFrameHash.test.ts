@@ -77,6 +77,7 @@ function makeClip(id: string, src: string, sourceFrame: number, zIndex = 1000): 
 function makeCtx(gl: RecordingGl, scene: Scene): LayerContext {
   return {
     gl: gl as unknown as WebGL2RenderingContext,
+    frame: scene.frame,
     stage: scene.stage,
     viewport: { width: 1920, height: 1080 },
     fps: scene.fps,

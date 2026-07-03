@@ -66,6 +66,15 @@ export function buildVideoTransformMatrix(
 
 export type VideoFrameProviderFactory = (src: string) => VideoFrameProvider
 
+/**
+ * Max timeline-frame distance between the holdover's capture point and the
+ * incoming clip's first draw for the holdover to be shown. A direct video→video
+ * cut is 1 frame apart (a few more under render jank). Anything larger means a
+ * gap (e.g. an image between the clips) or a seek — showing the previous
+ * video's frame there would ghost stale content into the new clip.
+ */
+const HOLDOVER_MAX_FRAME_GAP = 5
+
 export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _pool: TexturePool
   private readonly _providerFactory: VideoFrameProviderFactory
@@ -97,9 +106,14 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
    * exits the scene. Used as a single-frame fallback when the incoming clip's
    * texture has not received its first decoded frame yet — prevents the 1-2
    * tick black flash at clip boundaries while async decode catches up.
-   * Disposed as soon as the new clip uploads its first frame.
+   * Disposed as soon as the new clip uploads its first frame, or when the
+   * incoming clip is NOT frame-adjacent to it (see HOLDOVER_MAX_FRAME_GAP).
    */
   private _holdoverTexture: VideoTexture | null = null
+  /** Timeline frame at which the holdover's clip last drew. -Infinity = unknown/stale. */
+  private _holdoverFrame = Number.NEGATIVE_INFINITY
+  /** Timeline frame at which each active clip last drew — stamps the holdover on release. */
+  private readonly _lastDrawFrameByItemId = new Map<string, number>()
 
   constructor(
     pool: TexturePool,
@@ -151,9 +165,12 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     const texture = this._textures.get(itemId)
     if (texture?.hasContent) {
       // Transfer to holdover so the next clip can borrow this frame for its
-      // first tick while its own decode is in flight.
+      // first tick while its own decode is in flight. Stamp it with the frame
+      // this clip last drew at so draw() can reject it across gaps/seeks.
       this._holdoverTexture?.dispose()
       this._holdoverTexture = texture
+      this._holdoverFrame =
+        this._lastDrawFrameByItemId.get(itemId) ?? Number.NEGATIVE_INFINITY
     } else {
       texture?.dispose()
     }
@@ -161,6 +178,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._srcByItemId.delete(itemId)
     this._contentSizeByItemId.delete(itemId)
     this._lastLoggedSourceFrameByItemId.delete(itemId)
+    this._lastDrawFrameByItemId.delete(itemId)
 
     const entry = this._providers.get(itemId)
     if (!entry) return
@@ -235,6 +253,8 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     const entry = this._providers.get(item.id)
     if (!texture || !entry) return
 
+    this._lastDrawFrameByItemId.set(item.id, ctx.frame)
+
     const { provider } = entry
 
     // Push the playhead before reading the cache so the producer can fill
@@ -270,10 +290,18 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
 
     // Prefer the clip's own texture; fall back to the holdover for the first
     // tick(s) while async decode delivers the initial frame — avoids the black
-    // flash at clip boundaries.
+    // flash at clip boundaries. The holdover is only valid across a direct cut:
+    // if this clip is not frame-adjacent to where the holdover was captured
+    // (image/gap between clips, or a seek), drop it instead of ghosting the
+    // previous video's frame into this clip.
     let unit = texture.bind(ctx.gl, 0)
     if (unit < 0 && this._holdoverTexture !== null) {
-      unit = this._holdoverTexture.bind(ctx.gl, 0)
+      if (Math.abs(ctx.frame - this._holdoverFrame) <= HOLDOVER_MAX_FRAME_GAP) {
+        unit = this._holdoverTexture.bind(ctx.gl, 0)
+      } else {
+        this._holdoverTexture.dispose()
+        this._holdoverTexture = null
+      }
     }
     if (unit < 0) return
 
@@ -305,8 +333,10 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._textures.clear()
     this._srcByItemId.clear()
     this._contentSizeByItemId.clear()
+    this._lastDrawFrameByItemId.clear()
     this._holdoverTexture?.dispose()
     this._holdoverTexture = null
+    this._holdoverFrame = Number.NEGATIVE_INFINITY
 
     for (const entry of this._providers.values()) {
       entry.provider.dispose()

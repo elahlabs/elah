@@ -114,6 +114,7 @@ function makeClip(overrides: Partial<ActiveImageClip> = {}): ActiveImageClip {
 function makeCtx(gl: WebGL2RenderingContext): LayerContext {
   return {
     gl,
+    frame: 0,
     stage: { width: 1080, height: 1920 },
     viewport: { width: 1080, height: 1920 },
     fps: 30,
