@@ -19,19 +19,27 @@ import {
 import type { RefObject } from 'react'
 import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
 import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
+import { importFreesoundSound } from '@/lib/freesound/importFreesoundAsset'
+import type { FreesoundSearchResponse, FreesoundSound } from '@/lib/freesound/types'
 
 /** 400ms transition / fade at the project fps. */
 const FADE_MS = 400
 
-/** How many visual clips to place on the video lane, alternating video/image. */
-const VISUAL_COUNT = 16
+/** Target total on-screen duration for the composed project: 3 video slots at
+ *  VIDEO_CLIP_SECONDS each + 2 image slots at CLIP_SECONDS each = 60s. */
+const TARGET_TOTAL_SECONDS = 60
 
-/** Default on-screen length per visual (frames = fps * this), trimmed to source. */
+/** How many video clips vs image clips make up the visual lane. */
+const VIDEO_SLOT_COUNT = 3
+const IMAGE_SLOT_COUNT = 2
+const VISUAL_COUNT = VIDEO_SLOT_COUNT + IMAGE_SLOT_COUNT
+
+/** On-screen length per image slot (frames = fps * this), trimmed to source. */
 const CLIP_SECONDS = 4
 
-/** Preferred on-screen length for video clips — Pixabay's short (~5s) clips
- *  get stretched toward this via loop/hold in the placement pass below. */
-const VIDEO_CLIP_SECONDS = 17
+/** On-screen length per video slot — sized (with the 2 image slots above) so
+ *  the visual lane totals TARGET_TOTAL_SECONDS: 3 * ~17.3 + 2 * 4 = 60. */
+const VIDEO_CLIP_SECONDS = (TARGET_TOTAL_SECONDS - IMAGE_SLOT_COUNT * CLIP_SECONDS) / VIDEO_SLOT_COUNT
 
 /** Minimum source duration a video must have to be picked before shorter
  *  ones — biases toward 10-20s clips so the timeline doesn't fill up with
@@ -277,6 +285,24 @@ async function fetchImages(topic: PixabayTopic): Promise<PixabayPhoto[]> {
   return hits
 }
 
+/**
+ * One API call to Freesound for the topic's music query, via our own
+ * `/api/freesound` proxy (mirrors fetchVideos/fetchImages). Returns the pool
+ * of results so the caller can pick one — errors/empty results resolve to []
+ * so a music-fetch failure never blocks the rest of the random-load flow.
+ */
+async function fetchMusic(topic: PixabayTopic): Promise<FreesoundSound[]> {
+  const url = `/api/freesound?query=${encodeURIComponent(topic.musicQuery)}&page=1&per_page=15`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = (await res.json()) as FreesoundSearchResponse
+    return data.results ?? []
+  } catch {
+    return []
+  }
+}
+
 export interface LoadRandomPixabayDeps {
   engine: TimelineEngine
   timelineRef: RefObject<TimelineRef | null>
@@ -308,11 +334,16 @@ export async function loadPixabayTopic({
   // Exactly two API calls — one batch of videos, one batch of images — run in
   // parallel. Each proxy request returns up to 15 hits, so we pick distinct
   // clips from those pools locally instead of one request per visual.
-  const videoSlots = Math.ceil(VISUAL_COUNT / 2)
-  const imageSlots = VISUAL_COUNT - videoSlots
-  const [videoPool, imagePool] = await Promise.all([fetchVideos(topic), fetchImages(topic)])
+  const videoSlots = VIDEO_SLOT_COUNT
+  const imageSlots = IMAGE_SLOT_COUNT
+  const [videoPool, imagePool, musicPool] = await Promise.all([
+    fetchVideos(topic),
+    fetchImages(topic),
+    fetchMusic(topic),
+  ])
   const videos = pickManyRandomVideos(videoPool, videoSlots)
   const images = pickManyRandom(imagePool, imageSlots)
+  const music = pickRandom(musicPool)
 
   // Alternate video/image so the edit doesn't clump by kind. If one pool runs
   // dry, fall back to the other so we still fill up to VISUAL_COUNT slots.
@@ -342,17 +373,20 @@ export async function loadPixabayTopic({
   const desiredVideoFrames = Math.round(fps * VIDEO_CLIP_SECONDS)
 
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
+  const audioTrack = project.tracks.find((t) => t.kind === 'audio')
   const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
   if (!videoTrack || elementsTracks.length === 0) {
     throw new Error('Expected a video track and at least one elements track on the project')
   }
 
   engine.batch(() => {
-    // --- CLEAR PREVIOUS LOAD: this loader owns the video + elements lanes, so
-    // running it again (e.g. clicking the button twice) must clear whatever
-    // it placed last time first — otherwise the new clips, which start back
-    // at frame 0, collide with the leftover ones and addClip throws.
-    for (const track of [videoTrack, ...elementsTracks]) {
+    // --- CLEAR PREVIOUS LOAD: this loader owns the video + elements lanes
+    // (and the audio lane, when music is available), so running it again
+    // (e.g. clicking the button twice) must clear whatever it placed last
+    // time first — otherwise the new clips, which start back at frame 0,
+    // collide with the leftover ones and addClip throws.
+    const ownedTracks = audioTrack ? [videoTrack, audioTrack, ...elementsTracks] : [videoTrack, ...elementsTracks]
+    for (const track of ownedTracks) {
       for (const clip of engine.getClipsOnTrack(track.id)) {
         engine.removeClip(clip.id, track.id)
       }
@@ -386,6 +420,31 @@ export async function loadPixabayTopic({
       videoClipIds.push(clip.id)
       placedClips.push([cursor, duration])
       cursor += duration
+    }
+    const totalFrames = cursor
+
+    // --- AUDIO LANE: topic-matched Freesound track, looped under the whole
+    // edit. No looping primitive exists on the engine, so a track shorter
+    // than the visuals is repeated as back-to-back clips of the same asset
+    // until the audio lane covers the full totalFrames.
+    if (audioTrack && music) {
+      const asset = importFreesoundSound(music)
+      const sourceFrames =
+        asset.durationSec > 0 ? Math.max(1, secondsToFrames(asset.durationSec, fps)) : totalFrames
+      let audioCursor = 0
+      while (audioCursor < totalFrames) {
+        const duration = Math.min(sourceFrames, totalFrames - audioCursor)
+        engine.addClip({
+          trackId: audioTrack.id,
+          type: 'audio',
+          name: asset.name,
+          startFrame: audioCursor,
+          durationFrames: duration,
+          src: asset.src,
+          assetId: asset.id,
+        })
+        audioCursor += duration
+      }
     }
 
     // --- Fade transitions between every adjacent visual ----------------------

@@ -486,7 +486,7 @@ export function MediaPanel({ style, mode = 'stock' }: { style?: React.CSSPropert
         >
           {!showUploads ? (
             mode === 'audio' ? (
-              <FreesoundResults query={search} />
+              <FreesoundResults query={search} onActivate={onActivateAsset} />
             ) : (
               <PixabayResults
                 key={mode === 'stock' ? 'videos' : 'photos'}
