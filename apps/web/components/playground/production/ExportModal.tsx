@@ -29,6 +29,32 @@ const PRESETS: QualityPreset[] = [
 const DEFAULT_PRESET = 1 // 480p
 
 // ---------------------------------------------------------------------------
+// Hardware-based capability limits (mobile only)
+// ---------------------------------------------------------------------------
+
+// navigator.deviceMemory/hardwareConcurrency aren't in lib.dom yet on all TS targets.
+interface NavigatorWithHardwareHints extends Navigator {
+  deviceMemory?: number
+}
+
+/** Highest output height this device can reasonably encode. Desktop is
+ * unrestricted; mobile is capped using deviceMemory + core count, since
+ * high-resolution MediaRecorder/WebCodecs encodes can crash low-end phones.
+ * Falls back to a conservative 720p cap when the hints aren't available
+ * (e.g. iOS Safari, which doesn't expose deviceMemory). */
+function getMaxOutputHeight(isMobile: boolean): number {
+  if (!isMobile) return Infinity
+
+  const nav = navigator as NavigatorWithHardwareHints
+  const memory = nav.deviceMemory ?? 4 // unknown → assume mid-range
+  const cores = nav.hardwareConcurrency ?? 4
+
+  if (memory < 2 || cores < 4) return 480
+  if (memory < 4 || cores < 6) return 720
+  return 1080
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -36,6 +62,7 @@ type Phase = 'settings' | 'rendering' | 'error'
 
 export interface ExportModalProps {
   onClose: () => void
+  isMobile?: boolean
   onExport: (opts: {
     videoBitrate: number
     outputHeight: number
@@ -55,11 +82,13 @@ function SettingsPhase({
   onSelect,
   onCancel,
   onStart,
+  maxOutputHeight,
 }: {
   selectedPreset: number
   onSelect: (i: number) => void
   onCancel: () => void
   onStart: () => void
+  maxOutputHeight: number
 }) {
   return (
     <>
@@ -81,29 +110,41 @@ function SettingsPhase({
           Resolution
         </div>
         <div className="flex flex-col gap-1">
-          {PRESETS.map((p, i) => (
-            <button
-              key={p.label}
-              onClick={() => onSelect(i)}
-              className={cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-left font-sans border transition-colors',
-                selectedPreset === i
-                  ? 'bg-ed-accent-soft border-ed-accent'
-                  : 'bg-ed-elevated border-ed-border'
-              )}
-            >
-              <span
+          {PRESETS.map((p, i) => {
+            const disabled = p.outputHeight > maxOutputHeight
+            return (
+              <button
+                key={p.label}
+                onClick={() => !disabled && onSelect(i)}
+                disabled={disabled}
+                title={disabled ? 'Not available on this device' : undefined}
                 className={cn(
-                  'w-3.5 h-3.5 rounded-full border-2 shrink-0',
-                  selectedPreset === i
-                    ? 'border-ed-accent bg-ed-accent'
-                    : 'border-ed-text-muted bg-transparent'
+                  'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-left font-sans border transition-colors',
+                  disabled
+                    ? 'bg-ed-elevated border-ed-border opacity-40 cursor-not-allowed'
+                    : 'cursor-pointer',
+                  !disabled && selectedPreset === i
+                    ? 'bg-ed-accent-soft border-ed-accent'
+                    : !disabled
+                      ? 'bg-ed-elevated border-ed-border'
+                      : ''
                 )}
-              />
-              <span className="text-xs font-semibold text-ed-text min-w-[52px]">{p.label}</span>
-              <span className="text-[11px] text-ed-text-muted">{p.description}</span>
-            </button>
-          ))}
+              >
+                <span
+                  className={cn(
+                    'w-3.5 h-3.5 rounded-full border-2 shrink-0',
+                    !disabled && selectedPreset === i
+                      ? 'border-ed-accent bg-ed-accent'
+                      : 'border-ed-text-muted bg-transparent'
+                  )}
+                />
+                <span className="text-xs font-semibold text-ed-text min-w-[52px]">{p.label}</span>
+                <span className="text-[11px] text-ed-text-muted">
+                  {disabled ? 'Not available on this device' : p.description}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         <div className="mt-3 text-[11px] text-ed-text-muted">
@@ -232,9 +273,16 @@ function ErrorPhase({
 // ExportModal — main component
 // ---------------------------------------------------------------------------
 
-export function ExportModal({ onClose, onExport }: ExportModalProps) {
+export function ExportModal({ onClose, onExport, isMobile = false }: ExportModalProps) {
+  const maxOutputHeight = useRef(getMaxOutputHeight(isMobile)).current
   const [phase, setPhase] = useState<Phase>('settings')
-  const [selectedPreset, setSelectedPreset] = useState(DEFAULT_PRESET)
+  const [selectedPreset, setSelectedPreset] = useState(() => {
+    const preset = PRESETS[DEFAULT_PRESET]
+    if (preset.outputHeight <= maxOutputHeight) return DEFAULT_PRESET
+    // default is disabled on this device — fall back to the highest allowed preset
+    const fallback = [...PRESETS].reverse().findIndex((p) => p.outputHeight <= maxOutputHeight)
+    return fallback === -1 ? DEFAULT_PRESET : PRESETS.length - 1 - fallback
+  })
   const [frame, setFrame] = useState(0)
   const [totalFrames, setTotalFrames] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
@@ -305,6 +353,7 @@ export function ExportModal({ onClose, onExport }: ExportModalProps) {
             onSelect={setSelectedPreset}
             onCancel={handleClose}
             onStart={startExport}
+            maxOutputHeight={maxOutputHeight}
           />
         )}
         {phase === 'rendering' && (

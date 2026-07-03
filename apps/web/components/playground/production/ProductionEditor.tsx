@@ -802,6 +802,7 @@ export default function ProductionEditor() {
         />
         {showExportModal && (
           <ExportModal
+            isMobile={isMobile}
             onClose={() => setShowExportModal(false)}
             onExport={handleExportStart}
           />
