@@ -5,7 +5,7 @@ const footerLinks = {
     { label: 'Docs', href: '/docs' },
     { label: 'Examples', href: '/examples' },
     { label: 'Playgrounds', href: '/playgrounds' },
-    { label: 'Changelog', href: '/blog' },
+    { label: 'Changelog', href: '/changelog' },
     { label: 'Pricing', href: '/pricing' },
   ],
   Developers: [
@@ -79,7 +79,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-outline-variant pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-on-surface-variant">
-            © {new Date().getFullYear()} elah. Open source under MIT license.
+            © {new Date().getFullYear()} Elah Labs Private Limited. Source-available under the ECL v1.0 license.
           </p>
           <p className="label-mono text-2xs text-on-surface-variant opacity-60">
             Built with Next.js · Deployed on Vercel

@@ -7,7 +7,7 @@
 [![license](https://img.shields.io/badge/license-ECL--1.0-blue)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 
-[**Website**](https://www.elah.dev) · [**Docs**](https://www.elah.dev/docs) · [**Playground**](https://www.elah.dev/playgrounds) · [**npm**](https://www.npmjs.com/package/@elah/editor) · [**Discord**](https://discord.gg/8CeZ2XbPy)
+[**Website**](https://www.elah.dev) · [**Docs**](https://www.elah.dev/docs) · [**Playground**](https://www.elah.dev/playgrounds) · [**Changelog**](https://www.elah.dev/changelog) · [**npm**](https://www.npmjs.com/package/@elah/editor) · [**Discord**](https://discord.gg/8CeZ2XbPy)
 
 ![Elah video editor — timeline, WebGL2 preview, and export running in the browser](./docs/demo.gif)
 
@@ -66,8 +66,9 @@ Three goals shape every decision:
 | **Project aspect ratio / letterbox** | ✅ Working — canvas `gl.viewport` contain-fit + per-clip object-fit **contain** (off-aspect clips letterboxed *within* the frame, never stretched); switchable stage aspect via `TimelineEngine.setStage` (16:9 ↔ 9:16) with a `<StageBorder>` frame outline |
 | **Text overlays** (GPU `TextLayer` + interactive `TextOverlay`) | ✅ Working — paint via 2D-canvas→texture; drag / resize / inline-edit; `transform.scale` (re-rasterized to stay crisp) + `transform.rotation` applied |
 | **Video & image transform overlay** (`MediaTransformOverlay`) | ✅ Working — click-select, drag-move, corner-drag uniform scale for video and image clips; `transform` flows to both renderers so export matches preview automatically |
-| **Audio playback** (`AudioPlaybackController` on the `PlaybackEngine` clock) | ✅ Working — single track, whole-file decode, mounted by `<Preview enableAudio>` |
-| **Image clips** (GPU `ImageLayer`) | ✅ Working — static image load → textured quad, same object-fit contain as video |
+| **Audio playback** (`AudioPlaybackController` on the `PlaybackEngine` clock) | ✅ Working — **multi-track**, per-clip control, master/track volume via `useAudioMixer` / `useTrackLevels` / `useMasterVolume`; mounted by `<Preview enableAudio>` |
+| **Image clips** (GPU `ImageLayer`) | ✅ Working — static image load → textured quad, same object-fit contain as video; decode cache warming (`warmImageSrc`, `preloadProjectImages`) |
+| **Shape & freehand clips** (GPU `ShapeLayer`, `FreehandLayer`) | ✅ Working — `createShapeClip` / `createFreehandClip`; resolver exposes `scene.shapes` + `scene.freehand`; interactive `ShapeOverlay` for select / move / scale |
 | **Timeline thumbnails + waveforms** | ✅ Working — filmstrip tiles per clip (4-frame strip, tiled by zoom), real waveform peaks from `decodeAudioData`; both generated once per asset and cached on `MediaAsset` |
 | **Audio-on-drop dialog** | ✅ Working — dropping a video with audio shows a 3-choice modal (Video+Audio / Video only / Audio only); both clips added in one `engine.batch` (one undo) |
 | **Export pipeline** (`exportVideo` → MP4) | ✅ Working — module worker renders frames to `OffscreenCanvas` (reusing `resolveTimeline` + shared placement math) and muxes via mediabunny; audio mixed on the main thread |
@@ -81,14 +82,15 @@ See [`ROADMAP.md`](./ROADMAP.md) for current state and the next layer,
 [`packages/core/src/renderer/architecture.md`](./packages/core/src/renderer/architecture.md)
 for the GPU render + decode pipeline in depth.
 
-> **Single-video-track + single-audio-track is the current v1 constraint** — the
-> renderer and decode pipeline are not yet designed for multi-track compositing.
+> **Single-video-track is the current v1 constraint** — the video decode
+> pipeline is not yet designed for multi-track *video* compositing. Audio is
+> multi-track as of 0.3.0.
 
 ---
 
 ## Architecture (one paragraph)
 
-A single immutable `Project` tree owns all timeline data. The framework-agnostic `TimelineEngine` is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events. Time is **integer frames**; never floating-point seconds. A standalone `PlaybackEngine` owns the RAF loop and emits `(frame, isPlaying)` snapshots; React is a downstream consumer via Zustand mirrors. A pure function `resolveTimeline(frame, project) → Scene` determines what is visible and audible at any given frame — this is the only thing renderers consume. The shipped renderer is a **WebGL2 `GpuRenderer`** that turns each `Scene` into a sorted list of textured-quad draws across registered layers (`VideoLayer`, `ImageLayer`, `TextLayer`), composited by global `zIndex`; video frames come from a push-based WebCodecs decode pipeline (`StreamingFrameProducer`) that decodes ahead of the playhead and **copies each frame to an `ImageBitmap`** before caching it, so the decoder's hardware output pool never starves. Audio is **not** rendered through the GPU — an `AudioPlaybackController` reads `scene.audios` and schedules Web Audio beside the renderer on the same `PlaybackEngine` clock. Export reuses the exact same resolution: a worker steps `resolveTimeline` frame-by-frame and draws to an `OffscreenCanvas` using the *same* placement math (`resolveDrawRect`, `computeTextLayout`) as the live renderer, then muxes MP4 with mediabunny — so preview and export never drift. Any renderer implements the same `Renderer` interface and reads only the `Scene`.
+A single immutable `Project` tree owns all timeline data. The framework-agnostic `TimelineEngine` is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events. Time is **integer frames**; never floating-point seconds. A standalone `PlaybackEngine` owns the RAF loop and emits `(frame, isPlaying)` snapshots; React is a downstream consumer via Zustand mirrors. A pure function `resolveTimeline(frame, project) → Scene` determines what is visible and audible at any given frame — this is the only thing renderers consume. The shipped renderer is a **WebGL2 `GpuRenderer`** that turns each `Scene` into a sorted list of textured-quad draws across registered layers (`VideoLayer`, `ImageLayer`, `TextLayer`, `ShapeLayer`, `FreehandLayer`), composited by global `zIndex`; video frames come from a push-based WebCodecs decode pipeline (`StreamingFrameProducer`) that decodes ahead of the playhead and **copies each frame to an `ImageBitmap`** before caching it, so the decoder's hardware output pool never starves. Audio is **not** rendered through the GPU — an `AudioPlaybackController` reads `scene.audios` and schedules Web Audio across **multiple tracks** (per-clip and master volume) beside the renderer on the same `PlaybackEngine` clock. Export reuses the exact same resolution: a worker steps `resolveTimeline` frame-by-frame and draws to an `OffscreenCanvas` using the *same* placement math (`resolveDrawRect`, `computeTextLayout`) as the live renderer, then muxes MP4 with mediabunny — so preview and export never drift. Any renderer implements the same `Renderer` interface and reads only the `Scene`.
 
 For the full architecture document, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
@@ -97,8 +99,9 @@ For the full architecture document, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 ## Repository layout
 
 ```
-video-editor/
+elah/
 ├── README.md                     # this file
+├── CHANGELOG.md                  # per-release changes (all three packages)
 ├── ARCHITECTURE.md               # the engine architecture in depth
 ├── ROADMAP.md                    # current state + next architectural layer
 ├── CURRENT_LIMITATIONS.md        # known gaps and trade-offs
@@ -106,17 +109,25 @@ video-editor/
 ├── BUNDLE_STRATEGY.md            # dependency budget + tree-shaking + measured sizes (~63 KiB gz full SDK)
 ├── CONTRIBUTING.md               # branch/commit conventions, PR rules
 ├── apps/
-│   └── playground/               # Vite + React demo app (mediabunny wired here)
+│   └── web/                      # Next.js site + docs + playgrounds (www.elah.dev)
+├── playground/
+│   ├── next/                     # minimal Next.js integration example
+│   └── react/                    # minimal Vite + React integration example
 └── packages/
-    └── editor/                   # @elah/editor SDK
-        └── src/
-            ├── core/             # types, engine, playback, resolver, stores
-            │   ├── media/        # WebCodecs decode, FrameCache, mediabunny demux, audio
-            │   ├── renderer/     # Renderer interface + WebGL2 GpuRenderer, layers
-            │   ├── export/       # exportVideo + ExportWorker (OffscreenCanvas → MP4)
-            │   └── debug/        # channel-based trace logging
-            ├── timeline/         # Timeline, Ruler, TrackRow, ClipBlock, hooks
-            └── editor/           # EditorProvider, AssetPanel, Preview, useResolvedScene
+    ├── core/                     # @elah/core — framework-agnostic engine
+    │   └── src/
+    │       ├── editor/           # TimelineEngine (Immer commits, history, events)
+    │       ├── playback/         # PlaybackEngine (RAF clock)
+    │       ├── resolver/         # resolveTimeline(frame, project) → Scene
+    │       ├── elements/         # clip factories (video/audio/text/image/shape/freehand)
+    │       ├── media/            # WebCodecs decode, FrameCache, mediabunny demux, audio mixer
+    │       ├── renderer/         # Renderer interface + WebGL2 GpuRenderer, layers
+    │       ├── export/           # exportVideo + ExportWorker (OffscreenCanvas → MP4)
+    │       ├── assets/           # media library store + import (files / url / blob)
+    │       ├── stores/           # Zustand mirrors of engine state
+    │       └── debug/            # channel-based trace logging
+    ├── timeline/                 # @elah/timeline — Timeline, Ruler, TrackRow, ClipBlock, hooks
+    └── editor/                   # @elah/editor — EditorProvider, Preview, AssetPanel, SourcePanel
 docs/
 ├── glossary.md                   # terminology
 ├── known-bugs.md                 # deliberate workarounds + their real fixes
@@ -125,19 +136,23 @@ docs/
 
 ---
 
-## Run the playground locally
+## Run locally
 
 Cloning the repo to develop Elah itself (not just consume the npm package):
 
 ```bash
-git clone <repo-url>
-cd video-editor
+git clone https://github.com/elahlabs/elah.git
+cd elah
 npm install
-npm run dev      # starts apps/playground at http://localhost:5173
+npm run build:packages   # build @elah/core, @elah/timeline, @elah/editor
+npm run dev              # starts apps/web at http://localhost:3001
 npm run typecheck
 ```
 
-Then in the playground, add a video track, add a clip, hit **Space** to play. Keyboard shortcuts:
+> The apps consume the **built `dist/`** of each `@elah/*` package, so after
+> editing package source run `npm run build:packages` again to see the change.
+
+Then open the editor, drag a file into the asset panel, drop it on the timeline, and hit **Space** to play. Keyboard shortcuts:
 
 | Key | Action |
 |---|---|

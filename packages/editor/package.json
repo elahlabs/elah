@@ -1,6 +1,6 @@
 {
   "name": "@elah/editor",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Full React video editor SDK — timeline UI, WebGL2 preview, media library, drag and drop, and MP4 export",
   "type": "module",
   "main": "./dist/index.js",
@@ -58,8 +58,8 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@elah/core": "^0.2.1",
-    "@elah/timeline": "^0.2.1",
+    "@elah/core": "^0.3.0",
+    "@elah/timeline": "^0.3.0",
     "immer": "^10.1.1",
     "zustand": "^5.0.3"
   },

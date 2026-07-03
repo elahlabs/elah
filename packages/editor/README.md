@@ -2,6 +2,8 @@
 
 The full Elah video editor SDK for React. Combines the core engine, timeline UI, WebGL2 renderer, media library, and export pipeline into a single package.
 
+Ships `EditorProvider`, `Preview` (WebGL2 canvas + interactive transform overlays), `Timeline`, `AssetPanel`, `SourcePanel`, and `ElementsPanel`, and re-exports the entire `@elah/core` and `@elah/timeline` API. Supports video, image, text, **shape**, and **freehand** clips, **multi-track audio**, and MP4 export.
+
 [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 [![gzip size](https://img.shields.io/badge/gzip-~63%20KiB%20full%20SDK-brightgreen)](../../BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
@@ -82,13 +84,24 @@ function App() {
 ## Import media
 
 ```ts
-import { importFiles, useMediaLibrary } from '@elah/editor'
+import { importFiles, importUrl, useMediaLibrary } from '@elah/editor'
 
-await importFiles(Array.from(fileList))
+await importFiles(Array.from(fileList))   // local files
+await importUrl('https://example.com/clip.mp4') // remote URL (also importBlob for blobs)
 
 // Subscribe in React — useMediaLibrary() takes no arguments and returns
 // { assets, getAsset, removeAsset, updateAsset } with assets in insertion order.
 const { assets } = useMediaLibrary()
+```
+
+### Programmatic insertion (no drag)
+
+```ts
+import { insertMediaAsset } from '@elah/editor'
+
+// Place an imported asset onto the timeline — powers tap-to-add on touch.
+// Returns a typed InsertAssetResult ({ ok, kind, trackId, clipIds } | { ok:false, reason }).
+const result = await insertMediaAsset(engine, assetId, { desiredStartFrame: 0 })
 ```
 
 ---
