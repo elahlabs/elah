@@ -25,15 +25,21 @@ import type { FreesoundSearchResponse, FreesoundSound } from '@/lib/freesound/ty
 /** 400ms transition / fade at the project fps. */
 const FADE_MS = 400
 
-/** How many visual clips to place on the video lane, alternating video/image. */
-const VISUAL_COUNT = 16
+/** Target total on-screen duration for the composed project: 3 video slots at
+ *  VIDEO_CLIP_SECONDS each + 2 image slots at CLIP_SECONDS each = 60s. */
+const TARGET_TOTAL_SECONDS = 60
 
-/** Default on-screen length per visual (frames = fps * this), trimmed to source. */
+/** How many video clips vs image clips make up the visual lane. */
+const VIDEO_SLOT_COUNT = 3
+const IMAGE_SLOT_COUNT = 2
+const VISUAL_COUNT = VIDEO_SLOT_COUNT + IMAGE_SLOT_COUNT
+
+/** On-screen length per image slot (frames = fps * this), trimmed to source. */
 const CLIP_SECONDS = 4
 
-/** Preferred on-screen length for video clips — Pixabay's short (~5s) clips
- *  get stretched toward this via loop/hold in the placement pass below. */
-const VIDEO_CLIP_SECONDS = 17
+/** On-screen length per video slot — sized (with the 2 image slots above) so
+ *  the visual lane totals TARGET_TOTAL_SECONDS: 3 * ~17.3 + 2 * 4 = 60. */
+const VIDEO_CLIP_SECONDS = (TARGET_TOTAL_SECONDS - IMAGE_SLOT_COUNT * CLIP_SECONDS) / VIDEO_SLOT_COUNT
 
 /** Minimum source duration a video must have to be picked before shorter
  *  ones — biases toward 10-20s clips so the timeline doesn't fill up with
@@ -328,8 +334,8 @@ export async function loadPixabayTopic({
   // Exactly two API calls — one batch of videos, one batch of images — run in
   // parallel. Each proxy request returns up to 15 hits, so we pick distinct
   // clips from those pools locally instead of one request per visual.
-  const videoSlots = Math.ceil(VISUAL_COUNT / 2)
-  const imageSlots = VISUAL_COUNT - videoSlots
+  const videoSlots = VIDEO_SLOT_COUNT
+  const imageSlots = IMAGE_SLOT_COUNT
   const [videoPool, imagePool, musicPool] = await Promise.all([
     fetchVideos(topic),
     fetchImages(topic),
@@ -417,23 +423,28 @@ export async function loadPixabayTopic({
     }
     const totalFrames = cursor
 
-    // --- AUDIO LANE: topic-matched Freesound track under the whole edit -----
-    // No looping primitive exists on the engine, so a track shorter than the
-    // visuals simply ends early rather than repeating — trimmed to whichever
-    // is shorter, matching loadElahDemo's single music-bed clip.
+    // --- AUDIO LANE: topic-matched Freesound track, looped under the whole
+    // edit. No looping primitive exists on the engine, so a track shorter
+    // than the visuals is repeated as back-to-back clips of the same asset
+    // until the audio lane covers the full totalFrames.
     if (audioTrack && music) {
       const asset = importFreesoundSound(music)
       const sourceFrames =
         asset.durationSec > 0 ? Math.max(1, secondsToFrames(asset.durationSec, fps)) : totalFrames
-      engine.addClip({
-        trackId: audioTrack.id,
-        type: 'audio',
-        name: asset.name,
-        startFrame: 0,
-        durationFrames: Math.min(totalFrames, sourceFrames),
-        src: asset.src,
-        assetId: asset.id,
-      })
+      let audioCursor = 0
+      while (audioCursor < totalFrames) {
+        const duration = Math.min(sourceFrames, totalFrames - audioCursor)
+        engine.addClip({
+          trackId: audioTrack.id,
+          type: 'audio',
+          name: asset.name,
+          startFrame: audioCursor,
+          durationFrames: duration,
+          src: asset.src,
+          assetId: asset.id,
+        })
+        audioCursor += duration
+      }
     }
 
     // --- Fade transitions between every adjacent visual ----------------------
