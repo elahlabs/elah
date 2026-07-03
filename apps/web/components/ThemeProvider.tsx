@@ -5,17 +5,17 @@ import { createContext, useContext, useEffect, useState } from 'react'
 type Theme = 'light' | 'dark'
 
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
-  theme: 'light',
+  theme: 'dark',
   toggle: () => {},
 })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>('dark')
 
   useEffect(() => {
-    // Light is the default; only an explicit saved choice switches to dark.
+    // Dark is the default; only an explicit saved choice switches to light.
     const stored = localStorage.getItem('ps-theme') as Theme | null
-    const resolved: Theme = stored ?? 'light'
+    const resolved: Theme = stored ?? 'dark'
     setTheme(resolved)
     document.documentElement.classList.toggle('dark', resolved === 'dark')
   }, [])

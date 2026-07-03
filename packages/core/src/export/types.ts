@@ -8,6 +8,13 @@ export interface ExportOptions {
   audioCodec?: ExportAudioCodec
   /** Target video bitrate in bits/s. Default 8 Mbps. */
   videoBitrate?: number
+  /**
+   * Output height in pixels (e.g. 360, 480, 720, 1080). The output width is
+   * derived from the project stage's aspect ratio and rounded to an even
+   * number (required by most video codecs). Defaults to the stage's native
+   * height — no scaling.
+   */
+  outputHeight?: number
   /** Target audio bitrate in bits/s. Default 128 kbps. */
   audioBitrate?: number
   onProgress?: (progress: ExportProgress) => void

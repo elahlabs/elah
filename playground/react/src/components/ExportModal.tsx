@@ -9,19 +9,22 @@ import type { ExportVideoCodec, ExportAudioCodec } from '@elah/editor'
 interface QualityPreset {
   label: string
   description: string
+  outputHeight: number
   videoBitrate: number
   videoCodec: ExportVideoCodec
   audioCodec: ExportAudioCodec
 }
 
+// Bitrates follow YouTube's recommended SDR upload rates for each resolution
+// (H.264, 30fps) so quality matches what the resolution label promises.
 const PRESETS: QualityPreset[] = [
-  { label: 'Low',    description: '2 Mbps · VP9 · smaller file',     videoBitrate: 2_000_000,  videoCodec: 'vp9', audioCodec: 'opus' },
-  { label: 'Medium', description: '8 Mbps · H.264 · recommended',    videoBitrate: 8_000_000,  videoCodec: 'avc', audioCodec: 'aac'  },
-  { label: 'High',   description: '16 Mbps · H.264 · high quality',  videoBitrate: 16_000_000, videoCodec: 'avc', audioCodec: 'aac'  },
-  { label: 'Ultra',  description: '32 Mbps · H.264 · near lossless', videoBitrate: 32_000_000, videoCodec: 'avc', audioCodec: 'aac'  },
+  { label: '360p',  description: '640x360 · 1 Mbps · H.264 · smaller file',  outputHeight: 360,  videoBitrate: 1_000_000, videoCodec: 'avc', audioCodec: 'aac' },
+  { label: '480p',  description: '854x480 · 2.5 Mbps · H.264 · recommended', outputHeight: 480,  videoBitrate: 2_500_000, videoCodec: 'avc', audioCodec: 'aac' },
+  { label: '720p',  description: '1280x720 · 5 Mbps · H.264 · high quality', outputHeight: 720,  videoBitrate: 5_000_000, videoCodec: 'avc', audioCodec: 'aac' },
+  { label: '1080p', description: '1920x1080 · 8 Mbps · H.264 · full HD',     outputHeight: 1080, videoBitrate: 8_000_000, videoCodec: 'avc', audioCodec: 'aac' },
 ]
 
-const DEFAULT_PRESET = 1 // Medium
+const DEFAULT_PRESET = 1 // 480p
 
 type Phase = 'settings' | 'rendering' | 'error'
 
@@ -29,6 +32,7 @@ export interface ExportModalProps {
   onClose: () => void
   onExport: (opts: {
     videoBitrate: number
+    outputHeight: number
     videoCodec: ExportVideoCodec
     audioCodec: ExportAudioCodec
     signal: AbortSignal
@@ -131,7 +135,7 @@ function SettingsPhase({
 
       <div style={body}>
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>
-          Quality
+          Resolution
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {PRESETS.map((p, i) => (
@@ -289,6 +293,7 @@ export function ExportModal({ onClose, onExport }: ExportModalProps) {
     try {
       await onExport({
         videoBitrate: preset.videoBitrate,
+        outputHeight: preset.outputHeight,
         videoCodec: preset.videoCodec,
         audioCodec: preset.audioCodec,
         signal: controller.signal,

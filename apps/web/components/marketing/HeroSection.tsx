@@ -116,11 +116,17 @@ export function HeroSection() {
           {/* CTAs */}
           <motion.div variants={FADE_UP} className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/docs/getting-started"
+              href="/playground/production"
               className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
             >
-              Get Started
+              Try Now
               <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href="/docs/getting-started"
+              className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+            >
+              Get Started
             </Link>
             <Link
               href="/docs"

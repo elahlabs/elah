@@ -127,12 +127,21 @@ self.onmessage = async (e: MessageEvent) => {
 // ---------------------------------------------------------------------------
 
 async function runExport(project: Project, options: ExportOptions, audio: RenderedAudio | null): Promise<ArrayBuffer> {
-  const { width, height } = project.stage
+  const { width: stageWidth, height: stageHeight } = project.stage
   const fps = project.fps
   const totalFrames = getTotalFrames(project.clips)
 
+  // Scale the output canvas to the requested resolution while preserving the
+  // project stage's aspect ratio. Even dimensions are required by most video
+  // codecs (H.264/VP9 need even width/height for chroma subsampling).
+  const outputHeight = options.outputHeight ?? stageHeight
+  const scale = outputHeight / stageHeight
+  const width = Math.round((stageWidth * scale) / 2) * 2
+  const height = Math.round(outputHeight / 2) * 2
+
   xlog('run', 'starting', {
-    stage: `${width}x${height}`,
+    stage: `${stageWidth}x${stageHeight}`,
+    output: `${width}x${height}`,
     fps,
     totalFrames,
     durationSec: (totalFrames / fps).toFixed(2),

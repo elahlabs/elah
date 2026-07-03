@@ -52,13 +52,15 @@ export const viewport: Viewport = {
 }
 
 // Runs synchronously before first paint to avoid flash of wrong theme.
-// Defaults to light mode; only an explicit saved choice can switch to dark.
+// Defaults to dark mode; only an explicit saved choice can switch to light.
 const themeInitScript = `
 (function(){
   try{
     var t=localStorage.getItem('ps-theme');
-    if(t==='dark') document.documentElement.classList.add('dark');
-  }catch(e){}
+    if(t!=='light') document.documentElement.classList.add('dark');
+  }catch(e){
+    document.documentElement.classList.add('dark');
+  }
 })();
 `
 
