@@ -2,6 +2,16 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.dirname(fileURLToPath(import.meta.url))
+
+// Next.js only auto-loads .env files from this app's own directory, but the
+// repo keeps a single shared .env at the monorepo root. Load it manually
+// before anything reads process.env.
+try {
+  process.loadEnvFile(path.resolve(root, '../../.env'))
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err
+}
+
 const pkgSrcAbs = (name) => path.resolve(root, '../../packages', name, 'src/index.ts')
 // Turbopack's resolveAlias can't take an absolute Windows path ("windows imports
 // are not implemented yet"), so give it a project-root-relative POSIX path.
