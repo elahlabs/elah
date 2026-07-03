@@ -1,13 +1,16 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import pkg from '@next/env'
-const { loadEnvConfig } = pkg
 
 const root = path.dirname(fileURLToPath(import.meta.url))
 
-// Load env vars from the monorepo root .env (not apps/web/.env) so a single
-// file works across branches/checkouts regardless of which app dir is active.
-loadEnvConfig(path.resolve(root, '../..'))
+// Next.js only auto-loads .env files from this app's own directory, but the
+// repo keeps a single shared .env at the monorepo root. Load it manually
+// before anything reads process.env.
+try {
+  process.loadEnvFile(path.resolve(root, '../../.env'))
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err
+}
 
 const pkgSrcAbs = (name) => path.resolve(root, '../../packages', name, 'src/index.ts')
 // Turbopack's resolveAlias can't take an absolute Windows path ("windows imports
