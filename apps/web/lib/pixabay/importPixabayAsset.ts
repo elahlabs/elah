@@ -86,7 +86,10 @@ function pickPhotoSrc(photo: PixabayPhoto): { src: string; width: number; height
 export function importPixabayPhoto(photo: PixabayPhoto): MediaAsset {
   const { src, width, height } = pickPhotoSrc(photo)
   const existing = findExisting(src)
-  if (existing) return existing
+  if (existing) {
+    console.log('[pixabay] photo reused from library', { id: photo.id, src, width: existing.width, height: existing.height })
+    return existing
+  }
 
   const asset: MediaAsset = {
     id: crypto.randomUUID(),
@@ -101,6 +104,16 @@ export function importPixabayPhoto(photo: PixabayPhoto): MediaAsset {
     lastModified: Date.now(),
     addedAt: Date.now(),
   }
+  console.log('[pixabay] photo imported', {
+    id: photo.id,
+    src,
+    width,
+    height,
+    imageWidth: photo.imageWidth,
+    imageHeight: photo.imageHeight,
+    webformatWidth: photo.webformatWidth,
+    webformatHeight: photo.webformatHeight,
+  })
   useMediaLibraryStore.getState().addAsset(asset)
   return asset
 }
@@ -109,7 +122,10 @@ export function importPixabayVideo(video: PixabayVideo): MediaAsset {
   const file = pickVideoFile(video)
   const src = file.url
   const existing = findExisting(src)
-  if (existing) return existing
+  if (existing) {
+    console.log('[pixabay] video reused from library', { id: video.id, src, width: existing.width, height: existing.height })
+    return existing
+  }
 
   const asset: MediaAsset = {
     id: crypto.randomUUID(),
@@ -124,6 +140,7 @@ export function importPixabayVideo(video: PixabayVideo): MediaAsset {
     lastModified: Date.now(),
     addedAt: Date.now(),
   }
+  console.log('[pixabay] video imported', { id: video.id, src, width: file.width, height: file.height, durationSec: video.duration })
   useMediaLibraryStore.getState().addAsset(asset)
   return asset
 }

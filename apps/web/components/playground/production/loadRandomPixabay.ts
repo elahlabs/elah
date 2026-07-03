@@ -33,7 +33,7 @@ const CLIP_SECONDS = 4
  * A topic pairs Pixabay search tags for video/image lookups with caption copy
  * for the 4 text lanes.
  */
-interface PixabayTopic {
+export interface PixabayTopic {
   videotags: string[]
   imagetags: string[]
   captions: string[]
@@ -239,14 +239,29 @@ export interface LoadRandomPixabayDeps {
   timelineRef: RefObject<TimelineRef | null>
 }
 
-/**
- * Build a random-topic Pixabay project: fetches alternating video/image clips
- * for a random topic, lays them on the video lane with fade transitions, and
- * spreads that topic's captions across all 4 elements (text) lanes.
- */
-export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixabayDeps): Promise<string> {
-  const [topicName, topic] = pickTopic()
+export interface LoadPixabayTopicDeps extends LoadRandomPixabayDeps {
+  topicName: string
+  topic: PixabayTopic
+}
 
+/** Picks one of the curated PIXABAY_TOPICS at random and composes it. */
+export async function loadRandomPixabay(deps: LoadRandomPixabayDeps): Promise<string> {
+  const [topicName, topic] = pickTopic()
+  return loadPixabayTopic({ ...deps, topicName, topic })
+}
+
+/**
+ * Build a Pixabay project from a given topic (curated or AI-generated):
+ * fetches alternating video/image clips, lays them on the video lane with
+ * fade transitions, and spreads that topic's captions across all 4 elements
+ * (text) lanes.
+ */
+export async function loadPixabayTopic({
+  engine,
+  timelineRef,
+  topicName,
+  topic,
+}: LoadPixabayTopicDeps): Promise<string> {
   // Exactly two API calls — one batch of videos, one batch of images — run in
   // parallel. Each proxy request returns up to 15 hits, so we pick distinct
   // clips from those pools locally instead of one request per visual.
