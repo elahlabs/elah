@@ -24,16 +24,26 @@ import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
 const FADE_MS = 400
 
 /** How many visual clips to place on the video lane, alternating video/image. */
-const VISUAL_COUNT = 6
+const VISUAL_COUNT = 16
 
 /** Default on-screen length per visual (frames = fps * this), trimmed to source. */
 const CLIP_SECONDS = 4
+
+/** Preferred on-screen length for video clips — Pixabay's short (~5s) clips
+ *  get stretched toward this via loop/hold in the placement pass below. */
+const VIDEO_CLIP_SECONDS = 17
+
+/** Minimum source duration a video must have to be picked before shorter
+ *  ones — biases toward 10-20s clips so the timeline doesn't fill up with
+ *  Pixabay's abundant 3-6s stock clips. */
+const PREFERRED_MIN_VIDEO_DURATION = 10
+const PREFERRED_MAX_VIDEO_DURATION = 20
 
 /**
  * A topic pairs Pixabay search tags for video/image lookups with caption copy
  * for the 4 text lanes.
  */
-interface PixabayTopic {
+export interface PixabayTopic {
   videotags: string[]
   imagetags: string[]
   captions: string[]
@@ -200,6 +210,25 @@ function pickManyRandom<T>(items: T[], n: number): T[] {
   return out
 }
 
+/**
+ * Pick up to `n` distinct random videos, preferring ones whose source
+ * duration falls in [PREFERRED_MIN_VIDEO_DURATION, PREFERRED_MAX_VIDEO_DURATION]
+ * — Pixabay's result pages skew toward very short (3-6s) clips, so drawing
+ * randomly from the whole pool rarely surfaces the longer ones. Falls back to
+ * the rest of the pool once the preferred bucket is exhausted.
+ */
+function pickManyRandomVideos(items: PixabayVideo[], n: number): PixabayVideo[] {
+  const preferred = items.filter(
+    (v) => v.duration >= PREFERRED_MIN_VIDEO_DURATION && v.duration <= PREFERRED_MAX_VIDEO_DURATION,
+  )
+  const rest = items.filter(
+    (v) => v.duration < PREFERRED_MIN_VIDEO_DURATION || v.duration > PREFERRED_MAX_VIDEO_DURATION,
+  )
+  const picked = pickManyRandom(preferred, n)
+  if (picked.length < n) picked.push(...pickManyRandom(rest, n - picked.length))
+  return picked
+}
+
 function pickTopic(): [string, PixabayTopic] {
   const keys = Object.keys(PIXABAY_TOPICS)
   const key = keys[Math.floor(Math.random() * keys.length)]
@@ -223,7 +252,14 @@ async function fetchVideos(topic: PixabayTopic): Promise<PixabayVideo[]> {
   const tag = pickRandom(topic.videotags)
   if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  return fetchPixabay('videos', tag, page)
+  const hits = await fetchPixabay('videos', tag, page)
+  console.log('[pixabay] video search', {
+    tag,
+    page,
+    hitCount: hits.length,
+    resultTags: hits.map((h) => h.tags),
+  })
+  return hits
 }
 
 /** One API call for a batch of images on a random tag/page for the topic. */
@@ -231,7 +267,14 @@ async function fetchImages(topic: PixabayTopic): Promise<PixabayPhoto[]> {
   const tag = pickRandom(topic.imagetags)
   if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  return fetchPixabay('photos', tag, page)
+  const hits = await fetchPixabay('photos', tag, page)
+  console.log('[pixabay] image search', {
+    tag,
+    page,
+    hitCount: hits.length,
+    resultTags: hits.map((h) => h.tags),
+  })
+  return hits
 }
 
 export interface LoadRandomPixabayDeps {
@@ -239,21 +282,36 @@ export interface LoadRandomPixabayDeps {
   timelineRef: RefObject<TimelineRef | null>
 }
 
-/**
- * Build a random-topic Pixabay project: fetches alternating video/image clips
- * for a random topic, lays them on the video lane with fade transitions, and
- * spreads that topic's captions across all 4 elements (text) lanes.
- */
-export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixabayDeps): Promise<string> {
-  const [topicName, topic] = pickTopic()
+export interface LoadPixabayTopicDeps extends LoadRandomPixabayDeps {
+  topicName: string
+  topic: PixabayTopic
+}
 
+/** Picks one of the curated PIXABAY_TOPICS at random and composes it. */
+export async function loadRandomPixabay(deps: LoadRandomPixabayDeps): Promise<string> {
+  const [topicName, topic] = pickTopic()
+  return loadPixabayTopic({ ...deps, topicName, topic })
+}
+
+/**
+ * Build a Pixabay project from a given topic (curated or AI-generated):
+ * fetches alternating video/image clips, lays them on the video lane with
+ * fade transitions, and spreads that topic's captions across all 4 elements
+ * (text) lanes.
+ */
+export async function loadPixabayTopic({
+  engine,
+  timelineRef,
+  topicName,
+  topic,
+}: LoadPixabayTopicDeps): Promise<string> {
   // Exactly two API calls — one batch of videos, one batch of images — run in
   // parallel. Each proxy request returns up to 15 hits, so we pick distinct
   // clips from those pools locally instead of one request per visual.
   const videoSlots = Math.ceil(VISUAL_COUNT / 2)
   const imageSlots = VISUAL_COUNT - videoSlots
   const [videoPool, imagePool] = await Promise.all([fetchVideos(topic), fetchImages(topic)])
-  const videos = pickManyRandom(videoPool, videoSlots)
+  const videos = pickManyRandomVideos(videoPool, videoSlots)
   const images = pickManyRandom(imagePool, imageSlots)
 
   // Alternate video/image so the edit doesn't clump by kind. If one pool runs
@@ -280,7 +338,8 @@ export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixab
   const fps = project.fps
   const stage = project.stage
   const fadeFrames = Math.max(2, secondsToFrames(FADE_MS / 1000, fps))
-  const desiredFrames = Math.round(fps * CLIP_SECONDS)
+  const desiredImageFrames = Math.round(fps * CLIP_SECONDS)
+  const desiredVideoFrames = Math.round(fps * VIDEO_CLIP_SECONDS)
 
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
   const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
@@ -289,11 +348,22 @@ export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixab
   }
 
   engine.batch(() => {
+    // --- CLEAR PREVIOUS LOAD: this loader owns the video + elements lanes, so
+    // running it again (e.g. clicking the button twice) must clear whatever
+    // it placed last time first — otherwise the new clips, which start back
+    // at frame 0, collide with the leftover ones and addClip throws.
+    for (const track of [videoTrack, ...elementsTracks]) {
+      for (const clip of engine.getClipsOnTrack(track.id)) {
+        engine.removeClip(clip.id, track.id)
+      }
+    }
+
     // --- VIDEO LANE: alternating video/image clips --------------------------
     let cursor = 0
     const videoClipIds: string[] = []
     const placedClips: [number, number][] = []
     for (const item of fetched) {
+      const desiredFrames = item.kind === 'video' ? desiredVideoFrames : desiredImageFrames
       const sourceFrames =
         item.asset.durationSec > 0 ? Math.max(1, secondsToFrames(item.asset.durationSec, fps)) : desiredFrames
       const duration = Math.min(desiredFrames, sourceFrames)

@@ -125,6 +125,7 @@ function makeClip(overrides: Partial<ActiveTextClip> = {}): ActiveTextClip {
 function makeCtx(gl: WebGL2RenderingContext): LayerContext {
   return {
     gl,
+    frame: 0,
     stage: { width: 1280, height: 720 },
     viewport: { width: 1280, height: 720 },
     fps: 30,

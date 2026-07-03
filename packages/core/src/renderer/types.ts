@@ -38,6 +38,20 @@ export interface Renderer {
    * is a no-op (implementations may check reference equality to skip work).
    */
   render(scene: Scene): void
+  /**
+   * Prewarm decode for a future scene without drawing it.
+   *
+   * Given a Scene resolved a short horizon AHEAD of the current playhead, the
+   * renderer acquires providers for any video clips that will soon be active and
+   * pushes their playhead so the decoder opens, seeks to a keyframe, and fills
+   * its lookahead buffer BEFORE the clip enters the visible scene. Without this,
+   * a cut from a non-video clip (e.g. an image) into a video starts decode cold
+   * at the boundary — a freeze / black flash while open+seek+decode catch up.
+   *
+   * Never draws, never uploads a texture. Optional: implementations without a
+   * decode pipeline may no-op.
+   */
+  prewarm?(scene: Scene): void
   /** Tear down all resources. After dispose, mount and render must not be called. */
   dispose(): void
 }

@@ -6,7 +6,7 @@ import {
   type MediaAsset,
 } from '@elah/core'
 import { useAudioDropDialogStore } from './audioDropDialog.store'
-import { insertElement, insertMediaAsset } from './insertAsset'
+import { insertElement, insertMediaAsset, resolveDropPosition } from './insertAsset'
 
 const originalAudioRequest = useAudioDropDialogStore.getState().request
 const originalAudioRespond = useAudioDropDialogStore.getState().respond
@@ -169,6 +169,32 @@ describe('insertElement', () => {
       startFrame: 9,
       durationFrames: 90,
     })
+  })
+})
+
+describe('resolveDropPosition', () => {
+  it('pushes past an entire run of back-to-back clips to the true end, not a zero-width internal gap', () => {
+    const clips = [
+      { startFrame: 0, durationFrames: 10 },
+      { startFrame: 10, durationFrames: 10 },
+      { startFrame: 20, durationFrames: 10 },
+    ]
+
+    const result = resolveDropPosition(clips, 5, 8)
+
+    expect(result).toEqual({ startFrame: 30, durationFrames: 8 })
+  })
+
+  it('still trims into a genuine gap after a run of overlapping clips', () => {
+    const clips = [
+      { startFrame: 0, durationFrames: 10 },
+      { startFrame: 10, durationFrames: 10 },
+      { startFrame: 25, durationFrames: 10 },
+    ]
+
+    const result = resolveDropPosition(clips, 5, 8)
+
+    expect(result).toEqual({ startFrame: 20, durationFrames: 5 })
   })
 })
 

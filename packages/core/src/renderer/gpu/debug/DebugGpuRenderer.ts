@@ -118,6 +118,7 @@ export class DebugGpuRenderer {
 
     const ctx = {
       gl,
+      frame: 0,
       stage: this._stage,
       viewport: this._viewport,
       fps: 30,

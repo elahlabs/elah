@@ -163,14 +163,26 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     })
 
     let rafId = 0
+    // How far ahead (in frames) to prewarm video decode. A cut from an image (or
+    // any non-video clip) into a video otherwise starts decode cold at the
+    // boundary — open + seek-to-keyframe + fill run AFTER the playhead crosses,
+    // freezing on a black frame. Resolving the scene this many frames ahead and
+    // pushing the upcoming clips' playhead lets their decoders warm up first.
+    // ~1s at 30fps comfortably covers a cold WebCodecs open + keyframe seek.
+    const PREWARM_HORIZON_FRAMES = 30
     const tick = () => {
       const frame = Math.floor(playback.getFrameAt())
-      const scene = resolveTimeline(frame, engine.getProject())
+      const project = engine.getProject()
+      const scene = resolveTimeline(frame, project)
       // Capture snapshot before render — canvas still holds the previous frame.
       const canvas = renderer.getCanvas()
       if (canvas) transitionOverlayRef.current?.captureIfNewTransition(scene, canvas)
       renderer.render(scene)
       transitionOverlayRef.current?.update(scene)
+      // Warm decoders for clips that will become active within the horizon so
+      // image→video (and any cold) boundaries paint instantly instead of freezing.
+      const prewarmScene = resolveTimeline(frame + PREWARM_HORIZON_FRAMES, project)
+      renderer.prewarm(prewarmScene)
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)

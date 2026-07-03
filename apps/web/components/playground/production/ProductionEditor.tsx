@@ -20,6 +20,7 @@ import {
   Minimize2,
   MoreVertical,
   SlidersHorizontal,
+  Sparkles,
   X,
 } from 'lucide-react'
 import { ClipProperties } from './properties/ClipProperties'
@@ -30,6 +31,7 @@ import { loadRandomPixabay } from './loadRandomPixabay'
 import { PixabayLogo } from './PixabayResults'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel, type PanelMode } from './MediaPanel'
+import { AgenticPanel } from './AgenticPanel'
 import { TracePanel } from './TracePanel'
 import { siteConfig } from '@/config/site'
 import { cn } from '@/lib/utils'
@@ -106,7 +108,8 @@ function MobileSheet({
   )
 }
 
-type MobileSheetKind = (typeof RAIL_ITEMS)[number]['id'] | 'properties' | null
+type RailItemId = 'stock' | 'photos' | 'audio' | 'elements' | 'agentic'
+type MobileSheetKind = RailItemId | 'properties' | null
 
 /** Floating fullscreen toggle on the preview (Figma's mobile design puts it
  * inside the player, bottom-right). Fullscreens the preview container — the
@@ -420,12 +423,19 @@ const AppHeader = memo(function AppHeader({
 
 // Left icon rail — far-left vertical nav (Figma). UI-only for now: clicking
 // moves the active highlight but doesn't switch panels yet.
-const RAIL_ITEMS = [
+const RAIL_ITEMS: {
+  id: RailItemId
+  label: string
+  Icon: typeof Film
+  /** Render in the design-system danger red instead of the cyan accent. */
+  danger?: boolean
+}[] = [
   { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
-] as const
+  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles, danger: true },
+]
 
 const LeftRail = memo(function LeftRail({
   active,
@@ -436,7 +446,7 @@ const LeftRail = memo(function LeftRail({
 }) {
   return (
     <div className="w-[68px] shrink-0 flex flex-col items-center gap-1.5 py-3 border-r border-ed-border bg-ed-bg overflow-y-auto">
-      {RAIL_ITEMS.map(({ id, label, Icon }) => {
+      {RAIL_ITEMS.map(({ id, label, Icon, danger }) => {
         const on = active === id
         return (
           <button
@@ -452,8 +462,14 @@ const LeftRail = memo(function LeftRail({
               )}
               style={
                 on
-                  ? { background: 'linear-gradient(160deg, rgba(0,194,255,0.5), rgba(0,194,255,0.1))' }
-                  : undefined
+                  ? {
+                      background: danger
+                        ? 'linear-gradient(160deg, rgba(255,107,107,0.5), rgba(255,107,107,0.1))'
+                        : 'linear-gradient(160deg, rgba(0,194,255,0.5), rgba(0,194,255,0.1))',
+                    }
+                  : danger
+                    ? { color: 'var(--elah-danger-text)' }
+                    : undefined
               }
             >
               <Icon size={18} />
@@ -849,6 +865,13 @@ export default function ProductionEditor() {
                 {/* <SourcePanel style={{ flex: 1, minHeight: 0 }} /> */}
                 {activePanel === 'elements' ? (
                   <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
+                ) : activePanel === 'agentic' ? (
+                  <AgenticPanel
+                    style={{ flex: 1, minHeight: 0 }}
+                    timelineRef={timelineRef}
+                    busy={loadingPixabay}
+                    setBusy={setLoadingPixabay}
+                  />
                 ) : (
                   <MediaPanel mode={activePanel as PanelMode} style={{ flex: 1, minHeight: 0 }} />
                 )}
@@ -909,7 +932,7 @@ export default function ProductionEditor() {
                   style={{ borderTopColor: '#fff' }}
                 />
                 <span className="text-xs font-medium text-white">
-                  Loading random Pixabay project…
+                  Composing stock media project…
                 </span>
               </div>
             )}
@@ -929,6 +952,13 @@ export default function ProductionEditor() {
           >
             {mobileSheet === 'elements' ? (
               <ElementsPanel activateOnTap style={{ flex: 1, minHeight: 0 }} />
+            ) : mobileSheet === 'agentic' ? (
+              <AgenticPanel
+                style={{ flex: 1, minHeight: 0 }}
+                timelineRef={timelineRef}
+                busy={loadingPixabay}
+                setBusy={setLoadingPixabay}
+              />
             ) : mobileSheet === 'properties' ? (
               /* Child selector outranks the panel's fixed desktop width (PANEL
                  w-[300px]) by specificity, so stylesheet order can't flip it. */

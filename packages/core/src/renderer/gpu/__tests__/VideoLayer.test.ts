@@ -130,6 +130,7 @@ function makeClip(overrides: Partial<ActiveVideoClip> = {}): ActiveVideoClip {
 function makeCtx(gl: WebGL2RenderingContext): LayerContext {
   return {
     gl,
+    frame: 0,
     stage: { width: 1280, height: 720 },
     viewport: { width: 1280, height: 720 },
     fps: 30,
@@ -286,6 +287,61 @@ describe('VideoLayer', () => {
     expect(layer.getTextureCount()).toBe(0)
     expect(gl.deleteVertexArray).toHaveBeenCalled()
     expect(gl.deleteProgram).toHaveBeenCalled()
+  })
+
+  it('prewarm() creates a provider and pushes the future playhead without drawing', () => {
+    const upcoming = makeClip({ id: 'clip-a', sourceFrame: 90 })
+
+    layer.prewarm([upcoming], ctx)
+
+    // Provider created and warmed to the future source frame — but nothing drawn.
+    expect(layer.getProviderCount()).toBe(1)
+    expect(provider.markActive).toHaveBeenCalledTimes(1)
+    expect(provider.setPlayhead).toHaveBeenCalledWith(90)
+    expect(gl.drawArrays).not.toHaveBeenCalled()
+    // Still refCount 0 — draw() has not acquired it.
+    expect(layer.getProviderRefCount('clip-a')).toBe(0)
+  })
+
+  it('acquire() reuses and promotes a prewarmed provider (no second provider)', () => {
+    const clip = makeClip({ id: 'clip-a', sourceFrame: 90 })
+
+    layer.prewarm([clip], ctx)
+    layer.acquire({ ...clip, sourceFrame: 100 }, ctx)
+
+    // Same provider instance reused — the warm decoder is kept.
+    expect(layer.getProviderCount()).toBe(1)
+    expect(layer.getProviderForItemId('clip-a')).toBe(provider)
+    expect(layer.getProviderRefCount('clip-a')).toBe(1)
+    // markActive called once by prewarm, once by acquire.
+    expect(provider.markActive).toHaveBeenCalledTimes(2)
+  })
+
+  it('prewarm() drops a still-un-drawn provider once it falls out of the horizon', () => {
+    const clip = makeClip({ id: 'clip-a', sourceFrame: 90 })
+
+    layer.prewarm([clip], ctx)
+    expect(layer.getProviderCount()).toBe(1)
+
+    // Next tick: horizon no longer includes clip-a (user scrubbed away).
+    layer.prewarm([], ctx)
+
+    expect(layer.getProviderCount()).toBe(0)
+    expect(provider.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('prewarm() never disturbs an already-active (drawn) clip', () => {
+    const clip = makeClip({ id: 'clip-a', sourceFrame: 100 })
+    layer.acquire(clip, ctx)
+    provider.setPlayhead.mockClear()
+
+    // A prewarm pass that still lists the active clip must not push a future
+    // playhead onto it — that would seek it off the frame being drawn.
+    layer.prewarm([{ ...clip, sourceFrame: 130 }], ctx)
+
+    expect(provider.setPlayhead).not.toHaveBeenCalled()
+    expect(provider.dispose).not.toHaveBeenCalled()
+    expect(layer.getProviderRefCount('clip-a')).toBe(1)
   })
 
   it('does not import decoder, PlaybackEngine, or React modules', () => {

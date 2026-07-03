@@ -1,4 +1,5 @@
 import { useMediaLibraryStore, type MediaAsset } from '@elah/editor'
+import { proxyPixabayImage } from './proxyImage'
 import type { PixabayPhoto, PixabayVideo, PixabayVideoFile } from './types'
 
 /**
@@ -84,9 +85,17 @@ function pickPhotoSrc(photo: PixabayPhoto): { src: string; width: number; height
  * returning.
  */
 export function importPixabayPhoto(photo: PixabayPhoto): MediaAsset {
-  const { src, width, height } = pickPhotoSrc(photo)
+  const picked = pickPhotoSrc(photo)
+  const { width, height } = picked
+  // Route the renderer-loaded image through our caching proxy so timeline
+  // images don't 429 against Pixabay's CDN under the agentic burst. Dedupe
+  // (findExisting) runs against the proxied src so re-imports still coalesce.
+  const src = proxyPixabayImage(picked.src)
   const existing = findExisting(src)
-  if (existing) return existing
+  if (existing) {
+    console.log('[pixabay] photo reused from library', { id: photo.id, src, width: existing.width, height: existing.height })
+    return existing
+  }
 
   const asset: MediaAsset = {
     id: crypto.randomUUID(),
@@ -96,11 +105,21 @@ export function importPixabayPhoto(photo: PixabayPhoto): MediaAsset {
     durationSec: 0,
     width,
     height,
-    thumbnailUrl: photo.webformatURL,
+    thumbnailUrl: proxyPixabayImage(photo.webformatURL),
     byteSize: 0,
     lastModified: Date.now(),
     addedAt: Date.now(),
   }
+  console.log('[pixabay] photo imported', {
+    id: photo.id,
+    src,
+    width,
+    height,
+    imageWidth: photo.imageWidth,
+    imageHeight: photo.imageHeight,
+    webformatWidth: photo.webformatWidth,
+    webformatHeight: photo.webformatHeight,
+  })
   useMediaLibraryStore.getState().addAsset(asset)
   return asset
 }
@@ -109,7 +128,10 @@ export function importPixabayVideo(video: PixabayVideo): MediaAsset {
   const file = pickVideoFile(video)
   const src = file.url
   const existing = findExisting(src)
-  if (existing) return existing
+  if (existing) {
+    console.log('[pixabay] video reused from library', { id: video.id, src, width: existing.width, height: existing.height })
+    return existing
+  }
 
   const asset: MediaAsset = {
     id: crypto.randomUUID(),
@@ -119,11 +141,14 @@ export function importPixabayVideo(video: PixabayVideo): MediaAsset {
     durationSec: video.duration,
     width: file.width,
     height: file.height,
-    thumbnailUrl: file.thumbnail,
+    // Proxy only the (small) thumbnail image; the video file itself streams
+    // direct — buffering a multi-MB video through the image proxy would be worse.
+    thumbnailUrl: proxyPixabayImage(file.thumbnail),
     byteSize: 0,
     lastModified: Date.now(),
     addedAt: Date.now(),
   }
+  console.log('[pixabay] video imported', { id: video.id, src, width: file.width, height: file.height, durationSec: video.duration })
   useMediaLibraryStore.getState().addAsset(asset)
   return asset
 }

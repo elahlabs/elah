@@ -137,16 +137,44 @@ export class FrameCache<T extends Closeable = VideoFrame> {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /**
+   * Evict one frame, preferring frames BEHIND the pivot over frames AHEAD of it.
+   *
+   * This cache is forward-oriented: frames ahead of the pivot are the lookahead
+   * buffer a burst feed just paid to decode, while frames behind the pivot have
+   * already been displayed and are safe to drop. A plain `Math.abs(key - pivot)`
+   * distance treats both sides symmetrically, so a multi-frame burst (which
+   * decodes up to `lookaheadFrames` ahead while the pivot stays fixed for the
+   * whole burst) can tie a fresh lookahead frame against a stale trailing frame
+   * and evict the frame it just cached — before the playhead ever reaches it,
+   * producing a cache miss moments later during otherwise-steady playback.
+   *
+   * Fix: only consider ahead-of-pivot frames for eviction when no behind-pivot
+   * frame remains. Within each group, evict the one furthest from the pivot
+   * (ties broken by lowest key, as before).
+   */
   private _evictFurthest(): void {
-    let victimKey: number | null = null
-    let maxDist = -1
+    let behindVictim: number | null = null
+    let behindMaxDist = -1
+    let aheadVictim: number | null = null
+    let aheadMaxDist = -1
+
     for (const key of this._frames.keys()) {
       const dist = Math.abs(key - this._pivot)
-      if (dist > maxDist || (dist === maxDist && victimKey !== null && key < victimKey)) {
-        maxDist = dist
-        victimKey = key
+      if (key <= this._pivot) {
+        if (dist > behindMaxDist || (dist === behindMaxDist && behindVictim !== null && key < behindVictim)) {
+          behindMaxDist = dist
+          behindVictim = key
+        }
+      } else {
+        if (dist > aheadMaxDist || (dist === aheadMaxDist && aheadVictim !== null && key < aheadVictim)) {
+          aheadMaxDist = dist
+          aheadVictim = key
+        }
       }
     }
+
+    const victimKey = behindVictim !== null ? behindVictim : aheadVictim
 
     if (victimKey !== null) {
       this._frames.get(victimKey)!.close()

@@ -16,6 +16,8 @@
 export interface LayerContext {
   /** WebGL2 context. The context may be lost; layers must guard accordingly. */
   gl: WebGL2RenderingContext
+  /** Timeline frame the Scene was resolved at. Lets layers detect cuts vs gaps/seeks. */
+  frame: number
   /** Logical stage dimensions — the coordinate space transforms are relative to. */
   stage: { width: number; height: number }
   /** Physical canvas backing-store dimensions in pixels (after DPR scaling). */

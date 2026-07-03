@@ -26,6 +26,7 @@ const STUB_SCENE: Scene = {
 
 const STUB_CTX = {
   gl: null as unknown as WebGL2RenderingContext,
+  frame: 0,
   stage: { width: 1280, height: 720 },
   viewport: { width: 1280, height: 720 },
   fps: 30,
