@@ -19,6 +19,8 @@ import {
 import type { RefObject } from 'react'
 import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
 import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
+import { importFreesoundSound } from '@/lib/freesound/importFreesoundAsset'
+import type { FreesoundSearchResponse, FreesoundSound } from '@/lib/freesound/types'
 
 /** 400ms transition / fade at the project fps. */
 const FADE_MS = 400
@@ -277,6 +279,24 @@ async function fetchImages(topic: PixabayTopic): Promise<PixabayPhoto[]> {
   return hits
 }
 
+/**
+ * One API call to Freesound for the topic's music query, via our own
+ * `/api/freesound` proxy (mirrors fetchVideos/fetchImages). Returns the pool
+ * of results so the caller can pick one — errors/empty results resolve to []
+ * so a music-fetch failure never blocks the rest of the random-load flow.
+ */
+async function fetchMusic(topic: PixabayTopic): Promise<FreesoundSound[]> {
+  const url = `/api/freesound?query=${encodeURIComponent(topic.musicQuery)}&page=1&per_page=15`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = (await res.json()) as FreesoundSearchResponse
+    return data.results ?? []
+  } catch {
+    return []
+  }
+}
+
 export interface LoadRandomPixabayDeps {
   engine: TimelineEngine
   timelineRef: RefObject<TimelineRef | null>
@@ -310,9 +330,14 @@ export async function loadPixabayTopic({
   // clips from those pools locally instead of one request per visual.
   const videoSlots = Math.ceil(VISUAL_COUNT / 2)
   const imageSlots = VISUAL_COUNT - videoSlots
-  const [videoPool, imagePool] = await Promise.all([fetchVideos(topic), fetchImages(topic)])
+  const [videoPool, imagePool, musicPool] = await Promise.all([
+    fetchVideos(topic),
+    fetchImages(topic),
+    fetchMusic(topic),
+  ])
   const videos = pickManyRandomVideos(videoPool, videoSlots)
   const images = pickManyRandom(imagePool, imageSlots)
+  const music = pickRandom(musicPool)
 
   // Alternate video/image so the edit doesn't clump by kind. If one pool runs
   // dry, fall back to the other so we still fill up to VISUAL_COUNT slots.
@@ -342,17 +367,20 @@ export async function loadPixabayTopic({
   const desiredVideoFrames = Math.round(fps * VIDEO_CLIP_SECONDS)
 
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
+  const audioTrack = project.tracks.find((t) => t.kind === 'audio')
   const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
   if (!videoTrack || elementsTracks.length === 0) {
     throw new Error('Expected a video track and at least one elements track on the project')
   }
 
   engine.batch(() => {
-    // --- CLEAR PREVIOUS LOAD: this loader owns the video + elements lanes, so
-    // running it again (e.g. clicking the button twice) must clear whatever
-    // it placed last time first — otherwise the new clips, which start back
-    // at frame 0, collide with the leftover ones and addClip throws.
-    for (const track of [videoTrack, ...elementsTracks]) {
+    // --- CLEAR PREVIOUS LOAD: this loader owns the video + elements lanes
+    // (and the audio lane, when music is available), so running it again
+    // (e.g. clicking the button twice) must clear whatever it placed last
+    // time first — otherwise the new clips, which start back at frame 0,
+    // collide with the leftover ones and addClip throws.
+    const ownedTracks = audioTrack ? [videoTrack, audioTrack, ...elementsTracks] : [videoTrack, ...elementsTracks]
+    for (const track of ownedTracks) {
       for (const clip of engine.getClipsOnTrack(track.id)) {
         engine.removeClip(clip.id, track.id)
       }
@@ -386,6 +414,26 @@ export async function loadPixabayTopic({
       videoClipIds.push(clip.id)
       placedClips.push([cursor, duration])
       cursor += duration
+    }
+    const totalFrames = cursor
+
+    // --- AUDIO LANE: topic-matched Freesound track under the whole edit -----
+    // No looping primitive exists on the engine, so a track shorter than the
+    // visuals simply ends early rather than repeating — trimmed to whichever
+    // is shorter, matching loadElahDemo's single music-bed clip.
+    if (audioTrack && music) {
+      const asset = importFreesoundSound(music)
+      const sourceFrames =
+        asset.durationSec > 0 ? Math.max(1, secondsToFrames(asset.durationSec, fps)) : totalFrames
+      engine.addClip({
+        trackId: audioTrack.id,
+        type: 'audio',
+        name: asset.name,
+        startFrame: 0,
+        durationFrames: Math.min(totalFrames, sourceFrames),
+        src: asset.src,
+        assetId: asset.id,
+      })
     }
 
     // --- Fade transitions between every adjacent visual ----------------------

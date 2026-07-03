@@ -2,9 +2,10 @@
 
 import { memo, useCallback, useEffect, useRef, useState, type DragEvent, type MouseEvent } from 'react'
 import { Loader2, Music, Play, Pause } from 'lucide-react'
-import { MEDIA_DRAG_MIME, mediaDragKindMime, type DragMediaPayload } from '@elah/editor'
+import { MEDIA_DRAG_MIME, mediaDragKindMime, type DragMediaPayload, type MediaAsset } from '@elah/editor'
 import { useFreesoundSearch } from '@/hooks/useFreesoundSearch'
 import { importFreesoundSound } from '@/lib/freesound/importFreesoundAsset'
+import { proxyFreesoundPreview } from '@/lib/freesound/proxyPreview'
 import type { FreesoundSound } from '@/lib/freesound/types'
 import { cn } from '@/lib/utils'
 
@@ -18,7 +19,13 @@ function fmtDuration(sec: number): string {
 /** Single shared preview element so starting one sound's preview stops any other. */
 let activePreview: HTMLAudioElement | null = null
 
-const SoundCard = memo(function SoundCard({ sound }: { sound: FreesoundSound }) {
+const SoundCard = memo(function SoundCard({
+  sound,
+  onActivate,
+}: {
+  sound: FreesoundSound
+  onActivate: (asset: MediaAsset) => void
+}) {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -30,7 +37,10 @@ const SoundCard = memo(function SoundCard({ sound }: { sound: FreesoundSound }) 
     (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
       if (!audioRef.current) {
-        const src = sound.previews['preview-hq-mp3'] || sound.previews['preview-lq-mp3']
+        // Same proxied URL the timeline will decode — previewing warms its cache.
+        const src = proxyFreesoundPreview(
+          sound.previews['preview-hq-mp3'] || sound.previews['preview-lq-mp3'],
+        )
         const audio = new Audio(src)
         audio.addEventListener('ended', () => setPlaying(false))
         audioRef.current = audio
@@ -64,7 +74,7 @@ const SoundCard = memo(function SoundCard({ sound }: { sound: FreesoundSound }) 
     <div
       draggable
       onDragStart={onDragStart}
-      onClick={() => importFreesoundSound(sound)}
+      onClick={() => onActivate(importFreesoundSound(sound))}
       title={sound.name}
       className="group flex flex-col gap-1.5 cursor-grab active:cursor-grabbing"
     >
@@ -109,7 +119,13 @@ const SoundCard = memo(function SoundCard({ sound }: { sound: FreesoundSound }) 
   )
 })
 
-export function FreesoundResults({ query }: { query: string }) {
+export function FreesoundResults({
+  query,
+  onActivate,
+}: {
+  query: string
+  onActivate: (asset: MediaAsset) => void
+}) {
   const { items, loading, loadingMore, error, hasMore, loadMore, isDefaultFeed } = useFreesoundSearch(query)
 
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -147,7 +163,7 @@ export function FreesoundResults({ query }: { query: string }) {
         <>
           <div className="grid grid-cols-2 gap-2.5">
             {items.map((s) => (
-              <SoundCard key={s.id} sound={s} />
+              <SoundCard key={s.id} sound={s} onActivate={onActivate} />
             ))}
           </div>
           {hasMore && (

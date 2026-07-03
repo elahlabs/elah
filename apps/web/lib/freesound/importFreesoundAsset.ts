@@ -1,4 +1,5 @@
 import { useMediaLibraryStore, type MediaAsset } from '@elah/editor'
+import { proxyFreesoundPreview } from './proxyPreview'
 import type { FreesoundSound } from './types'
 
 function findExisting(src: string): MediaAsset | undefined {
@@ -13,7 +14,12 @@ function findExisting(src: string): MediaAsset | undefined {
  * before returning.
  */
 export function importFreesoundSound(sound: FreesoundSound): MediaAsset {
-  const src = sound.previews['preview-hq-mp3'] || sound.previews['preview-lq-mp3']
+  // Proxied so the timeline's whole-file fetch+decode hits the browser cache
+  // (warmed by the card's <audio> preview) instead of a cold, slow CDN fetch —
+  // a cold fetch leaves a freshly inserted clip silent until it resolves.
+  const src = proxyFreesoundPreview(
+    sound.previews['preview-hq-mp3'] || sound.previews['preview-lq-mp3'],
+  )
   const existing = findExisting(src)
   if (existing) return existing
 
