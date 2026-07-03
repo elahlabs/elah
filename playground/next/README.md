@@ -26,6 +26,7 @@ npm run dev      # http://localhost:4001
 | Concern | File |
 | --- | --- |
 | Mount (client-only) | [`app/page.tsx`](app/page.tsx) — `dynamic(..., { ssr: false })` |
+| SDK stylesheet | [`app/layout.tsx`](app/layout.tsx) — `import '@elah/editor/styles.css'` |
 | Editor composition | [`components/ProductionEditor.tsx`](components/ProductionEditor.tsx) |
 | Bundler config | [`next.config.mjs`](next.config.mjs) — `transpilePackages` |
 

@@ -216,11 +216,9 @@ function Toolbar() {
     usePlaybackStore((s) => s)
 
   const handleExport = async () => {
+    // fps is read from project.fps — exportVideo takes only encode options.
     const project = engine.getProject()
-    const blob = await exportVideo(project, {
-      fps: FPS,
-      demuxerFactory,
-    })
+    const blob = await exportVideo(project)
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

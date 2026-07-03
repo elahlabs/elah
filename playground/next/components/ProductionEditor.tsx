@@ -25,10 +25,14 @@ import {
 
 const FPS = 30
 
+// One video lane on top, an elements (text/shape) lane, then two audio lanes —
+// 0.3.0 supports any number of audio/elements tracks. Order is top→bottom in the
+// UI (lower index renders on top). The demo/asset APIs fill these lanes.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
-  { kind: 'audio', name: 'Audio' },
   { kind: 'elements', name: 'Elements' },
+  { kind: 'audio', name: 'Audio (Main)' },
+  { kind: 'audio', name: 'Audio 2' },
 ]
 
 const ZOOM_MIN = 0.02
@@ -326,7 +330,12 @@ export default function ProductionEditor() {
   }, [])
 
   return (
-    <EditorProvider fps={FPS} initialTracks={INITIAL_TRACKS}>
+    <EditorProvider
+      fps={FPS}
+      defaultTrackHeight={36}
+      initialTracks={INITIAL_TRACKS}
+      stage={{ width: 1920, height: 1080 }}
+    >
       <div
         className="elah-root"
         style={{ display: 'flex', flexDirection: 'column', height: '100%' }}

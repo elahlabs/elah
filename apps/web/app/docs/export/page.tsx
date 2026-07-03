@@ -40,28 +40,25 @@ export default function ExportPage() {
             code={`import {
   exportVideo,
   useTimelineEngine,
-  createDefaultDemuxerFactory,
   type ExportOptions,
   type ExportProgress,
 } from '@elah/editor'
 import { useState } from 'react'
-
-const demuxerFactory = createDefaultDemuxerFactory()
 
 export function ExportButton() {
   const engine = useTimelineEngine()
   const [progress, setProgress] = useState<ExportProgress | null>(null)
 
   const handleExport = async () => {
+    // fps comes from project.fps — you don't pass it to exportVideo.
     const project = engine.getProject()
 
     const options: ExportOptions = {
-      fps: 30,
-      demuxerFactory,
-      videoCodec: 'avc',     // 'avc' | 'vp9' — default: 'avc'
-      audioCodec: 'aac',     // 'aac' | 'opus' — default: 'aac'
-      videoBitrate: 8_000_000, // 8 Mbps
+      videoCodec: 'avc',       // 'avc' | 'vp9' | 'vp8' — default: 'avc'
+      audioCodec: 'aac',       // 'aac' | 'opus'
+      videoBitrate: 8_000_000, // 8 Mbps (default)
       audioBitrate: 192_000,
+      outputHeight: 1080,      // optional downscale; default = stage height
       onProgress: (p) => setProgress(p),
     }
 
@@ -80,16 +77,16 @@ export function ExportButton() {
     }
   }
 
+  const percent = progress
+    ? Math.round((progress.frame / Math.max(1, progress.totalFrames)) * 100)
+    : 0
+
   return (
     <div>
       <button onClick={handleExport} disabled={!!progress}>
-        {progress
-          ? \`Exporting \${Math.round(progress.percent)}%\`
-          : 'Export MP4'}
+        {progress ? \`Exporting \${percent}%\` : 'Export MP4'}
       </button>
-      {progress && (
-        <progress value={progress.percent} max={100} />
-      )}
+      {progress && <progress value={percent} max={100} />}
     </div>
   )
 }`}
@@ -123,19 +120,15 @@ export function ExportButton() {
             ))}
           </div>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            If you need lower-level access, use <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lazyExportVideo()</code> — same pipeline but returns an <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">AsyncIterator</code> of frame chunks for streaming mux:
+            To keep mediabunny out of your main bundle, use <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lazyExportVideo()</code> — the same call and the same <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Promise&lt;Blob&gt;</code> result, but the export module (and mediabunny) is dynamically imported only when you first export, so bundlers code-split it out:
           </p>
           <CodeBlock
             language="typescript"
             code={`import { lazyExportVideo } from '@elah/editor'
 
-const iterator = lazyExportVideo(project, options)
-for await (const chunk of iterator) {
-  // chunk.type: 'video-chunk' | 'audio-chunk' | 'done'
-  // chunk.data: EncodedVideoChunk | EncodedAudioChunk | undefined
-  if (chunk.type === 'done') break
-  muxer.addChunk(chunk)
-}`}
+// Identical signature to exportVideo — resolves with an MP4 Blob.
+// mediabunny is only loaded on first call.
+const blob = await lazyExportVideo(project, options)`}
           />
         </section>
 
@@ -156,14 +149,16 @@ for await (const chunk of iterator) {
           <CodeBlock
             language="typescript"
             code={`// AudioPlaybackController is wired by EditorProvider automatically.
-// To control audio from outside:
+// Control master output volume / mute via the playback store:
 import { usePlaybackStore } from '@elah/editor'
 
-// Enable/disable audio playback
-const enableAudio = usePlaybackStore((s) => s.enableAudio)
-const setEnableAudio = usePlaybackStore((s) => s.setEnableAudio)
+const volume = usePlaybackStore((s) => s.volume)      // 0..1
+const setVolume = usePlaybackStore((s) => s.setVolume)
+const muted = usePlaybackStore((s) => s.muted)
+const toggleMute = usePlaybackStore((s) => s.toggleMute)
 
-// Or pass enableAudio prop to Preview (default: true)
+// To disable the audio pipeline entirely, pass enableAudio to Preview
+// (default: true):
 <Preview demuxerFactory={demuxerFactory} enableAudio={false} />`}
           />
         </section>
@@ -176,18 +171,15 @@ const setEnableAudio = usePlaybackStore((s) => s.setEnableAudio)
           <CodeBlock
             language="typescript"
             code={`interface ExportProgress {
-  frame: number        // current frame being rendered
+  frame: number        // current frame being encoded
   totalFrames: number  // total frames in the project
-  percent: number      // 0..100
-  phase: 'encoding' | 'muxing' | 'done'
 }
 
-// Usage
+// Derive a percentage yourself from frame / totalFrames.
 const blob = await exportVideo(project, {
-  fps: 30,
-  demuxerFactory,
   onProgress: (p) => {
-    console.log(\`\${p.phase}: \${Math.round(p.percent)}% (\${p.frame}/\${p.totalFrames})\`)
+    const percent = Math.round((p.frame / Math.max(1, p.totalFrames)) * 100)
+    console.log(\`\${percent}% (\${p.frame}/\${p.totalFrames})\`)
   },
 })`}
           />

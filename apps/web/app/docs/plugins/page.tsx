@@ -34,42 +34,50 @@ export default function PluginsPage() {
           <CodeBlock
             language="typescript"
             filename="MyRenderer.ts"
-            code={`import { type Renderer, type Scene } from '@elah/core'
+            code={`import { type Renderer, type Scene, resolveDrawRect } from '@elah/core'
 
 export class CanvasRenderer implements Renderer {
-  private ctx: CanvasRenderingContext2D
+  private canvas!: HTMLCanvasElement
+  private ctx!: CanvasRenderingContext2D
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.ctx = canvas.getContext('2d')!
+  // Attach to the host container once. The renderer owns its canvas.
+  mount(container: HTMLElement): void {
+    this.canvas = document.createElement('canvas')
+    this.ctx = this.canvas.getContext('2d')!
+    container.appendChild(this.canvas)
+  }
+
+  // Update the backing-store size when the container resizes.
+  resize(cssWidth: number, cssHeight: number, dpr = 1): void {
+    this.canvas.width = Math.round(cssWidth * dpr)
+    this.canvas.height = Math.round(cssHeight * dpr)
   }
 
   render(scene: Scene): void {
     const { ctx } = this
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-    // Render in zIndex order
-    const allClips = [
-      ...scene.videos,
-      ...scene.images,
-      ...scene.texts,
-    ].sort((a, b) => a.zIndex - b.zIndex)
+    // Arrays are already sorted back-to-front; last element wins.
+    const allClips = [...scene.videos, ...scene.images, ...scene.texts]
 
     for (const clip of allClips) {
       ctx.globalAlpha = clip.opacity
 
       if ('src' in clip) {
-        // draw image/video frame
+        // Compute placement yourself — drawRect is NOT on the Scene clip.
+        // resolveDrawRect(transform, stageW, stageH, contentW?, contentH?)
+        const { width: sw, height: sh } = scene.stage
+        const rect = resolveDrawRect(clip.transform, sw, sh)
         const frame = getFrame(clip.src, scene.frame)
-        if (frame) ctx.drawImage(frame, clip.drawRect.x, clip.drawRect.y,
-                                        clip.drawRect.width, clip.drawRect.height)
+        if (frame) ctx.drawImage(frame, rect.x, rect.y, rect.width, rect.height)
       }
     }
 
     ctx.globalAlpha = 1
   }
 
-  destroy(): void {
-    // cleanup
+  dispose(): void {
+    this.canvas.remove()
   }
 }`}
           />
@@ -112,30 +120,31 @@ renderer.registerLayer('gradient', GradientLayer)
             language="typescript"
             code={`import { type DemuxerFactory, type DemuxerBackend } from '@elah/core'
 
+// A DemuxerFactory is just () => DemuxerBackend.
 const myDemuxerFactory: DemuxerFactory = () => {
-  // Return a DemuxerBackend implementation
   return {
-    async probe(src: string): Promise<MediaInfo> {
-      // Return video dimensions, duration, track info
+    // Open the source and prepare to read packets.
+    async open(src: string): Promise<void> {},
+    // Return the WebCodecs config used to configure the VideoDecoder.
+    getConfig(): VideoDecoderConfig {
+      return { codec: 'avc1.640028' /* ... */ }
     },
-    async demux(
-      src: string,
-      options: DemuxOptions,
-      onChunk: (chunk: EncodedVideoChunk) => void
-    ): Promise<void> {
-      // Feed EncodedVideoChunks to the WebCodecs decoder
+    // Yield EncodedVideoChunks covering [startSec, endSec].
+    async *packets(timeRange: [number, number]): AsyncIterable<EncodedVideoChunk> {
+      // yield chunk
     },
-    destroy(): void {},
+    // Seek the reader to the keyframe at/just before the given time (seconds).
+    async seekToKeyframe(time: number): Promise<void> {},
+    dispose(): void {},
   }
 }
 
-// Pass your factory to Preview and exportVideo
+// Pass your factory to Preview to drive live playback decode:
 <Preview demuxerFactory={myDemuxerFactory} />
 
-await exportVideo(project, {
-  fps: 30,
-  demuxerFactory: myDemuxerFactory,
-})`}
+// Note: export runs in a dedicated worker that uses mediabunny directly,
+// so exportVideo() does not accept a demuxerFactory.
+await exportVideo(project)`}
           />
         </section>
       </article>

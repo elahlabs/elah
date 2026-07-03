@@ -5,13 +5,14 @@
   "type": "module",
   "description": "Standalone Vite + React showcase for @elah/editor (installed from npm, not the monorepo)",
   "scripts": {
+    "postinstall": "node scripts/patch-elah-worker.mjs",
     "dev": "vite --port 4002",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 4002",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@elah/editor": "^0.2.0",
+    "@elah/editor": "^0.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
