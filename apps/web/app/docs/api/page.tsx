@@ -86,18 +86,18 @@ export default function ApiPage() {
             description="Adds a new clip to a track. The clip is placed at startFrame and returns the created Clip object."
             params={[
               { name: 'trackId', type: 'string', desc: 'Target track ID' },
-              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image'" },
+              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'" },
               { name: 'startFrame', type: 'number', desc: 'Position on the timeline (integer frames)' },
               { name: 'durationFrames', type: 'number', desc: 'Length of the clip (integer frames)' },
               { name: 'src', type: 'string?', desc: 'URL or blob ref for video/audio/image clips' },
-              { name: 'text', type: 'TextClipData?', desc: 'Text content and styling for text clips' },
+              { name: 'text', type: 'TextClipMetadata?', desc: 'Content + style; required when type is \'text\'' },
             ]}
           />
 
           <ApiEntry
             name="moveClip"
-            signature="engine.moveClip(clipId: string, options: { startFrame: number; trackId?: string }): void"
-            description="Moves a clip to a new position, optionally changing its track."
+            signature="engine.moveClip(clipId: string, fromTrackId: string, toTrackId: string, startFrame: number): void"
+            description="Moves a clip to a new start frame, optionally onto a different track. Pass the same id for fromTrackId and toTrackId to move within a track. No-ops if the move would overlap a neighbour or either track is locked."
           />
 
           <ApiEntry
@@ -108,26 +108,27 @@ export default function ApiPage() {
 
           <ApiEntry
             name="updateClip"
-            signature="engine.updateClip(clipId: string, partial: Partial<Clip>): void"
-            description="Updates any fields on a clip. Common use: transform, text content, opacity."
+            signature="engine.updateClip(clipId: string, trackId: string, updates: Partial<Clip>): void"
+            description="Updates any fields on a clip. Common use: transform, text content, opacity. During drag/trim gestures prefer previewClip() + commitInteraction() so the interaction is a single undo entry."
           />
 
           <ApiEntry
             name="addTrack"
-            signature="engine.addTrack(kind: TrackKind, name?: string): Track"
-            description="Adds a new track to the project."
+            signature="engine.addTrack(kind: TrackKind, options?: Partial<CreateTrackOptions>): Track"
+            description="Adds a new track. Video is capped at one lane — adding a video track when one exists returns the existing track (idempotent)."
           />
 
           <ApiEntry
             name="addTransition"
-            signature="engine.addTransition(options: TransitionOptions): void"
-            description="Adds a transition between two adjacent clips on the same track."
+            signature="engine.addTransition(options): Transition | null"
+            description="Adds a transition between two adjacent clips on the same track. Returns the created Transition, or null if the clips aren't found on that track."
             params={[
               { name: 'fromClipId', type: 'string', desc: 'The outgoing clip' },
               { name: 'toClipId', type: 'string', desc: 'The incoming clip' },
+              { name: 'trackId', type: 'string', desc: 'Track both clips live on (required)' },
               { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe'" },
               { name: 'durationFrames', type: 'number', desc: 'How many frames the transition spans' },
-              { name: 'easing', type: 'TransitionEasing?', desc: "'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'" },
+              { name: 'easing', type: 'TransitionEasing?', desc: "'linear' | 'ease-in' | 'ease-out'" },
             ]}
           />
 
@@ -139,8 +140,8 @@ export default function ApiPage() {
 
           <ApiEntry
             name="undo / redo"
-            signature="engine.undo(): void | engine.redo(): void"
-            description="Step backwards/forwards through the commit history."
+            signature="engine.undo(): boolean | engine.redo(): boolean"
+            description="Step backwards/forwards through the commit history. Returns true if a step was applied (use canUndo() / canRedo() to gate UI)."
           />
 
           <ApiEntry
@@ -151,8 +152,8 @@ export default function ApiPage() {
 
           <ApiEntry
             name="setStage"
-            signature="engine.setStage(stage: { width: number; height: number }): void"
-            description="Sets the canvas output dimensions. All clips are letterboxed to this aspect ratio."
+            signature="engine.setStage(width: number, height: number): void"
+            description="Sets the canvas output dimensions. Clips re-fit to the new stage on the next resolve — placement is normalized, so no per-clip migration is needed."
           />
         </Section>
 
@@ -170,7 +171,7 @@ const engine = new PlaybackEngine({ fps: 30 })
 
 engine.play()
 engine.pause()
-engine.seekTo(frame)
+engine.seek(frame)
 
 // Subscribe to playback ticks
 const unsub = engine.subscribe((snapshot) => {
@@ -193,20 +194,33 @@ const scene: Scene = resolveTimeline(currentFrame, project)
 // Scene shape:
 interface Scene {
   frame: number
+  fps: number
+  stage: { width: number; height: number }
   videos: ActiveVideoClip[]
   audios: ActiveAudioClip[]
   texts: ActiveTextClip[]
   images: ActiveImageClip[]
+  shapes: ActiveShapeClip[]
+  freehand: ActiveFreehandClip[]
   transitions: ActiveTransition[]
 }
 
-// Each ActiveVideoClip includes:
-interface ActiveVideoClip extends ActiveClipBase {
-  src: string
+// Fields shared by every active clip:
+interface ActiveClipBase {
+  id: string
+  trackId: string
+  name: string
+  sourceFrame: number      // source-asset frame at the current playhead
   opacity: number          // 0..1, modified by transitions
-  drawRect: DrawRect       // computed placement rectangle
-  transform: Transform
-  objectFit: 'contain' | 'cover' | 'fill'
+  zIndex: number           // higher = closer to viewer (front)
+  transform?: Transform    // undefined → renderer default (contain-fit)
+}
+
+// Each ActiveVideoClip adds:
+interface ActiveVideoClip extends ActiveClipBase {
+  type: 'video'
+  src: string
+  volume: number           // 0..1, after track mute
 }`}
           />
         </Section>
@@ -222,19 +236,25 @@ interface ActiveVideoClip extends ActiveClipBase {
 
 // The Renderer interface
 interface Renderer {
+  mount(container: HTMLElement): void
+  resize(cssWidth: number, cssHeight: number, dpr?: number): void
   render(scene: Scene): void
-  destroy(): void
+  prewarm?(scene: Scene): void   // optional decode look-ahead
+  dispose(): void
 }
 
 // Direct usage (usually consumed through <Preview>)
-const canvas = document.createElement('canvas')
-const renderer = new GpuRenderer(canvas, {
-  width: 1920,
-  height: 1080,
+// The constructor takes RendererOptions — the stage size comes from the
+// Scene each tick, not the constructor. Pass a demuxerFactory to enable
+// the real WebCodecs decode pipeline.
+const renderer = new GpuRenderer({
+  demuxerFactory: () => createMediabunnyBackend(mediabunny),
 })
 
-renderer.render(scene) // called each RAF tick
-renderer.destroy()     // cleanup on unmount`}
+renderer.mount(containerEl)      // attach to the DOM once
+renderer.resize(1920, 1080, window.devicePixelRatio)
+renderer.render(scene)           // called each RAF tick
+renderer.dispose()               // cleanup on unmount`}
           />
         </Section>
 
@@ -274,8 +294,8 @@ renderer.destroy()     // cleanup on unmount`}
               },
               {
                 hook: 'useMediaLibrary()',
-                returns: 'MediaLibraryStore',
-                desc: 'Access the media library. Returns { assets, addAsset, removeAsset }.',
+                returns: 'UseMediaLibraryApi',
+                desc: 'Access the media library. Returns { assets, getAsset, removeAsset, updateAsset, importFiles, importUrl, importBlob }.',
               },
             ].map(({ hook, returns, desc }) => (
               <div key={hook} className="rounded-md border border-outline-variant bg-surface-low p-4">
@@ -299,89 +319,107 @@ renderer.destroy()     // cleanup on unmount`}
             code={`// Time
 type FrameCount = number // always integer
 
+type ClipType = 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+type TrackKind = 'video' | 'audio' | 'elements'
+
 // Core data types
 interface Project {
-  tracks: Track[]
-  transitions: Transition[]
-  stage: { width: number; height: number }
+  id: string
   fps: number
+  stage: { width: number; height: number }
+  tracks: Track[]
+  // Clips are stored keyed by trackId, NOT nested on Track.
+  clips: Record<string, Clip[]>
+  transitions: Transition[]
+  version: number
+  masterVolume?: number   // 0..2, linear
 }
 
 interface Track {
   id: string
-  kind: 'video' | 'audio' | 'elements'
   name: string
+  kind: TrackKind
+  order: number           // lower = closer to top of timeline
+  height: number          // px
+  locked: boolean
+  disabled: boolean
   muted: boolean
   solo: boolean
-  zIndex: number
-  clips: Clip[]
+  volume?: number         // 0..2, linear
 }
 
 interface Clip {
   id: string
   trackId: string
-  type: 'video' | 'audio' | 'text' | 'image'
+  type: ClipType
   name: string
+  startFrame: FrameCount        // position on the timeline
+  durationFrames: FrameCount    // length on the timeline
+  sourceStartFrame: FrameCount  // trim in-point into the source
+  sourceDurationFrames: FrameCount
   src?: string
-  startFrame: FrameCount
-  durationFrames: FrameCount
-  trimInFrames: FrameCount
-  trimOutFrames: FrameCount
-  transform: Transform
-  text?: TextClipData
-  opacity: number
-  zIndex: number
+  assetId?: string
+  transform?: Transform
+  opacity?: number              // 0..1
+  volume?: number               // 0..1
+  locked?: boolean
+  disabled?: boolean
+  // Text clips (flat fields, not a nested object):
+  content?: string
+  fontSize?: number
+  color?: string
+  fontFamily?: string
+  fontWeight?: 'normal' | 'bold'
+  textAlign?: 'left' | 'center' | 'right'
+  textAnimation?: TextAnimation
+  // Shape / freehand clips have their own shape*/stroke*/pathData fields.
 }
 
 interface Transform {
-  x: number       // -1..1 offset (normalized)
-  y: number
-  scale: number   // 1.0 = contain-fit
-  rotation: number // degrees
+  x: number        // 0..1, normalized to stage width
+  y: number        // 0..1, normalized to stage height
+  scale: number    // 1 = native size
+  rotation: number // radians, positive = clockwise
+  anchor: { x: number; y: number } // 0..1 within the clip box
 }
 
-interface TextClipData {
-  content: string
-  fontSize: number
-  color: string
-  fontFamily?: string
-  fontWeight?: 'normal' | 'bold'
-  fontStyle?: 'normal' | 'italic'
-  textAlign?: 'left' | 'center' | 'right'
-  animation?: TextAnimation
-}
-
+// Entry/exit ramp for text (and shape) clips.
 interface TextAnimation {
-  kind: 'fade-in' | 'fade-out' | 'slide-in' | 'typewriter'
+  in?: 'fade'
+  out?: 'fade'
   durationFrames: number
 }
 
 interface Transition {
   id: string
+  kind: 'fade' | 'slide' | 'wipe'
   fromClipId: string
   toClipId: string
-  kind: 'fade' | 'slide' | 'wipe'
+  trackId: string
+  startFrame: FrameCount   // = toClip.startFrame - durationFrames / 2
   durationFrames: FrameCount
-  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
   direction?: 'left' | 'right' | 'up' | 'down'
+  easing?: 'linear' | 'ease-in' | 'ease-out'
 }
 
-// Utility types
+// Export — fps is read from project.fps; the export worker uses
+// mediabunny directly, so there is no demuxerFactory here.
+type ExportVideoCodec = 'avc' | 'vp9' | 'vp8'
+type ExportAudioCodec = 'aac' | 'opus'
+
 interface ExportOptions {
-  fps: number
-  demuxerFactory: DemuxerFactory
-  videoCodec?: 'avc' | 'vp9'
-  audioCodec?: 'aac' | 'opus'
-  videoBitrate?: number
-  audioBitrate?: number
+  videoCodec?: ExportVideoCodec   // default 'avc'
+  audioCodec?: ExportAudioCodec
+  videoBitrate?: number           // bits/s, default 8 Mbps
+  audioBitrate?: number           // bits/s, default 128 kbps
+  outputHeight?: number           // scale output; default = stage height
   onProgress?: (p: ExportProgress) => void
+  signal?: AbortSignal
 }
 
 interface ExportProgress {
   frame: number
   totalFrames: number
-  percent: number
-  phase: 'encoding' | 'muxing' | 'done'
 }`}
           />
         </Section>

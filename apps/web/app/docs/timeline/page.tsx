@@ -74,35 +74,41 @@ export default function TimelineOnlyDemo() {
             Tracks & Clips
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Each <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track</code> has a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">kind</code>: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">video</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">audio</code>, or <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">text</code>. V1 uses fixed 3-lane layout. Each track holds an array of <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip</code> objects.
+            Each <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track</code> has a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">kind</code>: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">video</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">audio</code>, or <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> (text, shapes, and freehand live on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> tracks). V1 uses a fixed 3-lane layout. Clips are stored on the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> keyed by track id (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">project.clips[trackId]</code>).
           </p>
           <CodeBlock
             language="typescript"
             filename="types.ts (data model)"
             code={`interface Track {
   id: string
-  kind: 'video' | 'audio' | 'elements'
   name: string
+  kind: 'video' | 'audio' | 'elements'
+  order: number          // lower = closer to top of timeline
+  height: number         // px
+  locked: boolean
+  disabled: boolean
   muted: boolean
   solo: boolean
-  zIndex: number
+  volume?: number        // 0..2, linear
 }
 
 interface Clip {
   id: string
   trackId: string
-  type: 'video' | 'audio' | 'text' | 'image'
+  type: 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
   name: string
-  src?: string           // URL or blob ref for video/audio/image
-  startFrame: number     // integer — position on the timeline
-  durationFrames: number // integer — how long the clip is
-  trimInFrames: number   // frames trimmed from the start of the source
-  trimOutFrames: number  // frames trimmed from the end of the source
-  transform?: Transform  // position, scale, rotation
-  text?: TextClipData    // only for type: 'text'
-  opacity: number        // 0..1, managed by transition system
-  zIndex: number
-}`}
+  src?: string                  // URL or blob ref for video/audio/image
+  startFrame: number            // integer — position on the timeline
+  durationFrames: number        // integer — length on the timeline
+  sourceStartFrame: number      // trim in-point into the source asset
+  sourceDurationFrames: number  // source length (used for trim constraints)
+  transform?: Transform         // position, scale, rotation (optional)
+  opacity?: number              // 0..1, managed by the transition system
+  // Text clips carry flat style fields (content, fontSize, color, ...).
+}
+
+// Clips are NOT nested on Track. The Project stores them keyed by track:
+//   project.clips: Record<string /* trackId */, Clip[]>`}
           />
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
             Add and remove clips via the engine:
@@ -121,15 +127,17 @@ engine.addClip({
   name: 'Intro',
 })
 
-// Move a clip to a new position
-engine.moveClip(clipId, { startFrame: 30, trackId: videoTrack.id })
+// Move a clip to a new start frame (same track here — pass the target
+// track id as the 3rd arg to move it across tracks).
+engine.moveClip(clipId, videoTrack.id, videoTrack.id, 30)
 
 // Remove a clip
 engine.removeClip(clipId, trackId)
 
-// Split clip at playhead position
+// Split the selected clip at the current playhead. Reads the selection
+// and playhead from the stores — just hand it the engine.
 import { splitClipAtPlayhead } from '@elah/editor'
-splitClipAtPlayhead(engine, selectedClipId, currentFrame)`}
+splitClipAtPlayhead(engine)`}
           />
         </section>
 
@@ -184,23 +192,20 @@ export function TransportControls({ fps = 30 }) {
           </p>
           <CodeBlock
             language="tsx"
-            code={`// Timeline accepts a snapTolerance prop (in pixels, default 6)
-<Timeline
-  ref={ref}
-  fps={30}
-  snapTolerance={8}
-  style={{ height: 240 }}
-/>
+            code={`// Snapping is on by default. Ctrl/Cmd + scroll zooms the timeline.
+<Timeline ref={ref} fps={30} style={{ height: 240 }} />
 
-// Snap utilities are also exported for custom implementations
+// The snap utilities are exported for custom drag implementations.
+// buildSnapPoints takes the project's clips record (project.clips),
+// snapFrame snaps a frame to the nearest point within a pixel threshold.
 import {
   snapFrame,
   buildSnapPoints,
   DEFAULT_OVERLAP_TOLERANCE,
 } from '@elah/editor'
 
-const snapPoints = buildSnapPoints(project, excludeClipId)
-const snappedFrame = snapFrame(frame, snapPoints, tolerance)`}
+const snapPoints = buildSnapPoints(project.clips, excludeClipId)
+const snappedFrame = snapFrame(frame, snapPoints, threshold)`}
           />
         </section>
 
@@ -216,13 +221,15 @@ const snappedFrame = snapFrame(frame, snapPoints, tolerance)`}
             language="tsx"
             code={`const engine = useTimelineEngine()
 
-// Add a fade transition between two adjacent clips
+// Add a fade transition between two adjacent clips on the same track.
+// trackId is required.
 engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
+  trackId: track.id,
   kind: 'fade',
   durationFrames: 15, // 0.5 seconds at 30fps
-  easing: 'ease-in-out',
+  easing: 'ease-out',  // 'linear' | 'ease-in' | 'ease-out'
 })
 
 // The resolver handles opacity automatically:

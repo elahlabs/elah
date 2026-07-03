@@ -108,8 +108,8 @@ function MyPreview() {
   const ref = useRef<PreviewHandle>(null)
 
   // PreviewHandle exposes:
-  // ref.current.canvas — the underlying HTMLCanvasElement
-  // ref.current.renderer — the GpuRenderer instance
+  // ref.current.getCanvas()   → HTMLCanvasElement | null
+  // ref.current.getRenderer() → GpuRenderer | null
 
   return (
     <Preview
@@ -141,14 +141,15 @@ function MyPreview() {
 // Minimal usage
 <AssetPanel style={{ width: 240, minHeight: 0, overflowY: 'auto' }} />
 
-// The panel uses useMediaLibrary() internally:
-import { useMediaLibrary, importFiles } from '@elah/editor'
+// The panel uses useMediaLibrary() internally. The hook returns the assets
+// plus import/remove helpers — importFiles takes an Iterable<File>:
+import { useMediaLibrary } from '@elah/editor'
 
 function CustomLibrary() {
-  const { assets, addAsset, removeAsset } = useMediaLibrary()
+  const { assets, importFiles, removeAsset } = useMediaLibrary()
 
   const handleFileDrop = async (files: FileList) => {
-    const result = await importFiles({ files, addAsset })
+    const result = await importFiles(files)
     console.log('imported:', result.imported)
     console.log('skipped:', result.skipped)
   }
@@ -175,15 +176,16 @@ function CustomLibrary() {
           <CodeBlock
             language="typescript"
             code={`interface Transform {
-  x: number      // offset from clip center (normalized 0..1 of stage width)
-  y: number      // offset from clip center (normalized 0..1 of stage height)
-  scale: number  // uniform scale factor (1.0 = contain-fit size)
-  rotation: number // degrees
+  x: number        // position, normalized 0..1 of stage width
+  y: number        // position, normalized 0..1 of stage height
+  scale: number    // uniform scale factor (1 = native size)
+  rotation: number // radians, positive = clockwise
+  anchor: { x: number; y: number } // 0..1 within the clip's own box
 }
 
-// Set transform programmatically
-engine.updateClip(clipId, {
-  transform: { x: 0, y: -0.1, scale: 1.2, rotation: 0 },
+// Set transform programmatically (updateClip needs the clip's trackId)
+engine.updateClip(clipId, trackId, {
+  transform: { x: 0.5, y: 0.4, scale: 1.2, rotation: 0, anchor: { x: 0.5, y: 0.5 } },
 })
 
 // The transform flows to both renderers:
@@ -208,7 +210,8 @@ engine.updateClip(clipId, {
           </p>
           <CodeBlock
             language="tsx"
-            code={`// Add a text clip
+            code={`// Add a text clip. The 'text' option carries content + style
+// (TextClipMetadata); it is required when type is 'text'.
 engine.addClip({
   trackId: textTrack.id,
   type: 'text',
@@ -220,21 +223,22 @@ engine.addClip({
     fontSize: 48,
     color: '#ffffff',
     fontWeight: 'bold',     // 'normal' | 'bold'
-    fontStyle: 'normal',    // 'normal' | 'italic'
     textAlign: 'center',    // 'left' | 'center' | 'right'
     fontFamily: 'Inter',
-    // animation (optional)
-    animation: {
-      kind: 'fade-in',
-      durationFrames: 10,
-    },
   },
   transform: {
-    x: 0,
-    y: 0.3, // lower third position
+    x: 0.5,
+    y: 0.8, // lower third
     scale: 1,
-    rotation: 0,
+    rotation: 0,            // radians
+    anchor: { x: 0.5, y: 0.5 },
   },
+})
+
+// Entry/exit animation lives on the clip as 'textAnimation', not on 'text'.
+// Set it after creation via updateClip (in/out ramp, kind is 'fade'):
+engine.updateClip(clipId, textTrack.id, {
+  textAnimation: { in: 'fade', out: 'fade', durationFrames: 10 },
 })`}
           />
         </section>
@@ -249,13 +253,16 @@ engine.addClip({
           </p>
           <CodeBlock
             language="tsx"
-            code={`// Add a fade transition between two clips on the same track
+            code={`// Add a fade transition between two adjacent clips on the same track.
+// trackId is required; returns the created Transition (or null if the
+// clips aren't found on that track).
 engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
+  trackId: track.id,
   kind: 'fade',           // 'fade' | 'slide' (partial) | 'wipe' (partial)
   durationFrames: 15,
-  easing: 'ease-in-out',  // 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  easing: 'ease-out',     // 'linear' | 'ease-in' | 'ease-out'
 })
 
 // Read transitions
@@ -278,17 +285,18 @@ engine.removeTransition(transitionId)`}
             language="tsx"
             code={`const engine = useTimelineEngine()
 
-// Switch to portrait (9:16 — Reels/Shorts/TikTok)
-engine.setStage({ width: 1080, height: 1920 })
+// setStage takes (width, height) as positional args.
+// Portrait (9:16 — Reels/Shorts/TikTok)
+engine.setStage(1080, 1920)
 
-// Switch to landscape (16:9 — YouTube)
-engine.setStage({ width: 1920, height: 1080 })
+// Landscape (16:9 — YouTube)
+engine.setStage(1920, 1080)
 
 // Square (1:1)
-engine.setStage({ width: 1080, height: 1080 })
+engine.setStage(1080, 1080)
 
 // Custom
-engine.setStage({ width: 2560, height: 1440 })`}
+engine.setStage(2560, 1440)`}
           />
         </section>
       </article>

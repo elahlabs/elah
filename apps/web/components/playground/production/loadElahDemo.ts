@@ -265,7 +265,7 @@ export async function loadElahDemo({ engine, timelineRef }: LoadElahDemoDeps): P
     }
     if (laneTags) {
       addText('OPEN SOURCE', scenes[1], 'top-left', { fontSize: 34, trackId: laneTags.id })
-      addText('MIT LICENSED', scenes[3], 'top-left', { fontSize: 34, trackId: laneTags.id })
+      addText('ELAH LICENSED', scenes[3], 'top-left', { fontSize: 34, trackId: laneTags.id })
     }
     if (laneSpecs) {
       addText('9:16 · 30 FPS', scenes[0], 'top-right', { fontSize: 32, trackId: laneSpecs.id })

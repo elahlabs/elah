@@ -65,7 +65,7 @@ export function HeroSection() {
           {/* Technical badge */}
           <motion.div variants={FADE_UP} className="mb-6 flex items-center gap-2">
             <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
-              Open Source · MIT License
+              Open Source · ECL v1.0
             </span>
             <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
               WebCodecs + WebGL2
