@@ -26,6 +26,7 @@ npm run dev      # http://localhost:4002
 | Concern | File |
 | --- | --- |
 | Mount | [`src/main.tsx`](src/main.tsx) |
+| SDK stylesheet | [`src/main.tsx`](src/main.tsx) — `import '@elah/editor/styles.css'` |
 | Editor composition | [`src/components/ProductionEditor.tsx`](src/components/ProductionEditor.tsx) |
 | Bundler config | [`vite.config.ts`](vite.config.ts) |
 

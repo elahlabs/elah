@@ -1,4 +1,7 @@
 import type { Metadata } from 'next'
+// The SDK ships the CSS its components (Timeline, Preview, Asset/Elements
+// panels) need. Import it first so our local globals.css can still override.
+import '@elah/editor/styles.css'
 import './globals.css'
 
 export const metadata: Metadata = {
