@@ -5,6 +5,7 @@ import { Loader2, ImageOff } from 'lucide-react'
 import { MEDIA_DRAG_MIME, mediaDragKindMime, type DragMediaPayload } from '@elah/editor'
 import { usePixabaySearch } from '@/hooks/usePixabaySearch'
 import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
+import { proxyPixabayImage } from '@/lib/pixabay/proxyImage'
 import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
 import { cn } from '@/lib/utils'
 
@@ -83,8 +84,16 @@ const PhotoCard = memo(function PhotoCard({ photo }: { photo: PixabayPhoto }) {
     >
       <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
         <img
-          src={photo.webformatURL}
+          // previewURL (~150px) is sized for this grid tile; webformatURL (640px)
+          // is the size actually imported onto the timeline (importPixabayAsset),
+          // so using it here just to share a cache entry meant every tile in the
+          // grid pulled a 640px image through the proxy at once — exactly the
+          // burst pattern that trips Pixabay's anti-hotlink throttling on
+          // pixabay.com/get/. Importing still costs one extra fetch on drop/click,
+          // but the grid no longer needs N full-size images just to render.
+          src={proxyPixabayImage(photo.previewURL)}
           alt=""
+          crossOrigin="anonymous"
           draggable={false}
           loading="lazy"
           className="h-full w-full object-cover"
@@ -119,8 +128,9 @@ const VideoCard = memo(function VideoCard({ video }: { video: PixabayVideo }) {
     >
       <div className="relative aspect-video w-full overflow-hidden rounded-md border border-ed-border bg-ed-bg-2">
         <img
-          src={video.videos.medium.thumbnail}
+          src={proxyPixabayImage(video.videos.medium.thumbnail)}
           alt=""
+          crossOrigin="anonymous"
           draggable={false}
           loading="lazy"
           className="h-full w-full object-cover"

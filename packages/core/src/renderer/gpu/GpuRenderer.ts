@@ -218,6 +218,25 @@ export class GpuRenderer implements Renderer {
   }
 
   /**
+   * Prewarm decode for a future scene without drawing it.
+   *
+   * Called by the render loop with a Scene resolved a short horizon ahead of the
+   * current playhead. Forwards the upcoming video clips to VideoLayer so their
+   * decoders open + seek + fill lookahead before the clip becomes visible —
+   * eliminating the cold-start freeze when cutting from an image (or any
+   * non-video clip) into a video. No-op in probe mode (FrameProbeLayer has no
+   * decode pipeline) and before mount.
+   */
+  prewarm(scene: Scene): void {
+    if (!this._mounted || !this._glCtx || !this._videoLayer) return
+    if (this._glCtx.isLost) return
+    const gl = this._glCtx.gl
+    if (!gl) return
+    const ctx = this._buildLayerContext(scene, gl)
+    this._videoLayer.prewarm(scene.videos, ctx)
+  }
+
+  /**
    * Returns the canvas element used for rendering, or null if not mounted.
    * Intended for dev tools and Playwright tests (window.__GPU__.readCanvas).
    */

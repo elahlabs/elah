@@ -79,6 +79,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _providers = new Map<string, ProviderEntry>()
   private readonly _textures = new Map<string, VideoTexture>()
   private readonly _srcByItemId = new Map<string, string>()
+  /**
+   * Item IDs whose provider was created by prewarm() ahead of the clip becoming
+   * active — the decoder is opening/decoding but the clip is NOT yet drawn.
+   * These providers have refCount 0 (draw() has never acquired them). Kept in a
+   * separate set so prewarm can idle+drop providers that fall back out of the
+   * horizon (e.g. the user scrubs away) without disturbing the draw lifecycle.
+   * An entry is removed from this set the moment acquire() promotes it to a
+   * drawn clip.
+   */
+  private readonly _prewarmedItemIds = new Set<string>()
   private readonly _contentSizeByItemId = new Map<string, { width: number; height: number }>()
   /** Last sourceFrame logged per clip — prevents flooding at 60 fps on a frozen playhead. */
   private readonly _lastLoggedSourceFrameByItemId = new Map<string, number>()
@@ -125,6 +135,11 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       this._providers.set(item.id, entry)
     }
 
+    // Promote a prewarmed provider to a drawn clip: it's no longer prewarm's to
+    // idle/dispose — the draw lifecycle (refCount + release) now owns it. Its
+    // decoder is already warm from prewarm(), so the boundary paints instantly.
+    this._prewarmedItemIds.delete(item.id)
+
     entry.refCount++
     entry.provider.markActive()
   }
@@ -154,6 +169,62 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     if (entry.refCount <= 0) {
       entry.refCount = 0
       entry.provider.markIdle()
+    }
+  }
+
+  /**
+   * Prewarm decode for video clips that are about to become active.
+   *
+   * `upcoming` is the list of ActiveVideoClips resolved a short horizon AHEAD of
+   * the current playhead. For each, this ensures a provider exists and pushes its
+   * playhead so the decoder opens, seeks to the nearest keyframe, and fills its
+   * lookahead buffer — all BEFORE the clip enters the drawn scene. When the cut
+   * arrives, acquire()+draw() find a warm decoder and paint the first frame
+   * immediately instead of freezing on a cold open+seek.
+   *
+   * Does NOT draw, upload, or allocate GL state. Providers created here start at
+   * refCount 0; if a clip later becomes active, acquire() promotes it. If the
+   * horizon moves off a clip before it ever draws (e.g. the user scrubs away),
+   * its still-refCount-0 provider is idled and dropped here.
+   */
+  prewarm(upcoming: ActiveVideoClip[], ctx: LayerContext): void {
+    const horizonIds = new Set<string>()
+
+    for (const item of upcoming) {
+      horizonIds.add(item.id)
+
+      let entry = this._providers.get(item.id)
+      if (!entry) {
+        // Never seen this clip — create its provider cold and mark it prewarmed.
+        const provider = this._deps
+          ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
+          : this._providerFactory(item.src)
+        entry = { provider, refCount: 0 }
+        this._providers.set(item.id, entry)
+        this._prewarmedItemIds.add(item.id)
+        provider.markActive()
+      } else if (entry.refCount > 0) {
+        // Already an active, drawn clip — draw() is driving its playhead. Leave
+        // it alone; pushing a future playhead here would seek it off the frame
+        // being drawn this tick.
+        continue
+      }
+
+      // Push the future playhead so the decoder decodes ahead of the cut.
+      entry.provider.setPlayhead(item.sourceFrame)
+    }
+
+    // Drop providers we prewarmed earlier that have fallen out of the horizon
+    // without ever being drawn (scrub-away). Active clips (promoted via acquire)
+    // are never in _prewarmedItemIds, so this can't touch a drawn clip.
+    for (const id of [...this._prewarmedItemIds]) {
+      if (horizonIds.has(id)) continue
+      const entry = this._providers.get(id)
+      this._prewarmedItemIds.delete(id)
+      if (!entry || entry.refCount > 0) continue
+      entry.provider.dispose()
+      this._providers.delete(id)
+      this._srcByItemId.delete(id)
     }
   }
 
@@ -241,6 +312,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       entry.provider.dispose()
     }
     this._providers.clear()
+    this._prewarmedItemIds.clear()
 
     if (this._gl) {
       if (this._vao) this._gl.deleteVertexArray(this._vao)

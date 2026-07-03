@@ -24,10 +24,20 @@ import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
 const FADE_MS = 400
 
 /** How many visual clips to place on the video lane, alternating video/image. */
-const VISUAL_COUNT = 6
+const VISUAL_COUNT = 16
 
 /** Default on-screen length per visual (frames = fps * this), trimmed to source. */
 const CLIP_SECONDS = 4
+
+/** Preferred on-screen length for video clips — Pixabay's short (~5s) clips
+ *  get stretched toward this via loop/hold in the placement pass below. */
+const VIDEO_CLIP_SECONDS = 17
+
+/** Minimum source duration a video must have to be picked before shorter
+ *  ones — biases toward 10-20s clips so the timeline doesn't fill up with
+ *  Pixabay's abundant 3-6s stock clips. */
+const PREFERRED_MIN_VIDEO_DURATION = 10
+const PREFERRED_MAX_VIDEO_DURATION = 20
 
 /**
  * A topic pairs Pixabay search tags for video/image lookups with caption copy
@@ -200,6 +210,25 @@ function pickManyRandom<T>(items: T[], n: number): T[] {
   return out
 }
 
+/**
+ * Pick up to `n` distinct random videos, preferring ones whose source
+ * duration falls in [PREFERRED_MIN_VIDEO_DURATION, PREFERRED_MAX_VIDEO_DURATION]
+ * — Pixabay's result pages skew toward very short (3-6s) clips, so drawing
+ * randomly from the whole pool rarely surfaces the longer ones. Falls back to
+ * the rest of the pool once the preferred bucket is exhausted.
+ */
+function pickManyRandomVideos(items: PixabayVideo[], n: number): PixabayVideo[] {
+  const preferred = items.filter(
+    (v) => v.duration >= PREFERRED_MIN_VIDEO_DURATION && v.duration <= PREFERRED_MAX_VIDEO_DURATION,
+  )
+  const rest = items.filter(
+    (v) => v.duration < PREFERRED_MIN_VIDEO_DURATION || v.duration > PREFERRED_MAX_VIDEO_DURATION,
+  )
+  const picked = pickManyRandom(preferred, n)
+  if (picked.length < n) picked.push(...pickManyRandom(rest, n - picked.length))
+  return picked
+}
+
 function pickTopic(): [string, PixabayTopic] {
   const keys = Object.keys(PIXABAY_TOPICS)
   const key = keys[Math.floor(Math.random() * keys.length)]
@@ -282,7 +311,7 @@ export async function loadPixabayTopic({
   const videoSlots = Math.ceil(VISUAL_COUNT / 2)
   const imageSlots = VISUAL_COUNT - videoSlots
   const [videoPool, imagePool] = await Promise.all([fetchVideos(topic), fetchImages(topic)])
-  const videos = pickManyRandom(videoPool, videoSlots)
+  const videos = pickManyRandomVideos(videoPool, videoSlots)
   const images = pickManyRandom(imagePool, imageSlots)
 
   // Alternate video/image so the edit doesn't clump by kind. If one pool runs
@@ -309,7 +338,8 @@ export async function loadPixabayTopic({
   const fps = project.fps
   const stage = project.stage
   const fadeFrames = Math.max(2, secondsToFrames(FADE_MS / 1000, fps))
-  const desiredFrames = Math.round(fps * CLIP_SECONDS)
+  const desiredImageFrames = Math.round(fps * CLIP_SECONDS)
+  const desiredVideoFrames = Math.round(fps * VIDEO_CLIP_SECONDS)
 
   const videoTrack = project.tracks.find((t) => t.kind === 'video')
   const elementsTracks = project.tracks.filter((t) => t.kind === 'elements')
@@ -333,6 +363,7 @@ export async function loadPixabayTopic({
     const videoClipIds: string[] = []
     const placedClips: [number, number][] = []
     for (const item of fetched) {
+      const desiredFrames = item.kind === 'video' ? desiredVideoFrames : desiredImageFrames
       const sourceFrames =
         item.asset.durationSec > 0 ? Math.max(1, secondsToFrames(item.asset.durationSec, fps)) : desiredFrames
       const duration = Math.min(desiredFrames, sourceFrames)

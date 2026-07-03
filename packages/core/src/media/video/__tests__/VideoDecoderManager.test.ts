@@ -388,6 +388,54 @@ describe('VideoDecoderManager — feed/reset API', () => {
     expect(decoderMock.lastDecoder.decode).not.toHaveBeenCalled()
   })
 
+  it('reopen() increments generation, so a stale feed cannot poison the fresh decoder', async () => {
+    // Regression: an EncodingError → reopen() while a feed loop is parked in an
+    // await used to let that stale loop wake up and decode() a mid-stream delta
+    // packet against the freshly-configured decoder, throwing again → reopen
+    // loop. reopen() must bump the feed generation so the stale loop exits.
+    const pending: { resolve: (() => void) | null } = { resolve: null }
+    const slowDemuxerBackend = {
+      ...demuxerBackend,
+      packets: vi.fn(async function* (_range: [number, number]) {
+        yield createMockChunk(0)
+        await new Promise<void>(r => { pending.resolve = r as () => void })
+        yield createMockChunk(33333)
+      }),
+    }
+
+    const manager = new VideoDecoderManager({
+      demuxerFactory: () => slowDemuxerBackend,
+      decoderFactory: decoderMock.factory,
+      fps: 30,
+    })
+    await manager.open('video://test')
+
+    manager.feed([0, 66666])
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // First packet fed; loop now parked on the pending promise.
+    expect(decoderMock.lastDecoder.decode).toHaveBeenCalledTimes(1)
+
+    // Simulate error-recovery reopen: drain to Idle, then reopen builds a fresh
+    // decoder + demuxer. (reopen from Errored follows the same generation-bump
+    // path; draining first keeps the mock demuxer generator simple.)
+    await manager.drain()
+    await manager.reopen('video://recovered')
+    expect(manager.state).toBe('Ready')
+
+    // The reopen created a fresh decoder — clear its call count.
+    vi.mocked(decoderMock.lastDecoder.decode).mockClear()
+
+    // Wake the stale feed loop. Its captured gen is now behind, so it must exit
+    // WITHOUT feeding the second (stale, mid-stream) packet to the new decoder.
+    pending.resolve?.()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(decoderMock.lastDecoder.decode).not.toHaveBeenCalled()
+  })
+
   it('feed() is a no-op when state is not Ready', async () => {
     const manager = createManager()
     await manager.open('video://test')

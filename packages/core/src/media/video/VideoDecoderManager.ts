@@ -244,6 +244,19 @@ export class VideoDecoderManager {
 
   /** Reopen from Idle after drain or error recovery. */
   async reopen(src: string): Promise<void> {
+    // Invalidate any in-flight _feedAsync loop BEFORE tearing down the old
+    // decoder/demuxer. A feed loop parked in an await (demuxer generator or the
+    // backpressure setTimeout) would otherwise wake up after open() has swapped
+    // in a fresh decoder, pass its gen/state guards (reopen never bumped the
+    // generation), and call decode() with a mid-stream DELTA packet on a decoder
+    // that has no reference frame — throwing EncodingError, which reopens again:
+    // a self-sustaining decode-error loop. Bumping the generation and clearing
+    // the serialization flags makes the stale loop exit at its next guard check,
+    // exactly as reset() and dispose() already do.
+    this._feedGeneration++
+    this._feedActive = false
+    this._feedPendingRange = null
+
     if (this._state === 'Errored') {
       this._cleanupResources()
       this._transition('Idle')
