@@ -223,7 +223,14 @@ async function fetchVideos(topic: PixabayTopic): Promise<PixabayVideo[]> {
   const tag = pickRandom(topic.videotags)
   if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  return fetchPixabay('videos', tag, page)
+  const hits = await fetchPixabay('videos', tag, page)
+  console.log('[pixabay] video search', {
+    tag,
+    page,
+    hitCount: hits.length,
+    resultTags: hits.map((h) => h.tags),
+  })
+  return hits
 }
 
 /** One API call for a batch of images on a random tag/page for the topic. */
@@ -231,7 +238,14 @@ async function fetchImages(topic: PixabayTopic): Promise<PixabayPhoto[]> {
   const tag = pickRandom(topic.imagetags)
   if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  return fetchPixabay('photos', tag, page)
+  const hits = await fetchPixabay('photos', tag, page)
+  console.log('[pixabay] image search', {
+    tag,
+    page,
+    hitCount: hits.length,
+    resultTags: hits.map((h) => h.tags),
+  })
+  return hits
 }
 
 export interface LoadRandomPixabayDeps {

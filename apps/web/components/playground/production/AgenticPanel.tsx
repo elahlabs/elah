@@ -9,14 +9,14 @@ import type { TopicOption } from '@/lib/ai/types'
 type PanelState = 'idle' | 'thinking' | 'choosing'
 
 const SAMPLE_PROMPTS = [
-  'Cozy rainy night in Tokyo',
-  'Northern lights adventure',
-  'Morning productivity routine',
-  'Future of artificial intelligence',
-  'Street food in Korea',
-  'Never give up',
-  'Cyberpunk city',
-  'Instagram travel reel',
+  'Serene mountain sunrise',
+  'Rainforest waterfall escape',
+  'Product launch ad',
+  'Brand story reel',
+  'Ocean waves at golden hour',
+  'Minimalist skincare promo',
+  'Autumn forest walk',
+  'Startup pitch teaser',
 ]
 
 export interface AgenticPanelProps {
@@ -88,6 +88,11 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
       setOptions([])
       setState('idle')
       setBusy(true)
+      console.log('[playground] Agentic AI topic chosen', {
+        name: option.name,
+        videotags: option.topic.videotags,
+        imagetags: option.topic.imagetags,
+      })
       try {
         await loadPixabayTopic({
           engine,
@@ -123,26 +128,31 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
       </div>
 
       <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3">
-        {state === 'idle' && !askedPrompt && !error && (
-          <>
-            <p className="text-[11px] leading-relaxed text-ed-text-muted">
-              Describe the video you want to create. I&apos;ll plan stock footage and captions —
-              then compose it on the timeline.
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {SAMPLE_PROMPTS.map((sample) => (
-                <button
-                  key={sample}
-                  type="button"
-                  onClick={() => pickSample(sample)}
-                  className="rounded-full border border-ed-border bg-ed-elevated px-2.5 py-1 text-[11px] text-ed-text-muted transition-colors hover:border-[var(--elah-color-error)] hover:text-ed-text"
-                >
-                  {sample}
-                </button>
-              ))}
-            </div>
-          </>
+        {!askedPrompt && !error && (
+          <p className="text-[11px] leading-relaxed text-ed-text-muted">
+            Describe the video you want to create. I&apos;ll plan stock footage and captions —
+            then compose it on the timeline.
+          </p>
         )}
+
+        <details open={!askedPrompt} className="group">
+          <summary className="cursor-pointer select-none text-[10px] font-semibold tracking-wide text-ed-text-muted hover:text-ed-text">
+            SAMPLE IDEAS
+          </summary>
+          <div className="flex flex-wrap gap-1.5 pt-1.5">
+            {SAMPLE_PROMPTS.map((sample) => (
+              <button
+                key={sample}
+                type="button"
+                onClick={() => pickSample(sample)}
+                disabled={disabled}
+                className="rounded-full border border-ed-border bg-ed-elevated px-2.5 py-1 text-[11px] text-ed-text-muted transition-colors hover:border-[var(--elah-color-error)] hover:text-ed-text disabled:opacity-50"
+              >
+                {sample}
+              </button>
+            ))}
+          </div>
+        </details>
 
         {askedPrompt && (
           <div className="self-end max-w-[90%] rounded-lg border border-ed-border bg-ed-elevated px-2.5 py-1.5 text-[12px]">
