@@ -17,8 +17,10 @@ import {
   transformFromCoverRect,
 } from '@elah/editor'
 import type { RefObject } from 'react'
-import { importPixabayPhoto, importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
-import type { PixabayPhoto, PixabayVideo } from '@/lib/pixabay/types'
+import { importPixabayVideo } from '@/lib/pixabay/importPixabayAsset'
+import type { PixabayVideo } from '@/lib/pixabay/types'
+import { importPexelsPhoto } from '@/lib/pexels/importPexelsAsset'
+import type { PexelsPhoto } from '@/lib/pexels/types'
 import { importFreesoundSound } from '@/lib/freesound/importFreesoundAsset'
 import type { FreesoundSearchResponse, FreesoundSound } from '@/lib/freesound/types'
 
@@ -243,16 +245,20 @@ function pickTopic(): [string, PixabayTopic] {
   return [key, PIXABAY_TOPICS[key]]
 }
 
-async function fetchPixabay<T extends 'photos' | 'videos'>(
-  kind: T,
-  query: string,
-  page: number,
-): Promise<T extends 'photos' ? PixabayPhoto[] : PixabayVideo[]> {
-  const url = `/api/pixabay/${kind}?query=${encodeURIComponent(query)}&page=${page}&per_page=15`
+async function fetchPixabayVideos(query: string, page: number): Promise<PixabayVideo[]> {
+  const url = `/api/pixabay/videos?query=${encodeURIComponent(query)}&page=${page}&per_page=15`
   const res = await fetch(url)
-  if (!res.ok) return [] as never
+  if (!res.ok) return []
   const data = await res.json()
   return data.hits ?? []
+}
+
+async function fetchPexelsPhotos(query: string, page: number): Promise<PexelsPhoto[]> {
+  const url = `/api/pexels/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=15`
+  const res = await fetch(url)
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.photos ?? []
 }
 
 /** One API call for a batch of videos on a random tag/page for the topic. */
@@ -260,7 +266,7 @@ async function fetchVideos(topic: PixabayTopic): Promise<PixabayVideo[]> {
   const tag = pickRandom(topic.videotags)
   if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  const hits = await fetchPixabay('videos', tag, page)
+  const hits = await fetchPixabayVideos(tag, page)
   console.log('[pixabay] video search', {
     tag,
     page,
@@ -271,16 +277,15 @@ async function fetchVideos(topic: PixabayTopic): Promise<PixabayVideo[]> {
 }
 
 /** One API call for a batch of images on a random tag/page for the topic. */
-async function fetchImages(topic: PixabayTopic): Promise<PixabayPhoto[]> {
+async function fetchImages(topic: PixabayTopic): Promise<PexelsPhoto[]> {
   const tag = pickRandom(topic.imagetags)
   if (!tag) return []
   const page = 1 + Math.floor(Math.random() * 3)
-  const hits = await fetchPixabay('photos', tag, page)
-  console.log('[pixabay] image search', {
+  const hits = await fetchPexelsPhotos(tag, page)
+  console.log('[pexels] image search', {
     tag,
     page,
     hitCount: hits.length,
-    resultTags: hits.map((h) => h.tags),
   })
   return hits
 }
@@ -353,7 +358,7 @@ export async function loadPixabayTopic({
   }
   const takeImage = () => {
     const item = images.shift()
-    return item && { kind: 'image' as const, asset: importPixabayPhoto(item) }
+    return item && { kind: 'image' as const, asset: importPexelsPhoto(item) }
   }
   const fetched: { kind: 'video' | 'image'; asset: MediaAsset }[] = []
   for (let i = 0; i < VISUAL_COUNT; i++) {
