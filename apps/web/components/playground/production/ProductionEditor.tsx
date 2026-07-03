@@ -27,8 +27,6 @@ import { ClipProperties } from './properties/ClipProperties'
 import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
-import { loadRandomPixabay } from './loadRandomPixabay'
-import { PixabayLogo } from './PixabayResults'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { AgenticPanel } from './AgenticPanel'
@@ -196,16 +194,10 @@ const AppHeader = memo(function AppHeader({
   onExport,
   onToggleCode,
   codeOpen,
-  timelineRef,
-  loadingPixabay,
-  setLoadingPixabay,
 }: {
   onExport: () => void
   onToggleCode: () => void
   codeOpen: boolean
-  timelineRef: React.RefObject<TimelineRef | null>
-  loadingPixabay: boolean
-  setLoadingPixabay: (loading: boolean) => void
 }) {
   const [showTrace, setShowTrace] = useState(false)
   const [showOverflow, setShowOverflow] = useState(false)
@@ -216,37 +208,6 @@ const AppHeader = memo(function AppHeader({
   // their own Tailwind utilities (.hidden/.inline-flex), and stylesheet load
   // order lets those beat the app's md: variants either way.
   const isMobile = useIsMobile()
-
-  const handleRandomPixabay = useCallback(async () => {
-    setLoadingPixabay(true)
-    try {
-      const topic = await loadRandomPixabay({ engine, timelineRef })
-      console.info(`[playground] Loaded random Pixabay project — topic: ${topic}`)
-    } catch (err) {
-      console.error('[playground] Failed to load random Pixabay project:', err)
-      globalThis.alert?.('Could not load a random Pixabay project — check the console for details.')
-    } finally {
-      setLoadingPixabay(false)
-    }
-  }, [engine, timelineRef])
-
-  // Pixabay button — gradient + glow are dynamic based on loadingPixabay state
-  const pixabayBtnStyle: React.CSSProperties = loadingPixabay
-    ? {
-        background: 'var(--elah-bg-panel)',
-        border: '1px solid var(--elah-border)',
-        color: 'var(--elah-text-muted)',
-        cursor: 'wait',
-        opacity: 0.6,
-      }
-    : {
-        // Deeper cyan than the brand accent so the white label keeps contrast.
-        background: `linear-gradient(180deg, #00a0d4, #0086b8)`,
-        border: '1px solid #0086b8',
-        color: '#fff',
-        boxShadow: '0 0 14px var(--elah-accent-glow)',
-        cursor: 'pointer',
-      }
 
   return (
     <header className="elah-app-header grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
@@ -276,23 +237,6 @@ const AppHeader = memo(function AppHeader({
                 @elah/editor
               </span>
             </span>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md font-sans tracking-[-0.01em] transition-all"
-              style={pixabayBtnStyle}
-              disabled={loadingPixabay}
-              onClick={handleRandomPixabay}
-              title="Load a random topic from Pixabay: images, videos, fades, and text overlays across 4 lanes — add audio yourself from the audio panel"
-            >
-              {loadingPixabay ? (
-                'Loading…'
-              ) : (
-                <>
-                  ✦ Random Load from
-                  <PixabayLogo size={12} className="text-white" />
-                </>
-              )}
-            </button>
           </>
         )}
       </div>
@@ -353,7 +297,12 @@ const AppHeader = memo(function AppHeader({
         )}
         <button
           type="button"
-          className={toolbarBtnCls}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md font-sans cursor-pointer transition-colors"
+          style={{
+            background: 'var(--elah-accent)',
+            color: '#04202a',
+            boxShadow: '0 0 10px var(--elah-accent-glow)',
+          }}
           onClick={onExport}
           title="Export to MP4"
         >
@@ -411,14 +360,6 @@ const AppHeader = memo(function AppHeader({
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
               <div className="absolute right-0 top-full mt-1 z-50 min-w-[190px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
-                <button
-                  type="button"
-                  disabled={loadingPixabay}
-                  onClick={() => { setShowOverflow(false); void handleRandomPixabay() }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
-                >
-                  ✦ {loadingPixabay ? 'Loading…' : 'Random Load from Pixabay'}
-                </button>
                 <button
                   type="button"
                   onClick={() => { setShowOverflow(false); onToggleCode() }}
@@ -817,6 +758,7 @@ export default function ProductionEditor() {
 
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
+    outputHeight: number
     videoCodec: ExportVideoCodec
     audioCodec: ExportAudioCodec
     signal: AbortSignal
@@ -829,6 +771,7 @@ export default function ProductionEditor() {
     const { lazyExportVideo } = await import('@elah/editor')
     const blob = await lazyExportVideo(project, {
       videoBitrate: opts.videoBitrate,
+      outputHeight: opts.outputHeight,
       videoCodec: opts.videoCodec,
       audioCodec: opts.audioCodec,
       signal: opts.signal,
@@ -856,12 +799,10 @@ export default function ProductionEditor() {
           onExport={() => setShowExportModal(true)}
           onToggleCode={() => setShowCode((o) => !o)}
           codeOpen={showCode}
-          timelineRef={timelineRef}
-          loadingPixabay={loadingPixabay}
-          setLoadingPixabay={setLoadingPixabay}
         />
         {showExportModal && (
           <ExportModal
+            isMobile={isMobile}
             onClose={() => setShowExportModal(false)}
             onExport={handleExportStart}
           />
@@ -1006,8 +947,6 @@ const MobileToolbar = memo(function MobileToolbar({
 }: {
   onOpenSheet: (kind: MobileSheetKind) => void
 }) {
-  const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
-
   const item =
     'flex flex-col items-center gap-1 py-1 px-1 min-w-0 text-ed-text-muted cursor-pointer'
   const iconBox =
@@ -1028,18 +967,6 @@ const MobileToolbar = memo(function MobileToolbar({
           </span>
         </button>
       ))}
-      <button
-        type="button"
-        className={cn(item, !hasSelection && 'opacity-40 cursor-not-allowed')}
-        disabled={!hasSelection}
-        onClick={() => onOpenSheet('properties')}
-        title={hasSelection ? 'Clip properties' : 'Select a clip first'}
-      >
-        <span className={iconBox}>
-          <SlidersHorizontal size={17} />
-        </span>
-        <span className="text-[10px] leading-none">Edit</span>
-      </button>
     </div>
   )
 })
