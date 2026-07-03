@@ -289,6 +289,16 @@ export async function loadRandomPixabay({ engine, timelineRef }: LoadRandomPixab
   }
 
   engine.batch(() => {
+    // --- CLEAR PREVIOUS LOAD: this loader owns the video + elements lanes, so
+    // running it again (e.g. clicking the button twice) must clear whatever
+    // it placed last time first — otherwise the new clips, which start back
+    // at frame 0, collide with the leftover ones and addClip throws.
+    for (const track of [videoTrack, ...elementsTracks]) {
+      for (const clip of engine.getClipsOnTrack(track.id)) {
+        engine.removeClip(clip.id, track.id)
+      }
+    }
+
     // --- VIDEO LANE: alternating video/image clips --------------------------
     let cursor = 0
     const videoClipIds: string[] = []

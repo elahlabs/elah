@@ -89,9 +89,18 @@ export function resolveDropPosition(
     return { startFrame: prevEnd, durationFrames: Math.min(durationFrames, gapSize) }
   }
 
-  const lastOverlapEnd = Math.max(
-    ...overlapping.map((c) => c.startFrame + c.durationFrames),
-  )
+  // Walk forward through the whole contiguous run starting at the overlap,
+  // extending the end every time another clip starts at-or-before it. Without
+  // this, a chain of back-to-back clips (zero gap between them) stops at the
+  // first internal boundary and returns a zero-width placement instead of
+  // skipping past the whole run to its actual end.
+  let lastOverlapEnd = Math.max(...overlapping.map((c) => c.startFrame + c.durationFrames))
+  for (const c of sorted) {
+    if (c.startFrame <= lastOverlapEnd && c.startFrame + c.durationFrames > lastOverlapEnd) {
+      lastOverlapEnd = c.startFrame + c.durationFrames
+    }
+  }
+
   const nextClip = sorted.find((c) => c.startFrame >= lastOverlapEnd)
   if (nextClip) {
     const available = nextClip.startFrame - lastOverlapEnd
