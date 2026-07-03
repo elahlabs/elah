@@ -148,6 +148,29 @@ function PreviewFullscreenButton({
   )
 }
 
+/** Floating clip-properties toggle on the preview, mirroring
+ * PreviewFullscreenButton on the opposite (bottom-left) corner. Opens the
+ * same "properties" mobile sheet as the bottom toolbar's Edit action. */
+function PreviewEditButton({ onOpenSheet }: { onOpenSheet: (kind: MobileSheetKind) => void }) {
+  const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenSheet('properties')}
+      disabled={!hasSelection}
+      aria-label="Clip properties"
+      title={hasSelection ? 'Clip properties' : 'Select a clip first'}
+      className={cn(
+        'absolute bottom-3 left-3 z-20 flex items-center justify-center w-10 h-10 rounded-full bg-black/60 text-white border border-white/10 backdrop-blur-sm cursor-pointer',
+        !hasSelection && 'opacity-40 cursor-not-allowed',
+      )}
+    >
+      <SlidersHorizontal size={16} />
+    </button>
+  )
+}
+
 // Default lanes. The model allows a single video track but any number of audio
 // / elements tracks, so we seed extra text + audio lanes up front: four elements
 // tracks (text overlays) on top, one video, then two audio lanes (one main,
@@ -432,9 +455,9 @@ const RAIL_ITEMS: {
 }[] = [
   { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
+  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles, danger: true },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
-  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles, danger: true },
 ]
 
 const LeftRail = memo(function LeftRail({
@@ -889,6 +912,7 @@ export default function ProductionEditor() {
                   style={{ width: '100%', height: '100%' }}
                 />
                 {isMobile && <PreviewFullscreenButton targetRef={previewBoxRef} />}
+                {isMobile && <PreviewEditButton onOpenSheet={setMobileSheet} />}
               </div>
               <TransportBar />
             </div>
@@ -991,12 +1015,17 @@ const MobileToolbar = memo(function MobileToolbar({
 
   return (
     <div className="flex items-center justify-around border-t border-ed-border bg-ed-bg-2 shrink-0 pt-1.5 pb-[max(env(safe-area-inset-bottom),6px)]">
-      {RAIL_ITEMS.map(({ id, label, Icon }) => (
+      {RAIL_ITEMS.map(({ id, label, Icon, danger }) => (
         <button key={id} type="button" className={item} onClick={() => onOpenSheet(id)}>
-          <span className={iconBox}>
+          <span className={iconBox} style={danger ? { color: 'var(--elah-danger-text)' } : undefined}>
             <Icon size={17} />
           </span>
-          <span className="text-[10px] leading-none">{label}</span>
+          <span
+            className="text-[10px] leading-none"
+            style={danger ? { color: 'var(--elah-danger-text)' } : undefined}
+          >
+            {label}
+          </span>
         </button>
       ))}
       <button

@@ -1,7 +1,14 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import pkg from '@next/env'
+const { loadEnvConfig } = pkg
 
 const root = path.dirname(fileURLToPath(import.meta.url))
+
+// Load env vars from the monorepo root .env (not apps/web/.env) so a single
+// file works across branches/checkouts regardless of which app dir is active.
+loadEnvConfig(path.resolve(root, '../..'))
+
 const pkgSrcAbs = (name) => path.resolve(root, '../../packages', name, 'src/index.ts')
 // Turbopack's resolveAlias can't take an absolute Windows path ("windows imports
 // are not implemented yet"), so give it a project-root-relative POSIX path.
