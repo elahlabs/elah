@@ -4,7 +4,7 @@ import type { ImportFilesResult, ImportUrlOptions, ImportBlobOptions } from './i
 import type { MediaAsset } from './types'
 
 export type { MediaAsset, MediaKind, DragMediaPayload } from './types'
-export { MEDIA_DRAG_MIME } from './types'
+export { MEDIA_DRAG_MIME, mediaDragKindMime } from './types'
 export { useMediaLibraryStore } from './store'
 export { importFiles, importUrl, importBlob } from './importFiles'
 export type {

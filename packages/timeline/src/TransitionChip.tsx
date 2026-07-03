@@ -111,6 +111,7 @@ export const TransitionChip = memo(function TransitionChip({ fromClip, toClip, z
       >
         {/* Diamond icon — always visible when transition exists, visible on hover otherwise */}
         <div
+          className="elah-transition-chip-affordance"
           style={{
             position: 'absolute',
             top: diamondTop,

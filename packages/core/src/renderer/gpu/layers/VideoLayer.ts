@@ -66,6 +66,15 @@ export function buildVideoTransformMatrix(
 
 export type VideoFrameProviderFactory = (src: string) => VideoFrameProvider
 
+/**
+ * Max timeline-frame distance between the holdover's capture point and the
+ * incoming clip's first draw for the holdover to be shown. A direct video→video
+ * cut is 1 frame apart (a few more under render jank). Anything larger means a
+ * gap (e.g. an image between the clips) or a seek — showing the previous
+ * video's frame there would ghost stale content into the new clip.
+ */
+const HOLDOVER_MAX_FRAME_GAP = 5
+
 export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _pool: TexturePool
   private readonly _providerFactory: VideoFrameProviderFactory
@@ -79,6 +88,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _providers = new Map<string, ProviderEntry>()
   private readonly _textures = new Map<string, VideoTexture>()
   private readonly _srcByItemId = new Map<string, string>()
+  /**
+   * Item IDs whose provider was created by prewarm() ahead of the clip becoming
+   * active — the decoder is opening/decoding but the clip is NOT yet drawn.
+   * These providers have refCount 0 (draw() has never acquired them). Kept in a
+   * separate set so prewarm can idle+drop providers that fall back out of the
+   * horizon (e.g. the user scrubs away) without disturbing the draw lifecycle.
+   * An entry is removed from this set the moment acquire() promotes it to a
+   * drawn clip.
+   */
+  private readonly _prewarmedItemIds = new Set<string>()
   private readonly _contentSizeByItemId = new Map<string, { width: number; height: number }>()
   /** Last sourceFrame logged per clip — prevents flooding at 60 fps on a frozen playhead. */
   private readonly _lastLoggedSourceFrameByItemId = new Map<string, number>()
@@ -87,9 +106,14 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
    * exits the scene. Used as a single-frame fallback when the incoming clip's
    * texture has not received its first decoded frame yet — prevents the 1-2
    * tick black flash at clip boundaries while async decode catches up.
-   * Disposed as soon as the new clip uploads its first frame.
+   * Disposed as soon as the new clip uploads its first frame, or when the
+   * incoming clip is NOT frame-adjacent to it (see HOLDOVER_MAX_FRAME_GAP).
    */
   private _holdoverTexture: VideoTexture | null = null
+  /** Timeline frame at which the holdover's clip last drew. -Infinity = unknown/stale. */
+  private _holdoverFrame = Number.NEGATIVE_INFINITY
+  /** Timeline frame at which each active clip last drew — stamps the holdover on release. */
+  private readonly _lastDrawFrameByItemId = new Map<string, number>()
 
   constructor(
     pool: TexturePool,
@@ -125,6 +149,11 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       this._providers.set(item.id, entry)
     }
 
+    // Promote a prewarmed provider to a drawn clip: it's no longer prewarm's to
+    // idle/dispose — the draw lifecycle (refCount + release) now owns it. Its
+    // decoder is already warm from prewarm(), so the boundary paints instantly.
+    this._prewarmedItemIds.delete(item.id)
+
     entry.refCount++
     entry.provider.markActive()
   }
@@ -136,9 +165,12 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     const texture = this._textures.get(itemId)
     if (texture?.hasContent) {
       // Transfer to holdover so the next clip can borrow this frame for its
-      // first tick while its own decode is in flight.
+      // first tick while its own decode is in flight. Stamp it with the frame
+      // this clip last drew at so draw() can reject it across gaps/seeks.
       this._holdoverTexture?.dispose()
       this._holdoverTexture = texture
+      this._holdoverFrame =
+        this._lastDrawFrameByItemId.get(itemId) ?? Number.NEGATIVE_INFINITY
     } else {
       texture?.dispose()
     }
@@ -146,6 +178,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._srcByItemId.delete(itemId)
     this._contentSizeByItemId.delete(itemId)
     this._lastLoggedSourceFrameByItemId.delete(itemId)
+    this._lastDrawFrameByItemId.delete(itemId)
 
     const entry = this._providers.get(itemId)
     if (!entry) return
@@ -157,12 +190,70 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     }
   }
 
+  /**
+   * Prewarm decode for video clips that are about to become active.
+   *
+   * `upcoming` is the list of ActiveVideoClips resolved a short horizon AHEAD of
+   * the current playhead. For each, this ensures a provider exists and pushes its
+   * playhead so the decoder opens, seeks to the nearest keyframe, and fills its
+   * lookahead buffer — all BEFORE the clip enters the drawn scene. When the cut
+   * arrives, acquire()+draw() find a warm decoder and paint the first frame
+   * immediately instead of freezing on a cold open+seek.
+   *
+   * Does NOT draw, upload, or allocate GL state. Providers created here start at
+   * refCount 0; if a clip later becomes active, acquire() promotes it. If the
+   * horizon moves off a clip before it ever draws (e.g. the user scrubs away),
+   * its still-refCount-0 provider is idled and dropped here.
+   */
+  prewarm(upcoming: ActiveVideoClip[], ctx: LayerContext): void {
+    const horizonIds = new Set<string>()
+
+    for (const item of upcoming) {
+      horizonIds.add(item.id)
+
+      let entry = this._providers.get(item.id)
+      if (!entry) {
+        // Never seen this clip — create its provider cold and mark it prewarmed.
+        const provider = this._deps
+          ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
+          : this._providerFactory(item.src)
+        entry = { provider, refCount: 0 }
+        this._providers.set(item.id, entry)
+        this._prewarmedItemIds.add(item.id)
+        provider.markActive()
+      } else if (entry.refCount > 0) {
+        // Already an active, drawn clip — draw() is driving its playhead. Leave
+        // it alone; pushing a future playhead here would seek it off the frame
+        // being drawn this tick.
+        continue
+      }
+
+      // Push the future playhead so the decoder decodes ahead of the cut.
+      entry.provider.setPlayhead(item.sourceFrame)
+    }
+
+    // Drop providers we prewarmed earlier that have fallen out of the horizon
+    // without ever being drawn (scrub-away). Active clips (promoted via acquire)
+    // are never in _prewarmedItemIds, so this can't touch a drawn clip.
+    for (const id of [...this._prewarmedItemIds]) {
+      if (horizonIds.has(id)) continue
+      const entry = this._providers.get(id)
+      this._prewarmedItemIds.delete(id)
+      if (!entry || entry.refCount > 0) continue
+      entry.provider.dispose()
+      this._providers.delete(id)
+      this._srcByItemId.delete(id)
+    }
+  }
+
   draw(item: ActiveVideoClip, ctx: LayerContext): void {
     this._gl = ctx.gl
 
     const texture = this._textures.get(item.id)
     const entry = this._providers.get(item.id)
     if (!texture || !entry) return
+
+    this._lastDrawFrameByItemId.set(item.id, ctx.frame)
 
     const { provider } = entry
 
@@ -199,10 +290,18 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
 
     // Prefer the clip's own texture; fall back to the holdover for the first
     // tick(s) while async decode delivers the initial frame — avoids the black
-    // flash at clip boundaries.
+    // flash at clip boundaries. The holdover is only valid across a direct cut:
+    // if this clip is not frame-adjacent to where the holdover was captured
+    // (image/gap between clips, or a seek), drop it instead of ghosting the
+    // previous video's frame into this clip.
     let unit = texture.bind(ctx.gl, 0)
     if (unit < 0 && this._holdoverTexture !== null) {
-      unit = this._holdoverTexture.bind(ctx.gl, 0)
+      if (Math.abs(ctx.frame - this._holdoverFrame) <= HOLDOVER_MAX_FRAME_GAP) {
+        unit = this._holdoverTexture.bind(ctx.gl, 0)
+      } else {
+        this._holdoverTexture.dispose()
+        this._holdoverTexture = null
+      }
     }
     if (unit < 0) return
 
@@ -234,13 +333,16 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._textures.clear()
     this._srcByItemId.clear()
     this._contentSizeByItemId.clear()
+    this._lastDrawFrameByItemId.clear()
     this._holdoverTexture?.dispose()
     this._holdoverTexture = null
+    this._holdoverFrame = Number.NEGATIVE_INFINITY
 
     for (const entry of this._providers.values()) {
       entry.provider.dispose()
     }
     this._providers.clear()
+    this._prewarmedItemIds.clear()
 
     if (this._gl) {
       if (this._vao) this._gl.deleteVertexArray(this._vao)

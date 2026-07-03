@@ -44,6 +44,10 @@ interface TrackRowProps {
   totalFrames: number
   zoom: number
   fps: number
+  /** Sidebar width in px — must match Timeline's ruler offset. */
+  sidebarWidth?: number
+  /** Icon-only label for narrow sidebars: name and header controls hidden. */
+  compact?: boolean
   /** Override class for the row container. */
   className?: string
   /** Override class for the track-label sidebar. */
@@ -72,6 +76,8 @@ export const TrackRow = memo(function TrackRow({
   totalFrames,
   zoom,
   fps,
+  sidebarWidth = SIDEBAR_WIDTH,
+  compact = false,
   className,
   labelClassName,
   laneClassName,
@@ -158,7 +164,7 @@ export const TrackRow = memo(function TrackRow({
     color: 'var(--elah-text-muted)',
   }
 
-  useTimelineDrop(track.id, laneEl)
+  const dropState = useTimelineDrop(track.id, laneEl)
 
   // Minimum pixel width so there is always a usable timeline on small screens.
   // flex:1 grows it to fill the container when the container is larger.
@@ -192,7 +198,7 @@ export const TrackRow = memo(function TrackRow({
           position: 'sticky',
           left: 0,
           zIndex: 6,
-          width: SIDEBAR_WIDTH,
+          width: sidebarWidth,
           flexShrink: 0,
           // The left bar paints from currentColor (set by kindAccentClass above).
           borderLeft: '3px solid currentColor',
@@ -202,32 +208,38 @@ export const TrackRow = memo(function TrackRow({
           borderBottomStyle: 'solid',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          paddingLeft: 10,
-          paddingRight: 6,
+          justifyContent: compact ? 'center' : undefined,
+          gap: compact ? 0 : 8,
+          paddingLeft: compact ? 0 : 10,
+          paddingRight: compact ? 0 : 6,
           cursor: 'pointer',
           userSelect: 'none',
         }}
+        title={compact ? track.name : undefined}
       >
         {/* Type glyph — paints from currentColor (the track accent). */}
-        <TypeIcon size={13} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden />
+        <TypeIcon size={compact ? 15 : 13} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden />
 
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: 13,
-            color: isActive ? `var(--elah-text)` : `var(--elah-text-muted)`,
-            fontWeight: isActive ? 600 : 500,
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {track.name}
-        </span>
+        {!compact && (
+          <span
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 13,
+              color: isActive ? `var(--elah-text)` : `var(--elah-text-muted)`,
+              fontWeight: isActive ? 600 : 500,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {track.name}
+          </span>
+        )}
 
-        {/* Per-track controls — visibility, mute (audio only), lock. */}
+        {/* Per-track controls — visibility, mute (audio only), lock.
+            Hidden in compact mode: a ~48px sidebar fits only the kind glyph. */}
+        {!compact && (
         <span style={{ display: 'inline-flex', gap: 1, flexShrink: 0 }}>
           <button
             type="button"
@@ -297,6 +309,7 @@ export const TrackRow = memo(function TrackRow({
             </button>
           )}
         </span>
+        )}
       </div>
 
       {/* Clip area — bottom border is static */}
@@ -316,6 +329,21 @@ export const TrackRow = memo(function TrackRow({
           overflow: 'visible',
           // Locked lanes read as non-editable.
           opacity: track.locked ? 0.6 : 1,
+          // Highlight the lane the pointer is currently dragging media over —
+          // accent when the drop is legal here, red when it isn't (locked
+          // track or an incompatible media/element kind) — before release.
+          boxShadow:
+            dropState === 'valid'
+              ? 'inset 0 0 0 2px var(--elah-accent)'
+              : dropState === 'invalid'
+                ? 'inset 0 0 0 2px var(--elah-color-error)'
+                : undefined,
+          background:
+            dropState === 'valid'
+              ? 'color-mix(in srgb, var(--elah-accent) 12%, transparent)'
+              : dropState === 'invalid'
+                ? 'color-mix(in srgb, var(--elah-color-error) 12%, transparent)'
+                : undefined,
         }}
       >
         {clips.map((clip) => (

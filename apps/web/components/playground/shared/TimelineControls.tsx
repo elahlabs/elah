@@ -37,8 +37,15 @@ const sliderToZoom = (s: number) =>
 
 export const TimelineControls = memo(function TimelineControls({
   timelineRef,
+  compact = false,
 }: {
   timelineRef: React.RefObject<TimelineRef | null>
+  /**
+   * Touch-friendly variant: icon-only buttons and zoom +/- as the primary zoom
+   * control (the range slider's 12px thumb is untouchable on mobile). Default
+   * renders exactly as before — the Timeline playground passes nothing.
+   */
+  compact?: boolean
 }) {
   const engine = useTimelineEngine()
   const zoom = usePlaybackStore((s) => s.zoom)
@@ -81,16 +88,26 @@ export const TimelineControls = memo(function TimelineControls({
     engine.addTrack('audio', { name: `Audio ${n}` })
   }, [engine])
 
-  // Ghost toolbar buttons (flat icons, matching the Figma).
-  const ghostBtn =
-    'inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
-  const ghostIcon =
-    'inline-flex items-center justify-center w-7 h-7 rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer'
+  // Ghost toolbar buttons (flat icons, matching the Figma). Compact swaps the
+  // 28px targets for 36px ones — the minimum comfortable touch size here.
+  const ghostBtn = cn(
+    'inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer',
+    compact && 'h-9 px-2.5',
+  )
+  const ghostIcon = cn(
+    'inline-flex items-center justify-center rounded text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors cursor-pointer',
+    compact ? 'w-9 h-9' : 'w-7 h-7',
+  )
   const disabledMod =
     'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-ed-text-muted'
 
   return (
-    <div className="flex items-center justify-between h-10 px-4 bg-ed-bg-2 border-t border-ed-border shrink-0">
+    <div
+      className={cn(
+        'flex items-center justify-between px-4 bg-ed-bg-2 border-t border-ed-border shrink-0',
+        compact ? 'h-12 px-2' : 'h-10',
+      )}
+    >
       {/* Left — track + clip tools */}
       <div className="flex items-center gap-0.5">
         <div className="relative">
@@ -100,7 +117,7 @@ export const TimelineControls = memo(function TimelineControls({
             onClick={() => setAddOpen((o) => !o)}
             title="Add a track"
           >
-            <Plus size={14} /> Add Track <ChevronDown size={12} />
+            <Plus size={14} /> {!compact && 'Add Track'} <ChevronDown size={12} />
           </button>
           {addOpen && (
             <>
@@ -132,7 +149,7 @@ export const TimelineControls = memo(function TimelineControls({
           onClick={splitAtPlayhead}
           title="Split at playhead (S)"
         >
-          <Scissors size={14} /> Split
+          <Scissors size={14} /> {!compact && 'Split'}
         </button>
         <button
           type="button"
@@ -164,15 +181,17 @@ export const TimelineControls = memo(function TimelineControls({
         >
           <Minus size={14} />
         </button>
-        <input
-          type="range"
-          className="elah-range w-24"
-          min={0}
-          max={1}
-          step={0.001}
-          value={zoomToSlider(zoom)}
-          onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
-        />
+        {!compact && (
+          <input
+            type="range"
+            className="elah-range w-24"
+            min={0}
+            max={1}
+            step={0.001}
+            value={zoomToSlider(zoom)}
+            onChange={(e) => setZoom(sliderToZoom(Number(e.target.value)))}
+          />
+        )}
         <button
           type="button"
           className={ghostIcon}
@@ -187,7 +206,7 @@ export const TimelineControls = memo(function TimelineControls({
           onClick={() => timelineRef.current?.fitToWindow()}
           title="Zoom to fit timeline"
         >
-          <Maximize2 size={13} /> Fit
+          <Maximize2 size={13} /> {!compact && 'Fit'}
         </button>
       </div>
     </div>

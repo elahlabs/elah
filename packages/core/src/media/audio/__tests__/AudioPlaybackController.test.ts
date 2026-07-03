@@ -248,7 +248,7 @@ describe('AudioPlaybackController', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(8) })),
+      vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) })),
     )
   })
 
@@ -693,5 +693,128 @@ describe('AudioPlaybackController', () => {
       g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0),
     )
     expect(clipGain).toBeDefined()
+  })
+
+  // ── preloadProjectAudio ─────────────────────────────────────────────────────
+
+  it('preloadProjectAudio() decodes each unique src once, and is idempotent', async () => {
+    const { engine } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    // 3 clips over 2 unique srcs (one src looped across two clips on track-1).
+    const project: Project = {
+      ...makeMultiTrackProject(),
+      clips: {
+        'track-1': [
+          { ...makeMultiTrackProject().clips['track-1']![0]!, id: 'clip-a1' },
+          { ...makeMultiTrackProject().clips['track-1']![0]!, id: 'clip-a2', startFrame: 120 },
+        ],
+        'track-2': makeMultiTrackProject().clips['track-2']!,
+      },
+    }
+    const controller = new AudioPlaybackController(engine, () => project, {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    controller.preloadProjectAudio()
+    await flush()
+
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(2)
+
+    controller.preloadProjectAudio()
+    await flush()
+
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(2)
+  })
+
+  it('play reuses the buffer warmed by preloadProjectAudio()', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, raw, createdNodes } = makeMockAudioContext()
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    controller.preloadProjectAudio()
+    await flush()
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('evicts the cache on fetch failure and retries on the next attempt', async () => {
+    const { engine } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = vi.fn()
+    fetchMock.mockRejectedValueOnce(new Error('network down'))
+    fetchMock.mockResolvedValue({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    controller.preloadProjectAudio()
+    await flush()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalled()
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(0)
+
+    controller.preloadProjectAudio()
+    await flush()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
+
+    warnSpy.mockRestore()
+  })
+
+  it('play retries after a failed preload once the fetch succeeds', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, createdNodes } = makeMockAudioContext()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = vi.fn()
+    fetchMock.mockRejectedValueOnce(new Error('network down'))
+    fetchMock.mockResolvedValue({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+    expect(createdNodes).toHaveLength(0)
+
+    emit({ epoch: 2, isPlaying: true, currentFrame: 0 })
+    await flush()
+    expect(createdNodes).toHaveLength(1)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('preloadProjectAudio() is a no-op before start()', async () => {
+    const { engine } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const controller = new AudioPlaybackController(engine, () => makeProject(), {
+      audioContextFactory: () => ctx,
+    })
+
+    controller.preloadProjectAudio()
+    await flush()
+
+    expect(globalThis.fetch).not.toHaveBeenCalled()
+    expect(raw.decodeAudioData).not.toHaveBeenCalled()
+    expect(warnSpy).not.toHaveBeenCalled()
+
+    warnSpy.mockRestore()
   })
 })

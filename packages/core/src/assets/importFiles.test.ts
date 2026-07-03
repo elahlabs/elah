@@ -704,6 +704,7 @@ describe('computeWaveform', () => {
     decodeAudioData.mockReset()
     vi.stubGlobal('window', { AudioContext: vi.fn(() => ({ decodeAudioData })) })
     vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
       arrayBuffer: async () => new ArrayBuffer(8),
     })))
   })

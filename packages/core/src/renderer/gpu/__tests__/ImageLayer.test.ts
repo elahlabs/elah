@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveImageClip } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
 import { ImageLayer, type ImageLoader, type LoadedImage } from '../layers/ImageLayer'
+import { __clearImageCacheForTests } from '../layers/imageCache'
 
 // ---------------------------------------------------------------------------
 // Minimal WebGL2 mock (mirrors TextLayer.test.ts — same quad + premultiply path).
@@ -113,6 +114,7 @@ function makeClip(overrides: Partial<ActiveImageClip> = {}): ActiveImageClip {
 function makeCtx(gl: WebGL2RenderingContext): LayerContext {
   return {
     gl,
+    frame: 0,
     stage: { width: 1080, height: 1920 },
     viewport: { width: 1080, height: 1920 },
     fps: 30,
@@ -129,6 +131,7 @@ describe('ImageLayer', () => {
   let layer: ImageLayer
 
   beforeEach(() => {
+    __clearImageCacheForTests()
     gl = createMockGL()
     ctx = makeCtx(gl)
     layer = new ImageLayer(makeLoader())

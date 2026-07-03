@@ -104,6 +104,8 @@ function makeScene(
     audios: [],
     texts: [],
     images: [],
+    shapes: [],
+    freehand: [],
     transitions: [],
   }
 }

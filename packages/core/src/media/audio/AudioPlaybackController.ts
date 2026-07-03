@@ -17,10 +17,13 @@ import { resolveTimeline } from '../../resolver/resolveTimeline'
 import { trace } from '../../debug/trace'
 import type { PlaybackEngine, PlaybackSnapshot } from '../../playback/PlaybackEngine'
 import type { Project } from '../../types'
+import { defaultAudioResolver, type AudioResolver } from './audioResolver'
 
 export interface AudioPlaybackControllerOptions {
   /** Injectable for tests; production builds a real AudioContext. */
   audioContextFactory?: () => AudioContext
+  /** Injectable URL→bytes seam for CDN/auth/proxy overrides. Defaults to fetch(src).arrayBuffer(). */
+  audioResolver?: AudioResolver
 }
 
 /** Duration of gain ramps — short enough to be imperceptible, long enough to avoid clicks. */
@@ -41,6 +44,7 @@ export class AudioPlaybackController {
   private readonly _playback: PlaybackEngine
   private readonly _getProject: () => Project
   private readonly _audioContextFactory: () => AudioContext
+  private readonly _audioResolver: AudioResolver
 
   private _ctx: AudioContext | null = null
   private _masterGain: GainNode | null = null
@@ -50,6 +54,8 @@ export class AudioPlaybackController {
   private readonly _trackNodes = new Map<string, TrackNodes>()
   /** Per-clip tokens — bumped on stop or re-schedule so stale decodes bail. */
   private readonly _clipTokens = new Map<string, number>()
+  /** Clips currently awaiting a buffer (fetch+decode in flight) — prevents re-scheduling every tick. */
+  private readonly _pendingClips = new Set<string>()
   private readonly _buffers = new Map<string, Promise<AudioBuffer>>()
   private _tokenCounter = 0
   private _lastEpoch = -1
@@ -66,6 +72,7 @@ export class AudioPlaybackController {
     this._getProject = getProject
     this._audioContextFactory =
       options.audioContextFactory ?? (() => new AudioContext())
+    this._audioResolver = options.audioResolver ?? defaultAudioResolver
   }
 
   /** Begin tracking the playback clock. Lazily creates the AudioContext. */
@@ -223,44 +230,59 @@ export class AudioPlaybackController {
       }
 
       // Restart only on epoch change (seek / play / rate) or first appearance.
-      const needRestart = transportChanged || !this._active.has(clip.id)
+      // A clip already awaiting its buffer is left alone — _scheduleClip
+      // recomputes the offset against the live playhead once the decode
+      // resolves, so re-firing every tick would just churn tokens for nothing.
+      const needRestart = transportChanged || (!this._active.has(clip.id) && !this._pendingClips.has(clip.id))
       if (!needRestart) continue
 
-      const offsetSec = clip.sourceFrame / scene.fps
-      void this._scheduleClip(clip.id, clip.trackId, clip.src, offsetSec, clip.volume, snap.playbackRate)
+      void this._scheduleClip(clip.id, clip.trackId, clip.src)
     }
   }
 
-  private async _scheduleClip(
-    clipId: string,
-    trackId: string,
-    src: string,
-    offsetSec: number,
-    volume: number,
-    playbackRate: number,
-  ): Promise<void> {
+  private async _scheduleClip(clipId: string, trackId: string, src: string): Promise<void> {
     const token = ++this._tokenCounter
     this._clipTokens.set(clipId, token)
-    trace('AUDIO', 'scheduleClip start', { clipId, trackId, offsetSec })
+    this._pendingClips.add(clipId)
+    trace('AUDIO', 'scheduleClip start', { clipId, trackId })
 
     let buffer: AudioBuffer
     try {
       buffer = await this._ensureBuffer(src)
     } catch (e) {
       trace('AUDIO', 'scheduleClip buffer error', { clipId, error: String(e) })
+      this._pendingClips.delete(clipId)
       return
     }
     if (this._clipTokens.get(clipId) !== token) {
       trace('AUDIO', 'scheduleClip stale (superseded)', { clipId })
+      // A newer call already owns _pendingClips bookkeeping for this clip — leave it be.
       return
     }
+    this._pendingClips.delete(clipId)
     if (!this._ctx || !this._masterGain) {
       trace('AUDIO', 'scheduleClip stale (destroyed)', { clipId })
       return
     }
 
-    trace('AUDIO', 'scheduleClip starting node', { clipId, ctxState: this._ctx.state })
-    this._startClipNode(clipId, trackId, buffer, offsetSec, volume, playbackRate)
+    // The decode may have taken a while (cold CDN fetch) — the offset/volume
+    // captured when scheduling began can be seconds stale by now. Recompute
+    // against the live playhead so a slow decode snaps into sync instead of
+    // starting at a stale position (or resuming audio after a pause/stop).
+    if (!this._playback.isPlaying) {
+      trace('AUDIO', 'scheduleClip stale (no longer playing)', { clipId })
+      return
+    }
+    const liveScene = resolveTimeline(this._playback.currentFrame, this._getProject())
+    const liveClip = liveScene.audios.find((c) => c.id === clipId)
+    if (!liveClip) {
+      trace('AUDIO', 'scheduleClip stale (clip no longer active)', { clipId })
+      return
+    }
+    const liveOffsetSec = liveClip.sourceFrame / liveScene.fps
+
+    trace('AUDIO', 'scheduleClip starting node', { clipId, ctxState: this._ctx.state, liveOffsetSec })
+    this._startClipNode(clipId, trackId, buffer, liveOffsetSec, liveClip.volume, this._playback.playbackRate)
   }
 
   private _startClipNode(
@@ -326,6 +348,11 @@ export class AudioPlaybackController {
 
   private _stopClip(clipId: string): void {
     this._clipTokens.set(clipId, ++this._tokenCounter)
+    // Invalidates any in-flight _scheduleClip for this clip too — without this,
+    // a pending decode that resolves after a genuine stop (clip removed, or
+    // _stopAll on pause) would see itself as "stale" and bail without ever
+    // clearing _pendingClips, permanently blocking future restarts.
+    this._pendingClips.delete(clipId)
 
     const entry = this._active.get(clipId)
     if (entry) {
@@ -389,10 +416,44 @@ export class AudioPlaybackController {
     const ctx = this._ctx
     if (!ctx) return Promise.reject(new Error('AudioPlaybackController: no AudioContext'))
 
-    const promise = fetch(src)
-      .then((res) => res.arrayBuffer())
-      .then((buf) => ctx.decodeAudioData(buf))
+    const promise = this._audioResolver(src).then((buf) => ctx.decodeAudioData(buf))
+    // Evict on failure so a transient error can retry later; identity guard
+    // avoids clobbering a newer in-flight retry. This side-chain also marks
+    // the rejection "handled" so fire-and-forget preload callers don't raise
+    // unhandledrejection — `_scheduleClip` still awaits `promise` directly,
+    // so its own rejection handling is unaffected.
+    promise.catch((e) => {
+      if (this._buffers.get(src) === promise) this._buffers.delete(src)
+      console.warn(`[audio] failed to load ${src}:`, e)
+    })
     this._buffers.set(src, promise)
     return promise
+  }
+
+  /**
+   * Warm the decode cache for every audio clip in the project so first play
+   * doesn't wait on download + decode. Dedupe is the `_buffers` cache itself;
+   * failures are handled (evict + warn) inside `_ensureBuffer`. The cache is
+   * intentionally never evicted except on load failure.
+   */
+  preloadProjectAudio(): void {
+    if (!this._ctx) return
+    for (const clips of Object.values(this._getProject().clips)) {
+      for (const clip of clips) {
+        if (clip.type === 'audio' && typeof clip.src === 'string') {
+          void this._ensureBuffer(clip.src)
+        }
+      }
+    }
+  }
+
+  /**
+   * Warm the decode cache for a single URL — for callers that want to start
+   * fetching+decoding as soon as a media asset is registered (e.g. clicked
+   * into the library), rather than waiting for it to land on the timeline.
+   */
+  warmAudioSrc(src: string): void {
+    if (!this._ctx) return
+    void this._ensureBuffer(src)
   }
 }

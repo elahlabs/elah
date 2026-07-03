@@ -44,3 +44,14 @@ export interface DragMediaPayload {
   kind: 'media-asset'
   assetId: string
 }
+
+/**
+ * Extra `dataTransfer` type set alongside {@link MEDIA_DRAG_MIME} that encodes
+ * the asset's `MediaKind`. `dataTransfer.getData` is only readable on `drop`
+ * in most browsers, but `dataTransfer.types` is readable throughout the drag —
+ * so this lets drop targets show a compatible/incompatible highlight on
+ * dragenter/dragover, before the actual payload can be read.
+ */
+export function mediaDragKindMime(kind: MediaKind): string {
+  return `application/x-elah-media-kind-${kind}`
+}

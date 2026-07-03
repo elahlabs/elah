@@ -105,8 +105,27 @@ describe('BackwardSeekStability', () => {
     // old threshold — but frame 5 is no longer in cache.
     // Without the backwardMiss fix, getCurrent(5) returns null (evicted, not re-decoded).
     // With the fix, the miss forces a re-seek so the frame is decoded before getCurrent.
-    const demuxerBackend = createMockDemuxerBackend({
-      chunks: Array.from({ length: 30 }, (_, i) => createMockChunk(i * 33333)),
+    const chunks = Array.from({ length: 30 }, (_, i) => createMockChunk(i * 33333))
+    const demuxerBackend = createMockDemuxerBackend({ chunks })
+    // The shared mock's packets() ignores the requested time range and always
+    // replays the full chunk list. The real MediabunnyDemuxer/backend only
+    // yields packets inside [startUs, endUs] (see createMediabunnyBackend.ts).
+    // This test relies on range-scoped replay after a seek — a full 0..29
+    // replay after seeking to frame 5 would refill the cache with everything
+    // up to frame 29, evicting frame 5 again before the assertions run.
+    // Chunk timestamps use an integer 33333us/frame step while the producer's
+    // startUs/endUs are computed from the fractional 1_000_000/30 usPerFrame,
+    // so exact `>=` filtering can off-by-one exclude the target frame (e.g.
+    // frame 5 at ts=166665 vs. a computed startUs of 166667). Snap to the
+    // nearest frame index instead of comparing raw timestamps.
+    const usPerFrame = 1_000_000 / 30
+    vi.mocked(demuxerBackend.packets).mockImplementation(async function* ([startUs, endUs]) {
+      const startFrame = Math.round(startUs / usPerFrame)
+      const endFrame = Math.round(endUs / usPerFrame)
+      for (const chunk of chunks) {
+        const frame = Math.round(chunk.timestamp / usPerFrame)
+        if (frame >= startFrame && frame < endFrame) yield chunk
+      }
     })
     const { factory } = createMockDecoder()
 

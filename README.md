@@ -281,4 +281,4 @@ and the architectural invariants every renderer/decode change must preserve.
 
 ## License
 
-See [`LICENSE`](./LICENSE).
+Copyright (c) 2026 Elah Labs Private Limited. See [`LICENSE`](./LICENSE).

@@ -17,6 +17,14 @@ export { useTracks } from './hooks/useTracks'
 export { usePlayback } from './hooks/usePlayback'
 export { useSelection } from './hooks/useSelection'
 export { useTimelineDrop } from './useTimelineDrop'
+export type { TimelineDropState } from './useTimelineDrop'
+export { insertMediaAsset, insertElement } from './insertAsset'
+export type {
+  InsertAssetOptions,
+  InsertAssetResult,
+  InsertAssetFailureReason,
+  InsertedKind,
+} from './insertAsset'
 
 // --- Element drag infrastructure (public API) ---
 export { ELEMENT_DRAG_MIME } from './elementDrag'

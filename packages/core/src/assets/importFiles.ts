@@ -1,5 +1,6 @@
 import { generateId } from '../utils/id'
 import { useMediaLibraryStore } from './store'
+import { defaultAudioResolver, type AudioResolver } from '../media/audio/audioResolver'
 import type { MediaAsset, MediaKind } from './types'
 
 export interface ImportFilesOptions {
@@ -415,9 +416,11 @@ function getAudioContext(): AudioContext {
  * containers, so this works for both audio files and videos-with-audio. Returns
  * `null` when the source has no decodable audio (e.g. a silent/muted video).
  */
-export async function computeWaveform(src: string): Promise<Float32Array | null> {
-  const res = await fetch(src)
-  const buffer = await res.arrayBuffer()
+export async function computeWaveform(
+  src: string,
+  audioResolver: AudioResolver = defaultAudioResolver,
+): Promise<Float32Array | null> {
+  const buffer = await audioResolver(src)
   const audioBuffer = await getAudioContext().decodeAudioData(buffer)
   if (audioBuffer.length === 0) return null
 

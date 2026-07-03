@@ -56,8 +56,10 @@ export { createVideoFrameProvider, MockVideoFrameProvider, SyntheticVideoFramePr
 
 export { AudioPlaybackController } from '@elah/core'
 export type { AudioPlaybackControllerOptions } from '@elah/core'
+export { defaultAudioResolver } from '@elah/core'
+export type { AudioResolver } from '@elah/core'
 
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, importFiles, importUrl } from '@elah/core'
+export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, mediaDragKindMime, importFiles, importUrl } from '@elah/core'
 export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from '@elah/core'
 
 export { useTracksStore } from '@elah/core'
@@ -75,6 +77,7 @@ export type { ActionResult, ActionFailureReason } from '@elah/core'
 
 export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames } from '@elah/core'
 export { generateId } from '@elah/core'
+export { transformFromCoverRect } from '@elah/core'
 
 export { exportVideo } from '@elah/core'
 export { lazyExportVideo } from '@elah/core'
@@ -89,8 +92,17 @@ export { useTracks } from '@elah/timeline'
 export { usePlayback } from '@elah/timeline'
 export { useSelection } from '@elah/timeline'
 export { useTimelineDrop } from '@elah/timeline'
+export { insertMediaAsset, insertElement } from '@elah/timeline'
 export { ELEMENT_DRAG_MIME } from '@elah/timeline'
-export type { DragElementPayload, ElementKind } from '@elah/timeline'
+export type {
+  DragElementPayload,
+  ElementKind,
+  ShapeVariant,
+  InsertAssetOptions,
+  InsertAssetResult,
+  InsertAssetFailureReason,
+  InsertedKind,
+} from '@elah/timeline'
 
 // --- Editor composition layer ---
 export { EditorProvider } from './editor/EditorProvider'
@@ -108,6 +120,7 @@ export type { ElementsPanelProps } from './editor/ElementsPanel'
 
 export { SourcePanel } from './editor/SourcePanel'
 export type { SourcePanelProps, SourcePanelClassNames } from './editor/SourcePanel'
+export type { AssetActivationPayload, AssetActivationHandler } from './editor/activation'
 
 export { Preview } from './editor/Preview'
 export type { PreviewProps, PreviewHandle } from './editor/Preview'
