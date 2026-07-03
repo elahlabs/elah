@@ -147,4 +147,4 @@ Dragging a media asset from the library onto the lane resolves drop position to 
 - [GitHub](https://github.com/elahlabs/elah)
 - [Full SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
-- [Commercial licensing](mailto:contact@elah.dev)
+- [Commercial licensing](mailto:paul@elah.dev)

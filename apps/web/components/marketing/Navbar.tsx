@@ -7,6 +7,7 @@ import { Menu, X, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { VersionBadge } from '@/components/marketing/VersionBadge'
 
 const navLinks = [
   { label: 'Docs', href: '/docs' },
@@ -58,6 +59,7 @@ export function Navbar() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
+          <VersionBadge />
           <Link
             href="https://discord.gg/8CeZ2XbPy"
             target="_blank"
@@ -121,6 +123,9 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <div className="my-1 px-1" onClick={() => setMobileOpen(false)}>
+                <VersionBadge block />
+              </div>
               <Link
                 href="https://discord.gg/8CeZ2XbPy"
                 target="_blank"

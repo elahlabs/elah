@@ -1,6 +1,6 @@
 {
   "name": "@elah/timeline",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "React timeline UI for the Elah video engine — tracks, clips, ruler, playhead, drag and trim gestures",
   "type": "module",
   "main": "./dist/index.js",
@@ -54,7 +54,7 @@
     "lucide-react": ">=0.400.0"
   },
   "dependencies": {
-    "@elah/core": "^0.2.1",
+    "@elah/core": "^0.3.0",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0"
   },

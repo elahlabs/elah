@@ -68,7 +68,7 @@ This is the seam that `Scene.transitions` (reserved, empty today) and the
 - **Slide / wipe transitions** — architecture in place (snapshot overlay + `Scene.transitions`); CSS `transform` on the snapshot div + matching export pass in `ExportWorker`
 - **Playback correctness** — reverse scrub stability, predictive frame caching, black-frame elimination at clip boundaries; requires the scheduler layer (see above)
 - **Export frame-accuracy** — half-frame phase offset between preview (center-of-frame) and export (start-of-frame); golden-frame parity harness
-- Multi-track video/audio compositing beyond the current single-track v1 path
+- Multi-track **video** compositing beyond the current single-video-track v1 path (multi-track **audio** shipped in 0.3.0)
 - Effects / filters / animation (per-clip shader passes via a new layer)
 - Asset persistence (IndexedDB / OPFS) so the library survives reload
 - WebGPU backend behind the existing `Renderer` interface

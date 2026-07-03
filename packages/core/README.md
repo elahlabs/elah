@@ -27,12 +27,14 @@ npm install @elah/core
 | `TimelineEngine` | Manages project state — tracks, clips, undo/redo |
 | `PlaybackEngine` | Frame-accurate playback clock |
 | `resolveTimeline` | Pure function — project → active scene at a given frame |
-| `GpuRenderer` | WebGL2 renderer for video, image, and text layers |
+| `GpuRenderer` | WebGL2 renderer for video, image, text, shape, and freehand layers |
+| `AudioPlaybackController` | Multi-track audio mixer on the playback clock |
+| `useAudioMixer` / `useTrackLevels` / `useMasterVolume` | React hooks for volume + level-meter UIs |
 | `useTracksStore` | Zustand mirror of project state for React |
 | `usePlaybackStore` | Zustand mirror of playback state for React |
 | `useSelectionStore` | Zustand mirror of selection state for React |
-| `useMediaLibrary` | Media asset library with thumbnail generation |
-| `importFiles` | Import local files into the media library |
+| `useMediaLibrary` / `useAssets` | Media asset library with thumbnail generation |
+| `importFiles` / `importUrl` / `importBlob` | Import local files, remote URLs, or blobs into the media library |
 | `exportVideo` | Export the timeline to MP4 via a web worker |
 
 ---
@@ -61,9 +63,22 @@ const scene = resolveTimeline(15, engine.getProject())
 Standalone builders that return a fully-normalized `Clip` object (rounded frames, default volume/opacity, generated id) without an engine — useful for headless pipelines that feed `resolveTimeline` directly. When you have an engine, prefer `engine.addClip(options)` instead, which builds the clip and records an undo entry.
 
 ```ts
-import { createVideoClip, createAudioClip, createTextClip, createImageClip } from '@elah/core'
+import {
+  createVideoClip,
+  createAudioClip,
+  createTextClip,
+  createImageClip,
+  createShapeClip,
+  createFreehandClip,
+} from '@elah/core'
 
 const clip = createVideoClip({ trackId: 'v1', src: 'video.mp4', startFrame: 0, durationFrames: 90 })
+const rect = createShapeClip({
+  trackId: 'el1',
+  startFrame: 0,
+  durationFrames: 90,
+  shape: { shapeKind: 'rect', shapeFill: '#22d3ee' }, // 'rect' | 'circle' | 'triangle'
+})
 ```
 
 ---
@@ -87,4 +102,4 @@ const blob = await exportVideo(engine.getProject(), {
 - [GitHub](https://github.com/elahlabs/elah)
 - [Full SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
-- [Commercial licensing](mailto:contact@elah.dev)
+- [Commercial licensing](mailto:paul@elah.dev)

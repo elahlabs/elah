@@ -9,10 +9,11 @@
 
 ## Playback & decode
 
-- **Single video track + single audio track (v1).** The decode pipeline and
-  renderer composite multiple clips by `zIndex`, but the system is tuned and
-  tested for one active video track and one audio track. Heavy multi-track
-  compositing is not yet a supported path.
+- **Single *video* track (v1).** The decode pipeline and renderer composite
+  multiple clips by `zIndex`, but the system is tuned and tested for one active
+  video track. Heavy multi-track *video* compositing is not yet a supported
+  path. **Audio is multi-track** as of 0.3.0 — `AudioPlaybackController` mixes
+  several audio tracks with per-clip and master volume.
 - **Reverse / backward scrubbing is unstable.** `StreamingFrameProducer` feeds a
   *forward* lookahead window. A backward jump larger than the lookahead is a
   discontinuity: it seeks the demuxer to the nearest keyframe and cold-starts the
