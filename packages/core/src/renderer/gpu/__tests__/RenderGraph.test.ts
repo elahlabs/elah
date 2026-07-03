@@ -21,6 +21,8 @@ const STUB_SCENE: Scene = {
   audios: [],
   texts: [],
   images: [],
+  shapes: [],
+  freehand: [],
   transitions: [],
 }
 

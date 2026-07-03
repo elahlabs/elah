@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages (core -> timeline -> editor)
+        run: npm run build:packages
+
+      # Root `npm run typecheck` isn't scoped correctly across the monorepo yet
+      # (it can pull in apps/* and playground/* under the wrong tsconfig), so
+      # each workspace is typechecked individually against its own tsconfig.
+      - name: Typecheck packages/core
+        run: npm run typecheck --workspace=packages/core
+
+      - name: Typecheck packages/timeline
+        run: npm run typecheck --workspace=packages/timeline
+
+      - name: Typecheck packages/editor
+        run: npm run typecheck --workspace=packages/editor
+
+      - name: Typecheck apps/web
+        run: npm run typecheck --workspace=apps/web
+
+      - name: Test
+        run: npm test
+
+      - name: Check design-token drift
+        run: npm run lint:tokens
+
+      - name: Build apps/web
+        run: npm run build

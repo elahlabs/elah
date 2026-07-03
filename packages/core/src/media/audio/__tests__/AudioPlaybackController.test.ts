@@ -62,7 +62,12 @@ function makeMockAudioContext() {
   function makeGain(initialValue = 1) {
     const gains: ReturnType<typeof makeGainParam>[] = []
 
-    function makeGainParam(v: number) {
+    function makeGainParam(v: number): {
+      value: number
+      cancelScheduledValues: ReturnType<typeof vi.fn>
+      setValueAtTime: ReturnType<typeof vi.fn>
+      linearRampToValueAtTime: ReturnType<typeof vi.fn>
+    } {
       const param = {
         value: v,
         cancelScheduledValues: vi.fn(),
@@ -443,7 +448,7 @@ describe('AudioPlaybackController', () => {
 
     // Grab the statechange handler registered on the mock context.
     const stateChangeCall = raw.addEventListener.mock.calls.find(
-      ([event]: [string]) => event === 'statechange',
+      (call: unknown[]) => call[0] === 'statechange',
     )
     expect(stateChangeCall).toBeDefined()
     const stateChangeHandler = stateChangeCall![1] as () => void
@@ -633,7 +638,7 @@ describe('AudioPlaybackController', () => {
 
     // trackGain is created after masterGain and clipGain → it's the 3rd gain.
     const rampedGains = gainInstances.filter(
-      (g) => g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0.3),
+      (g) => g.gain.linearRampToValueAtTime.mock.calls.some((call: unknown[]) => call[0] === 0.3),
     )
     expect(rampedGains.length).toBeGreaterThan(0)
   })
@@ -690,7 +695,7 @@ describe('AudioPlaybackController', () => {
 
     // The clip gain should have been ramped to 0 (muted track → effective volume 0).
     const clipGain = gainInstances.find((g) =>
-      g.gain.linearRampToValueAtTime.mock.calls.some(([v]: [number]) => v === 0),
+      g.gain.linearRampToValueAtTime.mock.calls.some((call: unknown[]) => call[0] === 0),
     )
     expect(clipGain).toBeDefined()
   })
