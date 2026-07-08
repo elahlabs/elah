@@ -7,6 +7,7 @@ import { Terminal } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'Playgrounds',
   description: 'Interactive playground environments for elah. Explore the full editor, timeline-only, and demo modes.',
+  alternates: { canonical: '/playgrounds' },
 }
 
 const playgrounds = [
@@ -69,7 +70,7 @@ export default function PlaygroundsPage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
               Interactive
             </div>
             <h1
@@ -105,7 +106,7 @@ export default function PlaygroundsPage() {
 
                 {/* Feature list */}
                 <div className="rounded-md border border-outline-variant bg-surface-low p-4">
-                  <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+                  <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
                     What you can explore
                   </div>
                   <ul className="space-y-1.5">
@@ -125,7 +126,7 @@ export default function PlaygroundsPage() {
         {/* Tech breakdown */}
         <div className="border-t border-outline-variant bg-surface-low py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-6 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-6 text-2xs text-on-surface-variant opacity-90">
               What powers the playgrounds
             </div>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -140,7 +141,7 @@ export default function PlaygroundsPage() {
                 { label: 'Audio', value: 'Web Audio API', sub: 'Main-thread scheduling' },
               ].map(({ label, value, sub }) => (
                 <div key={label} className="rounded-md border border-outline-variant bg-surface-container p-4">
-                  <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">{label}</div>
+                  <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">{label}</div>
                   <div className="text-sm font-medium text-on-surface">{value}</div>
                   <div className="mt-0.5 text-xs text-on-surface-variant">{sub}</div>
                 </div>

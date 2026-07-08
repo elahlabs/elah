@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import '@/styles/globals.css'
 import { siteConfig } from '@/config/site'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { JsonLd } from '@/components/seo/JsonLd'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -18,6 +19,10 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
+  // Required for canonical URLs and og:image/twitter:image resolution — every
+  // relative URL in metadata (including the file-based opengraph-image route)
+  // resolves against this.
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: siteConfig.name,
     template: `%s — ${siteConfig.name}`,
@@ -49,6 +54,29 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fcf9f8' },
+    { media: '(prefers-color-scheme: dark)', color: '#111010' },
+  ],
+}
+
+// Site-wide schema.org entities. Page-specific schema (SoftwareApplication,
+// FAQPage, BlogPosting) lives with the pages that own it.
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteConfig.name,
+  url: siteConfig.url,
+  logo: `${siteConfig.url}/icon.png`,
+  sameAs: [siteConfig.links.github, 'https://www.npmjs.com/package/@elah/editor'],
+}
+
+const webSiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteConfig.name,
+  url: siteConfig.url,
+  description: siteConfig.description,
 }
 
 // Runs synchronously before first paint to avoid flash of wrong theme.
@@ -73,11 +101,21 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Plain <link> rather than metadata alternates.types: pages that set
+            their own `alternates` (canonicals) would replace it entirely. */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="elah blog"
+          href="/feed.xml"
+        />
       </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} bg-surface text-on-surface antialiased`}
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
       >
+        <JsonLd data={organizationJsonLd} />
+        <JsonLd data={webSiteJsonLd} />
         <ThemeProvider>
           {children}
         </ThemeProvider>

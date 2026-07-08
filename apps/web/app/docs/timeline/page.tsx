@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
-export const metadata: Metadata = { title: 'Timeline' }
+export const metadata: Metadata = {
+  title: 'Timeline',
+  description:
+    'The @elah/timeline React components: tracks and clips, playback, zooming and snapping, transitions, and keyboard shortcuts for drag, trim, and split.',
+  alternates: { canonical: '/docs/timeline' },
+}
 
 const toc = [
   { id: 'overview', title: 'Overview', level: 2 },
@@ -18,7 +23,7 @@ export default function TimelinePage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Timeline</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Timeline</div>
           <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Timeline
           </h1>

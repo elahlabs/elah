@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
-export const metadata: Metadata = { title: 'API Reference' }
+export const metadata: Metadata = {
+  title: 'API Reference',
+  description:
+    'API reference for @elah/core, @elah/timeline, and @elah/editor: TimelineEngine, PlaybackEngine, resolveTimeline, GpuRenderer, hooks, and types.',
+  alternates: { canonical: '/docs/api' },
+}
 
 const toc = [
   { id: 'timeline-engine', title: 'TimelineEngine', level: 2 },
@@ -65,7 +70,7 @@ export default function ApiPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Reference</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Reference</div>
           <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             API Reference
           </h1>

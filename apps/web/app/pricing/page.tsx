@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: 'Pricing',
   description:
     'elah is open source and free to build on. Commercial licensing is available — get in touch.',
+  alternates: { canonical: '/pricing' },
 }
 
 const openSourceIncludes = [
@@ -26,7 +27,7 @@ export default function PricingPage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
               Pricing
             </div>
             <h1
@@ -48,7 +49,7 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Open source */}
             <div className="flex flex-col rounded-lg border border-outline-variant bg-surface-container p-7">
-              <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+              <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
                 Open source
               </div>
               <h2
@@ -92,7 +93,7 @@ export default function PricingPage() {
 
             {/* Commercial / contact */}
             <div className="flex flex-col rounded-lg border border-primary/40 bg-surface-low p-7">
-              <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+              <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
                 Commercial &amp; support
               </div>
               <h2

@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { DocsToc } from '@/components/docs/DocsToc'
 import { MermaidDiagram } from '@/components/docs/MermaidDiagram'
 
-export const metadata: Metadata = { title: 'Architecture' }
+export const metadata: Metadata = {
+  title: 'Architecture',
+  description:
+    'How elah works: the three-ring state model, the timeline engine and its one mutation funnel, the playback clock, and the rendering engine built on a pure resolver.',
+  alternates: { canonical: '/docs/architecture' },
+}
 
 const toc = [
   { id: 'ring-states', title: 'Three-Ring State Model', level: 2 },
@@ -86,7 +91,7 @@ export default function ArchitecturePage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Architecture</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Architecture</div>
           <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Architecture Overview
           </h1>
@@ -263,7 +268,7 @@ export default function ArchitecturePage() {
                         >
                           <span className="font-mono text-xs text-on-surface">{item.name}</span>
                           {item.note && (
-                            <span className="text-2xs text-on-surface-variant opacity-60">{item.note}</span>
+                            <span className="text-2xs text-on-surface-variant opacity-90">{item.note}</span>
                           )}
                         </div>
                       ))}

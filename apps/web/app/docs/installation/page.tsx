@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
-export const metadata: Metadata = { title: 'Installation' }
+export const metadata: Metadata = {
+  title: 'Installation',
+  description:
+    'Install @elah/editor and its peer dependencies, and configure Next.js or Vite to run the elah video editor SDK.',
+  alternates: { canonical: '/docs/installation' },
+}
 
 const toc = [
   { id: 'requirements', title: 'Requirements', level: 2 },
@@ -17,7 +22,7 @@ export default function InstallationPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Getting Started</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Getting Started</div>
           <h1
             id="installation"
             className="text-3xl font-semibold tracking-tight text-on-surface"
@@ -177,7 +182,7 @@ export default defineConfig({
 
         {/* Next */}
         <div className="rounded-md border border-outline-variant bg-surface-low p-5">
-          <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">Up Next</div>
+          <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Up Next</div>
           <div className="text-sm font-medium text-on-surface mb-1">Quick Start</div>
           <p className="text-xs leading-relaxed text-on-surface-variant mb-3">
             Build the full editor in under 20 lines — wire your demuxer, mount Preview, and add the Timeline.
