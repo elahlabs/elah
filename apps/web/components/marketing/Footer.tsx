@@ -81,7 +81,7 @@ export function Footer() {
           <p className="text-xs text-on-surface-variant">
             © {new Date().getFullYear()} Elah Labs Private Limited. Source-available under the ECL v1.0 license.
           </p>
-          <p className="label-mono text-2xs text-on-surface-variant opacity-60">
+          <p className="label-mono text-2xs text-on-surface-variant opacity-90">
             Built with Next.js · Deployed on Vercel
           </p>
         </div>

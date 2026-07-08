@@ -16,7 +16,7 @@ export function CTASection() {
           className="flex flex-col items-start gap-8 md:flex-row md:items-center md:justify-between"
         >
           <div>
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
               Ready to build
             </div>
             <h2

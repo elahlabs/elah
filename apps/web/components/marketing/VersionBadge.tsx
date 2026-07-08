@@ -29,7 +29,7 @@ export function VersionBadge({ className, block }: VersionBadgeProps) {
         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
       </span>
       <span className="font-mono tracking-tight">v{currentVersion}</span>
-      <span className="text-on-surface-variant opacity-60 group-hover:opacity-100">
+      <span className="text-on-surface-variant opacity-90 group-hover:opacity-100">
         What&apos;s new
       </span>
     </Link>
