@@ -141,6 +141,29 @@ export { splitClipAtPlayhead } from './actions/splitClipAtPlayhead'
 export type { SplitAtPlayheadData } from './actions/splitClipAtPlayhead'
 export type { ActionResult, ActionFailureReason } from './actions/types'
 
+// --- AI edit commands ---
+export { interpretEditCommands } from './commands/interpretEditCommands'
+export type {
+  EditCommandResult,
+  EditCommandFailureReason,
+} from './commands/interpretEditCommands'
+export { EDIT_COMMAND_JSON_SCHEMA } from './commands/editCommand'
+export { mapVideoEventsToTimeline } from './commands/mapVideoEvents'
+export type {
+  SourceVideoEvent,
+  ClipGeometry,
+  TimelineEvent,
+} from './commands/mapVideoEvents'
+export type {
+  EditCommand,
+  EditCommandKind,
+  TrimCommand,
+  SplitCommand,
+  DeleteCommand,
+  MoveCommand,
+  CutRangeCommand,
+} from './commands/editCommand'
+
 // --- Utilities ---
 export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames, clipsOverlap } from './utils/frames'
 export { generateId } from './utils/id'

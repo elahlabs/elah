@@ -75,6 +75,23 @@ export { splitClipAtPlayhead } from '@elah/core'
 export type { SplitAtPlayheadData } from '@elah/core'
 export type { ActionResult, ActionFailureReason } from '@elah/core'
 
+// AI edit commands
+export { interpretEditCommands, EDIT_COMMAND_JSON_SCHEMA, mapVideoEventsToTimeline } from '@elah/core'
+export type {
+  EditCommand,
+  EditCommandKind,
+  TrimCommand,
+  SplitCommand,
+  DeleteCommand,
+  MoveCommand,
+  CutRangeCommand,
+  EditCommandResult,
+  EditCommandFailureReason,
+  SourceVideoEvent,
+  ClipGeometry,
+  TimelineEvent,
+} from '@elah/core'
+
 export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames } from '@elah/core'
 export { generateId } from '@elah/core'
 export { transformFromCoverRect } from '@elah/core'

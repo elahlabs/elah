@@ -31,6 +31,7 @@ import { ExportModal } from './ExportModal'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { AgenticPanel } from './AgenticPanel'
+import { EditCommandBar } from './EditCommandBar'
 import { TracePanel } from './TracePanel'
 import { siteConfig } from '@/config/site'
 import { cn } from '@/lib/utils'
@@ -886,6 +887,8 @@ export default function ProductionEditor() {
               <span className="h-1 w-12 rounded-full bg-ed-text-muted group-hover:bg-ed-accent transition-colors" />
             </div>
           )}
+
+          {!isMobile && <EditCommandBar fps={FPS} />}
 
           <div className="relative flex flex-col min-h-0 shrink-0">
             <TimelineControls timelineRef={timelineRef} compact={isMobile} />
