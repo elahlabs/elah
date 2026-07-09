@@ -6,6 +6,7 @@ import { ExternalLink, Layers, Clock, FileVideo, Cpu } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'Showcase',
   description: 'Projects and tools built with elah.',
+  alternates: { canonical: '/showcase' },
 }
 
 const showcaseItems = [
@@ -56,7 +57,7 @@ export default function ShowcasePage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Showcase</div>
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">Showcase</div>
             <h1
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
@@ -155,7 +156,7 @@ export default function ShowcasePage() {
 
           {/* Submit */}
           <div className="mt-12 rounded-md border border-outline-variant bg-surface-low p-6">
-            <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Built something?</div>
+            <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Built something?</div>
             <h3 className="mb-1 text-sm font-semibold text-on-surface">
               Share your project
             </h3>

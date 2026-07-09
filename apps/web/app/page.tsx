@@ -1,9 +1,32 @@
+import type { Metadata } from 'next'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { HeroSection } from '@/components/marketing/HeroSection'
 import { FeatureCard } from '@/components/marketing/FeatureCard'
 import { PlaygroundCard } from '@/components/marketing/PlaygroundCard'
 import { CTASection } from '@/components/marketing/CTASection'
+import { FAQSection } from '@/components/marketing/FAQSection'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { siteConfig } from '@/config/site'
+import { currentVersion } from '@/config/changelog'
+
+export const metadata: Metadata = {
+  title: { absolute: 'elah — browser-native, frame-accurate video editing engine' },
+  alternates: { canonical: '/' },
+}
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'elah',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Any (web browser)',
+  description: siteConfig.description,
+  url: siteConfig.url,
+  softwareVersion: currentVersion,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+}
+
 const features = [
   {
     iconName: 'Clock',
@@ -103,6 +126,7 @@ const playgrounds = [
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
+      <JsonLd data={softwareJsonLd} />
       <Navbar />
 
       <main className="flex-1">
@@ -112,7 +136,7 @@ export default function HomePage() {
         <section className="border-b border-outline-variant bg-surface py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mb-10">
-              <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+              <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                 Architecture
               </div>
               <h2
@@ -137,7 +161,7 @@ export default function HomePage() {
         <section className="border-b border-outline-variant bg-surface-low py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mb-10">
-              <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+              <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                 Data Flow
               </div>
               <h2
@@ -158,7 +182,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mb-10 flex items-end justify-between gap-4">
               <div>
-                <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+                <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                   Interactive
                 </div>
                 <h2
@@ -185,7 +209,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
               <div>
-                <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+                <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                   Integration
                 </div>
                 <h2
@@ -217,6 +241,8 @@ export default function HomePage() {
           </div>
         </section>
 
+        <FAQSection />
+
         <CTASection />
       </main>
 
@@ -243,10 +269,7 @@ function ArchitectureDiagram() {
           style={{ backgroundColor: i % 2 === 0 ? 'var(--color-surface-container)' : 'var(--color-surface-high)' }}
         >
           <div className="w-28 shrink-0">
-            <span
-              className="label-mono text-2xs text-on-surface-variant"
-              style={{ opacity: 0.7 }}
-            >
+            <span className="label-mono text-2xs text-on-surface-variant">
               {layer.label.toUpperCase()}
             </span>
           </div>
@@ -298,8 +321,8 @@ export default function App() {
   return (
     <div className="overflow-hidden rounded-md border border-outline-variant bg-[#0d0d0d]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
-        <span className="font-mono text-xs text-white/30">App.tsx</span>
-        <span className="label-mono text-2xs text-white/20">@elah/editor</span>
+        <span className="font-mono text-xs text-white/60">App.tsx</span>
+        <span className="label-mono text-2xs text-white/50">@elah/editor</span>
       </div>
       <pre
         className="overflow-x-auto p-4 text-xs leading-relaxed text-white/80"

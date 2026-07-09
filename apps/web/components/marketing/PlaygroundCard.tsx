@@ -133,7 +133,7 @@ function FullEditorPreview({ color }: { color: string }) {
         <div className="w-12 border-r border-white/10 bg-black/40" />
         <div className="flex flex-1 items-center justify-center">
           <div className="h-10 w-16 rounded border border-white/10 bg-white/5 flex items-center justify-center">
-            <Play className="h-4 w-4 text-white/30 ml-0.5" />
+            <Play className="h-4 w-4 text-white/60 ml-0.5" />
           </div>
         </div>
       </div>

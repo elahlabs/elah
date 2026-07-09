@@ -9,6 +9,7 @@ import { formatDate, cn } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Changelog',
   description: `What's new in the elah packages (@elah/core, @elah/timeline, @elah/editor). Currently v${currentVersion}.`,
+  alternates: { canonical: '/changelog' },
 }
 
 const kindLabel: Record<ChangeKind, string> = {
@@ -32,7 +33,7 @@ export default function ChangelogPage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
               Changelog
             </div>
             <h1

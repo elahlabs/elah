@@ -5,7 +5,9 @@ import { DocsToc } from '@/components/docs/DocsToc'
 
 export const metadata: Metadata = {
   title: 'Documentation',
-  description: 'elah documentation. Browser-native video infrastructure.',
+  description:
+    'Documentation for elah, the browser-native video editing engine: installation, quick start, timeline and editor components, MP4 export, architecture, and API reference.',
+  alternates: { canonical: '/docs' },
 }
 
 const toc = [
@@ -22,7 +24,7 @@ export default function DocsPage() {
       <article className="min-w-0 flex-1 max-w-3xl">
         {/* Page header */}
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
             elah
           </div>
           <h1

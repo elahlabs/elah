@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { ArrowRight, Check, Copy, Play } from 'lucide-react'
 
 function InstallCommand() {
@@ -34,14 +33,14 @@ function InstallCommand() {
   )
 }
 
-const FADE_UP = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-}
-
-const STAGGER = {
-  animate: { transition: { staggerChildren: 0.08 } },
-}
+// Entrance animation is the CSS `.fade-up` class (globals.css), not
+// framer-motion: motion's initial={opacity: 0} is server-rendered inline, so
+// the hero — including the LCP text — stayed invisible until hydration. The
+// headline and subheadline get no animation at all so LCP lands at first paint.
+const fadeUp = (step: number) => ({
+  className: 'fade-up',
+  style: { '--fade-delay': step } as React.CSSProperties,
+})
 
 export function HeroSection() {
   return (
@@ -61,118 +60,123 @@ export function HeroSection() {
       />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-        <motion.div variants={STAGGER} initial="initial" animate="animate" className="max-w-3xl">
+        <div className="max-w-3xl">
           {/* Technical badge */}
-          <motion.div variants={FADE_UP} className="mb-6 flex items-center gap-2">
-            <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
-              Open Source · ECL v1.0
-            </span>
-            <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
-              WebCodecs + WebGL2
-            </span>
-          </motion.div>
+          <div {...fadeUp(0)}>
+            <div className="mb-6 flex items-center gap-2">
+              <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
+                Open Source · ECL v1.0
+              </span>
+              <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
+                WebCodecs + WebGL2
+              </span>
+            </div>
+          </div>
 
-          {/* Headline */}
-          <motion.h1
-            variants={FADE_UP}
+          {/* Headline — no entrance animation: this is the LCP element */}
+          <h1
             className="text-4xl font-semibold leading-tight tracking-tight text-on-surface md:text-5xl lg:text-6xl"
             style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
           >
             Browser-Native
             <br />
             <span className="text-primary">Video Infrastructure</span>
-          </motion.h1>
+          </h1>
 
-          {/* Subheadline */}
-          <motion.p
-            variants={FADE_UP}
+          {/* Subheadline — static for the same reason */}
+          <p
             className="mt-5 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg"
             style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
           >
             elah provides the timeline, rendering, and editing foundation for
             professional creative applications built entirely on the web. Engine-first,
             renderer-agnostic, scalable from prototype to production.
-          </motion.p>
+          </p>
 
           {/* Framework support */}
-          <motion.div variants={FADE_UP} className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="label-mono text-2xs text-on-surface-variant opacity-60">
-              Framework-agnostic core ·
-            </span>
-            <span className="label-mono rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-2xs text-primary">
-              Next.js
-            </span>
-            <span className="label-mono rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-2xs text-primary">
-              React
-            </span>
-            <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
-              React Native · experimental
-            </span>
-            <span className="label-mono rounded border border-dashed border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant opacity-70">
-              More frameworks coming soon
-            </span>
-          </motion.div>
+          <div {...fadeUp(1)}>
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <span className="label-mono text-2xs text-on-surface-variant opacity-90">
+                Framework-agnostic core ·
+              </span>
+              <span className="label-mono rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-2xs text-primary">
+                Next.js
+              </span>
+              <span className="label-mono rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-2xs text-primary">
+                React
+              </span>
+              <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
+                React Native · experimental
+              </span>
+              <span className="label-mono rounded border border-dashed border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
+                More frameworks coming soon
+              </span>
+            </div>
+          </div>
 
           {/* CTAs */}
-          <motion.div variants={FADE_UP} className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/playground/production"
-              className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-            >
-              Try Now
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            <Link
-              href="/docs/getting-started"
-              className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
-            >
-              Get Started
-            </Link>
-            <Link
-              href="/docs"
-              className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
-            >
-              View Docs
-            </Link>
-            <Link
-              href="/playgrounds"
-              className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
-            >
-              <Play className="h-3.5 w-3.5" />
-              Open Playgrounds
-            </Link>
-          </motion.div>
+          <div {...fadeUp(2)}>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/editor"
+                className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+              >
+                Try Now
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/docs/getting-started"
+                className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+              >
+                Get Started
+              </Link>
+              <Link
+                href="/docs"
+                className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+              >
+                View Docs
+              </Link>
+              <Link
+                href="/playgrounds"
+                className="inline-flex items-center gap-2 rounded border border-outline-variant bg-transparent px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+              >
+                <Play className="h-3.5 w-3.5" />
+                Open Playgrounds
+              </Link>
+            </div>
+          </div>
 
           {/* Install command */}
-          <motion.div variants={FADE_UP} className="mt-6">
-            <InstallCommand />
-          </motion.div>
+          <div {...fadeUp(3)}>
+            <div className="mt-6">
+              <InstallCommand />
+            </div>
+          </div>
 
           {/* Technical stats */}
-          <motion.div variants={FADE_UP} className="mt-10 flex flex-wrap gap-x-8 gap-y-3">
-            {[
-              { label: 'Time model', value: 'Integer frames' },
-              { label: 'Renderer', value: 'WebGL2 / OffscreenCanvas' },
-              { label: 'Decode', value: 'WebCodecs + mediabunny' },
-              { label: 'Audio', value: 'Web Audio API' },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="label-mono text-2xs text-on-surface-variant opacity-60">{stat.label}</div>
-                <div className="mt-0.5 font-mono text-xs text-on-surface">{stat.value}</div>
-              </div>
-            ))}
-          </motion.div>
-        </motion.div>
+          <div {...fadeUp(4)}>
+            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3">
+              {[
+                { label: 'Time model', value: 'Integer frames' },
+                { label: 'Renderer', value: 'WebGL2 / OffscreenCanvas' },
+                { label: 'Decode', value: 'WebCodecs + mediabunny' },
+                { label: 'Audio', value: 'Web Audio API' },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <div className="label-mono text-2xs text-on-surface-variant opacity-90">{stat.label}</div>
+                  <div className="mt-0.5 font-mono text-xs text-on-surface">{stat.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Editor mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="mt-16"
-        >
-          <EditorMockup />
-        </motion.div>
+        <div {...fadeUp(5)}>
+          <div className="mt-16">
+            <EditorMockup />
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -187,7 +191,7 @@ function EditorMockup() {
         <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
         <div className="h-2.5 w-2.5 rounded-full bg-green-500/80" />
         <div className="ml-3 h-5 flex-1 rounded border border-white/10 bg-white/5 px-2 flex items-center">
-          <span className="font-mono text-2xs text-white/30">elah · Full Editor</span>
+          <span className="font-mono text-2xs text-white/60">elah · Full Editor</span>
         </div>
       </div>
 
@@ -195,7 +199,7 @@ function EditorMockup() {
       <div className="flex" style={{ height: '320px' }}>
         {/* Asset panel */}
         <div className="w-44 shrink-0 border-r border-white/10 bg-[#0a0a0a] p-3">
-          <div className="label-mono mb-2 text-2xs text-white/30">MEDIA LIBRARY</div>
+          <div className="label-mono mb-2 text-2xs text-white/60">MEDIA LIBRARY</div>
           {['intro.mp4', 'bg-music.mp3', 'logo.png', 'title.txt'].map((file, i) => (
             <div
               key={file}
@@ -222,7 +226,7 @@ function EditorMockup() {
             </div>
           </div>
           {/* Timecode */}
-          <div className="absolute bottom-3 right-4 font-mono text-xs text-white/30">00:00:02:15</div>
+          <div className="absolute bottom-3 right-4 font-mono text-xs text-white/60">00:00:02:15</div>
         </div>
       </div>
 
@@ -232,7 +236,7 @@ function EditorMockup() {
         <div className="mb-2 flex items-center border-b border-white/10 pb-1">
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="flex-1 border-l border-white/10 pl-1">
-              <span className="font-mono text-2xs text-white/20">{i * 5}s</span>
+              <span className="font-mono text-2xs text-white/50">{i * 5}s</span>
             </div>
           ))}
         </div>
@@ -243,7 +247,7 @@ function EditorMockup() {
           { label: 'TEXT', color: '#3a2a4a', clips: [{ start: 10, width: 15 }, { start: 50, width: 20 }] },
         ].map((track) => (
           <div key={track.label} className="mb-1 flex items-center gap-2">
-            <div className="label-mono w-10 text-right text-2xs text-white/30">{track.label}</div>
+            <div className="label-mono w-10 text-right text-2xs text-white/60">{track.label}</div>
             <div className="relative flex-1 rounded" style={{ height: '18px', background: '#111' }}>
               {track.clips.map((clip, i) => (
                 <div

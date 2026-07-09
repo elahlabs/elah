@@ -3,7 +3,8 @@ export const siteConfig = {
   description:
     'Framework-agnostic, browser-native video infrastructure. The timeline, rendering, and editing foundation for professional creative applications built entirely on the web. Currently supports Next.js and React, with React Native and more frameworks coming soon.',
   url: 'https://www.elah.dev',
-  ogImage: 'https://www.elah.dev/og.png',
+  // Served by app/opengraph-image.tsx (Next file-based metadata route).
+  ogImage: 'https://www.elah.dev/opengraph-image',
   links: {
     github: 'https://github.com/elahlabs/elah',
     docs: '/docs',

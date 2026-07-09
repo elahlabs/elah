@@ -5,6 +5,8 @@ import { ArrowLeft } from 'lucide-react'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { CodeBlock, InlineCode } from '@/components/docs/CodeBlock'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { siteConfig } from '@/config/site'
 import { posts, getPost, categoryColors, type Block } from '../posts'
 
 export function generateStaticParams() {
@@ -22,11 +24,14 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       type: 'article',
+      url: `/blog/${post.slug}`,
       title: post.title,
       description: post.excerpt,
       publishedTime: post.date,
+      authors: ['elah'],
     },
     twitter: { card: 'summary_large_image', title: post.title, description: post.excerpt },
   }
@@ -68,7 +73,7 @@ function renderBlock(block: Block, i: number) {
       return (
         <div key={i} className="mb-5 rounded-md border border-outline-variant bg-surface-low p-4">
           {block.title && (
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">
               {block.title}
             </div>
           )}
@@ -108,8 +113,21 @@ export default async function BlogPostPage({
 
   const toc = post.content.filter((b): b is Extract<Block, { type: 'h2' }> => b.type === 'h2')
 
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    articleSection: post.category,
+    author: { '@type': 'Organization', name: 'elah', url: siteConfig.url },
+    publisher: { '@type': 'Organization', name: 'elah', url: siteConfig.url },
+    mainEntityOfPage: `${siteConfig.url}/blog/${post.slug}`,
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-surface">
+      <JsonLd data={articleJsonLd} />
       <Navbar />
 
       <main className="flex-1">
@@ -179,7 +197,7 @@ export default async function BlogPostPage({
             {toc.length > 0 && (
               <nav className="hidden w-48 shrink-0 lg:block">
                 <div className="sticky top-24">
-                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                     On this page
                   </div>
                   <ul className="space-y-2">
