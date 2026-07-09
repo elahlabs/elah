@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
-// Published-package stylesheets: each @elah package ships its own compiled
-// Tailwind utilities (the app's Tailwind does not scan node_modules). The
-// --elah-* variables these classes consume are defined in globals.css .elah-root.
-import '@elah/timeline/styles.css'
-import '@elah/editor/styles.css'
+// Published-package stylesheets (@elah/timeline, @elah/editor) are imported
+// once in the root layout — see app/layout.tsx — so their cascade position
+// stays fixed across client-side navigation. Only the app-local playground
+// styles are scoped to this layout.
 import '@/styles/playground.css'
 
 export const metadata: Metadata = {

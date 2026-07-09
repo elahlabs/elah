@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Type as TypeIcon,
   Play,
@@ -208,20 +209,26 @@ const AppHeader = memo(function AppHeader({
   // their own Tailwind utilities (.hidden/.inline-flex), and stylesheet load
   // order lets those beat the app's md: variants either way.
   const isMobile = useIsMobile()
+  // The standalone /editor route is the embeddable, chrome-free surface —
+  // it keeps only brand, undo/redo, export, and the GitHub link.
+  const pathname = usePathname()
+  const isStandalone = pathname === '/editor'
 
   return (
     <header className="elah-app-header grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
       {/* Left — folded playground nav + brand + demo CTA */}
       <div className="flex items-center gap-3">
-        <Link
-          href="/playgrounds"
-          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-mono tracking-[0.04em] text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
-        >
-          ← Playgrounds
-        </Link>
+        {!isStandalone && (
+          <Link
+            href="/playgrounds"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-mono tracking-[0.04em] text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
+          >
+            ← Playgrounds
+          </Link>
+        )}
         {!isMobile && (
           <>
-            <div className="w-px h-4 bg-ed-border shrink-0" />
+            {!isStandalone && <div className="w-px h-4 bg-ed-border shrink-0" />}
             <span className="inline-flex items-center gap-2">
               <span
                 className="w-[7px] h-[7px] rounded-full shrink-0"
@@ -281,7 +288,7 @@ const AppHeader = memo(function AppHeader({
       {/* Right — export + nav group (tabs kept right-aligned so they hold
           position across Production / Timeline / Raw) */}
       <div className="flex items-center gap-1 justify-end">
-        {!isMobile && (
+        {!isMobile && !isStandalone && (
           <button
             type="button"
             className={cn(
@@ -308,7 +315,7 @@ const AppHeader = memo(function AppHeader({
         >
           ⬇ Export
         </button>
-        {!isMobile && (
+        {!isMobile && !isStandalone && (
           <>
             <div className="relative">
               <button
@@ -333,16 +340,18 @@ const AppHeader = memo(function AppHeader({
             </div>
             <div className="w-px h-4 bg-ed-border shrink-0 mx-1" />
             <PlaygroundTabs />
-            <a
-              href={siteConfig.links.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-2 py-1.5 rounded-md text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
-              title="View source on GitHub"
-            >
-              <Github size={14} />
-            </a>
           </>
+        )}
+        {!isMobile && (
+          <a
+            href={siteConfig.links.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-2 py-1.5 rounded-md text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
+            title="View source on GitHub"
+          >
+            <Github size={14} />
+          </a>
         )}
         {/* Mobile overflow — desktop-only header actions folded into one menu. */}
         {isMobile && (
@@ -360,13 +369,15 @@ const AppHeader = memo(function AppHeader({
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
               <div className="absolute right-0 top-full mt-1 z-50 min-w-[190px] rounded-md border border-ed-border bg-ed-elevated py-1 shadow-[var(--elah-menu-shadow)]">
-                <button
-                  type="button"
-                  onClick={() => { setShowOverflow(false); onToggleCode() }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
-                >
-                  <Code2 size={14} /> {codeOpen ? 'Hide code' : 'Show code'}
-                </button>
+                {!isStandalone && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowOverflow(false); onToggleCode() }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-ed-text-muted hover:text-ed-text hover:bg-ed-highest transition-colors"
+                  >
+                    <Code2 size={14} /> {codeOpen ? 'Hide code' : 'Show code'}
+                  </button>
+                )}
                 <a
                   href={siteConfig.links.github}
                   target="_blank"
