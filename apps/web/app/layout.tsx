@@ -1,5 +1,13 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
+// Published-package stylesheets are imported here (root layout) rather than
+// in the playground/editor nested layouts so their cascade position is fixed
+// at first paint. When they were imported per-route, client-side back
+// navigation could leave their <link> after the app's globals.css in <head>,
+// letting their unscoped `.hidden` utility beat globals.css's `md:` variants
+// and collapse the marketing Navbar to its mobile toggle on every page.
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles.css'
 import '@/styles/globals.css'
 import { siteConfig } from '@/config/site'
 import { ThemeProvider } from '@/components/ThemeProvider'

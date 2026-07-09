@@ -118,7 +118,7 @@ export function HeroSection() {
           <div {...fadeUp(2)}>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/playground/production"
+                href="/editor"
                 className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
               >
                 Try Now

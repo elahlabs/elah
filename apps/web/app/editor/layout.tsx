@@ -4,23 +4,18 @@ import type { Metadata } from 'next'
 // stays fixed across client-side navigation. Only the app-local playground
 // styles are scoped to this layout.
 import '@/styles/playground.css'
-import { PlaygroundNav } from '@/components/playground/shared/PlaygroundNav'
 
 export const metadata: Metadata = {
-  title: {
-    template: '%s — Playground',
-    default: 'Playground',
-  },
+  title: 'Editor',
 }
 
-export default function PlaygroundLayout({
+export default function EditorLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
     <div className="pg-shell">
-      <PlaygroundNav />
       <div className="pg-content">{children}</div>
     </div>
   )
