@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
+
+export const metadata: Metadata = {
+  title: 'Page not found',
+  robots: { index: false },
+}
 
 export default function NotFound() {
   return (
@@ -8,7 +14,7 @@ export default function NotFound() {
       <Navbar />
       <main className="flex flex-1 items-center justify-center px-4">
         <div className="text-center">
-          <div className="label-mono mb-4 text-2xs text-on-surface-variant opacity-60">404</div>
+          <div className="label-mono mb-4 text-2xs text-on-surface-variant opacity-90">404</div>
           <h1
             className="text-3xl font-semibold tracking-tight text-on-surface"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}

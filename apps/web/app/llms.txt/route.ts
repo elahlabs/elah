@@ -1,4 +1,5 @@
 import { siteConfig } from '@/config/site'
+import { posts } from '../blog/posts'
 
 /**
  * Generates /llms.txt — a curated, LLM-friendly index of the site's docs, per
@@ -32,11 +33,23 @@ const RESOURCES: DocLink[] = [
   { title: 'Playgrounds', path: '/playgrounds', description: 'Live, editable examples running the SDK in the browser.' },
   { title: 'Examples', path: '/examples', description: 'Focused code samples for common tasks.' },
   { title: 'Blog', path: '/blog', description: 'Engineering notes and release posts.' },
+  { title: 'Changelog', path: '/changelog', description: 'Release history for @elah/core, @elah/timeline, and @elah/editor.' },
+  { title: 'Pricing & licensing', path: '/pricing', description: 'Elah Community License terms: free to build on; commercial licensing for hosted/white-label products.' },
+  { title: 'Showcase', path: '/showcase', description: 'Projects and tools built with elah.' },
 ]
+
+// Derived from the blog source of truth so new posts appear automatically.
+const POSTS: DocLink[] = posts.map((post) => ({
+  title: post.title,
+  path: `/blog/${post.slug}`,
+  description: post.excerpt,
+}))
 
 const EXTERNAL: DocLink[] = [
   { title: 'GitHub repository', path: siteConfig.links.github, description: 'Source, ARCHITECTURE.md, and AGENTS.md (the brief for coding agents in the checkout).' },
   { title: '@elah/editor on npm', path: 'https://www.npmjs.com/package/@elah/editor', description: 'The full React editor SDK package.' },
+  { title: '@elah/timeline on npm', path: 'https://www.npmjs.com/package/@elah/timeline', description: 'React timeline UI components and hooks.' },
+  { title: '@elah/core on npm', path: 'https://www.npmjs.com/package/@elah/core', description: 'The framework-agnostic headless engine, resolver, renderer, and export pipeline.' },
 ]
 
 function section(title: string, links: DocLink[], base: string): string {
@@ -62,6 +75,8 @@ engine; \`resolveTimeline(frame, project) → Scene\` is the pure bridge to any 
 ${section('Documentation', DOCS, base)}
 
 ${section('Resources', RESOURCES, base)}
+
+${section('Blog posts', POSTS, base)}
 
 ${section('Source & packages', EXTERNAL, base)}
 `

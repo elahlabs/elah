@@ -8,6 +8,7 @@ import { posts, categoryColors } from './posts'
 export const metadata: Metadata = {
   title: 'Blog',
   description: 'Engineering deep-dives, architecture decisions, and release notes from elah.',
+  alternates: { canonical: '/blog' },
 }
 
 export default function BlogPage() {
@@ -19,7 +20,7 @@ export default function BlogPage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Engineering</div>
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">Engineering</div>
             <h1
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}

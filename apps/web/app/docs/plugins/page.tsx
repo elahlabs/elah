@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
-export const metadata: Metadata = { title: 'Plugins & Custom Renderers' }
+export const metadata: Metadata = {
+  title: 'Plugins & Custom Renderers',
+  description:
+    'Extend elah with custom renderers, custom layers, and custom demuxers — the supported extension points of the engine.',
+  alternates: { canonical: '/docs/plugins' },
+}
 
 const toc = [
   { id: 'custom-renderers', title: 'Custom Renderers', level: 2 },
@@ -15,7 +20,7 @@ export default function PluginsPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Plugins</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Plugins</div>
           <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Plugins & Custom Renderers
           </h1>

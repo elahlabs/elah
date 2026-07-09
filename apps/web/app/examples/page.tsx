@@ -26,6 +26,7 @@ const fullExamples = [
 export const metadata: Metadata = {
   title: 'Examples',
   description: 'Code examples showing how to integrate elah for specific use cases.',
+  alternates: { canonical: '/examples' },
 }
 
 const examples = [
@@ -281,7 +282,7 @@ export default function ExamplesPage() {
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">Code</div>
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">Code</div>
             <h1
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
@@ -297,7 +298,7 @@ export default function ExamplesPage() {
         {/* Complete example apps */}
         <div className="border-b border-outline-variant bg-surface-low py-12">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
               Full apps
             </div>
             <h2
@@ -330,7 +331,7 @@ export default function ExamplesPage() {
                     </h3>
                     <Github className="h-4 w-4 shrink-0 text-on-surface-variant transition-colors group-hover:text-on-surface" />
                   </div>
-                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-60">
+                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                     {ex.runtime}
                   </div>
                   <p className="flex-1 text-xs leading-relaxed text-on-surface-variant">

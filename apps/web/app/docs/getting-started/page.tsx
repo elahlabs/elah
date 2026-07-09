@@ -3,7 +3,12 @@ import Link from 'next/link'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
-export const metadata: Metadata = { title: 'Quick Start' }
+export const metadata: Metadata = {
+  title: 'Quick Start',
+  description:
+    'Build a working browser video editor in minutes: mount EditorProvider, Preview, and Timeline, learn the keyboard shortcuts, and add clips programmatically.',
+  alternates: { canonical: '/docs/getting-started' },
+}
 
 const toc = [
   { id: 'timeline-only', title: 'Timeline Only', level: 2 },
@@ -18,7 +23,7 @@ export default function GettingStartedPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Getting Started</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Getting Started</div>
           <h1
             className="text-3xl font-semibold tracking-tight text-on-surface"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
@@ -166,7 +171,7 @@ export default function App() {
 }`}
           />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">Note</div>
+            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Note</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
               <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">{'<Preview>'}</code> paints interactive transform overlays automatically — drag/resize for video and image clips, inline-edit for text clips. No additional wiring needed.
             </p>
@@ -395,7 +400,7 @@ export function AddClipButton() {
 }`}
           />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-60">Batch edits</div>
+            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Batch edits</div>
             <p className="mb-3 text-xs leading-relaxed text-on-surface-variant">
               Wrap multiple mutations in <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">engine.batch()</code> to commit them as a single undo entry:
             </p>

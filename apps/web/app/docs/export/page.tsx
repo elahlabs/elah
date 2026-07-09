@@ -2,7 +2,12 @@ import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 
-export const metadata: Metadata = { title: 'Export' }
+export const metadata: Metadata = {
+  title: 'Export',
+  description:
+    'Export a timeline to MP4 entirely in the browser with exportVideo(): Web Worker rendering on OffscreenCanvas, the audio pipeline, progress tracking, and browser limits.',
+  alternates: { canonical: '/docs/export' },
+}
 
 const toc = [
   { id: 'export-video', title: 'exportVideo()', level: 2 },
@@ -17,7 +22,7 @@ export default function ExportPage() {
     <div className="flex gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
-          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-60">Export</div>
+          <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Export</div>
           <h1 className="text-3xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Export Pipeline
           </h1>

@@ -35,7 +35,7 @@ export function CodeBlock({
           {filename ? (
             <span className="font-mono text-xs text-on-surface-variant">{filename}</span>
           ) : (
-            <span className="label-mono text-2xs text-on-surface-variant opacity-60">{language}</span>
+            <span className="label-mono text-2xs text-on-surface-variant opacity-90">{language}</span>
           )}
         </div>
         <button
