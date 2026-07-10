@@ -3,9 +3,9 @@ import { CliError } from './errors'
 
 /**
  * The AI-friendly build spec: times in seconds, assets by name, no engine
- * bookkeeping. `elah build` turns this into a full Project via TimelineEngine,
- * so every data-model invariant (overlap, source bounds, track caps) is
- * enforced by core, not re-implemented here.
+ * bookkeeping. `elah build` turns this into a full Project via TimelineEngine —
+ * overlaps and track caps are enforced by core; source bounds are enforced
+ * here in frame space (the engine does not validate source windows on update).
  */
 export interface BuildSpec {
   /** Frames per second — integer. Default 30. */
@@ -84,6 +84,9 @@ export function specToProject(spec: BuildSpec, assets: Map<string, ProbedAsset>)
   const audioTracks = [project.tracks.find((t) => t.kind === 'audio')!.id]
 
   const occupied = new Map<string, Array<{ start: number; end: number }>>()
+  // engine-generated clip ids → spec index, so overlap errors can name
+  // clips[j] instead of an internal id the spec author never wrote
+  const specIndexByClipId = new Map<string, number>()
 
   const placeOnPool = (
     pool: string[],
@@ -111,7 +114,7 @@ export function specToProject(spec: BuildSpec, assets: Map<string, ProbedAsset>)
     try {
       if (clip.track === 'text') {
         const durationFrames = Math.max(1, secondsToFrames(clip.duration, fps))
-        engine.addClip({
+        const created = engine.addClip({
           type: 'text',
           trackId: placeOnPool(elementsTracks, 'elements', startFrame, startFrame + durationFrames),
           name: clip.text.slice(0, 24) || 'Text',
@@ -128,6 +131,7 @@ export function specToProject(spec: BuildSpec, assets: Map<string, ProbedAsset>)
             textAlign: clip.align,
           },
         })
+        specIndexByClipId.set(created.id, i)
         return
       }
 
@@ -137,7 +141,7 @@ export function specToProject(spec: BuildSpec, assets: Map<string, ProbedAsset>)
       if (clip.track === 'image') {
         if (clip.duration === undefined) throw new CliError(`${where}: image clips need an explicit duration`)
         const durationFrames = Math.max(1, secondsToFrames(clip.duration, fps))
-        engine.addClip({
+        const createdImage = engine.addClip({
           type: 'image',
           trackId: placeOnPool(elementsTracks, 'elements', startFrame, startFrame + durationFrames),
           name: clip.asset,
@@ -147,28 +151,35 @@ export function specToProject(spec: BuildSpec, assets: Map<string, ProbedAsset>)
           transform: toTransform(clip),
           src: asset.src,
         })
+        specIndexByClipId.set(createdImage.id, i)
         return
       }
 
-      // video / audio — need source-length accounting
+      // video / audio — need source-length accounting.
+      // All bounds arithmetic happens ONCE, in frame space: mixing rounded
+      // seconds-domain quantities can violate the core invariant
+      // sourceStartFrame + durationFrames <= sourceDurationFrames.
       if (asset.durationSec === undefined) {
         throw new CliError(`${where}: could not determine media duration — probe failed or asset is not audio/video`)
       }
       const sourceStartSec = clip.sourceStart ?? 0
-      const available = asset.durationSec - sourceStartSec
-      if (available <= 0) {
-        throw new CliError(
-          `${where}: sourceStart ${sourceStartSec}s is beyond the media length (${asset.durationSec.toFixed(2)}s)`
-        )
-      }
-      const durationSec = clip.duration ?? available
-      if (durationSec > available + 1 / fps) {
-        throw new CliError(
-          `${where}: duration ${durationSec}s exceeds the media's remaining ${available.toFixed(2)}s after sourceStart`
-        )
-      }
-      const durationFrames = Math.max(1, Math.min(secondsToFrames(durationSec, fps), Math.floor(available * fps)))
+      const sourceDurationFrames = Math.floor(asset.durationSec * fps)
       const sourceStartFrame = secondsToFrames(sourceStartSec, fps)
+      const availableFrames = sourceDurationFrames - sourceStartFrame
+      if (availableFrames < 1) {
+        throw new CliError(
+          `${where}: sourceStart ${sourceStartSec}s is at or beyond the media length (${asset.durationSec.toFixed(2)}s)`
+        )
+      }
+      const requestedFrames =
+        clip.duration !== undefined ? Math.max(1, secondsToFrames(clip.duration, fps)) : availableFrames
+      if (requestedFrames > availableFrames + 1) {
+        throw new CliError(
+          `${where}: duration ${clip.duration}s exceeds the media's remaining ` +
+            `${(availableFrames / fps).toFixed(2)}s after sourceStart`
+        )
+      }
+      const durationFrames = Math.min(requestedFrames, availableFrames)
 
       const trackId =
         clip.track === 'video'
@@ -186,16 +197,18 @@ export function specToProject(spec: BuildSpec, assets: Map<string, ProbedAsset>)
         transform: clip.track === 'video' ? toTransform(clip) : undefined,
         src: asset.src,
       })
+      specIndexByClipId.set(created.id, i)
       // addClip defaults sourceDurationFrames to durationFrames; widen to the
       // real media length so later trims/splits know the true source bounds
-      engine.updateClip(created.id, trackId, {
-        sourceStartFrame,
-        sourceDurationFrames: Math.floor(asset.durationSec * fps),
-      })
+      engine.updateClip(created.id, trackId, { sourceStartFrame, sourceDurationFrames })
     } catch (err) {
       if (err instanceof CliError) throw err
-      // engine addClip throws plain Errors on overlap / missing track
-      throw new CliError(`${where}: ${(err as Error).message}`)
+      // engine addClip throws plain Errors on overlap / missing track;
+      // translate internal clip ids back into spec indices
+      const message = (err as Error).message.replace(/"([a-z0-9]+)"/g, (m, id: string) =>
+        specIndexByClipId.has(id) ? `clips[${specIndexByClipId.get(id)}]` : m
+      )
+      throw new CliError(`${where}: ${message}`)
     }
   })
 
@@ -221,6 +234,13 @@ export function validateSpec(value: unknown): BuildSpec {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('expected a JSON object')
   const s = value as Record<string, unknown>
 
+  const TOP_LEVEL_KEYS = new Set(['fps', 'stage', 'assets', 'clips'])
+  for (const key of Object.keys(s)) {
+    if (!TOP_LEVEL_KEYS.has(key)) {
+      fail(`unknown field '${key}' — expected one of: ${[...TOP_LEVEL_KEYS].join(', ')}`)
+    }
+  }
+
   if (s.fps !== undefined && (typeof s.fps !== 'number' || !Number.isInteger(s.fps) || s.fps <= 0)) {
     fail("'fps' must be a positive integer")
   }
@@ -240,11 +260,24 @@ export function validateSpec(value: unknown): BuildSpec {
   }
   if (!Array.isArray(s.clips) || s.clips.length === 0) fail("'clips' must be a non-empty array")
 
+  const COMMON = ['track', 'start', 'duration', 'x', 'y', 'scale', 'opacity']
+  const CLIP_KEYS: Record<string, Set<string>> = {
+    video: new Set([...COMMON, 'asset', 'sourceStart', 'volume']),
+    audio: new Set([...COMMON, 'asset', 'sourceStart', 'volume']),
+    image: new Set([...COMMON, 'asset']),
+    text: new Set([...COMMON, 'text', 'fontSize', 'color', 'fontFamily', 'fontWeight', 'align']),
+  }
+
   const kinds = ['video', 'audio', 'text', 'image']
   ;(s.clips as Record<string, unknown>[]).forEach((c, i) => {
     const at = `clips[${i}]`
     if (typeof c !== 'object' || c === null) fail(`${at} must be an object`)
     if (!kinds.includes(c.track as string)) fail(`${at}.track must be one of: ${kinds.join(', ')}`)
+    // reject typo'd keys loudly — an LLM can self-correct from a named field
+    const allowed = CLIP_KEYS[c.track as string]
+    for (const key of Object.keys(c)) {
+      if (!allowed.has(key)) fail(`${at}: unknown field '${key}' for a ${c.track} clip — allowed: ${[...allowed].join(', ')}`)
+    }
     if (typeof c.start !== 'number' || c.start < 0) fail(`${at}.start must be a number >= 0 (seconds)`)
     if (c.duration !== undefined && (typeof c.duration !== 'number' || c.duration <= 0)) {
       fail(`${at}.duration must be a positive number of seconds`)
@@ -252,11 +285,29 @@ export function validateSpec(value: unknown): BuildSpec {
     if (c.track === 'text') {
       if (typeof c.text !== 'string' || c.text.length === 0) fail(`${at}.text must be a non-empty string`)
       if (c.duration === undefined) fail(`${at}: text clips need an explicit duration`)
+      if (c.fontWeight !== undefined && c.fontWeight !== 'normal' && c.fontWeight !== 'bold') {
+        fail(`${at}.fontWeight must be 'normal' or 'bold'`)
+      }
+      if (c.align !== undefined && !['left', 'center', 'right'].includes(c.align as string)) {
+        fail(`${at}.align must be 'left', 'center' or 'right'`)
+      }
+      if (c.fontSize !== undefined && typeof c.fontSize !== 'number') fail(`${at}.fontSize must be a number`)
+      for (const field of ['color', 'fontFamily'] as const) {
+        if (c[field] !== undefined && typeof c[field] !== 'string') fail(`${at}.${field} must be a string`)
+      }
     } else if (typeof c.asset !== 'string' || (c.asset as string).length === 0) {
       fail(`${at}.asset must reference a name from the assets map`)
     }
+    if (c.track === 'image' && c.duration === undefined) {
+      fail(`${at}: image clips need an explicit duration`)
+    }
     if (c.sourceStart !== undefined && (typeof c.sourceStart !== 'number' || (c.sourceStart as number) < 0)) {
       fail(`${at}.sourceStart must be a number >= 0 (seconds)`)
+    }
+    for (const field of ['x', 'y', 'scale', 'opacity', 'volume'] as const) {
+      if (c[field] !== undefined && typeof c[field] !== 'number') {
+        fail(`${at}.${field} must be a number`)
+      }
     }
   })
 

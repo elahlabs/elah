@@ -44,6 +44,7 @@ consumer bundle. Its budget is still enumerated:
 |---|---|
 | `@elah/core` | The engine itself — the CLI is a thin consumer of its public APIs |
 | `playwright-core` | Drives the system Chrome so `elah export` runs core's real `exportVideo` pipeline (WebCodecs/OffscreenCanvas are browser-only); no bundled browser download |
+| `mediabunny` | Probes media duration/dimensions for `elah build` in plain Node (pure-JS demux, no WebCodecs; ranged reads for remote URLs); already a core dependency, bundled into the binary, never reaches a consumer bundle |
 | `esbuild` (dev, build-time only) | core's tsc dist uses extensionless relative imports (bundler resolution) that plain Node cannot resolve; the CLI bundles at build time and tree-shakes core's browser-only modules out of the Node binary |
 
 Everything else the engine needs is a **browser-native API**, not a bundled

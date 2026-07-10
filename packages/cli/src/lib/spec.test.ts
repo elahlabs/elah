@@ -95,6 +95,43 @@ describe('specToProject', () => {
     expect(() => build([{ track: 'video', asset: 'ghost', start: 0 }])).toThrow(/unknown asset 'ghost'/)
   })
 
+  it('never violates sourceStartFrame + durationFrames <= sourceDurationFrames (rounding family 1)', () => {
+    // fractional probed duration: floor(10.05*30)=301 vs round(1.5)=2 — the
+    // old seconds-domain math produced 2+300=302 > 301
+    const fractional = new Map([['m', { src: '/m.mp4', durationSec: 10.05 }]])
+    const p = specToProject({ clips: [{ track: 'video', asset: 'm', start: 0, sourceStart: 0.05 }] }, fractional)
+    const clip = Object.values(p.clips).flat()[0]
+    expect(clip.sourceStartFrame + clip.durationFrames).toBeLessThanOrEqual(clip.sourceDurationFrames)
+  })
+
+  it('rejects a sub-frame sourceStart remainder instead of emitting an invalid clip (family 2)', () => {
+    // 7.99s into an 8.00s file leaves no whole frame: round(239.7)=240 = floor(240)
+    const eightSec = new Map([['m', { src: '/m.mp4', durationSec: 8.0 }]])
+    expect(() =>
+      specToProject({ clips: [{ track: 'video', asset: 'm', start: 0, sourceStart: 7.99 }] }, eightSec)
+    ).toThrow(/at or beyond the media length/)
+  })
+
+  it('translates engine clip ids in overlap errors back to spec indices', () => {
+    try {
+      build([
+        { track: 'video', asset: 'main', start: 0, duration: 5 },
+        { track: 'video', asset: 'main', start: 3, duration: 5 },
+      ])
+      expect.unreachable()
+    } catch (err) {
+      // the engine's internal CLIP id is translated (track ids may remain)
+      expect((err as CliError).message).toMatch(/existing clip clips\[0\]/)
+    }
+  })
+
+  it('rejects unknown/typo fields by name', () => {
+    expect(() => validateSpec({ clips: [{ track: 'video', asset: 'a', start: 0, duraton: 3 }] })).toThrow(/unknown field 'duraton'/)
+    expect(() => validateSpec({ clips: [{ track: 'text', text: 'x', start: 0, duration: 1, align: 'middle' }] })).toThrow(/align/)
+    expect(() => validateSpec({ clips: [{ track: 'text', text: 'x', start: 0, duration: 1, fontSize: 'huge' }] })).toThrow(/fontSize/)
+    expect(() => validateSpec({ fps: 30, clip: [] })).toThrow(/unknown field 'clip'/)
+  })
+
   it('requires explicit duration for images', () => {
     expect(() => build([{ track: 'image', asset: 'logo', start: 0 }])).toThrow(/explicit duration/)
   })
