@@ -1,0 +1,66 @@
+{
+  "id": "fixture-text-only",
+  "fps": 30,
+  "stage": { "width": 1280, "height": 720 },
+  "tracks": [
+    {
+      "id": "track-video",
+      "name": "Video",
+      "kind": "video",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false
+    },
+    {
+      "id": "track-elements",
+      "name": "Elements",
+      "kind": "elements",
+      "order": 1,
+      "height": 48,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false
+    }
+  ],
+  "clips": {
+    "track-video": [],
+    "track-elements": [
+      {
+        "id": "title",
+        "trackId": "track-elements",
+        "type": "text",
+        "name": "Title",
+        "startFrame": 0,
+        "durationFrames": 60,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 60,
+        "content": "elah CLI smoke test",
+        "fontSize": 72,
+        "color": "#ffffff",
+        "fontFamily": "Arial",
+        "fontWeight": "bold",
+        "textAlign": "center"
+      },
+      {
+        "id": "badge",
+        "trackId": "track-elements",
+        "type": "shape",
+        "name": "Badge",
+        "startFrame": 15,
+        "durationFrames": 45,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 45,
+        "shapeKind": "rect",
+        "shapeFill": "#b7102a",
+        "opacity": 0.8,
+        "transform": { "x": 0.5, "y": 0.75, "scale": 0.4, "rotation": 0, "anchor": { "x": 0.5, "y": 0.5 } }
+      }
+    ]
+  },
+  "transitions": [],
+  "version": 1
+}
