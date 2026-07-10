@@ -91,6 +91,14 @@ describe('readProject', () => {
   })
 })
 
+describe('multi-layer parity fixture', () => {
+  it('loads and validates (4 layers across video/elements/audio tracks)', () => {
+    const { project } = readProject(join(fixtures, 'multi-layer.json'))
+    expect(Object.values(project.clips).flat()).toHaveLength(4)
+    expect(new Set(project.tracks.map((t) => t.kind))).toEqual(new Set(['video', 'elements', 'audio']))
+  })
+})
+
 describe('findClipTrack', () => {
   it('finds a clip and its track', () => {
     const { project } = readProject(join(fixtures, 'single-video.json'))

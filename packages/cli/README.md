@@ -52,7 +52,8 @@ Rules:
 - **`assets`** maps names to paths relative to the spec file, or `http(s)` URLs.
   Duplicate keys follow JSON semantics (last one wins) — avoid them.
 - **video/audio** clips: `duration` defaults to the media's remainder after
-  `sourceStart`; exceeding it is an error. The real media length is recorded as
+  `sourceStart`; exceeding it is an error (with a one-frame rounding tolerance,
+  which clamps). The real media length is recorded as
   the clip's source bounds so later `trim`/`split` behave correctly.
 - **text** clips need `text` + `duration`; **image** clips need `duration`.
 - **`x`/`y`** are the normalized (0..1) stage position of the clip's center;
@@ -74,7 +75,8 @@ to keep the editable project; export options like `--height` pass through).
 - `node packages/cli/scripts/parity-compare.mjs <editor.mp4> <cli.mp4>` compares
   an editor UI export against a CLI export of the same project: stream params,
   decoded-video hashes (expected bit-identical), and the audio null-test
-  residual (−91 dB = digital silence; small residuals are AAC encoder-session
-  variance across Chrome instances).
+  residual (−91 dB = digital silence; a small residual is a systematic
+  editor-page vs harness-page environment delta in the AAC encode stage —
+  both pipelines are individually deterministic).
 
 Full documentation lands with the release phase; see `elah --help`.

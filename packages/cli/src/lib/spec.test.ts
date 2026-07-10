@@ -144,6 +144,15 @@ describe('validateSpec', () => {
     expect(validateSpec(valid).clips).toHaveLength(1)
   })
 
+  it('accepts the committed example/fixture specs', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    for (const rel of ['../__fixtures__/ai-spec.json', '../../examples/build-spec.json']) {
+      const raw = readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
+      expect(() => validateSpec(JSON.parse(raw)), rel).not.toThrow()
+    }
+  })
+
   it('rejects structural problems with path-addressed messages', () => {
     const cases: Array<[unknown, RegExp]> = [
       [[], /expected a JSON object/],
