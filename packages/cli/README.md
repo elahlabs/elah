@@ -66,4 +66,15 @@ Rules:
 Then: `elah build --spec spec.json --export final.mp4` (add `--out project.json`
 to keep the editable project; export options like `--height` pass through).
 
+## Validation tooling
+
+- `ELAH_E2E=1 npm test --workspace=packages/cli` additionally runs a browser
+  end-to-end test (exports the no-media fixture through headless Chrome and
+  probes the MP4).
+- `node packages/cli/scripts/parity-compare.mjs <editor.mp4> <cli.mp4>` compares
+  an editor UI export against a CLI export of the same project: stream params,
+  decoded-video hashes (expected bit-identical), and the audio null-test
+  residual (−91 dB = digital silence; small residuals are AAC encoder-session
+  variance across Chrome instances).
+
 Full documentation lands with the release phase; see `elah --help`.
