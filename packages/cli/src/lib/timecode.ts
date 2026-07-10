@@ -30,8 +30,13 @@ export function parseFramePosition(value: string, fps: number): number {
       `Invalid timecode '${value}': frame part ${ff} must be below the project fps (${fps}).`
     )
   }
-  if (ss >= 60 || (nums.length === 4 && mm >= 60)) {
-    throw usageError(`Invalid timecode '${value}': seconds/minutes must be below 60.`)
+  // uniform rule: the leading (top) field is unbounded, every field below it
+  // is bounded — SS:FF allows 75:00, MM:SS:FF bounds ss, HH:MM:SS:FF bounds mm+ss
+  if (nums.length >= 3 && ss >= 60) {
+    throw usageError(`Invalid timecode '${value}': seconds must be below 60.`)
+  }
+  if (nums.length === 4 && mm >= 60) {
+    throw usageError(`Invalid timecode '${value}': minutes must be below 60.`)
   }
 
   return ((hh * 60 + mm) * 60 + ss) * fps + ff

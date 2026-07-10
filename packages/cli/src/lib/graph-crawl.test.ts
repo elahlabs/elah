@@ -14,10 +14,15 @@ const coreDistBuilt = (() => {
     return false
   }
 })()
+if (!coreDistBuilt) {
+  console.warn(
+    '[cli tests] @elah/core dist not built — module-graph crawl SKIPPED. Run `npm run build:packages` first.'
+  )
+}
 
 describe.skipIf(!coreDistBuilt)('served module graph', () => {
   it('every transitive import of ExportWorker resolves', async () => {
-    const server = await startHarnessServer({ media: new Map() })
+    const server = await startHarnessServer({ token: 'crawl-token', media: new Map() })
     const seen = new Set<string>()
     const queue = ['/core/export/ExportWorker.ts', '/core/export/exportVideo.js']
     const failures: string[] = []

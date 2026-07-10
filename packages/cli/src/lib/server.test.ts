@@ -80,8 +80,14 @@ const coreDistBuilt = (() => {
     return false
   }
 })()
+if (!coreDistBuilt) {
+  console.warn(
+    '[cli tests] @elah/core dist not built — startHarnessServer suite SKIPPED. Run `npm run build:packages` first.'
+  )
+}
 
 describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
+  const TOKEN = 'test-token'
   const mediaDir = mkdtempSync(join(tmpdir(), 'elah-media-'))
   const mediaFile = join(mediaDir, 'clip.mp4')
   writeFileSync(mediaFile, Buffer.from('0123456789abcdef'))
@@ -92,11 +98,17 @@ describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
   })
 
   it('serves harness, core modules (rewritten), and ranged media', async () => {
-    server = await startHarnessServer({ media: new Map([['/media/0', mediaFile]]) })
+    server = await startHarnessServer({
+      token: TOKEN,
+      media: new Map([[`/media/${TOKEN}/0`, mediaFile]]),
+    })
 
     const html = await fetch(`${server.origin}/`)
     expect(html.status).toBe(200)
     expect(await html.text()).toContain('/harness.js')
+
+    const harness = await fetch(`${server.origin}/harness.js`)
+    expect(await harness.text()).toContain(`/cb/${TOKEN}`)
 
     const worker = await fetch(`${server.origin}/core/export/ExportWorker.ts`)
     expect(worker.status).toBe(200)
@@ -105,24 +117,70 @@ describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
     expect(workerSource).not.toMatch(/from\s*['"]mediabunny['"]/)
     expect(workerSource).toContain('/vendor/mediabunny/')
 
-    const full = await fetch(`${server.origin}/media/0`)
+    const full = await fetch(`${server.origin}/media/${TOKEN}/0`)
     expect(full.status).toBe(200)
     expect(full.headers.get('accept-ranges')).toBe('bytes')
 
-    const ranged = await fetch(`${server.origin}/media/0`, { headers: { range: 'bytes=4-7' } })
+    const ranged = await fetch(`${server.origin}/media/${TOKEN}/0`, {
+      headers: { range: 'bytes=4-7' },
+    })
     expect(ranged.status).toBe(206)
     expect(ranged.headers.get('content-range')).toBe('bytes 4-7/16')
     expect(await ranged.text()).toBe('4567')
 
-    const missing = await fetch(`${server.origin}/media/9`)
+    // suffix, open-ended, unsatisfiable, malformed ranges
+    const suffix = await fetch(`${server.origin}/media/${TOKEN}/0`, {
+      headers: { range: 'bytes=-4' },
+    })
+    expect(suffix.status).toBe(206)
+    expect(await suffix.text()).toBe('cdef')
+
+    const open = await fetch(`${server.origin}/media/${TOKEN}/0`, {
+      headers: { range: 'bytes=12-' },
+    })
+    expect(open.status).toBe(206)
+    expect(await open.text()).toBe('cdef')
+
+    const beyond = await fetch(`${server.origin}/media/${TOKEN}/0`, {
+      headers: { range: 'bytes=99-' },
+    })
+    expect(beyond.status).toBe(416)
+
+    const malformed = await fetch(`${server.origin}/media/${TOKEN}/0`, {
+      headers: { range: 'bytes=abc' },
+    })
+    expect(malformed.status).toBe(200)
+
+    const missing = await fetch(`${server.origin}/media/${TOKEN}/9`)
     expect(missing.status).toBe(404)
   })
 
-  it('delivers progress and result round-trips', async () => {
-    const progress: Array<{ frame: number; totalFrames: number }> = []
-    const s = await startHarnessServer({ media: new Map(), onProgress: (p) => progress.push(p) })
+  it("stubs mediabunny's browser:false node-only module with an empty module", async () => {
+    const stub = await fetch(`${server.origin}/vendor/mediabunny/dist/modules/src/node.js`)
+    expect(stub.status).toBe(200)
+    const source = await stub.text()
+    expect(source.trim()).toBe('export {}')
+    expect(source).not.toContain('node:fs')
+  })
 
-    await fetch(`${s.origin}/progress`, {
+  it('delivers progress and result round-trips on token routes only', async () => {
+    const progress: Array<{ frame: number; totalFrames: number }> = []
+    const s = await startHarnessServer({
+      token: TOKEN,
+      media: new Map(),
+      onProgress: (p) => progress.push(p),
+    })
+
+    // wrong token → 404, callback not invoked
+    const forged = await fetch(`${s.origin}/cb/wrong-token/progress`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ frame: 9, totalFrames: 10 }),
+    })
+    expect(forged.status).toBe(404)
+    expect(progress).toEqual([])
+
+    await fetch(`${s.origin}/cb/${TOKEN}/progress`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ frame: 3, totalFrames: 10 }),
@@ -130,7 +188,7 @@ describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
     expect(progress).toEqual([{ frame: 3, totalFrames: 10 }])
 
     const bytes = Buffer.from([1, 2, 3, 4])
-    await fetch(`${s.origin}/result`, { method: 'POST', body: bytes })
+    await fetch(`${s.origin}/cb/${TOKEN}/result`, { method: 'POST', body: bytes })
     expect(await s.result).toEqual(bytes)
     await s.close()
   })

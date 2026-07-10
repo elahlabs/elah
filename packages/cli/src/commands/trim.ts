@@ -1,6 +1,8 @@
 import { TimelineEngine } from '@elah/core'
 import { CliError, usageError } from '../lib/errors'
+import { parseFramePosition } from '../lib/timecode'
 import { readProject, writeProject, findClipTrack } from '../lib/project-io'
+import { requireUnlockedTrack } from './split'
 
 export interface TrimArgs {
   project: string
@@ -18,12 +20,14 @@ export function runTrim(args: TrimArgs): void {
   const { project } = readProject(args.project)
   const { clip, trackId } = findClipTrack(project, args.clip)
 
-  const startFrame = args.start !== undefined ? parseIntStrict(args.start, '--start') : clip.startFrame
+  const startFrame =
+    args.start !== undefined ? parseFramePosition(args.start, project.fps) : clip.startFrame
   const durationFrames =
-    args.duration !== undefined ? parseIntStrict(args.duration, '--duration') : clip.durationFrames
+    args.duration !== undefined ? parseFramePosition(args.duration, project.fps) : clip.durationFrames
 
   if (durationFrames < 1) throw usageError('--duration must be at least 1 frame')
-  if (startFrame < 0) throw usageError('--start must be >= 0')
+
+  requireUnlockedTrack(project, trackId)
 
   const engine = new TimelineEngine({ fps: project.fps })
   engine.loadProject(project)
@@ -35,10 +39,13 @@ export function runTrim(args: TrimArgs): void {
   const requestedChange = startFrame !== clip.startFrame || durationFrames !== clip.durationFrames
   const changed = after.startFrame !== clip.startFrame || after.durationFrames !== clip.durationFrames
   if (requestedChange && !changed) {
-    // trimClip rejects silently on overlap or locked track — surface that as a real error
+    // trimClip commits nothing in two cases we cannot distinguish from out here:
+    // the trimmed range overlaps a neighbouring clip, or the engine clamped the
+    // request back to exactly the current values (source-bounds limits).
     throw new CliError(
-      `Trim of clip '${args.clip}' to start=${startFrame} duration=${durationFrames} was rejected: ` +
-        `it would overlap a neighbouring clip, or the track is locked.`
+      `Trim of clip '${args.clip}' to start=${startFrame} duration=${durationFrames} did not apply: ` +
+        `it would overlap a neighbouring clip, or the source bounds clamp the edit back to the ` +
+        `current values (start=${clip.startFrame} duration=${clip.durationFrames}).`
     )
   }
 
@@ -51,9 +58,4 @@ export function runTrim(args: TrimArgs): void {
   process.stderr.write(
     `trimmed clip '${args.clip}' → start=${after.startFrame} duration=${after.durationFrames}\n`
   )
-}
-
-function parseIntStrict(value: string, flag: string): number {
-  if (!/^\d+$/.test(value)) throw usageError(`${flag} expects a non-negative integer frame count`)
-  return Number(value)
 }

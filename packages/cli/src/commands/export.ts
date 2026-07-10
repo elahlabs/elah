@@ -1,8 +1,9 @@
 import { existsSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import type { Project } from '@elah/core'
 import { CliError, usageError } from '../lib/errors'
-import { readProject, resolveMediaSource } from '../lib/project-io'
+import { readProject, resolveMediaSource, isRemoteUrl } from '../lib/project-io'
 import { startHarnessServer } from '../lib/server'
 import { launchBrowser } from '../lib/browser'
 
@@ -35,19 +36,49 @@ export async function runExport(args: ExportArgs): Promise<void> {
   const timeoutMs =
     (args.timeoutSec !== undefined ? parsePositiveInt(args.timeoutSec, '--timeout') : 600) * 1000
 
-  const { exportProject, media } = prepareMedia(project, dir)
+  // Fail on an unwritable destination before any browser work happens.
+  const outPath = resolve(args.out)
+  if (!existsSync(dirname(outPath))) {
+    throw new CliError(`Output directory does not exist: ${dirname(outPath)}`)
+  }
+
+  const token = randomUUID()
+  const { exportProject, media } = prepareMedia(project, dir, token)
 
   const stderr = (line: string) => process.stderr.write(line)
+  let progressLineOpen = false
   const server = await startHarnessServer({
+    token,
     media,
-    onProgress: ({ frame, totalFrames }) => stderr(`\rexporting frame ${frame}/${totalFrames}`),
-    onAudioIssue: (message, src) => stderr(`\nwarning: audio clip skipped (${src ?? 'unknown'}): ${message}\n`),
+    onProgress: ({ frame, totalFrames }) => {
+      progressLineOpen = true
+      // frame is 0-indexed while rendering; show human-friendly 1-based count
+      stderr(`\rexporting frame ${Math.min(frame + 1, totalFrames)}/${totalFrames}`)
+    },
+    onAudioIssue: (message, src) => {
+      progressLineOpen = false
+      stderr(`\nwarning: audio clip skipped (${src ?? 'unknown'}): ${message}\n`)
+    },
     log: (line) => args.verbose && stderr(`[server] ${line}\n`),
   })
 
   const browser = await launchBrowser({ browserPath: args.browser, headed: args.headed })
   try {
+    // Attach the timeout wrapper (and a no-op catch) immediately: the page can
+    // POST /error before page.goto() resolves, and an unhandled rejection here
+    // would crash the process past the cleanup in `finally`.
+    const result = withTimeout(
+      server.result,
+      timeoutMs,
+      `Export timed out after ${timeoutMs / 1000}s — pass --timeout to raise the limit`
+    )
+    result.catch(() => {})
+
+    browser.on('disconnected', () =>
+      server.fail(new CliError('Browser disconnected before the export finished'))
+    )
     const page = await browser.newPage()
+    page.on('crash', () => server.fail(new CliError('Browser tab crashed during export')))
     page.on('console', (msg) => {
       if (args.verbose) stderr(`[browser] ${msg.text()}\n`)
     })
@@ -59,18 +90,27 @@ export async function runExport(args: ExportArgs): Promise<void> {
       videoBitrate,
       audioBitrate,
     }
+    // Double-stringify → JSON.parse keeps the page side a data-only channel
+    // (an object literal would e.g. honour a "__proto__" key).
     await page.addInitScript(
-      `globalThis.__ELAH_PROJECT__ = ${JSON.stringify(exportProject)};` +
-        `globalThis.__ELAH_OPTIONS__ = ${JSON.stringify(options)};`
+      `globalThis.__ELAH_PROJECT__ = JSON.parse(${JSON.stringify(JSON.stringify(exportProject))});` +
+        `globalThis.__ELAH_OPTIONS__ = JSON.parse(${JSON.stringify(JSON.stringify(options))});`
     )
     await page.goto(server.origin)
 
-    const buffer = await withTimeout(
-      server.result,
-      timeoutMs,
-      `Export timed out after ${timeoutMs / 1000}s — pass --timeout to raise the limit`
-    )
-    writeFileSync(resolve(args.out), buffer)
+    let buffer: Buffer
+    try {
+      buffer = await result
+    } catch (err) {
+      if (progressLineOpen) stderr('\n')
+      throw err
+    }
+    try {
+      writeFileSync(outPath, buffer)
+    } catch (err) {
+      if (progressLineOpen) stderr('\n')
+      throw new CliError(`Cannot write ${args.out}: ${(err as Error).message}`)
+    }
     stderr(`\nwrote ${args.out} (${buffer.length} bytes)\n`)
   } finally {
     await browser.close()
@@ -79,13 +119,14 @@ export async function runExport(args: ExportArgs): Promise<void> {
 }
 
 /**
- * Clone the project with every media clip src rewritten to a local-server
- * route; the map feeds the harness server. Missing local files fail here,
- * before a browser ever launches.
+ * Clone the project with every media clip src rewritten to a token-guarded
+ * local-server route; the map feeds the harness server. Missing local files
+ * fail here, before a browser ever launches.
  */
-function prepareMedia(
+export function prepareMedia(
   project: Project,
-  projectDir: string
+  projectDir: string,
+  token: string
 ): { exportProject: Project; media: Map<string, string> } {
   const exportProject = structuredClone(project)
   const media = new Map<string, string>()
@@ -99,10 +140,10 @@ function prepareMedia(
       const resolved = resolveMediaSource(clip.src, projectDir)
       let route = routeBySource.get(resolved)
       if (!route) {
-        if (!/^https?:\/\//.test(resolved) && !existsSync(resolved)) {
+        if (!isRemoteUrl(resolved) && !existsSync(resolved)) {
           throw new CliError(`Media file not found: ${clip.src} (resolved to ${resolved})`)
         }
-        route = `/media/${routeBySource.size}`
+        route = `/media/${token}/${routeBySource.size}`
         routeBySource.set(resolved, route)
         media.set(route, resolved)
       }

@@ -28,9 +28,15 @@ describe('parseFramePosition', () => {
     expect(parseFramePosition('00:00:29', 30)).toBe(29)
   })
 
-  it('rejects seconds/minutes >= 60', () => {
+  it('bounds every field below the leading one, leaves the leading field open', () => {
+    // seconds bounded in 3- and 4-part forms
     expect(() => parseFramePosition('00:61:00', 30)).toThrow(CliError)
+    expect(() => parseFramePosition('00:00:61:00', 30)).toThrow(CliError)
+    // minutes bounded only when hours are present
     expect(() => parseFramePosition('01:61:00:00', 30)).toThrow(CliError)
+    expect(parseFramePosition('99:00:00', 30)).toBe(99 * 60 * 30)
+    // 2-part form: seconds are the leading field, unbounded
+    expect(parseFramePosition('75:00', 30)).toBe(75 * 30)
   })
 
   it('rejects malformed values with a usage error (exit 2)', () => {

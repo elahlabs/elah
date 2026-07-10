@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readProject, findClipTrack, resolveMediaSource } from './project-io'
+import { readProject, writeProject, findClipTrack, resolveMediaSource } from './project-io'
 import { CliError } from './errors'
 
 const fixtures = fileURLToPath(new URL('../__fixtures__', import.meta.url))
@@ -68,6 +68,21 @@ describe('readProject', () => {
         }),
         /must be an integer frame count/,
       ],
+      [
+        JSON.stringify({
+          id: 'x',
+          fps: 30,
+          stage: { width: 1, height: 1 },
+          tracks: [{ id: 't1' }, { id: 't2' }],
+          clips: {
+            t1: [{ id: 'dup', startFrame: 0, durationFrames: 10, sourceStartFrame: 0, sourceDurationFrames: 10 }],
+            t2: [{ id: 'dup', startFrame: 0, durationFrames: 10, sourceStartFrame: 0, sourceDurationFrames: 10 }],
+          },
+          transitions: [],
+          version: 1,
+        }),
+        /duplicate clip id 'dup'/,
+      ],
     ]
     for (const [content, pattern] of cases) {
       const path = tmpFile('case.json', content)
@@ -101,5 +116,21 @@ describe('resolveMediaSource', () => {
   })
   it('keeps absolute paths', () => {
     expect(resolveMediaSource('/abs/a.mp4', '/proj')).toBe('/abs/a.mp4')
+  })
+  it('percent-decodes file:// URLs', () => {
+    expect(resolveMediaSource('file:///media/My%20Video.mp4', '/proj')).toBe('/media/My Video.mp4')
+  })
+})
+
+describe('writeProject', () => {
+  it('wraps filesystem errors in a CliError instead of a stack trace', () => {
+    const { project } = readProject(join(fixtures, 'single-video.json'))
+    try {
+      writeProject(project, '/nonexistent-dir/deep/out.json')
+      expect.unreachable()
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).message).toContain('Cannot write')
+    }
   })
 })

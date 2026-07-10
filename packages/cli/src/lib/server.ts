@@ -4,7 +4,7 @@ import { dirname, extname, join, normalize, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import { Readable } from 'node:stream'
-import { HARNESS_HTML, HARNESS_JS } from './harness'
+import { HARNESS_HTML, harnessJs } from './harness'
 import { CliError } from './errors'
 
 export interface ProgressPayload {
@@ -13,7 +13,9 @@ export interface ProgressPayload {
 }
 
 export interface HarnessServerArgs {
-  /** Route path (e.g. '/media/0') → absolute file path or http(s) URL to proxy. */
+  /** Per-run random secret protecting the callback and media routes. */
+  token: string
+  /** Route path (e.g. '/media/<token>/0') → absolute file path or http(s) URL to proxy. */
   media: Map<string, string>
   onProgress?: (p: ProgressPayload) => void
   onAudioIssue?: (message: string, src?: string) => void
@@ -24,6 +26,8 @@ export interface HarnessServer {
   origin: string
   /** Resolves with the exported MP4 bytes; rejects when the page reports an error. */
   result: Promise<Buffer>
+  /** Reject the result from the outside (tab crash, browser disconnect). */
+  fail(err: Error): void
   close(): Promise<void>
 }
 
@@ -143,7 +147,7 @@ export function rewriteSpecifiers(source: string, vendors: Map<string, VendorEnt
     const url = `/vendor/${name}/${vendor.entry}`
     out = out
       .replace(new RegExp(`(from\\s*)(['"])${name}\\2`, 'g'), `$1$2${url}$2`)
-      .replace(new RegExp(`(import\\s*\\(\\s*)(['"])${name}\\2`, 'g'), `$1$2${url}$2`)
+      .replace(new RegExp(`(\\bimport\\s*\\(\\s*)(['"])${name}\\2`, 'g'), `$1$2${url}$2`)
       .replace(new RegExp(`(^|[;\\n])(import\\s*)(['"])${name}\\3`, 'g'), `$1$2$3${url}$3`)
   }
   return out
@@ -195,18 +199,18 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     if (req.method === 'POST') {
       const body = await readBody(req)
       switch (path) {
-        case '/progress':
+        case `/cb/${args.token}/progress`:
           args.onProgress?.(JSON.parse(body.toString('utf8')) as ProgressPayload)
           break
-        case '/audio-issue': {
+        case `/cb/${args.token}/audio-issue`: {
           const { message, src } = JSON.parse(body.toString('utf8')) as { message: string; src?: string }
           args.onAudioIssue?.(message, src)
           break
         }
-        case '/result':
+        case `/cb/${args.token}/result`:
           resolveResult(body)
           break
-        case '/error': {
+        case `/cb/${args.token}/error`: {
           const { message, stack } = JSON.parse(body.toString('utf8')) as { message: string; stack?: string }
           rejectResult(new CliError(`Export failed in the browser: ${message}${stack ? `\n${stack}` : ''}`))
           break
@@ -228,7 +232,7 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     }
     if (path === '/harness.js') {
       res.writeHead(200, { 'content-type': 'text/javascript' })
-      res.end(HARNESS_JS)
+      res.end(harnessJs(args.token))
       return
     }
 
@@ -292,6 +296,7 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
   return {
     origin: `http://127.0.0.1:${address.port}`,
     result,
+    fail: (err) => rejectResult(err),
     close: () =>
       new Promise<void>((res) => {
         server.closeAllConnections()

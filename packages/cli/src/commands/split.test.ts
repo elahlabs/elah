@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -53,5 +53,30 @@ describe('runSplit', () => {
 
   it('rejects an unknown clip id', () => {
     expect(() => runSplit({ project: fixture, clip: 'ghost', at: '10' })).toThrow(/not found/)
+  })
+
+  it('rejects a locked track with the real reason, not a guess', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'elah-split-locked-'))
+    const project = JSON.parse(readFileSync(fixture, 'utf8')) as Project
+    project.tracks[0] = { ...project.tracks[0], locked: true }
+    const path = join(dir, 'locked.json')
+    writeFileSync(path, JSON.stringify(project))
+    try {
+      runSplit({ project: path, clip: 'clip1', at: '60' })
+      expect.unreachable()
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).message).toContain('locked')
+      expect((err as CliError).message).not.toContain('strictly inside')
+    }
+  })
+
+  it('supports in-place --out (same path as --project)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'elah-split-inplace-'))
+    const path = join(dir, 'project.json')
+    writeFileSync(path, readFileSync(fixture))
+    runSplit({ project: path, clip: 'clip1', at: '60', out: path })
+    const project = JSON.parse(readFileSync(path, 'utf8')) as Project
+    expect(project.clips['track-video']).toHaveLength(3)
   })
 })

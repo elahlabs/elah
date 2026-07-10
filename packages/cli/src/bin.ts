@@ -1,13 +1,16 @@
 import { parseArgs } from 'node:util'
 import { CliError, usageError } from './lib/errors'
 
-const VERSION = '0.3.0'
+// Inlined from package.json by the esbuild define at build time.
+declare const __ELAH_CLI_VERSION__: string | undefined
+const VERSION = typeof __ELAH_CLI_VERSION__ === 'string' ? __ELAH_CLI_VERSION__ : '0.0.0-dev'
 
 const USAGE = `elah — headless CLI for the Elah video engine
 
 Usage:
   elah split  --project <in.json> --clip <clipId> --at <frame|timecode> [--out <out.json>]
-  elah trim   --project <in.json> --clip <clipId> [--start <frame>] [--duration <frames>] [--out <out.json>]
+  elah trim   --project <in.json> --clip <clipId> [--start <frame|timecode>]
+              [--duration <frames|timecode>] [--out <out.json>]
   elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
               [--video-bitrate <bps>] [--audio-bitrate <bps>] [--browser <path>] [--headed] [--timeout <s>]
 

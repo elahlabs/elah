@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { build } from 'esbuild'
-import { chmodSync } from 'node:fs'
+import { chmodSync, readFileSync } from 'node:fs'
+
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 // Bundling (rather than tsc emit like the other packages) is load-bearing:
 // @elah/core's dist uses extensionless relative imports (bundler resolution),
@@ -15,6 +17,7 @@ await build({
   outfile: 'dist/bin.js',
   external: ['playwright-core'],
   banner: { js: '#!/usr/bin/env node' },
+  define: { __ELAH_CLI_VERSION__: JSON.stringify(pkg.version) },
   logLevel: 'info',
 })
 
