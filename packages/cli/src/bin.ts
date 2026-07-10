@@ -13,8 +13,11 @@ Usage:
               [--duration <frames|timecode>] [--out <out.json>]
   elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
               [--video-bitrate <bps>] [--audio-bitrate <bps>] [--browser <path>] [--headed] [--timeout <s>]
+  elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4>] [export options]
 
 split/trim write the resulting project JSON to stdout unless --out is given.
+build consumes a seconds-based spec (assets map + clips) — see packages/cli/README.md
+for the schema; it probes media durations and constructs the project via the engine.
 Timecodes: SS:FF, MM:SS:FF or HH:MM:SS:FF at the project fps.
 Exit codes: 0 success · 1 validation/runtime failure · 2 usage error.
 `
@@ -84,6 +87,36 @@ async function main(argv: string[]): Promise<void> {
       await runExport({
         project: required(values.project, '--project'),
         out: required(values.out, '--out'),
+        codec: values.codec,
+        height: values.height,
+        videoBitrate: values['video-bitrate'],
+        audioBitrate: values['audio-bitrate'],
+        browser: values.browser,
+        headed: values.headed ?? false,
+        timeoutSec: values.timeout,
+        verbose: values.verbose ?? false,
+      })
+      return
+    }
+    case 'build': {
+      const { values } = parse(rest, {
+        spec: { type: 'string' },
+        out: { type: 'string' },
+        export: { type: 'string' },
+        codec: { type: 'string' },
+        height: { type: 'string' },
+        'video-bitrate': { type: 'string' },
+        'audio-bitrate': { type: 'string' },
+        browser: { type: 'string' },
+        headed: { type: 'boolean' },
+        timeout: { type: 'string' },
+        verbose: { type: 'boolean' },
+      })
+      const { runBuild } = await import('./commands/build')
+      await runBuild({
+        spec: required(values.spec, '--spec'),
+        out: values.out,
+        export: values.export,
         codec: values.codec,
         height: values.height,
         videoBitrate: values['video-bitrate'],

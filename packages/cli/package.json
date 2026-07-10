@@ -42,6 +42,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@elah/core": "^0.3.0",
+    "mediabunny": "^1.45.3",
     "playwright-core": "^1.50.0"
   },
   "devDependencies": {
