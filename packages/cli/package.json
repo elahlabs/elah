@@ -1,0 +1,51 @@
+{
+  "name": "@elah/cli",
+  "version": "0.3.0",
+  "description": "Headless command-line runtime for the Elah video engine — split, trim, and export projects using @elah/core",
+  "type": "module",
+  "bin": {
+    "elah": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit && node scripts/build.mjs"
+  },
+  "keywords": [
+    "video-editor",
+    "cli",
+    "headless",
+    "timeline",
+    "video-engine",
+    "export",
+    "mp4",
+    "automation",
+    "typescript"
+  ],
+  "homepage": "https://www.elah.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elahlabs/elah.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elahlabs/elah/issues"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "@elah/core": "^0.3.0",
+    "playwright-core": "^1.50.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}
