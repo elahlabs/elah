@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseFramePosition } from './timecode'
-import { CliError } from './errors'
+import { parseFramePosition } from '../timecode'
+import { CliError } from '../errors'
 
 describe('parseFramePosition', () => {
   it('passes plain integers through', () => {

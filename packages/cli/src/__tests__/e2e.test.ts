@@ -11,12 +11,12 @@ import { fileURLToPath } from 'node:url'
  */
 describe.runIf(process.env.ELAH_E2E === '1')('elah export e2e (ELAH_E2E=1)', () => {
   it('exports the text-only fixture to a valid 2s MP4', async () => {
-    const { runExport } = await import('./commands/export')
-    const { probeMedia } = await import('./lib/probe')
+    const { runExport } = await import('../commands/export')
+    const { probeMedia } = await import('../lib/probe')
 
     const out = join(mkdtempSync(join(tmpdir(), 'elah-e2e-')), 'out.mp4')
     await runExport({
-      project: fileURLToPath(new URL('./__fixtures__/text-only.json', import.meta.url)),
+      project: fileURLToPath(new URL('../__fixtures__/text-only.json', import.meta.url)),
       out,
       headed: false,
       verbose: false,
@@ -34,10 +34,10 @@ describe.runIf(process.env.ELAH_E2E === '1')('elah export e2e (ELAH_E2E=1)', () 
 
 describe.runIf(process.env.ELAH_E2E === '1')('elah serve e2e (ELAH_E2E=1)', () => {
   it('renders a text-only spec over HTTP to a valid MP4', async () => {
-    const { createRenderSession } = await import('./lib/render-session')
-    const { startServe } = await import('./lib/serve')
+    const { createRenderSession } = await import('../lib/render-session')
+    const { startServe } = await import('../lib/serve')
 
-    const fixturesDir = dirname(fileURLToPath(new URL('./__fixtures__/text-only.json', import.meta.url)))
+    const fixturesDir = dirname(fileURLToPath(new URL('../__fixtures__/text-only.json', import.meta.url)))
     const session = createRenderSession()
     const handle = await startServe({
       host: '127.0.0.1',

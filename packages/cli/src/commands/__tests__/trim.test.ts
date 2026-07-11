@@ -4,10 +4,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Project } from '@elah/core'
-import { runTrim, type TrimArgs } from './trim'
-import { CliError } from '../lib/errors'
+import { runTrim, type TrimArgs } from '../trim'
+import { CliError } from '../../lib/errors'
 
-const fixture = fileURLToPath(new URL('../__fixtures__/single-video.json', import.meta.url))
+const fixture = fileURLToPath(new URL('../../__fixtures__/single-video.json', import.meta.url))
 
 function trimToTmp(args: Omit<TrimArgs, 'project' | 'out'>): Project {
   const out = join(mkdtempSync(join(tmpdir(), 'elah-trim-')), 'out.json')

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { specToProject, validateSpec, type BuildSpec, type ProbedAsset } from './spec'
-import { CliError } from './errors'
+import { specToProject, validateSpec, type BuildSpec, type ProbedAsset } from '../spec'
+import { CliError } from '../errors'
 
 const ASSETS = new Map<string, ProbedAsset>([
   ['main', { src: '/abs/main.mp4', durationSec: 10 }],
@@ -147,7 +147,7 @@ describe('validateSpec', () => {
   it('accepts the committed example/fixture specs', async () => {
     const { readFileSync } = await import('node:fs')
     const { fileURLToPath } = await import('node:url')
-    for (const rel of ['../__fixtures__/ai-spec.json', '../../examples/build-spec.json']) {
+    for (const rel of ['../../__fixtures__/ai-spec.json', '../../../examples/build-spec.json']) {
       const raw = readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
       expect(() => validateSpec(JSON.parse(raw)), rel).not.toThrow()
     }

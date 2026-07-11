@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { buildProject } from './build-project'
-import { CliError } from './errors'
+import { buildProject } from '../build-project'
+import { CliError } from '../errors'
 
 // Text-only specs exercise the whole build pipe without any media probing.
 describe('buildProject (orchestration, no media)', () => {

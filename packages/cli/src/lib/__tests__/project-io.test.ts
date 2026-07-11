@@ -3,10 +3,10 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readProject, writeProject, findClipTrack, resolveMediaSource } from './project-io'
-import { CliError } from './errors'
+import { readProject, writeProject, findClipTrack, resolveMediaSource } from '../project-io'
+import { CliError } from '../errors'
 
-const fixtures = fileURLToPath(new URL('../__fixtures__', import.meta.url))
+const fixtures = fileURLToPath(new URL('../../__fixtures__', import.meta.url))
 
 function tmpFile(name: string, content: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'elah-cli-test-'))

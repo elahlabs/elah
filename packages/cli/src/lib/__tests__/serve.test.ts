@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Project } from '@elah/core'
-import { createServeHandler, Semaphore, type ServeHandlerDeps } from './serve'
-import { CliError } from './errors'
+import { createServeHandler, Semaphore, type ServeHandlerDeps } from '../serve'
+import { CliError } from '../errors'
 
 const FAKE_PROJECT = {} as Project
 const FAKE_BYTES = Buffer.from('fake-mp4-bytes')

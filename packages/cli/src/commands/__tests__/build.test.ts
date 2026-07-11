@@ -3,8 +3,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Project } from '@elah/core'
-import { runBuild } from './build'
-import { CliError } from '../lib/errors'
+import { runBuild } from '../build'
+import { CliError } from '../../lib/errors'
 
 // Text-only specs exercise the whole build pipe without any media probing.
 describe('runBuild (orchestration, no media)', () => {

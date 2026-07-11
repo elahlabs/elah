@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Project } from '@elah/core'
-import { prepareMedia } from '../lib/render-session'
-import { CliError } from '../lib/errors'
+import { prepareMedia } from '../../lib/render-session'
+import { CliError } from '../../lib/errors'
 
-const fixturesDir = fileURLToPath(new URL('../__fixtures__', import.meta.url))
+const fixturesDir = fileURLToPath(new URL('../../__fixtures__', import.meta.url))
 const fixturePath = join(fixturesDir, 'single-video.json')
 
 function loadFixture(): Project {
