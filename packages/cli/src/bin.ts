@@ -14,6 +14,9 @@ Usage:
   elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
               [--video-bitrate <bps>] [--audio-bitrate <bps>] [--browser <path>] [--headed] [--timeout <s>]
   elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4>] [export options]
+  elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>]
+              [--codec avc|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
+              [--browser <path>] [--timeout <s>] [--verbose]
 
 split/trim write the resulting project JSON to stdout unless --out is given.
 build consumes a seconds-based spec (assets map + clips) — see packages/cli/README.md
@@ -123,6 +126,36 @@ async function main(argv: string[]): Promise<void> {
         audioBitrate: values['audio-bitrate'],
         browser: values.browser,
         headed: values.headed ?? false,
+        timeoutSec: values.timeout,
+        verbose: values.verbose ?? false,
+      })
+      return
+    }
+    case 'serve': {
+      const { values } = parse(rest, {
+        port: { type: 'string' },
+        host: { type: 'string' },
+        concurrency: { type: 'string' },
+        'media-root': { type: 'string' },
+        codec: { type: 'string' },
+        height: { type: 'string' },
+        'video-bitrate': { type: 'string' },
+        'audio-bitrate': { type: 'string' },
+        browser: { type: 'string' },
+        timeout: { type: 'string' },
+        verbose: { type: 'boolean' },
+      })
+      const { runServe } = await import('./commands/serve')
+      await runServe({
+        port: values.port,
+        host: values.host,
+        concurrency: values.concurrency,
+        mediaRoot: values['media-root'],
+        codec: values.codec,
+        height: values.height,
+        videoBitrate: values['video-bitrate'],
+        audioBitrate: values['audio-bitrate'],
+        browser: values.browser,
         timeoutSec: values.timeout,
         verbose: values.verbose ?? false,
       })
