@@ -1,6 +1,6 @@
 # Elah
 
-**A browser-native, frame-accurate video editing engine for the web.** A framework-agnostic core — timeline, WebGL2 renderer, media pipeline, and MP4 export — with thin UI bindings on top. **React is the first UI layer** (shipping today); the engine knows nothing about it, so React Native and other frameworks can bind to the same core. Works for any aspect ratio (9:16 Reels, 16:9 YouTube, 1:1, or any custom stage).
+**A browser-native, frame-accurate video editing engine for the web.** A framework-agnostic core — timeline, WebGL2 renderer, media pipeline, and MP4 export — with thin UI bindings on top. **React is the first UI layer** (shipping today); the engine knows nothing about it, so React Native and other frameworks can bind to the same core. The same engine also runs **headless**: [`@elah/cli`](./packages/cli) builds and renders projects from the command line, a Node API, or a long-lived HTTP render server (`elah serve`) — so AI backends can generate videos with no UI at all. Works for any aspect ratio (9:16 Reels, 16:9 YouTube, 1:1, or any custom stage).
 
 [![npm](https://img.shields.io/npm/v/@elah/editor?label=%40elah%2Feditor)](https://www.npmjs.com/package/@elah/editor)
 [![gzip size](https://img.shields.io/badge/gzip-~63%20KiB%20full%20SDK-brightgreen)](./BUNDLE_STRATEGY.md)
@@ -33,7 +33,7 @@ export default function App() {
 }
 ```
 
-That's a working editor: drag a file into the asset panel, drop it on the timeline, hit **Space** to play. See [Install](#install) for the package layers and [How to use the SDK](#how-to-use-the-sdk-in-your-own-app) for more.
+That's a working editor: drag a file into the asset panel, drop it on the timeline, hit **Space** to play. See [Install](#install) for the package layers and [How to use the SDK](#how-to-use-the-sdk-in-your-own-app) for more — or skip the UI entirely and render from a JSON spec with the [headless CLI & render server](#headless-cli-node-api--render-server).
 
 ---
 
@@ -72,6 +72,9 @@ Three goals shape every decision:
 | **Timeline thumbnails + waveforms** | ✅ Working — filmstrip tiles per clip (4-frame strip, tiled by zoom), real waveform peaks from `decodeAudioData`; both generated once per asset and cached on `MediaAsset` |
 | **Audio-on-drop dialog** | ✅ Working — dropping a video with audio shows a 3-choice modal (Video+Audio / Video only / Audio only); both clips added in one `engine.batch` (one undo) |
 | **Export pipeline** (`exportVideo` → MP4) | ✅ Working — module worker renders frames to `OffscreenCanvas` (reusing `resolveTimeline` + shared placement math) and muxes via mediabunny; audio mixed on the main thread |
+| **Headless CLI** (`@elah/cli` — `split` / `trim` / `build` / `export`) | ✅ Working — engine edits in plain Node; `export` runs core's real `exportVideo` in headless Chrome, so CLI output matches editor output by construction |
+| **AI build spec** (`elah build --spec spec.json --export out.mp4`) | ✅ Working — seconds-based JSON spec → validated project via `TimelineEngine`; path-addressed errors (`clips[2].duration must be …`) a generating model can self-correct from |
+| **HTTP render server** (`elah serve` + Docker) | ✅ Working — long-lived warm-browser session; `POST /render` takes a build spec, returns MP4 bytes; `/healthz`, `--concurrency` guard with `503 + Retry-After`; Dockerfile ships Chrome + fonts |
 | **Fade transitions** | ✅ Working — snapshot-overlay architecture: resolver sets `fromClip.opacity=0`/`toClip.opacity=1`; `TransitionOverlay` fades a frozen canvas snapshot via CSS; export mirrors with `globalAlpha=1-t` |
 | Slide / wipe transitions | 🟡 Partial — architecture in place; only fade implemented |
 | Rotation handle for video/image | 🟡 Partial — `transform.rotation` already flows through both renderers; interactive overlay handle not yet built |
@@ -128,11 +131,12 @@ elah/
     │       └── debug/            # channel-based trace logging
     ├── timeline/                 # @elah/timeline — Timeline, Ruler, TrackRow, ClipBlock, hooks
     ├── editor/                   # @elah/editor — EditorProvider, Preview, AssetPanel, SourcePanel
-    └── cli/                      # @elah/cli — headless split/trim/build/export (elah <cmd>)
+    └── cli/                      # @elah/cli — headless split/trim/build/export + `elah serve` render server (Dockerfile included)
 docs/
 ├── glossary.md                   # terminology
 ├── known-bugs.md                 # deliberate workarounds + their real fixes
-└── design-tokens.md              # timeline color/theme token system
+├── design-tokens.md              # timeline color/theme token system
+└── deploy-render-server.md       # `elah serve` contract, security notes, deployment options
 ```
 
 ---
@@ -173,7 +177,7 @@ Right-click any clip on the timeline to open the context menu (Delete).
 
 ## Install
 
-Elah ships as three published npm packages:
+Elah ships as four published npm packages:
 
 | Package | npm | What it is |
 |---|---|---|
@@ -262,6 +266,42 @@ import { resolveTimeline } from '@elah/editor'
 const scene = resolveTimeline(currentFrame, engine.getProject())
 // scene.videos, scene.audios, scene.texts, scene.images, scene.transitions
 ```
+
+---
+
+## Headless: CLI, Node API & render server
+
+The engine also runs with **no UI at all** via [`@elah/cli`](./packages/cli) — built for automation and AI-generation pipelines. `split`, `trim`, and `build` run in plain Node; `export` runs core's real `exportVideo` pipeline in headless Chrome, so CLI output is identical to editor output by construction.
+
+**Spec → MP4 in one command.** `elah build` consumes a seconds-based JSON spec (the AI-generation contract), probes each asset's real duration, and constructs the project through `TimelineEngine` — so overlaps, track caps, and source bounds are validated with path-addressed errors (`clips[2].duration must be …`) that a generating model can self-correct from:
+
+```jsonc
+// spec.json — times in seconds, assets by path or URL
+{
+  "fps": 30,
+  "assets": { "footage": "./media/clip.mp4", "music": "./media/song.mp3" },
+  "clips": [
+    { "track": "video", "asset": "footage", "start": 0, "duration": 8 },
+    { "track": "text", "text": "Hello", "start": 0.5, "duration": 4, "fontSize": 96 },
+    { "track": "audio", "asset": "music", "start": 0, "duration": 8, "volume": 0.5 }
+  ]
+}
+```
+
+```bash
+npx @elah/cli build --spec spec.json --export final.mp4
+```
+
+**Long-lived render server.** `elah serve` keeps a warm browser across requests — each render pays for a new tab, not a fresh Chrome launch. `POST /render` takes a build spec and returns the MP4 bytes:
+
+```bash
+elah serve --port 8080 --concurrency 2 --media-root ./assets
+curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4
+```
+
+A [`Dockerfile`](./packages/cli/Dockerfile) that installs Chrome + fonts and runs `elah serve` ships with the package — see [`docs/deploy-render-server.md`](./docs/deploy-render-server.md) for the full contract, security notes, and deployment options.
+
+**Importable, too.** Everything the CLI does is available as a Node API (`build`, `exportProject`, and `createRenderSession()` for warm-browser reuse) — see the [`@elah/cli` README](./packages/cli/README.md) for the full command reference, spec rules, and library API.
 
 ---
 
