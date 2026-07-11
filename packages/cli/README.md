@@ -8,6 +8,7 @@ elah split  --project <in.json> --clip <clipId> --at <frame|timecode> [--out <ou
 elah trim   --project <in.json> --clip <clipId> [--start <frame|timecode>] [--duration <frames|timecode>] [--out <out.json>]
 elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
 elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4>]
+elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>]
 ```
 
 `split`, `trim` and `build` run in plain Node against the engine. `export`
@@ -66,6 +67,67 @@ Rules:
 
 Then: `elah build --spec spec.json --export final.mp4` (add `--out project.json`
 to keep the editable project; export options like `--height` pass through).
+
+## Library API
+
+`@elah/cli` is also importable — no shelling out, no stderr parsing:
+
+```ts
+import { build, exportProject } from '@elah/cli'
+
+const { project } = await build({ spec: mySpecObject, baseDir: '/path/to/assets' })
+
+const { bytes } = await exportProject(
+  { project, outPath: 'out.mp4' },
+  { onProgress: ({ frame, totalFrames }) => console.log(`${frame}/${totalFrames}`) }
+)
+```
+
+For repeated renders, `createRenderSession()` keeps a browser warm across
+calls instead of launching Chrome per export — this is what `elah serve`
+uses internally:
+
+```ts
+import { createRenderSession } from '@elah/cli'
+
+const session = createRenderSession()
+await session.warmup()
+const mp4 = await session.render(project, '/path/to/assets')
+// ... more session.render() calls reuse the same browser ...
+await session.close()
+```
+
+Errors throw `CliError` (aliased `ElahError`) with a `.message` that is
+already the human-readable, path-addressed text (`clips[2].duration must be …`).
+
+## Serve mode
+
+`elah serve` runs a long-lived HTTP render server with a warm browser, so
+each request only pays for a new browser tab instead of a fresh Chrome
+process:
+
+```sh
+elah serve --port 8080 --concurrency 2 --media-root ./assets
+```
+
+| Route | Behavior |
+|---|---|
+| `GET /healthz` | `200 { status, browser: "connected" \| "disconnected" }` |
+| `POST /render` | body = a build spec JSON document; blocks until the render finishes and returns the MP4 bytes. `422` on spec/asset validation errors, `503` + `Retry-After` when at capacity (`--concurrency`), `500` on render failure. |
+
+```sh
+curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4
+```
+
+There is no job queue — this is a synchronous, retry-on-503 contract. See
+[docs/deploy-render-server.md](../../docs/deploy-render-server.md) for the
+full contract, security notes, and deployment options.
+
+## Docker
+
+A Dockerfile that installs branded Chrome + fonts and runs `elah serve` is at
+[`Dockerfile`](./Dockerfile) (build from the repo root — see
+[docs/deploy-render-server.md](../../docs/deploy-render-server.md)).
 
 ## Validation tooling
 

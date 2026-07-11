@@ -6,6 +6,16 @@
   "bin": {
     "elah": "./dist/bin.js"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
     "README.md",
@@ -18,7 +28,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit && node scripts/build.mjs"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit && tsc -p tsconfig.build.json && node scripts/build.mjs"
   },
   "keywords": [
     "video-editor",

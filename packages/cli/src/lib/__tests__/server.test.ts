@@ -8,7 +8,7 @@ import {
   rewriteSpecifiers,
   startHarnessServer,
   type HarnessServer,
-} from './server'
+} from '../server'
 
 describe('resolveDistFile', () => {
   const root = mkdtempSync(join(tmpdir(), 'elah-dist-'))
@@ -67,7 +67,7 @@ describe('rewriteSpecifiers', () => {
   })
 
   it('leaves relative imports and other specifiers alone', () => {
-    const src = "import { a } from './local'\nimport b from 'other-pkg'"
+    const src = "import { a } from '../local'\nimport b from 'other-pkg'"
     expect(rewriteSpecifiers(src, vendors)).toBe(src)
   })
 })

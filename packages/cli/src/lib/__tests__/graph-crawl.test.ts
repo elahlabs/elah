@@ -3,7 +3,7 @@
 // that escaped the vendor rewrite (e.g. mediabunny's node-only modules).
 import { describe, it, expect } from 'vitest'
 import { existsSync } from 'node:fs'
-import { resolveModuleFile, startHarnessServer } from './server'
+import { resolveModuleFile, startHarnessServer } from '../server'
 
 const IMPORT_RE = /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g
 
