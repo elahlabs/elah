@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight, Layers, Clock, Cpu, FileVideo } from 'lucide-react'
+import { ArrowRight, Layers, Clock, Cpu, FileVideo, Terminal } from 'lucide-react'
 import { DocsToc } from '@/components/docs/DocsToc'
 
 export const metadata: Metadata = {
@@ -137,6 +137,11 @@ export default function DocsPage() {
                 desc: 'React timeline UI components. Timeline, Ruler, TrackRow, ClipBlock, Playhead, and all interaction hooks.',
                 icon: Clock,
               },
+              {
+                name: '@elah/cli',
+                desc: 'Headless runtime. elah build/export/serve — render projects on your server via headless Chrome, bit-identical to browser export. Also importable as a Node library.',
+                icon: Terminal,
+              },
             ].map(({ name, desc, icon: Icon }) => (
               <div key={name} className="flex gap-3 rounded-md border border-outline-variant bg-surface-low p-4">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-low">
@@ -194,7 +199,9 @@ export default function DocsPage() {
               { title: 'Installation', desc: 'Install @elah/editor from npm and configure Next.js or Vite.', href: '/docs/installation' },
               { title: 'Quick Start', desc: 'Build the full editor in under 20 lines. Wire your demuxer, render, ship.', href: '/docs/getting-started' },
               { title: 'Timeline', desc: 'Deep-dive into tracks, clips, playback, snapping, and keyboard shortcuts.', href: '/docs/timeline' },
+              { title: 'CLI & Server', desc: 'Render headlessly: build specs, elah serve, Docker self-hosting.', href: '/docs/cli' },
               { title: 'API Reference', desc: 'Full reference for TimelineEngine, PlaybackEngine, resolveTimeline, hooks.', href: '/docs/api' },
+              { title: 'Export', desc: 'Render a project to MP4 in the browser with exportVideo().', href: '/docs/export' },
             ].map(({ title, desc, href }) => (
               <Link
                 key={href}

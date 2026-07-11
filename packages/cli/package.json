@@ -1,6 +1,6 @@
 {
   "name": "@elah/cli",
-  "version": "0.3.0",
+  "version": "0.1.0",
   "description": "Headless command-line runtime for the Elah video engine — split, trim, and export projects using @elah/core",
   "type": "module",
   "bin": {
@@ -49,7 +49,7 @@
   "bugs": {
     "url": "https://github.com/elahlabs/elah/issues"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "dependencies": {
     "@elah/core": "^0.3.0",
     "mediabunny": "^1.45.3",

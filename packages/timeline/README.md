@@ -6,7 +6,7 @@ A consumer of `@elah/core`. Owns no project state — all state lives in the cor
 
 [![npm](https://img.shields.io/npm/v/@elah/timeline)](https://www.npmjs.com/package/@elah/timeline)
 [![gzip size](https://img.shields.io/badge/gzip-12%20KiB-brightgreen)](../../BUNDLE_STRATEGY.md)
-[![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "@elah/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Framework-agnostic video timeline engine — playback, frame resolution, WebGL2 renderer, and media management",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,7 +48,7 @@
   "bugs": {
     "url": "https://github.com/elahlabs/elah/issues"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "dependencies": {
     "immer": "^10.1.1",
     "mediabunny": "^1.45.3",

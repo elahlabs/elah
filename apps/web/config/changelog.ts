@@ -28,9 +28,22 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.3.1',
+    date: '2026-07-11',
+    latest: true,
+    summary: 'License changed from ECL v1.0 to Apache-2.0. No code changes.',
+    groups: [
+      {
+        kind: 'changed',
+        items: [
+          'License changed from the Elah Community License (ECL) v1.0 to Apache-2.0, across @elah/core, @elah/timeline, and @elah/editor. Copyright remains with Elah Labs Private Limited.',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.3.0',
     date: '2026-07-03',
-    latest: true,
     summary:
       'Multi-track audio, shape & freehand clips, a programmatic asset-insertion API, and a fully themeable timeline. No breaking changes.',
     groups: [
@@ -77,6 +90,24 @@ export const releases: Release[] = [
         items: [
           'Backward-seek frame-cache stability and video-decoder pivot handling.',
           'Generated clips can grow left without being clamped by source bounds.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '0.1.0',
+    date: '2026-07-11',
+    summary:
+      'Initial release of @elah/cli — a headless CLI and self-hosted render server, bit-identical to browser export.',
+    groups: [
+      {
+        kind: 'added',
+        scope: '@elah/cli',
+        items: [
+          'CLI commands — elah split, trim, export, and build for headless project editing and MP4 export.',
+          'elah serve — a long-lived HTTP render server (POST /render: spec JSON in, MP4 out) with a warm browser and concurrency control.',
+          'Seconds-based build spec for programmatic and AI-generated projects, with path-addressed validation errors.',
+          'Library API — build, exportProject, createRenderSession, startServe, validateSpec, probeMedia — importable directly from Node.',
         ],
       },
     ],

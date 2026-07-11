@@ -51,6 +51,17 @@ export const docsNav: DocNavSection[] = [
     ],
   },
   {
+    title: 'CLI & Server',
+    items: [
+      { title: 'Overview', href: '/docs/cli' },
+      { title: 'Commands', href: '/docs/cli#commands' },
+      { title: 'The Build Spec', href: '/docs/cli#build-spec' },
+      { title: 'Serve Mode', href: '/docs/cli#serve' },
+      { title: 'Docker & Self-Hosting', href: '/docs/cli#docker' },
+      { title: 'Library API', href: '/docs/cli#library-api' },
+    ],
+  },
+  {
     title: 'API Reference',
     items: [
       { title: 'TimelineEngine', href: '/docs/api#timeline-engine' },

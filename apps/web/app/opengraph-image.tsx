@@ -55,8 +55,8 @@ export default function OpengraphImage() {
               maxWidth: 900,
             }}
           >
-            A browser-native, frame-accurate video editing engine. No servers.
-            Same frame, same pixels — always.
+            A browser-native, frame-accurate video editing engine — in the browser
+            and on your server. Same frame, same pixels — always.
           </div>
         </div>
 

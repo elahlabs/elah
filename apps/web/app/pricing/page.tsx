@@ -7,14 +7,15 @@ import { Footer } from '@/components/marketing/Footer'
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'elah is open source and free to build on. Commercial licensing is available — get in touch.',
+    'elah is open source under Apache-2.0 and free to build on, embed, and self-host — including commercial and hosted products. Paid support is available — get in touch.',
   alternates: { canonical: '/pricing' },
 }
 
 const openSourceIncludes = [
   'The full engine, timeline, WebGL2 renderer, and MP4 export',
-  'All three packages: @elah/core, @elah/timeline, @elah/editor',
+  'All four packages: @elah/core, @elah/timeline, @elah/editor, @elah/cli',
   'Every framework binding as it ships',
+  'Self-hosted server-side rendering via @elah/cli — no license fee',
   'Community support on Discord and GitHub',
 ]
 
@@ -34,12 +35,13 @@ export default function PricingPage() {
               className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
               style={{ fontFamily: 'var(--font-inter), sans-serif' }}
             >
-              Open source. Commercial licensing on request.
+              Open source. Support available on request.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-              elah is free to build on. If you need a commercial license, want
-              dedicated support, or have a use case the open-source license
-              doesn&apos;t cover, reach out — we&apos;ll work something out.
+              elah is free to build on, embed, self-host, and ship in commercial
+              products under Apache-2.0 — no license fee, no gated features. If you
+              want dedicated support, priority help, or custom integration work,
+              reach out — we&apos;ll work something out.
             </p>
           </div>
         </div>
@@ -91,10 +93,10 @@ export default function PricingPage() {
               </div>
             </div>
 
-            {/* Commercial / contact */}
+            {/* Support / contact */}
             <div className="flex flex-col rounded-lg border border-primary/40 bg-surface-low p-7">
               <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
-                Commercial &amp; support
+                Support &amp; services
               </div>
               <h2
                 className="text-2xl font-semibold tracking-tight text-on-surface"
@@ -103,8 +105,8 @@ export default function PricingPage() {
                 Let&apos;s talk
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                For commercial licensing, priority support, custom integration
-                help, or anything the open-source license doesn&apos;t cover,
+                For priority support, custom integration help, or production
+                deployment (including self-hosted @elah/cli render infrastructure),
                 get in touch. No forms, no sales funnel — just email or Discord.
               </p>
 
