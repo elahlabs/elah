@@ -36,6 +36,62 @@ export interface ServeHandlerDeps {
 
 const DEFAULT_MAX_BODY_BYTES = 5 * 1024 * 1024
 
+/**
+ * Text-only spec (no media assets) so the copy-paste example renders on a
+ * machine with nothing but the server running. fps/stage fall back to spec
+ * defaults (30, 1920x1080).
+ */
+export const HELLO_SPEC =
+  '{"clips":[{"track":"text","text":"Hello from elah","start":0,"duration":3,"fontSize":96}]}'
+
+export function curlExample(origin: string): string {
+  return `curl -X POST ${origin}/render -H 'content-type: application/json' -d '${HELLO_SPEC}' -o hello.mp4`
+}
+
+/**
+ * PowerShell aliases `curl` to Invoke-WebRequest, which doesn't accept -H/-d
+ * the curl way. Point Windows users at curl.exe (or Invoke-RestMethod).
+ */
+export function powershellExample(origin: string): string {
+  return `Invoke-RestMethod -Uri "${origin}/render" -Method Post -ContentType "application/json" -Body '${HELLO_SPEC}' -OutFile hello.mp4`
+}
+
+/** GET / — a human clicked the listen address; orient them instead of a JSON 404. */
+function welcomePage(origin: string, browserConnected: boolean): string {
+  const escapedCurl = curlExample(origin).replace(/</g, '&lt;')
+  const escapedPowershell = powershellExample(origin).replace(/</g, '&lt;')
+  return `<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>elah serve</title>
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+         max-width: 720px; margin: 3rem auto; padding: 0 1rem; line-height: 1.6;
+         background: #0d1117; color: #e6edf3; }
+  h1 { font-size: 1.3rem; } h1 span { color: #7ee787; }
+  code, pre { background: #161b22; border: 1px solid #30363d; border-radius: 6px; }
+  code { padding: 0.1em 0.4em; }
+  pre { padding: 0.8em 1em; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  table { border-collapse: collapse; } td { padding: 0.15em 1em 0.15em 0; vertical-align: top; }
+  a { color: #58a6ff; }
+  .muted { color: #8b949e; }
+</style>
+<h1>elah serve <span>&#9679; ${browserConnected ? 'browser connected' : 'browser disconnected'}</span></h1>
+<p>Headless render server for the <a href="https://www.elah.dev">elah</a> video engine.
+POST a build spec, get an MP4 back.</p>
+<table>
+  <tr><td><code>GET /healthz</code></td><td class="muted">status + browser state</td></tr>
+  <tr><td><code>POST /render</code></td><td class="muted">build spec JSON in, <code>video/mp4</code> out</td></tr>
+</table>
+<p>Render your first video (no media files needed):</p>
+<pre>${escapedCurl}</pre>
+<p class="muted">On Windows PowerShell, <code>curl</code> is aliased to Invoke-WebRequest and won't accept <code>-H</code>/<code>-d</code> the curl way &mdash; use this instead:</p>
+<pre>${escapedPowershell}</pre>
+<p class="muted">Spec schema: assets map + clips array &mdash; see the
+<a href="https://github.com/elahlabs/elah/tree/main/packages/cli#readme">@elah/cli README</a>.</p>
+`
+}
+
 export function createServeHandler(
   deps: ServeHandlerDeps
 ): (req: IncomingMessage, res: ServerResponse) => void {
@@ -50,6 +106,18 @@ export function createServeHandler(
 
 async function handle(req: IncomingMessage, res: ServerResponse, deps: ServeHandlerDeps): Promise<void> {
   const url = new URL(req.url ?? '/', 'http://localhost')
+
+  if (url.pathname === '/') {
+    if (req.method !== 'GET') {
+      writeJson(res, 405, { error: 'method not allowed' })
+      return
+    }
+    const origin = `http://${req.headers.host ?? 'localhost'}`
+    const html = welcomePage(origin, deps.browserConnected())
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-length': Buffer.byteLength(html) })
+    res.end(html)
+    return
+  }
 
   if (url.pathname === '/healthz') {
     if (req.method !== 'GET') {

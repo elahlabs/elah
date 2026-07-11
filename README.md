@@ -180,6 +180,7 @@ Elah ships as three published npm packages:
 | [`@elah/editor`](https://www.npmjs.com/package/@elah/editor) | [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor) | Full React editor SDK — `EditorProvider`, `Preview`, `Timeline`, `AssetPanel` + re-exports everything below |
 | [`@elah/timeline`](https://www.npmjs.com/package/@elah/timeline) | [![npm](https://img.shields.io/npm/v/@elah/timeline)](https://www.npmjs.com/package/@elah/timeline) | React timeline UI components and hooks |
 | [`@elah/core`](https://www.npmjs.com/package/@elah/core) | [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core) | Framework-agnostic engine, resolver, renderer, export (headless) |
+| [`@elah/cli`](https://www.npmjs.com/package/@elah/cli) | [![npm](https://img.shields.io/npm/v/@elah/cli)](https://www.npmjs.com/package/@elah/cli) | Headless `elah` command-line runtime — split/trim/build/export/serve on `@elah/core` |
 
 For the full experience, install `@elah/editor` — it pulls in the other two:
 
@@ -190,7 +191,7 @@ npm install @elah/editor
 
 Peer dependencies: `react`, `react-dom` >= 18.
 
-Use `@elah/core` directly if you only need the headless engine for a custom renderer or export pipeline.
+Use `@elah/core` directly if you only need the headless engine for a custom renderer or export pipeline. Use `@elah/cli` if you want a ready-made command-line/server runtime (`elah build --spec spec.json --export out.mp4`, or `elah serve` for an HTTP render endpoint) instead of scripting against `@elah/core` yourself.
 
 ---
 

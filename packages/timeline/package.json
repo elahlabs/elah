@@ -1,6 +1,6 @@
 {
   "name": "@elah/timeline",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "React timeline UI for the Elah video engine — tracks, clips, ruler, playhead, drag and trim gestures",
   "type": "module",
   "main": "./dist/index.js",
