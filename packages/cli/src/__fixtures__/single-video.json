@@ -1,0 +1,46 @@
+{
+  "id": "fixture-single-video",
+  "fps": 30,
+  "stage": { "width": 1920, "height": 1080 },
+  "tracks": [
+    {
+      "id": "track-video",
+      "name": "Video",
+      "kind": "video",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false
+    }
+  ],
+  "clips": {
+    "track-video": [
+      {
+        "id": "clip1",
+        "trackId": "track-video",
+        "type": "video",
+        "name": "Sample",
+        "startFrame": 0,
+        "durationFrames": 150,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 300,
+        "src": "./media/sample.mp4"
+      },
+      {
+        "id": "clip2",
+        "trackId": "track-video",
+        "type": "video",
+        "name": "Sample tail",
+        "startFrame": 180,
+        "durationFrames": 90,
+        "sourceStartFrame": 60,
+        "sourceDurationFrames": 300,
+        "src": "./media/sample.mp4"
+      }
+    ]
+  },
+  "transitions": [],
+  "version": 1
+}

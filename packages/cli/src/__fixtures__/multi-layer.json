@@ -1,0 +1,174 @@
+{
+  "id": "69wfffyd",
+  "fps": 30,
+  "stage": {
+    "width": 1920,
+    "height": 1080
+  },
+  "tracks": [
+    {
+      "id": "w75ed1e7",
+      "name": "Video",
+      "kind": "video",
+      "order": 0,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "00tdooml",
+      "name": "Elements",
+      "kind": "elements",
+      "order": 1,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "3tcy8rwt",
+      "name": "Elements 2",
+      "kind": "elements",
+      "order": 2,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "ecin3vbr",
+      "name": "Elements 3",
+      "kind": "elements",
+      "order": 3,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "3gndeg1j",
+      "name": "Elements 4",
+      "kind": "elements",
+      "order": 4,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "7g5nxhzs",
+      "name": "Audio (Main)",
+      "kind": "audio",
+      "order": 5,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "3if6f33i",
+      "name": "Audio 2",
+      "kind": "audio",
+      "order": 6,
+      "height": 36,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    }
+  ],
+  "clips": {
+    "w75ed1e7": [
+      {
+        "id": "2tlh2v3h",
+        "trackId": "w75ed1e7",
+        "type": "video",
+        "name": "Scene 1",
+        "startFrame": 0,
+        "durationFrames": 150,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 150,
+        "volume": 0.8,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "src": "./media/scene-1.mp4"
+      }
+    ],
+    "00tdooml": [
+      {
+        "id": "bf72q45f",
+        "trackId": "00tdooml",
+        "type": "text",
+        "name": "Title",
+        "startFrame": 15,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "content": "Parity Test",
+        "fontSize": 96,
+        "color": "#ffffff",
+        "fontFamily": "Arial",
+        "fontWeight": "bold",
+        "textAlign": "center"
+      }
+    ],
+    "3tcy8rwt": [
+      {
+        "id": "uqrhx0ck",
+        "trackId": "3tcy8rwt",
+        "type": "image",
+        "name": "Logo",
+        "startFrame": 30,
+        "durationFrames": 120,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 120,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "src": "./media/logo-single.png"
+      }
+    ],
+    "ecin3vbr": [],
+    "3gndeg1j": [],
+    "7g5nxhzs": [
+      {
+        "id": "g9nu9a2g",
+        "trackId": "7g5nxhzs",
+        "type": "audio",
+        "name": "Music",
+        "startFrame": 0,
+        "durationFrames": 150,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 150,
+        "volume": 0.5,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "src": "./media/audio.mp3"
+      }
+    ],
+    "3if6f33i": []
+  },
+  "transitions": [],
+  "version": 1
+}

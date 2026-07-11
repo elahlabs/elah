@@ -127,7 +127,8 @@ elah/
     │       ├── stores/           # Zustand mirrors of engine state
     │       └── debug/            # channel-based trace logging
     ├── timeline/                 # @elah/timeline — Timeline, Ruler, TrackRow, ClipBlock, hooks
-    └── editor/                   # @elah/editor — EditorProvider, Preview, AssetPanel, SourcePanel
+    ├── editor/                   # @elah/editor — EditorProvider, Preview, AssetPanel, SourcePanel
+    └── cli/                      # @elah/cli — headless split/trim/build/export (elah <cmd>)
 docs/
 ├── glossary.md                   # terminology
 ├── known-bugs.md                 # deliberate workarounds + their real fixes
