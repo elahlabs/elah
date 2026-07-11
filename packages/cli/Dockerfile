@@ -25,6 +25,9 @@ FROM node:22-bookworm-slim AS runtime
 # bundled Chromium lacks the proprietary H.264/AAC codecs the default
 # export path uses. fonts-liberation/fonts-noto-* keep text clips from
 # rendering with missing-glyph boxes on a bare container.
+## NOTE: google-chrome-stable Depends on wget (its update mechanism), so
+## purging wget/gnupg after install pulls Chrome out with it in the same
+## transaction — keep them installed rather than trying to slim this layer.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       wget gnupg ca-certificates \
     && wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-linux.gpg \
@@ -35,8 +38,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-liberation \
       fonts-noto-core \
       fonts-noto-color-emoji \
-    && apt-get purge -y wget gnupg \
-    && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Deterministic browser selection — skips channel discovery.

@@ -1,0 +1,22 @@
+{
+  "name": "@elah/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "tsx src/render-once.ts",
+    "serve": "tsx src/serve.ts",
+    "api": "tsx src/api.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@elah/cli": "*",
+    "busboy": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/busboy": "^1.5.4",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
