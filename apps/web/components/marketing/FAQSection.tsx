@@ -7,7 +7,12 @@ const faqs = [
   {
     question: 'Does elah need a server to edit or export video?',
     answer:
-      'No. Decoding (WebCodecs), rendering (WebGL2), and MP4 export (a Web Worker drawing to an OffscreenCanvas) all run in the browser. Footage never leaves the user’s machine, and there is no render farm to pay for.',
+      'No — by default everything runs in the browser: decoding (WebCodecs), rendering (WebGL2), and MP4 export (a Web Worker drawing to an OffscreenCanvas), so footage never leaves the user’s machine. When you want server-side rendering — batch jobs, AI-generated video, CI — @elah/cli runs the exact same export pipeline headlessly on your own hardware, with bit-identical output.',
+  },
+  {
+    question: 'Can elah render video on a server?',
+    answer:
+      'Yes. npx @elah/cli serve starts a self-hosted HTTP render server: POST a seconds-based JSON spec to /render and get MP4 bytes back. It keeps a warm headless Chrome and runs core’s real exportVideo pipeline, so server output is frame-identical to the browser. There is also elah build / elah export for one-shot CLI renders, and a Node library API.',
   },
   {
     question: 'What can I build with elah?',
@@ -22,7 +27,7 @@ const faqs = [
   {
     question: 'How is elah different from Remotion?',
     answer:
-      'Remotion turns React components into video, typically rendered by headless Chromium on a server. elah is an editing engine: an integer-frame timeline data model with undo history, drag/trim/split UI, and in-browser GPU export — the foundation for a user-facing editor rather than programmatic composition.',
+      'Remotion turns React components into video — programmatic composition rendered by headless Chromium. elah is an editing engine: an integer-frame timeline data model with undo history, drag/trim/split UI, and a GPU export pipeline that runs in the user’s browser or headlessly via @elah/cli. The difference is the editing foundation, not where rendering happens.',
   },
   {
     question: 'Which frameworks does elah support?',
@@ -32,7 +37,7 @@ const faqs = [
   {
     question: 'Is elah open source?',
     answer:
-      'elah is source-available under the Elah Community License: free for personal, educational, research, and commercial internal use, and free to embed in your own applications. Offering elah as a hosted or white-label editor product requires a commercial license.',
+      'Yes — elah is open source under the Apache-2.0 license, copyright Elah Labs Private Limited. It’s free to use, modify, embed, self-host, and ship in commercial products, including hosted and white-label offerings. Paid support and services are available if you want them, but nothing is gated behind a license.',
   },
   {
     question: 'What export formats does elah support?',

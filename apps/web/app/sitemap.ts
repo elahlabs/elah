@@ -9,6 +9,7 @@ const DOCS_PAGES = [
   'timeline',
   'editor',
   'export',
+  'cli',
   'api',
   'architecture',
   'plugins',

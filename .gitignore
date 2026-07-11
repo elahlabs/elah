@@ -5,6 +5,7 @@ apps/*/.env
 apps/*/.env.local
 apps/*/node_modules
 apps/*/.next
+apps/server/output/
 playground/*/node_modules
 playground/*/.next
 playground/*/dist

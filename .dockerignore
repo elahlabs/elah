@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/.next
+apps/web/.next
+image.png
+*.gif
+*.mp4
+*.mov
+.env
+.env.*
+!.env.example

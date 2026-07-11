@@ -6,7 +6,7 @@ Used internally by `@elah/timeline` and `@elah/editor`, but can be consumed dire
 
 [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core)
 [![gzip size](https://img.shields.io/badge/gzip-41%20KiB-brightgreen)](../../BUNDLE_STRATEGY.md)
-[![license](https://img.shields.io/badge/license-ECL--1.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
 

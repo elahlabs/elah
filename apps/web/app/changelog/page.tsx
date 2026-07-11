@@ -8,7 +8,7 @@ import { formatDate, cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Changelog',
-  description: `What's new in the elah packages (@elah/core, @elah/timeline, @elah/editor). Currently v${currentVersion}.`,
+  description: `What's new in the elah packages (@elah/core, @elah/timeline, @elah/editor, @elah/cli). Currently v${currentVersion}.`,
   alternates: { canonical: '/changelog' },
 }
 
@@ -45,7 +45,8 @@ export default function ChangelogPage() {
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
               Release notes for the published packages — <code className="font-mono text-xs">@elah/core</code>,{' '}
               <code className="font-mono text-xs">@elah/timeline</code>, and{' '}
-              <code className="font-mono text-xs">@elah/editor</code>. All three ship together and share a version.
+              <code className="font-mono text-xs">@elah/editor</code> ship together and share a version.{' '}
+              <code className="font-mono text-xs">@elah/cli</code> is a separate package that versions independently.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">

@@ -1,11 +1,40 @@
 # Changelog
 
 All notable changes to the Elah packages (`@elah/core`, `@elah/timeline`,
-`@elah/editor`) are documented here.
+`@elah/editor`, `@elah/cli`) are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the packages follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-All three packages are released together and share a version number.
+`@elah/core`, `@elah/timeline`, and `@elah/editor` are released together and
+share a version number. `@elah/cli` is a separate package and versions
+independently, starting from its own 0.1.0.
+
+## [0.3.1] — 2026-07-11
+
+License changed from the Elah Community License (ECL) v1.0 to Apache-2.0,
+across `@elah/core`, `@elah/timeline`, and `@elah/editor`. Copyright remains
+with Elah Labs Private Limited. No code changes.
+
+## `@elah/cli` [0.1.0] — 2026-07-11
+
+Initial release of `@elah/cli` — a headless CLI and self-hosted render
+server. Rendering runs core's real `exportVideo` pipeline in headless
+branded Chrome, so output is bit-identical to the browser editor by
+construction.
+
+### Added
+
+- **CLI commands** — `elah split`, `trim`, `export`, and `build` for headless
+  project editing and MP4 export.
+- **`elah serve`** — a long-lived HTTP render server (`POST /render`: spec
+  JSON in, MP4 bytes out) with a warm browser and `--concurrency` control.
+- **Seconds-based build spec** for programmatic and AI-generated projects,
+  with path-addressed validation errors a generating model can self-correct
+  from.
+- **Library API** — `build`, `exportProject`, `createRenderSession`,
+  `startServe`, `validateSpec`, `probeMedia` — importable directly from Node.
+- Dockerfile (`packages/cli/Dockerfile`) with branded Chrome + fonts,
+  entrypoint `elah serve --host 0.0.0.0 --port 8080`.
 
 ## [0.3.0] — 2026-07-03
 
@@ -83,6 +112,8 @@ timeline**. Additive — no breaking changes to the 0.2.x public API.
 - First public release of the three-package split: `@elah/core`,
   `@elah/timeline`, `@elah/editor`.
 
+[0.3.1]: https://github.com/elahlabs/elah/releases/tag/v0.3.1
 [0.3.0]: https://github.com/elahlabs/elah/releases/tag/v0.3.0
 [0.2.1]: https://github.com/elahlabs/elah/releases/tag/v0.2.1
 [0.2.0]: https://github.com/elahlabs/elah/releases/tag/v0.2.0
+[@elah/cli 0.1.0]: https://github.com/elahlabs/elah/releases/tag/cli-v0.1.0

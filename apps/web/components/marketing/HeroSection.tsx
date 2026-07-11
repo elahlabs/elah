@@ -4,8 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, Copy, Play } from 'lucide-react'
 
-function InstallCommand() {
-  const command = 'npm install @elah/editor'
+function InstallCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
 
   const copy = () => {
@@ -44,7 +43,7 @@ const fadeUp = (step: number) => ({
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden border-b border-outline-variant bg-surface pb-20 pt-24 md:pt-32">
+    <section className="relative overflow-hidden border-b border-outline-variant bg-surface pb-20 pt-12 md:pt-16">
       {/* Subtle grid background */}
       <div
         className="pointer-events-none absolute inset-0 opacity-40"
@@ -65,7 +64,7 @@ export function HeroSection() {
           <div {...fadeUp(0)}>
             <div className="mb-6 flex items-center gap-2">
               <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
-                Open Source · ECL v1.0
+                Open Source · Apache-2.0
               </span>
               <span className="label-mono rounded border border-outline-variant bg-surface-container px-2.5 py-1 text-2xs text-on-surface-variant">
                 WebCodecs + WebGL2
@@ -90,7 +89,8 @@ export function HeroSection() {
           >
             elah provides the timeline, rendering, and editing foundation for
             professional creative applications built entirely on the web. Engine-first,
-            renderer-agnostic, scalable from prototype to production.
+            renderer-agnostic, scalable from prototype to production — in the browser
+            and on your server.
           </p>
 
           {/* Framework support */}
@@ -148,8 +148,9 @@ export function HeroSection() {
 
           {/* Install command */}
           <div {...fadeUp(3)}>
-            <div className="mt-6">
-              <InstallCommand />
+            <div className="mt-6 flex flex-col items-start gap-2">
+              <InstallCommand command="npm install @elah/editor" />
+              <InstallCommand command="npx @elah/cli serve" />
             </div>
           </div>
 

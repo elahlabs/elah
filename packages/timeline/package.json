@@ -1,6 +1,6 @@
 {
   "name": "@elah/timeline",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "React timeline UI for the Elah video engine — tracks, clips, ruler, playhead, drag and trim gestures",
   "type": "module",
   "main": "./dist/index.js",
@@ -47,7 +47,7 @@
   "bugs": {
     "url": "https://github.com/elahlabs/elah/issues"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",

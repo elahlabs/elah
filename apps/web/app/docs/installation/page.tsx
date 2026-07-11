@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 const toc = [
   { id: 'requirements', title: 'Requirements', level: 2 },
   { id: 'npm-install', title: 'Install', level: 2 },
+  { id: 'cli-install', title: 'CLI (optional)', level: 2 },
   { id: 'peer-deps', title: 'Peer Dependencies', level: 2 },
   { id: 'nextjs-config', title: 'Next.js Setup', level: 2 },
   { id: 'vite-config', title: 'Vite Setup', level: 2 },
@@ -84,6 +85,30 @@ export default function InstallationPage() {
 yarn add @elah/editor
 bun add @elah/editor`}
           />
+        </section>
+
+        {/* CLI install */}
+        <section className="mb-10">
+          <h2 id="cli-install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            CLI (optional)
+          </h2>
+          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
+            Want to render on a server instead of (or alongside) the browser? Install{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> — it runs
+            core&apos;s real export pipeline headlessly, so output is bit-identical to the editor:
+          </p>
+          <CodeBlock
+            language="bash"
+            filename="npm"
+            code={`npm install -g @elah/cli`}
+          />
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+            See{' '}
+            <a href="/docs/cli" className="text-primary hover:underline">
+              CLI &amp; Server
+            </a>{' '}
+            for commands, the build spec, and self-hosting a render server.
+          </p>
         </section>
 
         {/* Peer dependencies */}

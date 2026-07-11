@@ -111,7 +111,7 @@ export default function ArchitecturePage() {
           <MermaidDiagram chart={ringStatesDiagram} />
           <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine can run in Node, Web Workers, or WASM with no changes. Tests import it directly without mounting any React tree.
+              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine runs in Node, Web Workers, or headless Chrome with no changes — <a href="/docs/cli" className="text-primary hover:underline">@elah/cli</a> ships exactly this, driving the same export pipeline server-side. Tests import it directly without mounting any React tree.
             </p>
           </div>
         </section>

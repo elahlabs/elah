@@ -58,10 +58,10 @@ const features = [
   },
   {
     iconName: 'FileVideo',
-    title: 'Zero-Drift Export Pipeline',
+    title: 'Zero-Drift Export — Browser & Server',
     description:
-      'Export worker steps resolveTimeline frame-by-frame on OffscreenCanvas using the same placement math as the live renderer. Preview and export never drift.',
-    tech: ['Web Worker', 'MP4', 'mediabunny'],
+      'The export worker steps resolveTimeline frame-by-frame in the browser — and @elah/cli runs the exact same pipeline headlessly on your server. Bit-identical output, by construction.',
+    tech: ['Web Worker', 'MP4', '@elah/cli'],
   },
   {
     iconName: 'Wand2',
