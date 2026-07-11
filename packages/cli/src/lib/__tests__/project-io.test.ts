@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { readProject, writeProject, findClipTrack, resolveMediaSource } from '../project-io'
 import { CliError } from '../errors'
 
@@ -115,18 +115,25 @@ describe('findClipTrack', () => {
 
 describe('resolveMediaSource', () => {
   it('resolves relative paths against the project dir', () => {
-    expect(resolveMediaSource('./media/a.mp4', '/proj')).toBe('/proj/media/a.mp4')
+    const projectDir = resolve('proj')
+    expect(resolveMediaSource('./media/a.mp4', projectDir)).toBe(resolve(projectDir, 'media/a.mp4'))
   })
   it('passes remote URLs through', () => {
-    expect(resolveMediaSource('https://cdn.example.com/a.mp4', '/proj')).toBe(
+    const projectDir = resolve('proj')
+    expect(resolveMediaSource('https://cdn.example.com/a.mp4', projectDir)).toBe(
       'https://cdn.example.com/a.mp4'
     )
   })
   it('keeps absolute paths', () => {
-    expect(resolveMediaSource('/abs/a.mp4', '/proj')).toBe('/abs/a.mp4')
+    const projectDir = resolve('proj')
+    const abs = resolve('abs/a.mp4')
+    expect(resolveMediaSource(abs, projectDir)).toBe(abs)
   })
   it('percent-decodes file:// URLs', () => {
-    expect(resolveMediaSource('file:///media/My%20Video.mp4', '/proj')).toBe('/media/My Video.mp4')
+    const projectDir = resolve('proj')
+    const abs = resolve('media/My Video.mp4')
+    const fileUrl = pathToFileURL(abs).href
+    expect(resolveMediaSource(fileUrl, projectDir)).toBe(abs)
   })
 })
 
