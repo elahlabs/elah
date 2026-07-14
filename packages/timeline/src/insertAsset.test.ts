@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   TimelineEngine,
-  useMediaLibraryStore,
-  usePlaybackStore,
+  mediaLibraryStore,
+  playbackStore,
   type MediaAsset,
 } from '@elah/core'
 import { useAudioDropDialogStore } from './audioDropDialog.store'
@@ -12,8 +12,8 @@ const originalAudioRequest = useAudioDropDialogStore.getState().request
 const originalAudioRespond = useAudioDropDialogStore.getState().respond
 
 afterEach(() => {
-  useMediaLibraryStore.setState({ assets: {}, order: [] })
-  usePlaybackStore.setState({ currentFrame: 0 })
+  mediaLibraryStore.setState({ assets: {}, order: [] })
+  playbackStore.setState({ currentFrame: 0 })
   useAudioDropDialogStore.setState({
     open: false,
     assetName: '',
@@ -29,7 +29,7 @@ describe('insertMediaAsset', () => {
     const engine = new TimelineEngine({ fps: 30 })
     const videoTrack = engine.getProject().tracks[0]
     addAsset({ id: 'asset-video', kind: 'video', durationSec: 2 })
-    usePlaybackStore.setState({ currentFrame: 12 })
+    playbackStore.setState({ currentFrame: 12 })
 
     const result = await insertMediaAsset(engine, 'asset-video')
 
@@ -50,7 +50,7 @@ describe('insertMediaAsset', () => {
     engine.updateTrack(lockedAudio.id, { locked: true })
     const unlockedAudio = engine.addTrack('audio', { name: 'Open audio' })
     addAsset({ id: 'asset-audio', kind: 'audio', durationSec: 1 })
-    usePlaybackStore.setState({ currentFrame: 7 })
+    playbackStore.setState({ currentFrame: 7 })
 
     const result = await insertMediaAsset(engine, 'asset-audio')
 
@@ -156,7 +156,7 @@ describe('insertMediaAsset', () => {
 describe('insertElement', () => {
   it('creates an elements track when inserting an element with no elements lane', () => {
     const engine = new TimelineEngine({ fps: 30 })
-    usePlaybackStore.setState({ currentFrame: 9 })
+    playbackStore.setState({ currentFrame: 9 })
 
     const result = insertElement(engine, { kind: 'element', element: 'text' })
 
@@ -216,5 +216,5 @@ function addAsset(overrides: Partial<MediaAsset> & Pick<MediaAsset, 'id' | 'kind
     thumbnailStrip: overrides.thumbnailStrip,
     waveform: overrides.waveform,
   }
-  useMediaLibraryStore.getState().addAsset(asset)
+  mediaLibraryStore.getState().addAsset(asset)
 }

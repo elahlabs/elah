@@ -7,7 +7,7 @@ import type {
   Track,
   TrackKind,
 } from '@elah/core'
-import { clipsOverlap, secondsToFrames, useMediaLibraryStore, usePlaybackStore } from '@elah/core'
+import { clipsOverlap, secondsToFrames, mediaLibraryStore, playbackStore } from '@elah/core'
 import { useAudioDropDialogStore } from './audioDropDialog.store'
 import type { DragElementPayload } from './elementDrag'
 
@@ -122,7 +122,7 @@ export function isCompatibleTrackKind(trackKind: TrackKind, mediaKind: MediaKind
 }
 
 function currentDesiredStart(opts: InsertAssetOptions | undefined): number {
-  return opts?.desiredStartFrame ?? usePlaybackStore.getState().currentFrame
+  return opts?.desiredStartFrame ?? playbackStore.getState().currentFrame
 }
 
 function getProjectTracks(engine: TimelineEngine): Track[] {
@@ -321,7 +321,7 @@ export async function insertMediaAsset(
   assetId: string,
   opts: InsertAssetOptions = {},
 ): Promise<InsertAssetResult> {
-  const asset = useMediaLibraryStore.getState().getAsset(assetId)
+  const asset = mediaLibraryStore.getState().getAsset(assetId)
   if (!asset) return mediaRefusal('video', 'missing-asset')
 
   const target = resolveMediaTarget(engine, asset.kind, opts.targetTrackId)

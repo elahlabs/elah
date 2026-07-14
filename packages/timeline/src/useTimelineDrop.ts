@@ -4,8 +4,8 @@ import {
   MEDIA_DRAG_MIME,
   mediaDragKindMime,
   snapFrame,
-  usePlaybackStore,
-  useTracksStore,
+  playbackStore,
+  tracksStore,
   type DragMediaPayload,
   type MediaKind,
   type TrackKind,
@@ -89,14 +89,14 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
 
     /** Pointer x -> timeline frame, snapped to clips + the playhead when enabled. */
     const startFrameAt = (clientX: number): number => {
-      const zoom = usePlaybackStore.getState().zoom
+      const zoom = playbackStore.getState().zoom
       const rect = lane.getBoundingClientRect()
       let startFrame = Math.max(0, Math.round((clientX - rect.left) / zoom))
 
-      if (usePlaybackStore.getState().snapEnabled) {
-        const allClips = useTracksStore.getState().clips
+      if (playbackStore.getState().snapEnabled) {
+        const allClips = tracksStore.getState().clips
         const snapPoints = buildSnapPoints(allClips)
-        snapPoints.push(usePlaybackStore.getState().currentFrame)
+        snapPoints.push(playbackStore.getState().currentFrame)
         const threshold = Math.max(1, Math.round(5 / zoom))
         startFrame = snapFrame(startFrame, snapPoints, threshold)
       }
@@ -105,7 +105,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
 
     const handleDragOver = (e: DragEvent) => {
       if (!acceptsDrag(e)) return
-      const track = useTracksStore.getState().tracks.find((t) => t.id === trackId)
+      const track = tracksStore.getState().tracks.find((t) => t.id === trackId)
       if (!track || !isDropAllowed(e, track)) {
         // Not a legal drop here (locked track or incompatible kind) — show the
         // no-drop cursor and, by not calling preventDefault, let the browser
@@ -119,7 +119,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
 
     const handleDragEnter = (e: DragEvent) => {
       if (!acceptsDrag(e)) return
-      const track = useTracksStore.getState().tracks.find((t) => t.id === trackId)
+      const track = tracksStore.getState().tracks.find((t) => t.id === trackId)
       dragDepth += 1
       setDropState(track && isDropAllowed(e, track) ? 'valid' : 'invalid')
     }
@@ -173,7 +173,7 @@ export function useTimelineDrop(trackId: string, lane: HTMLElement | null): Time
       e.preventDefault()
       resetDragState()
 
-      const track = useTracksStore
+      const track = tracksStore
         .getState()
         .tracks.find((t) => t.id === trackId)
       if (!track) return

@@ -8,12 +8,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import type { Transform, ActiveShapeClip } from '@elah/core'
+import { computeContainViewport } from '@elah/core'
 import {
   useTimelineEngine,
   useSelectionStore,
   usePlaybackStore,
-  computeContainViewport,
-} from '@elah/core'
+} from '@elah/react'
 import { useResolvedScene } from '../useResolvedScene'
 
 /**

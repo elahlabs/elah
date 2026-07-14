@@ -1,4 +1,4 @@
-import { useSelectionStore } from '@elah/core'
+import { useSelectionStore } from '@elah/react'
 
 export const useSelection = useSelectionStore
 
