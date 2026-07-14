@@ -113,7 +113,7 @@ Default max dimension: 240 px (`thumbnailMaxDim` option). Failures are logged an
 
 ## Public API
 
-### Hook (React)
+### Hook (React, from @elah/react)
 
 ```ts
 const { assets, getAsset } = useMediaLibrary()
@@ -124,10 +124,10 @@ Returns assets in insertion order (`order` array in the store). Prefer this in c
 ### Store (imperative / granular)
 
 ```ts
-useMediaLibraryStore.getState().addAsset(asset)
-useMediaLibraryStore.getState().updateAsset(id, { thumbnailUrl })
-useMediaLibraryStore.getState().removeAsset(id)
-useMediaLibraryStore.getState().getAsset(id)
+mediaLibraryStore.getState().addAsset(asset)
+mediaLibraryStore.getState().updateAsset(id, { thumbnailUrl })
+mediaLibraryStore.getState().removeAsset(id)
+mediaLibraryStore.getState().getAsset(id)
 ```
 
 Use for non-React code paths (`importFiles`, workers, actions). Components that need fine-grained subscriptions can select from the store directly.

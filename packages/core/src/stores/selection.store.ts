@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createStore } from 'zustand/vanilla'
 
 export interface SelectionState {
   selectedClipIds: Set<string>
@@ -13,7 +13,7 @@ export interface SelectionActions {
   setActiveTrack: (trackId: string | null) => void
 }
 
-export const useSelectionStore = create<SelectionState & SelectionActions>()(
+export const selectionStore = createStore<SelectionState & SelectionActions>()(
   (set) => ({
     selectedClipIds: new Set(),
     activeTrackId: null,

@@ -1,5 +1,5 @@
 import { generateId } from '../utils/id'
-import { useMediaLibraryStore } from './store'
+import { mediaLibraryStore } from './store'
 import { defaultAudioResolver, type AudioResolver } from '../media/audio/audioResolver'
 import type { MediaAsset, MediaKind } from './types'
 
@@ -457,7 +457,7 @@ function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
     void makeVideoThumbnailStrip(asset.src, THUMBNAIL_STRIP_COUNT, THUMBNAIL_STRIP_MAX_DIM)
       .then((strip) => {
         if (strip.length === 0) return
-        useMediaLibraryStore.getState().updateAsset(asset.id, {
+        mediaLibraryStore.getState().updateAsset(asset.id, {
           thumbnailStrip: strip,
           thumbnailUrl: strip[Math.floor(strip.length / 2)],
         })
@@ -471,7 +471,7 @@ function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
   if (asset.kind === 'image') {
     void makeImageThumbnail(asset.src, maxDim)
       .then((thumbnailUrl) => {
-        useMediaLibraryStore.getState().updateAsset(asset.id, { thumbnailUrl })
+        mediaLibraryStore.getState().updateAsset(asset.id, { thumbnailUrl })
       })
       .catch((err) => {
         console.warn(`[importFiles] Thumbnail failed for "${asset.name}":`, err)
@@ -490,11 +490,11 @@ function scheduleAudioAnalysis(asset: MediaAsset): void {
     .then((waveform) => {
       if (!waveform) {
         if (asset.kind === 'video') {
-          useMediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
+          mediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
         }
         return
       }
-      useMediaLibraryStore.getState().updateAsset(asset.id, {
+      mediaLibraryStore.getState().updateAsset(asset.id, {
         waveform,
         ...(asset.kind === 'video' ? { hasAudio: true } : {}),
       })
@@ -502,7 +502,7 @@ function scheduleAudioAnalysis(asset: MediaAsset): void {
     .catch(() => {
       // No decodable audio track (silent/muted video, or unsupported codec).
       if (asset.kind === 'video') {
-        useMediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
+        mediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
       }
     })
 }
@@ -538,7 +538,7 @@ async function registerAsset(input: RegisterAssetInput): Promise<MediaAsset> {
     addedAt: Date.now(),
   }
 
-  useMediaLibraryStore.getState().addAsset(asset)
+  mediaLibraryStore.getState().addAsset(asset)
   scheduleThumbnail(asset, input.thumbnailMaxDim)
   scheduleAudioAnalysis(asset)
 
@@ -563,7 +563,7 @@ function importSingleFile(
 function partitionFiles(
   files: Iterable<File>,
 ): { toImport: Array<{ file: File; kind: MediaKind }>; skipped: SkippedImport[] } {
-  const storeAssets = useMediaLibraryStore.getState().assets
+  const storeAssets = mediaLibraryStore.getState().assets
   const existingByKey = new Map<string, string>()
   for (const asset of Object.values(storeAssets)) {
     existingByKey.set(
@@ -607,7 +607,7 @@ function partitionFiles(
  * Import local files into the media library.
  *
  * Creates object URLs, probes metadata, registers assets in
- * `useMediaLibraryStore`, and generates thumbnails asynchronously on the main
+ * `mediaLibraryStore`, and generates thumbnails asynchronously on the main
  * thread.
  */
 export async function importFiles(
@@ -636,7 +636,7 @@ export async function importFiles(
  * content-type probe; throws if none of those determine a supported media kind.
  */
 export async function importUrl(url: string, opts?: ImportUrlOptions): Promise<MediaAsset> {
-  const existing = Object.values(useMediaLibraryStore.getState().assets).find(
+  const existing = Object.values(mediaLibraryStore.getState().assets).find(
     (asset) => asset.src === url,
   )
   if (existing) return existing
