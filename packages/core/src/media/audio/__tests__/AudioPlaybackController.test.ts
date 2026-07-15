@@ -60,8 +60,6 @@ function makeMockAudioContext() {
   }
 
   function makeGain(initialValue = 1) {
-    const gains: ReturnType<typeof makeGainParam>[] = []
-
     function makeGainParam(v: number) {
       const param = {
         value: v,
@@ -69,7 +67,6 @@ function makeMockAudioContext() {
         setValueAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn((target: number) => { param.value = target }),
       }
-      gains.push(param)
       return param
     }
 
@@ -443,7 +440,7 @@ describe('AudioPlaybackController', () => {
 
     // Grab the statechange handler registered on the mock context.
     const stateChangeCall = raw.addEventListener.mock.calls.find(
-      ([event]: [string]) => event === 'statechange',
+      (call: unknown[]) => call[0] === 'statechange',
     )
     expect(stateChangeCall).toBeDefined()
     const stateChangeHandler = stateChangeCall![1] as () => void

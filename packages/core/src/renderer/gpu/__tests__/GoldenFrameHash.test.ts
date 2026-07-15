@@ -54,6 +54,8 @@ function makeScene(overrides: Partial<Scene> = {}): Scene {
     audios: [],
     texts: [],
     images: [],
+    shapes: [],
+    freehand: [],
     transitions: [],
     ...overrides,
   }
