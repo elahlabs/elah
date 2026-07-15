@@ -60,7 +60,9 @@ export default function BlogPage() {
                 </p>
 
                 <div className="flex items-center justify-between">
-                  <time className="text-xs text-on-surface-variant">{post.date}</time>
+                  <time dateTime={post.date} className="text-xs text-on-surface-variant">
+                    {post.date}
+                  </time>
                   <Link
                     href={`/blog/${post.slug}`}
                     className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:underline"
