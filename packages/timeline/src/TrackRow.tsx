@@ -1,7 +1,7 @@
 import { memo, useState, useMemo } from 'react'
 import type { Track } from '@elah/core'
-import { useTracksStore } from '@elah/core'
-import { useSelectionStore } from '@elah/core'
+import { useTracksStore } from '@elah/react'
+import { useSelectionStore } from '@elah/react'
 import {
   Film,
   Music,

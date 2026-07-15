@@ -43,7 +43,7 @@ import {
 ```
 
 - `Timeline` must run inside an `EditorContext` provider — either `<EditorProvider>`
-  from `@elah/editor`, or a bare `EditorContext.Provider` from `@elah/core` supplying
+  from `@elah/editor`, or a bare `EditorContext.Provider` from `@elah/react` supplying
   `{ engine, playback }`. `useEditor()` throws otherwise. The `fps` prop only sets
   the ruler/scale; the engine and clock always come from context. `ref.current.engine`
   and `ref.current.playback` expose them.

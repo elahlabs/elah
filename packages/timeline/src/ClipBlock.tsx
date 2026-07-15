@@ -3,16 +3,16 @@ import { createPortal } from 'react-dom'
 import { Type, Square, Circle, Triangle, Pencil } from 'lucide-react'
 import type { Clip } from '@elah/core'
 import { useTimeline } from './engine-context'
-import { useSelectionStore } from '@elah/core'
-import { usePlaybackStore } from '@elah/core'
+import { useSelectionStore } from '@elah/react'
+import { usePlaybackStore } from '@elah/react'
 import {
   buildSnapPoints,
   DEFAULT_OVERLAP_TOLERANCE,
   resolveOverlapEdgeSnap,
   snapFrame,
 } from '@elah/core'
-import { useTracksStore } from '@elah/core'
-import { useMediaLibraryStore } from '@elah/core'
+import { useTracksStore } from '@elah/react'
+import { useMediaLibraryStore } from '@elah/react'
 import { cn } from './cn'
 import { normBg } from './clipSlot'
 

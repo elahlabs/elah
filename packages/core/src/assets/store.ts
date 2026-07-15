@@ -1,12 +1,12 @@
-import { create } from 'zustand'
+import { createStore } from 'zustand/vanilla'
 import type { MediaAsset } from './types'
 
-interface MediaLibraryState {
+export interface MediaLibraryState {
   assets: Record<string, MediaAsset>
   order: string[]
 }
 
-interface MediaLibraryActions {
+export interface MediaLibraryActions {
   addAsset: (asset: MediaAsset) => void
   removeAsset: (id: string) => void
   updateAsset: (id: string, patch: Partial<MediaAsset>) => void
@@ -14,11 +14,11 @@ interface MediaLibraryActions {
 }
 
 /**
- * Internal store. Prefer `useMediaLibrary()` for React consumers.
- * Imperative access via `useMediaLibraryStore.getState()` is intended
- * for non-React code paths (workers, actions) only.
+ * Vanilla store. React consumers should prefer `useMediaLibrary()` from
+ * @elah/react; imperative access via `mediaLibraryStore.getState()` is for
+ * non-React code paths (workers, actions).
  */
-export const useMediaLibraryStore = create<MediaLibraryState & MediaLibraryActions>(
+export const mediaLibraryStore = createStore<MediaLibraryState & MediaLibraryActions>(
   (set, get) => ({
     assets: {},
     order: [],

@@ -3,13 +3,15 @@ import type { InitialTrackConfig } from '@elah/core'
 import {
   TimelineEngine,
   PlaybackEngine,
+  installTraceGlobal,
+  trace,
+} from '@elah/core'
+import {
   useTracksStore,
   usePlaybackStore,
   useTransitionsStore,
   EditorContext,
-  installTraceGlobal,
-  trace,
-} from '@elah/core'
+} from '@elah/react'
 
 export interface EditorProviderProps {
   fps: number

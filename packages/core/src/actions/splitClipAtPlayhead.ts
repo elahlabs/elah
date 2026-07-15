@@ -1,6 +1,6 @@
 import type { TimelineEngine } from '../editor/TimelineEngine'
-import { useSelectionStore } from '../stores/selection.store'
-import { usePlaybackStore } from '../stores/playback.store'
+import { selectionStore } from '../stores/selection.store'
+import { playbackStore } from '../stores/playback.store'
 import type { ActionResult } from './types'
 
 export interface SplitAtPlayheadData {
@@ -23,8 +23,8 @@ export interface SplitAtPlayheadData {
 export function splitClipAtPlayhead(
   engine: TimelineEngine,
 ): ActionResult<SplitAtPlayheadData> {
-  const selectedIds = useSelectionStore.getState().selectedClipIds
-  const isPlaying = usePlaybackStore.getState().isPlaying
+  const selectedIds = selectionStore.getState().selectedClipIds
+  const isPlaying = playbackStore.getState().isPlaying
   if (isPlaying) return { ok: false, reason: 'cannot-split-while-playing' }
 
   if (selectedIds.size === 0) return { ok: false, reason: 'no-selection' }
@@ -37,7 +37,7 @@ export function splitClipAtPlayhead(
   if (!found) return { ok: false, reason: 'clip-not-found' }
 
   const { clip, trackId } = found
-  const frame = usePlaybackStore.getState().currentFrame
+  const frame = playbackStore.getState().currentFrame
 
   if (
     frame <= clip.startFrame ||

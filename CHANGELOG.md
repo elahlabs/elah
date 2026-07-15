@@ -1,13 +1,39 @@
 # Changelog
 
-All notable changes to the Elah packages (`@elah/core`, `@elah/timeline`,
-`@elah/editor`, `@elah/cli`) are documented here.
+All notable changes to the Elah packages (`@elah/core`, `@elah/react`,
+`@elah/timeline`, `@elah/editor`, `@elah/cli`) are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the packages follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-`@elah/core`, `@elah/timeline`, and `@elah/editor` are released together and
-share a version number. `@elah/cli` is a separate package and versions
-independently, starting from its own 0.1.0.
+`@elah/core`, `@elah/react`, `@elah/timeline`, and `@elah/editor` are released
+together and share a version number. `@elah/cli` is a separate package and
+versions independently, starting from its own 0.1.0.
+
+## [Unreleased]
+
+### Added
+
+- **New package `@elah/react`** — all React bindings in one place: the editor
+  context (`EditorContext`, `useEditor`, `useTimelineEngine`,
+  `usePlaybackEngine`), store hooks (`useTracksStore`, `usePlaybackStore`,
+  `useSelectionStore`, `useTransitionsStore`, `useMediaLibraryStore`,
+  `useMediaLibrary`/`useAssets`), and the audio hooks (`useAudioMixer`,
+  `useMasterVolume`, `useTrackLevels`). Store hooks keep the imperative
+  surface too (`useTracksStore.getState()` still works).
+- `@elah/editor` now also re-exports the audio hooks.
+
+### Changed
+
+- **BREAKING (`@elah/core`)**: core is now truly framework-agnostic — zero
+  React in its module graph (fixes [#42](https://github.com/elahlabs/elah/issues/42);
+  importing `@elah/core` from Vue/Nuxt/Node no longer requires React).
+  - All React hooks moved to `@elah/react` (re-exported unchanged by
+    `@elah/editor`, so `@elah/editor` users are unaffected).
+  - The Zustand mirrors are now vanilla stores exported as `tracksStore`,
+    `playbackStore`, `selectionStore`, `transitionsStore`, and
+    `mediaLibraryStore` (previously the React-bound `useXStore` exports).
+    Imperative call sites migrate as
+    `useTracksStore.getState()` → `tracksStore.getState()`.
 
 ## [0.3.1] — 2026-07-11
 

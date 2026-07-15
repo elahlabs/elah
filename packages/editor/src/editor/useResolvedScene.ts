@@ -1,11 +1,10 @@
 import { useMemo, useRef } from 'react'
+import { resolveTimeline, type Scene } from '@elah/core'
 import {
   useTimelineEngine,
   useTracksStore,
   usePlaybackStore,
-  resolveTimeline,
-  type Scene,
-} from '@elah/core'
+} from '@elah/react'
 
 /**
  * Returns a memoized Scene for the current playhead frame (or `frameOverride` if given).

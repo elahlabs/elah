@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createStore } from 'zustand/vanilla'
 import { persist } from 'zustand/middleware'
 import { toFrame } from '../utils/frames'
 
@@ -36,7 +36,7 @@ export interface PlaybackActions {
   toggleSnap: () => void
 }
 
-export const usePlaybackStore = create<PlaybackState & PlaybackActions>()(
+export const playbackStore = createStore<PlaybackState & PlaybackActions>()(
   persist(
     (set) => ({
       currentFrame: 0,

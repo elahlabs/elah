@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { usePlaybackStore } from '@elah/core'
+import { usePlaybackStore } from '@elah/react'
 import { cn } from './cn'
 
 interface PlayheadProps {

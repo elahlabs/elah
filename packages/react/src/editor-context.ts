@@ -1,6 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { TimelineEngine } from './editor/TimelineEngine'
-import type { PlaybackEngine } from './playback/PlaybackEngine'
+import type { TimelineEngine, PlaybackEngine } from '@elah/core'
 
 export interface EditorContextValue {
   engine: TimelineEngine

@@ -1,15 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, createElement, type ReactElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { PlaybackEngine, TimelineEngine, type Clip } from '@elah/core'
 import {
   EditorContext,
-  PlaybackEngine,
-  TimelineEngine,
   usePlaybackStore,
   useSelectionStore,
   useTracksStore,
-  type Clip,
-} from '@elah/core'
+} from '@elah/react'
 import { ClipBlock } from './ClipBlock'
 import { Playhead } from './Playhead'
 import { Ruler } from './Ruler'

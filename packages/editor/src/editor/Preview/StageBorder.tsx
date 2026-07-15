@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { computeContainViewport, useTracksStore } from '@elah/core'
+import { computeContainViewport } from '@elah/core'
+import { useTracksStore } from '@elah/react'
 
 /**
  * `<StageBorder>` — a thin, non-interactive outline of the project frame inside

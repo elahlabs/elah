@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { AudioPlaybackController } from './AudioPlaybackController'
+import type { AudioPlaybackController } from '@elah/core'
 
 export interface AudioMixerApi {
   /** Ramp the master output gain to `value` (linear, 0..2). Click-free. */

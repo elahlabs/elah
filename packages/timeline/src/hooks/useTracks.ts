@@ -1,4 +1,4 @@
-import { useTracksStore } from '@elah/core'
+import { useTracksStore } from '@elah/react'
 
 export const useTracks = useTracksStore
 
