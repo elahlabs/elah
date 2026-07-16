@@ -9,7 +9,7 @@
     "dev": "npm run dev --workspace=apps/web",
     "build:packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/react && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor && npm run build --workspace=packages/cli",
     "build": "npm run build --workspace=apps/web",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run typecheck --workspaces --if-present",
     "lint:tokens": "node scripts/check-tokens.mjs",
     "test": "npm run test --workspace=packages/core --workspace=packages/timeline --workspace=packages/cli"
   },
