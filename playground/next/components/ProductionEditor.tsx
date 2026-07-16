@@ -308,6 +308,32 @@ export default function ProductionEditor() {
   const demuxerFactoryRef = useRef(createDefaultDemuxerFactory())
 
   const [showExportModal, setShowExportModal] = useState(false)
+  const [timelineHeight, setTimelineHeight] = useState(236)
+  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+
+  // Drag the handle above the timeline to resize its height. Clamped so the
+  // timeline can neither swallow the canvas nor collapse below a usable strip.
+  const onTimelineResizeStart = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      resizeRef.current = { startY: e.clientY, startHeight: timelineHeight }
+      const onMove = (ev: PointerEvent) => {
+        if (!resizeRef.current) return
+        const delta = ev.clientY - resizeRef.current.startY
+        setTimelineHeight(
+          Math.min(600, Math.max(120, resizeRef.current.startHeight - delta)),
+        )
+      }
+      const onUp = () => {
+        resizeRef.current = null
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+    },
+    [timelineHeight],
+  )
 
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
@@ -397,10 +423,30 @@ export default function ProductionEditor() {
 
           <TimelineControls timelineRef={timelineRef} />
 
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            title="Drag to resize timeline"
+            onPointerDown={onTimelineResizeStart}
+            style={{
+              height: 7,
+              flexShrink: 0,
+              cursor: 'ns-resize',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: theme.bgSecondary,
+              borderTop: `1px solid ${theme.border}`,
+              touchAction: 'none',
+            }}
+          >
+            <div style={{ width: 36, height: 3, borderRadius: 2, background: theme.border }} />
+          </div>
+
           <Timeline
             ref={timelineRef}
             fps={FPS}
-            style={{ height: 236, flexShrink: 0, minWidth: 0 }}
+            style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
           />
         </div>
       </div>
