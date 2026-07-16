@@ -127,3 +127,32 @@ body {
   background: var(--pg-bg-elevated) !important;
   border-color: var(--pg-border) !important;
 }
+
+/* Visible tooltip on hover — surfaces each button's `title` instantly and
+   styled, instead of relying only on the browser's slow native tooltip. */
+.elah-toolbar-btn,
+.elah-export-btn {
+  position: relative;
+}
+.elah-toolbar-btn[title]:hover::after,
+.elah-export-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: var(--pg-radius-sm, 4px);
+  background: var(--pg-bg-elevated);
+  color: var(--pg-text);
+  border: 1px solid var(--pg-border);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  pointer-events: none;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}

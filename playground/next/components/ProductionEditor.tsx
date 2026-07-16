@@ -58,11 +58,14 @@ const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }
   return (
     <header
       style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
         alignItems: 'center',
-        padding: '0 16px',
-        height: 46,
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        columnGap: 12,
+        rowGap: 6,
+        padding: '6px 16px',
+        minHeight: 46,
         background: theme.bgSecondary,
         borderBottom: `1px solid ${theme.border}`,
         flexShrink: 0,
@@ -117,19 +120,13 @@ const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }
   )
 })
 
-const TimelineControls = memo(function TimelineControls({
-  timelineRef,
-}: {
-  timelineRef: React.RefObject<TimelineRef | null>
-}) {
-  const engine = useTimelineEngine()
+// Play control + running time — mirrors the app-side editor by sitting directly
+// below the preview. A 1fr auto 1fr grid centers the play button; the running
+// time / total time reads on the left.
+const PreviewTransport = memo(function PreviewTransport() {
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
-  const zoom = usePlaybackStore((s) => s.zoom)
-  const setZoom = usePlaybackStore((s) => s.setZoom)
   const totalFrames = useTracksStore((s) => s.totalFrames)
-  const stage = useTracksStore((s) => s.stage)
-  const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
   const timecodeRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -150,6 +147,72 @@ const TimelineControls = memo(function TimelineControls({
         `${framesToTimecode(frame, FPS)} / ${framesToTimecode(dur, FPS)}`
     }
   }, [totalFrames])
+
+  const playBtnStyle: React.CSSProperties = {
+    ...btnDisabled(false),
+    minWidth: 36,
+    padding: '5px 12px',
+    ...(isPlaying
+      ? {
+          background: 'rgba(34, 197, 94, 0.12)',
+          border: `1px solid ${theme.success}`,
+          color: theme.success,
+        }
+      : {}),
+  }
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+        gap: 12,
+        minHeight: 40,
+        padding: '6px 16px',
+        background: theme.bgSecondary,
+        borderTop: `1px solid ${theme.border}`,
+        flexShrink: 0,
+      }}
+    >
+      <span
+        ref={timecodeRef}
+        style={{
+          fontSize: 11,
+          color: theme.textSecondary,
+          fontFamily: theme.fontMono,
+          letterSpacing: '0.02em',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        00:00:00:00 / 00:00:00:00
+      </span>
+
+      <button
+        type="button"
+        className="elah-toolbar-btn"
+        style={playBtnStyle}
+        onClick={togglePlayPause}
+        title="Play / Pause (Space)"
+      >
+        {isPlaying ? '⏸' : '▶'}
+      </button>
+
+      <span />
+    </div>
+  )
+})
+
+const TimelineControls = memo(function TimelineControls({
+  timelineRef,
+}: {
+  timelineRef: React.RefObject<TimelineRef | null>
+}) {
+  const engine = useTimelineEngine()
+  const zoom = usePlaybackStore((s) => s.zoom)
+  const setZoom = usePlaybackStore((s) => s.setZoom)
+  const stage = useTracksStore((s) => s.stage)
+  const hasSelection = useSelectionStore((s) => s.selectedClipIds.size === 1)
 
   const splitAtPlayhead = useCallback(() => {
     const result = splitClipAtPlayhead(engine)
@@ -173,27 +236,17 @@ const TimelineControls = memo(function TimelineControls({
       : {}),
   })
 
-  const playBtnStyle: React.CSSProperties = {
-    ...btnDisabled(false),
-    minWidth: 36,
-    padding: '5px 12px',
-    ...(isPlaying
-      ? {
-          background: 'rgba(34, 197, 94, 0.12)',
-          border: `1px solid ${theme.success}`,
-          color: theme.success,
-        }
-      : {}),
-  }
-
   return (
     <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
         alignItems: 'center',
-        height: 40,
-        padding: '0 16px',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        columnGap: 12,
+        rowGap: 6,
+        minHeight: 40,
+        padding: '6px 16px',
         background: theme.bgSecondary,
         borderTop: `1px solid ${theme.border}`,
         flexShrink: 0,
@@ -210,30 +263,6 @@ const TimelineControls = memo(function TimelineControls({
         >
           ✂ Split
         </button>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button
-          type="button"
-          className="elah-toolbar-btn"
-          style={playBtnStyle}
-          onClick={togglePlayPause}
-          title="Play / Pause (Space)"
-        >
-          {isPlaying ? '⏸' : '▶'}
-        </button>
-        <span
-          ref={timecodeRef}
-          style={{
-            fontSize: 11,
-            color: theme.textSecondary,
-            fontFamily: theme.fontMono,
-            minWidth: 172,
-            letterSpacing: '0.02em',
-          }}
-        >
-          00:00:00:00 / 00:00:00:00
-        </span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
@@ -269,6 +298,7 @@ const TimelineControls = memo(function TimelineControls({
             className="elah-toolbar-btn"
             style={aspectBtn(aspectActive(1920, 1080))}
             onClick={() => engine.setStage(1920, 1080)}
+            title="Landscape 16:9"
           >
             16:9
           </button>
@@ -277,6 +307,7 @@ const TimelineControls = memo(function TimelineControls({
             className="elah-toolbar-btn"
             style={aspectBtn(aspectActive(1080, 1920))}
             onClick={() => engine.setStage(1080, 1920)}
+            title="Portrait 9:16"
           >
             9:16
           </button>
@@ -285,6 +316,7 @@ const TimelineControls = memo(function TimelineControls({
             className="elah-toolbar-btn"
             style={aspectBtn(aspectActive(1080, 1080))}
             onClick={() => engine.setStage(1080, 1080)}
+            title="Square 1:1"
           >
             1:1
           </button>
@@ -299,6 +331,32 @@ export default function ProductionEditor() {
   const demuxerFactoryRef = useRef(createDefaultDemuxerFactory())
 
   const [showExportModal, setShowExportModal] = useState(false)
+  const [timelineHeight, setTimelineHeight] = useState(236)
+  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+
+  // Drag the handle above the timeline to resize its height. Clamped so the
+  // timeline can neither swallow the canvas nor collapse below a usable strip.
+  const onTimelineResizeStart = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      resizeRef.current = { startY: e.clientY, startHeight: timelineHeight }
+      const onMove = (ev: PointerEvent) => {
+        if (!resizeRef.current) return
+        const delta = ev.clientY - resizeRef.current.startY
+        setTimelineHeight(
+          Math.min(600, Math.max(120, resizeRef.current.startHeight - delta)),
+        )
+      }
+      const onUp = () => {
+        resizeRef.current = null
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+    },
+    [timelineHeight],
+  )
 
   const handleExportStart = useCallback(async (opts: {
     videoBitrate: number
@@ -373,14 +431,18 @@ export default function ProductionEditor() {
                 flex: 1,
                 minWidth: 0,
                 minHeight: 0,
-                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
                 background: theme.bgPrimary,
               }}
             >
-              <Preview
-                demuxerFactory={demuxerFactoryRef.current}
-                style={{ width: '100%', height: '100%' }}
-              />
+              <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+                <Preview
+                  demuxerFactory={demuxerFactoryRef.current}
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </div>
+              <PreviewTransport />
             </div>
 
             <TextClipProperties />
@@ -388,10 +450,30 @@ export default function ProductionEditor() {
 
           <TimelineControls timelineRef={timelineRef} />
 
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            title="Drag to resize timeline"
+            onPointerDown={onTimelineResizeStart}
+            style={{
+              height: 7,
+              flexShrink: 0,
+              cursor: 'ns-resize',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: theme.bgSecondary,
+              borderTop: `1px solid ${theme.border}`,
+              touchAction: 'none',
+            }}
+          >
+            <div style={{ width: 36, height: 3, borderRadius: 2, background: theme.border }} />
+          </div>
+
           <Timeline
             ref={timelineRef}
             fps={FPS}
-            style={{ height: 236, flexShrink: 0, minWidth: 0 }}
+            style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }}
           />
         </div>
       </div>
