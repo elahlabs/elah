@@ -41,7 +41,7 @@ export function CodeBlock({
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 rounded px-2 py-1 text-2xs text-on-surface-variant transition-colors hover:bg-surface-high hover:text-on-surface"
-          aria-label="Copy code"
+          aria-label={copied ? 'Code copied' : 'Copy code'}
         >
           {copied ? (
             <>
@@ -59,6 +59,9 @@ export function CodeBlock({
 
       {/* Code content */}
       <pre
+        tabIndex={0}
+        role="region"
+        aria-label={filename ? `Code: ${filename}` : `Code sample (${language})`}
         className={cn(
           'overflow-x-auto p-4 text-xs leading-relaxed',
           showLineNumbers && 'pl-0'
