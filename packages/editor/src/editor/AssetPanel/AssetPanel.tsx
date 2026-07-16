@@ -26,6 +26,7 @@ import {
   type AssetActivationHandler,
 } from '../activation'
 
+/** Props for AssetPanel; passing `onAssetActivate` (or `activateOnTap`) opts into tap-to-add on top of drag-to-timeline. */
 export interface AssetPanelProps {
   style?: CSSProperties
   className?: string
