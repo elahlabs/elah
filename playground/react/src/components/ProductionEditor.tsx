@@ -56,11 +56,14 @@ const AppHeader = memo(function AppHeader({ onExport }: { onExport: () => void }
   return (
     <header
       style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
         alignItems: 'center',
-        padding: '0 16px',
-        height: 46,
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        columnGap: 12,
+        rowGap: 6,
+        padding: '6px 16px',
+        minHeight: 46,
         background: theme.bgSecondary,
         borderBottom: `1px solid ${theme.border}`,
         flexShrink: 0,
@@ -187,11 +190,14 @@ const TimelineControls = memo(function TimelineControls({
   return (
     <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
         alignItems: 'center',
-        height: 40,
-        padding: '0 16px',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        columnGap: 12,
+        rowGap: 6,
+        minHeight: 40,
+        padding: '6px 16px',
         background: theme.bgSecondary,
         borderTop: `1px solid ${theme.border}`,
         flexShrink: 0,
@@ -267,6 +273,7 @@ const TimelineControls = memo(function TimelineControls({
             className="elah-toolbar-btn"
             style={aspectBtn(aspectActive(1920, 1080))}
             onClick={() => engine.setStage(1920, 1080)}
+            title="Landscape 16:9"
           >
             16:9
           </button>
@@ -275,6 +282,7 @@ const TimelineControls = memo(function TimelineControls({
             className="elah-toolbar-btn"
             style={aspectBtn(aspectActive(1080, 1920))}
             onClick={() => engine.setStage(1080, 1920)}
+            title="Portrait 9:16"
           >
             9:16
           </button>
@@ -283,6 +291,7 @@ const TimelineControls = memo(function TimelineControls({
             className="elah-toolbar-btn"
             style={aspectBtn(aspectActive(1080, 1080))}
             onClick={() => engine.setStage(1080, 1080)}
+            title="Square 1:1"
           >
             1:1
           </button>
