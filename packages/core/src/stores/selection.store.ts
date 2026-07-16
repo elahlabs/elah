@@ -1,10 +1,12 @@
 import { createStore } from 'zustand/vanilla'
 
+/** UI-only selection (Ring 2); holds no engine truth, so ids here may name clips that have since been removed. */
 export interface SelectionState {
   selectedClipIds: Set<string>
   activeTrackId: string | null
 }
 
+/** Selection mutators; selectClip replaces the set, toggleClipSelection adds/removes within it for multi-select. */
 export interface SelectionActions {
   selectClip: (clipId: string) => void
   toggleClipSelection: (clipId: string) => void
@@ -13,6 +15,7 @@ export interface SelectionActions {
   setActiveTrack: (trackId: string | null) => void
 }
 
+/** Vanilla store so core stays React-free; @elah/react wraps it as the `useSelectionStore` hook. */
 export const selectionStore = createStore<SelectionState & SelectionActions>()(
   (set) => ({
     selectedClipIds: new Set(),
