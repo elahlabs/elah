@@ -1,5 +1,6 @@
 import { siteConfig } from '@/config/site'
 import { posts } from '../blog/posts'
+import { postToHtml } from '../blog/serialize'
 
 function escapeXml(value: string): string {
   return value
@@ -23,12 +24,13 @@ export function GET(): Response {
       <pubDate>${new Date(post.date).toUTCString()}</pubDate>
       <category>${escapeXml(post.category)}</category>
       <description>${escapeXml(post.excerpt)}</description>
+      <content:encoded><![CDATA[${postToHtml(post)}]]></content:encoded>
     </item>`
     })
     .join('\n')
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>${escapeXml(siteConfig.name)} blog</title>
     <link>${base}/blog</link>

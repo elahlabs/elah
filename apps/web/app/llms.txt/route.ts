@@ -40,9 +40,11 @@ const RESOURCES: DocLink[] = [
 ]
 
 // Derived from the blog source of truth so new posts appear automatically.
+// Each post links to its raw-markdown variant (/blog/<slug>/md) so agents can
+// fetch full content directly instead of scraping the HTML page.
 const POSTS: DocLink[] = posts.map((post) => ({
   title: post.title,
-  path: `/blog/${post.slug}`,
+  path: `/blog/${post.slug}/md`,
   description: post.excerpt,
 }))
 
@@ -73,6 +75,9 @@ Elah is a browser-native, frame-accurate video editing engine: a framework-agnos
 core (timeline engine, pure resolver, WebGL2 renderer, WebCodecs decode, MP4 export)
 with React bindings on top. Time is integer frames; every edit funnels through one
 engine; \`resolveTimeline(frame, project) → Scene\` is the pure bridge to any renderer.
+
+For full blog content in one fetch, see ${base}/llms-full.txt. Individual posts are
+available as raw markdown at ${base}/blog/<slug>/md.
 
 ${section('Documentation', DOCS, base)}
 

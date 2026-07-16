@@ -31,7 +31,10 @@ export async function generateMetadata({
       title: post.title,
       description: post.excerpt,
       publishedTime: post.date,
-      authors: ['elah'],
+      modifiedTime: post.date,
+      authors: [siteConfig.url],
+      section: post.category,
+      tags: [post.category],
     },
     twitter: { card: 'summary_large_image', title: post.title, description: post.excerpt },
   }
@@ -118,7 +121,9 @@ export default async function BlogPostPage({
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
+    image: `${siteConfig.url}/blog/${post.slug}/opengraph-image`,
     datePublished: post.date,
+    dateModified: post.date,
     articleSection: post.category,
     author: { '@type': 'Organization', name: 'elah', url: siteConfig.url },
     publisher: { '@type': 'Organization', name: 'elah', url: siteConfig.url },
@@ -156,7 +161,9 @@ export default async function BlogPostPage({
               {post.title}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">{post.excerpt}</p>
-            <time className="mt-4 block text-xs text-on-surface-variant">{post.date}</time>
+            <time dateTime={post.date} className="mt-4 block text-xs text-on-surface-variant">
+              {post.date}
+            </time>
           </div>
         </div>
 
