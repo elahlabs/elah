@@ -135,7 +135,7 @@ export default async function BlogPostPage({
       <JsonLd data={articleJsonLd} />
       <Navbar />
 
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
@@ -202,7 +202,7 @@ export default async function BlogPostPage({
 
             {/* TOC */}
             {toc.length > 0 && (
-              <nav className="hidden w-48 shrink-0 lg:block">
+              <nav aria-label="Table of contents" className="hidden w-48 shrink-0 lg:block">
                 <div className="sticky top-24">
                   <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                     On this page

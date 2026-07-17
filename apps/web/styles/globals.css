@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  /* Visible keyboard focus for all interactive elements (a11y: WCAG 2.4.7). */
+  :focus-visible {
+    outline: 2px solid var(--color-outline);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
   /* ── Light theme (Precision Studio — warm neutral foundation) ─────────── */
   :root {
     --font-geist-sans: 'Geist', system-ui, sans-serif;

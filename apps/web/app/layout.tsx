@@ -122,6 +122,12 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} bg-surface text-on-surface antialiased`}
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
       >
+        <a
+          href="#main"
+          className="sr-only rounded bg-primary px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+        >
+          Skip to content
+        </a>
         <JsonLd data={organizationJsonLd} />
         <JsonLd data={webSiteJsonLd} />
         <ThemeProvider>

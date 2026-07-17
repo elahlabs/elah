@@ -40,7 +40,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -107,7 +107,7 @@ export function Navbar() {
             transition={{ duration: 0.15 }}
             className="border-t border-outline-variant bg-surface px-4 pb-4 pt-2 md:hidden"
           >
-            <nav className="flex flex-col gap-1">
+            <nav aria-label="Mobile" className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
