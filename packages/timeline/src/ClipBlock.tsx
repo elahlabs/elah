@@ -86,6 +86,7 @@ export const ClipBlock = memo(function ClipBlock({
   const isSelected = useSelectionStore((s) => s.selectedClipIds.has(clip.id))
   const selectClip = useSelectionStore((s) => s.selectClip)
   const clearSelection = useSelectionStore((s) => s.clearSelection)
+  const toggleClipSelection = useSelectionStore((s) => s.toggleClipSelection)
   const snapEnabled = usePlaybackStore((s) => s.snapEnabled)
   const asset = useMediaLibraryStore((s) =>
     clip.assetId ? s.assets[clip.assetId] : undefined,
@@ -153,7 +154,11 @@ export const ClipBlock = memo(function ClipBlock({
     (e: React.PointerEvent) => {
       if (e.button !== 0) return
       e.stopPropagation()
-      selectClip(clip.id)
+      if (e.shiftKey) {
+        toggleClipSelection(clip.id)
+      } else {
+        selectClip(clip.id)
+      }
       clearActiveGesture()
       if (trackLocked) return // selectable, but not draggable
 
