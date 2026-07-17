@@ -1,4 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { framesToTimecode } from '@elah/core'
 import { cn } from './cn'
 
 /**
@@ -71,6 +72,7 @@ export const Ruler = memo(function Ruler({
   }, [fps, totalFrames, zoom])
 
   const activeGestureCleanup = useRef<(() => void) | null>(null)
+  const [hoverState, setHoverState] = useState<{ frame: number; x: number } | null>(null)
 
   const clearActiveGesture = useCallback(() => {
     activeGestureCleanup.current?.()
@@ -133,7 +135,40 @@ export const Ruler = memo(function Ruler({
         userSelect: 'none',
       }}
       onPointerDown={handlePointerDown}
+      onPointerMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const frame = Math.floor(x / zoom)
+        setHoverState({ frame, x })
+      }}
+      onPointerLeave={() => setHoverState(null)}
     >
+      {hoverState && (
+        <div
+          className="bg-ed-panel border-ed-border border-ed-border-subtle text-ed-text"
+          style={{
+            position: 'absolute',
+            left: hoverState.x,
+            bottom: height + 4,
+            transform: 'translateX(-50%)',
+            padding: '4px 8px',
+            borderRadius: 4,
+            fontSize: 11,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            zIndex: 50,
+            borderWidth: 1,
+            borderStyle: 'solid',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}
+        >
+          <div>Frame {hoverState.frame}</div>
+          <div style={{ color: 'var(--elah-text-muted)', fontSize: 10 }}>
+            {framesToTimecode(hoverState.frame, fps)}
+          </div>
+        </div>
+      )}
+
       {ticks.map(({ frame, label }) => (
         <div
           key={frame}

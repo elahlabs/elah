@@ -352,6 +352,7 @@ export const TrackRow = memo(function TrackRow({
             clip={clip}
             zoom={zoom}
             trackHeight={track.height}
+            fps={fps}
             className={clipClassName}
             clipVideo={clipVideo}
             clipAudio={clipAudio}
