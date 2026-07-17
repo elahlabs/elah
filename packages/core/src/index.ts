@@ -138,6 +138,9 @@ export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames, cli
 export { generateId } from './utils/id'
 export { snapFrame, buildSnapPoints, resolveOverlapEdgeSnap, DEFAULT_OVERLAP_TOLERANCE } from './utils/snap'
 
+// --- Project serialization ---
+export { serializeProject, deserializeProject } from './project/serialization'
+
 // --- Export pipeline ---
 export { exportVideo } from './export'
 export { lazyExportVideo } from './export/lazyExport'
