@@ -155,8 +155,17 @@ export const Timeline = memo(
       const handleWheel = (e: WheelEvent) => {
         if (!e.ctrlKey && !e.metaKey) return
         e.preventDefault()
+        
+        const state = usePlaybackStore.getState()
+        const oldZoom = state.zoom
+        const currentFrame = state.currentFrame
+        const playheadScreenX = (currentFrame * oldZoom) - el.scrollLeft
+
         const direction = e.deltaY > 0 ? -0.5 : 0.5
-        setZoom(usePlaybackStore.getState().zoom + direction)
+        setZoom(oldZoom + direction)
+        
+        const newZoom = usePlaybackStore.getState().zoom
+        el.scrollLeft = (currentFrame * newZoom) - playheadScreenX
       }
 
       el.addEventListener('wheel', handleWheel, { passive: false })
