@@ -10,6 +10,7 @@ import {
   DEFAULT_OVERLAP_TOLERANCE,
   resolveOverlapEdgeSnap,
   snapFrame,
+  secondsToFrames,
 } from '@elah/core'
 import { useTracksStore } from '@elah/core'
 import { useMediaLibraryStore } from '@elah/core'
@@ -51,6 +52,7 @@ interface ClipBlockProps {
   clip: Clip
   zoom: number
   trackHeight: number
+  fps: number
   /** Override class for the clip body (merged so it wins over defaults). */
   className?: string
   /**
@@ -72,6 +74,7 @@ export const ClipBlock = memo(function ClipBlock({
   clip,
   zoom,
   trackHeight,
+  fps,
   className,
   clipVideo,
   clipAudio,
@@ -126,9 +129,52 @@ export const ClipBlock = memo(function ClipBlock({
   // Filmstrip tiles for video/image — decorative; tiles repeat/reduce with zoom.
   const stripFrames =
     asset?.thumbnailStrip ?? (asset?.thumbnailUrl ? [asset.thumbnailUrl] : [])
-  const tileAspect = asset?.width && asset?.height ? asset.width / asset.height : 16 / 9
-  const tileWidth = Math.max(12, blockHeight * tileAspect)
-  const tileCount = Math.min(40, Math.max(1, Math.ceil(width / tileWidth)))
+
+  let filmstripContent = null
+  if ((clip.type === 'video' || clip.type === 'image') && stripFrames.length > 0) {
+    const assetFrames = asset?.durationSec ? secondsToFrames(asset.durationSec, fps) : Math.max(clip.durationFrames, 1)
+    const framesPerThumb = assetFrames / stripFrames.length
+    
+    const startOffsetFrames = clip.sourceStartFrame ?? 0
+    const endOffsetFrames = startOffsetFrames + clip.durationFrames
+    
+    const startIndex = Math.floor(startOffsetFrames / framesPerThumb)
+    const endIndex = Math.min(stripFrames.length - 1, Math.ceil(endOffsetFrames / framesPerThumb))
+
+    const visibleThumbs = []
+    for (let i = startIndex; i <= endIndex; i++) {
+      const thumbStartFrame = (i * framesPerThumb) - startOffsetFrames
+      visibleThumbs.push(
+        <img
+          key={i}
+          src={stripFrames[i]}
+          style={{
+            position: 'absolute',
+            left: thumbStartFrame * zoom,
+            width: framesPerThumb * zoom,
+            height: '100%',
+            objectFit: 'cover',
+            borderRight: '1px solid var(--elah-effect-tile-separator)'
+          }}
+          alt=""
+        />
+      )
+    }
+
+    filmstripContent = (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          borderRadius: 4,
+        }}
+      >
+        {visibleThumbs}
+      </div>
+    )
+  }
 
   // Real waveform bars for audio — falls back to static bars while decoding.
   const waveform = asset?.waveform
@@ -441,41 +487,8 @@ export const ClipBlock = memo(function ClipBlock({
         zIndex: isSelected ? 5 : 1,
       }}
     >
-      {/* Filmstrip — evenly-spaced source frames tiled across the clip. Tiles
-          repeat (or thin out) as the clip widens/narrows with zoom. */}
-      {(clip.type === 'video' || clip.type === 'image') && stripFrames.length > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            overflow: 'hidden',
-            pointerEvents: 'none',
-            borderRadius: 4,
-          }}
-        >
-          {Array.from({ length: tileCount }).map((_, i) => {
-            const frameIdx = Math.min(
-              stripFrames.length - 1,
-              Math.floor((i / tileCount) * stripFrames.length),
-            )
-            return (
-              <div
-                key={i}
-                style={{
-                  flex: '1 1 0',
-                  minWidth: 0,
-                  height: '100%',
-                  backgroundImage: `url(${stripFrames[frameIdx]})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  boxShadow: `inset -1px 0 0 var(--elah-effect-tile-separator)`,
-                }}
-              />
-            )
-          })}
-        </div>
-      )}
+      {/* Filmstrip logic rendered here */}
+      {filmstripContent}
 
       {/* Left accent stripe — paints from currentColor (the clip's accent). */}
       <div
