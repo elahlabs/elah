@@ -10,7 +10,6 @@ import {
   Square,
   Maximize2,
   ChevronDown,
-  RectangleHorizontal,
   Film,
   Image as ImageIcon,
   Music,
@@ -708,21 +707,9 @@ const TransportBar = memo(function TransportBar() {
             </button>
           </>
         ) : (
-          <>
-            <button type="button" title="Fullscreen" className={ghostIcon}>
-              <Maximize2 size={14} />
-            </button>
-            <button
-              type="button"
-              title="Fit"
-              className="inline-flex items-center gap-1 px-2 h-7 rounded border border-ed-border text-ed-text-muted text-[11px] hover:text-ed-text transition-colors cursor-pointer"
-            >
-              Fit <ChevronDown size={12} />
-            </button>
-            <button type="button" title="Frame" className={ghostIcon}>
-              <RectangleHorizontal size={15} />
-            </button>
-          </>
+          <button type="button" title="Fullscreen" className={cn(ghostIcon, 'hidden')}>
+            <Maximize2 size={14} />
+          </button>
         )}
       </div>
     </div>
