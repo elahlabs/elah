@@ -1,0 +1,64 @@
+{
+  "name": "@elah/export-server",
+  "version": "0.1.0",
+  "description": "Node-only, browser-free video export for the Elah engine — resolves the same Scene as the editor and renders it with system ffmpeg",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit && tsc -p tsconfig.build.json && node scripts/build.mjs"
+  },
+  "keywords": [
+    "video-editor",
+    "video-engine",
+    "export",
+    "ffmpeg",
+    "headless",
+    "server",
+    "node",
+    "frame-accurate",
+    "mp4",
+    "timeline",
+    "typescript"
+  ],
+  "homepage": "https://www.elah.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elahlabs/elah.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elahlabs/elah/issues"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@elah/core": "^0.3.1",
+    "@napi-rs/canvas": "^0.1.60",
+    "mediabunny": "^1.45.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}
