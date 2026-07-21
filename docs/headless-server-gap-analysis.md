@@ -151,6 +151,80 @@ on, and the Docker image (#3) is what makes both deployable. In Tier 3, fonts
 and captions are the highest-leverage spec additions because they are what
 AI-pipeline customers evaluate first. Tier 2 can follow demand.
 
+## Appendix — how a Node render path would get its codecs
+
+*Added 2026-07-21, prompted by a proposal for a server-only export package.*
+
+Problem statement at a glance:
+
+```json
+{
+  "goal": "Export video from a server without a browser",
+  "why": "WebCodecs is browser-only, so server export runs headless Chrome via Playwright",
+  "chromeCosts": [
+    "~300MB + ~40 shared libs",
+    "redistribution limits on baked images",
+    "1-3s cold start/job",
+    "software encoder only, no GPU choice",
+    "whole MP4 in RAM"
+  ],
+  "proposal": "New Node-only package using ffmpeg instead of WebCodecs",
+  "problemWithProposal": "Replacing decode/encode forces replacing compositing too = second renderer = parity tax forever (fonts, color, audio)",
+  "betterOption": "webcodecs-node shim — ffmpeg-backed WebCodecs API in Node, hardware encoders, existing ExportWorker.ts runs unchanged, one renderer",
+  "misdiagnosis": "Tier 1 above ranks top blockers as: no programmatic API, no warm/daemon mode, no Docker story. Encoder is not the blocker.",
+  "unmeasured": "Export loop is fully serial; logs show only avgMsPerFrame, no decode/draw/encode split. Nobody confirmed encode dominates.",
+  "recommendedOrder": [
+    "measure per-stage timing",
+    "spike webcodecs-node",
+    "programmatic API",
+    "warm mode",
+    "Docker image",
+    "ffmpeg port only if spike fails"
+  ]
+}
+```
+
+If the browser-free path in "Industry context" is ever picked up, the first
+decision is where the codec implementation comes from. The options are not
+equivalent, and two of them are traps:
+
+| Dimension | System ffmpeg binary | `ffmpeg-static` (npm) | ffmpeg.wasm | `beamcoder` (native bindings) | WebCodecs shim (`webcodecs-node`) |
+|---|---|---|---|---|---|
+| What it is | Executable found on PATH | Prebuilt binary vendored by npm | ffmpeg compiled to wasm | N-API bindings to libav* | ffmpeg-backed WebCodecs API |
+| Execution model | spawn + pipes | spawn + pipes | in-process wasm | in-process native | in-process, native |
+| Added install size | 0 | ~80 MiB/platform | ~25–30 MiB | small pkg, needs system libav* | native pkg |
+| Speed | full native | full native | 3–10× slower, CPU only | full native | full native |
+| Hardware encoders | Yes, if the build has them | Usually not | Never | Yes, if libs built with them | Yes (NVENC/VAAPI/QSV/VideoToolbox) |
+| Version reproducibility | Weak — machine-dependent | Strong — pinned | Strong | Weak — system libs | Pinned pkg, system libs vary |
+| Licensing exposure | None — not redistributed | Redistributes a GPL build | Redistributes | Linking libav* raises LGPL/GPL | Same as bindings |
+| Memory ceiling | OS-level | OS-level | wasm heap — long exports break | OS-level | OS-level |
+| **Requires a second renderer** | **Yes** | **Yes** | **Yes** | **Yes** | **No** |
+
+The last row is the one that decides it. The first four options all replace
+core's WebCodecs decode/encode with a pipe- or binding-based API, which means
+compositing also has to move off `OffscreenCanvas` onto a Node canvas — a
+second implementation of the draw path, and therefore the dual-renderer parity
+violation this document already flags. Fonts are the sharpest edge: Chrome has
+a system fallback chain, Node canvas libraries only know fonts explicitly
+registered (see Tier 3 #1).
+
+A WebCodecs shim avoids that entirely. `VideoDecoder`/`VideoEncoder` keep their
+browser signatures, so `packages/core/src/export/ExportWorker.ts` runs in Node
+substantially unchanged — one render path, no parity tests, hardware encoders
+included. This should be spiked before any port is attempted; the spike is
+cheap (run the existing export worker in Node against a fixture) and it either
+removes the need for the port or produces the concrete failure that justifies it.
+
+If a port does turn out to be necessary, prefer the **system binary** over
+`ffmpeg-static`: no size cost, no GPL redistribution from an MIT package, and
+it keeps hardware encoders — consistent with how
+`packages/cli/src/lib/browser.ts` already discovers system Chrome rather than
+vendoring a browser. Guard version drift with an `ffmpeg -encoders` capability
+check at startup, and keep `ffmpeg-static` as an optional fallback for
+zero-config local dev. ffmpeg.wasm is not viable at all: software-only encoding
+plus a wasm heap ceiling is strictly worse than the headless Chrome it would
+replace.
+
 ## Sources
 
 - [Shotstack Edit API](https://shotstack.io/product/video-editing-api/)
