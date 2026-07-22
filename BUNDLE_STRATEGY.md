@@ -47,6 +47,24 @@ consumer bundle. Its budget is still enumerated:
 | `mediabunny` | Probes media duration/dimensions for `elah build` in plain Node (pure-JS demux, no WebCodecs; ranged reads for remote URLs); already a core dependency, bundled into the binary, never reaches a consumer bundle |
 | `esbuild` (dev, build-time only) | core's tsc dist uses extensionless relative imports (bundler resolution) that plain Node cannot resolve; the CLI bundles at build time and tree-shakes core's browser-only modules out of the Node binary |
 
+`@elah/export-server` is a **server-side library** — it imports `node:child_process`
+and a native addon, so it can never be pulled into a browser bundle even by
+accident:
+
+| Dependency | Why it's in |
+|---|---|
+| `@elah/core` | The resolver and the placement helpers (`resolveDrawRect`, `computeTextLayout`); the package is a `Scene` consumer and shares core's geometry so server output matches the editor |
+| `@napi-rs/canvas` | The 2D compositor in Node (Skia-backed). Ships prebuilt per-platform binaries, so a deploy box needs no build toolchain; `GlobalFonts.registerFromPath` is what makes text render at all in a container with no system font stack |
+| `mediabunny` | Probes source duration/dimensions, supplies the packet PTS index that drives frame-accurate seeking, and re-opens the finished MP4 to validate it; already a core dependency, and none of these paths need WebCodecs |
+| `esbuild` (dev, build-time only) | Same reason as the CLI — resolves core's extensionless imports and tree-shakes its browser-only modules out of the Node bundle |
+
+**ffmpeg is deliberately not a dependency.** It is discovered as a system binary
+(`opts.ffmpegPath` → `ELAH_FFMPEG` → `PATH`), the same way
+`packages/cli/src/lib/browser.ts` discovers system Chrome rather than bundling
+one. Vendoring a static build would add ~80 MiB per platform, drop the hardware
+encoders (`h264_videotoolbox`, NVENC, QSV) that are a main reason to run this
+path at all, and mean redistributing a GPL binary from an Apache-2.0 package.
+
 Everything else the engine needs is a **browser-native API**, not a bundled
 dependency: WebCodecs (`VideoDecoder`), WebGL2, Web Audio (`OfflineAudioContext`),
 `OffscreenCanvas`, `createImageBitmap`. No WASM runtime ships in the core.
