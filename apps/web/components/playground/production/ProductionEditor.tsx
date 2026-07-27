@@ -763,7 +763,10 @@ export default function ProductionEditor() {
     onProgress: (frame: number, totalFrames: number) => void
   }) => {
     const e = timelineRef.current?.engine
-    if (!e) return
+    // Returning quietly here resolved the modal's await as success: it closed
+    // with nothing exported and no error shown. Throw so the modal's existing
+    // catch surfaces the failure.
+    if (!e) throw new Error('Editor is not ready yet — try again in a moment.')
     usePlaybackStore.getState().pause()
     const project = e.getProject()
     const { lazyExportVideo } = await import('@elah/editor')
