@@ -90,4 +90,8 @@ export const docsNav: DocNavSection[] = [
       { title: 'Custom Layers', href: '/docs/plugins#custom-layers' },
     ],
   },
+  {
+    title: 'Privacy',
+    items: [{ title: 'Analytics & Tracking', href: '/docs/analytics' }],
+  },
 ]
