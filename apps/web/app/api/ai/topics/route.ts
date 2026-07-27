@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { generateTopicOptions } from '@/lib/ai/client'
+import { getPostHogClient } from '@/lib/posthog-server'
 
 export async function POST(req: NextRequest) {
   let body: unknown
@@ -19,6 +20,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const options = await generateTopicOptions(prompt.slice(0, 500), req.signal)
+    const posthog = getPostHogClient()
+    posthog.capture({
+      distinctId: 'anonymous',
+      event: 'ai_topics_generated',
+      properties: { options_count: options.length },
+    })
+    await posthog.flush()
     return NextResponse.json({ options })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Topic generation failed.'

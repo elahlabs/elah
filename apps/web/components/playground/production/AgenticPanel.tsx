@@ -5,6 +5,7 @@ import { Sparkles, Send, X } from 'lucide-react'
 import { useTimelineEngine, type TimelineRef } from '@elah/editor'
 import { loadPixabayTopic } from './loadRandomPixabay'
 import type { TopicOption } from '@/lib/ai/types'
+import posthog from 'posthog-js'
 
 type PanelState = 'idle' | 'thinking' | 'choosing'
 
@@ -47,6 +48,8 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
       setError('')
       setState('thinking')
 
+      posthog.capture('agentic_prompt_submitted', { prompt_length: trimmed.length })
+
       try {
         const res = await fetch('/api/ai/topics', {
           method: 'POST',
@@ -88,6 +91,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
       setOptions([])
       setState('idle')
       setBusy(true)
+      posthog.capture('agentic_topic_selected', { topic_name: option.name })
       console.log('[playground] Agentic AI topic chosen', {
         name: option.name,
         videotags: option.topic.videotags,

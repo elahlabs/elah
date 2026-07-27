@@ -1,5 +1,6 @@
 'use client'
 
+import posthog from 'posthog-js'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -427,7 +428,10 @@ const LeftRail = memo(function LeftRail({
           <button
             key={id}
             type="button"
-            onClick={() => onSelect(id)}
+            onClick={() => {
+              onSelect(id)
+              posthog.capture('editor_panel_switched', { panel: id })
+            }}
             className="w-full flex flex-col items-center gap-1.5 py-1 cursor-pointer"
           >
             <span
@@ -487,7 +491,10 @@ const AspectControl = memo(function AspectControl() {
           <button
             key={a.label}
             type="button"
-            onClick={() => engine.setStage(a.w, a.h)}
+            onClick={() => {
+              engine.setStage(a.w, a.h)
+              posthog.capture('aspect_ratio_changed', { aspect_ratio: a.label, width: a.w, height: a.h })
+            }}
             title={`${a.label} aspect ratio`}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs cursor-pointer transition-colors',
@@ -559,6 +566,7 @@ const MobileAspectSelect = memo(function MobileAspectSelect() {
                 onClick={() => {
                   engine.setStage(a.w, a.h)
                   setOpen(false)
+                  posthog.capture('aspect_ratio_changed', { aspect_ratio: a.label, width: a.w, height: a.h })
                 }}
                 className={cn(
                   'flex items-center gap-2 w-full px-3 py-2 text-xs transition-colors hover:bg-ed-highest',
@@ -794,6 +802,11 @@ export default function ProductionEditor() {
     a.download = 'export.mp4'
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    posthog.capture('export_completed', {
+      output_height: opts.outputHeight,
+      video_codec: opts.videoCodec,
+      audio_codec: opts.audioCodec,
+    })
   }, [])
 
   return (
@@ -807,7 +820,10 @@ export default function ProductionEditor() {
         className="elah-root flex flex-col h-full"
       >
         <AppHeader
-          onExport={() => setShowExportModal(true)}
+          onExport={() => {
+            setShowExportModal(true)
+            posthog.capture('export_modal_opened')
+          }}
           onToggleCode={() => setShowCode((o) => !o)}
           codeOpen={showCode}
         />

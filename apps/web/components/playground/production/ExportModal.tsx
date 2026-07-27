@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { ExportVideoCodec, ExportAudioCodec } from '@elah/editor'
+import posthog from 'posthog-js'
 
 // ---------------------------------------------------------------------------
 // Quality presets
@@ -297,6 +298,14 @@ export function ExportModal({ onClose, onExport, isMobile = false }: ExportModal
     setFrame(0)
     setTotalFrames(0)
 
+    posthog.capture('export_started', {
+      resolution: preset.label,
+      output_height: preset.outputHeight,
+      video_bitrate: preset.videoBitrate,
+      video_codec: preset.videoCodec,
+      audio_codec: preset.audioCodec,
+    })
+
     try {
       await onExport({
         videoBitrate: preset.videoBitrate,
@@ -316,8 +325,15 @@ export function ExportModal({ onClose, onExport, isMobile = false }: ExportModal
         // user-cancelled — go back to settings
         setPhase('settings')
       } else {
-        setErrorMessage(String(err))
+        const message = String(err)
+        setErrorMessage(message)
         setPhase('error')
+        posthog.capture('export_failed', {
+          resolution: preset.label,
+          output_height: preset.outputHeight,
+          video_codec: preset.videoCodec,
+        })
+        posthog.captureException(err instanceof Error ? err : new Error(message))
       }
     } finally {
       abortRef.current = null
