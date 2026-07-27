@@ -77,7 +77,7 @@ export default function PricingPage() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/docs/getting-started"
-                  className="inline-flex items-center justify-center gap-2 rounded bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+                  className="inline-flex items-center justify-center gap-2 rounded bg-primary px-5 py-2.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   Get started
                 </Link>

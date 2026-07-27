@@ -184,7 +184,7 @@ export default async function BlogPostPage({
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href="/docs/getting-started"
-                    className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-hover"
+                    className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover"
                   >
                     Get started
                   </Link>

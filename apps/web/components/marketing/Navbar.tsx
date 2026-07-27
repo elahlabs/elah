@@ -81,7 +81,7 @@ export function Navbar() {
           <ThemeToggle />
           <Link
             href="/docs/getting-started"
-            className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+            className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
           >
             Get Started
           </Link>
@@ -151,7 +151,7 @@ export function Navbar() {
                 <Link
                   href="/docs/getting-started"
                   onClick={() => setMobileOpen(false)}
-                  className="block rounded bg-primary px-3 py-2 text-center text-sm font-medium text-white"
+                  className="block rounded bg-primary px-3 py-2 text-center text-sm font-medium text-on-primary"
                 >
                   Get Started
                 </Link>
