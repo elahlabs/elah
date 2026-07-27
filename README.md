@@ -278,6 +278,16 @@ For the longer treatment, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ---
 
+## Analytics & privacy
+
+The published website uses opt-in product analytics (PostHog) and a Reddit
+pixel — both gated behind a consent banner and disabled under Do-Not-Track, and
+inert unless their `NEXT_PUBLIC_*` variables are set (see
+[`.env.example`](./.env.example)). The elah libraries ship no telemetry. Full
+details on the [Analytics docs page](https://www.elah.dev/docs/analytics).
+
+---
+
 ## Contributing
 
 The foundation and the first feature wave have shipped; work now is feature and

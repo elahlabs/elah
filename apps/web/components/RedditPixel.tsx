@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef } from 'react'
 import Script from 'next/script'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useConsent } from '@/components/ConsentProvider'
 
 declare global {
   interface Window {
@@ -36,7 +37,11 @@ function RedditPixelPageviews() {
 }
 
 export function RedditPixel() {
-  if (!PIXEL_ID) return null
+  const { consent } = useConsent()
+
+  // Only inject the pixel after explicit opt-in (and when configured). Before
+  // consent this renders nothing, so no Reddit request is made.
+  if (!PIXEL_ID || consent !== 'granted') return null
 
   return (
     <>
