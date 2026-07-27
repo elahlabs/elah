@@ -36,10 +36,12 @@
     --color-outline:             #8f6f6e;
     --color-outline-variant:     #e4bebc;
 
-    /* Accent — Crimson */
-    --color-primary:             #b7102a;
-    --color-primary-hover:       #9a0d23;
-    --color-primary-dim:         #b7102a; /* same as primary in light */
+    /* Accent — Elah blue (unified with the editor/playground accent #00c2ff;
+       light theme uses a darker cyan so white text on the fill clears WCAG AA) */
+    --color-primary:             #0086c9;
+    --color-primary-hover:       #0072ad;
+    --color-primary-dim:         #0086c9; /* same as primary in light */
+    --color-on-primary:          #ffffff; /* foreground on a primary fill */
 
     /* Supporting */
     --color-secondary:           #485f84;
@@ -68,10 +70,12 @@
     --color-outline:             #564848; /* interactive / focus edges */
     --color-outline-variant:     #302828; /* structural hairlines */
 
-    /* Accent — Crimson (slightly more vibrant for dark bg contrast) */
-    --color-primary:             #dc2f4e; /* 4.6:1 with white text (WCAG AA); #e03050 was 4.46 */
-    --color-primary-hover:       #cc2846;
-    --color-primary-dim:         #f08090; /* soft glow for highlights */
+    /* Accent — Elah blue (the editor's cyan #00c2ff; bright fill takes dark
+       text, matching the editor's --elah-accent-text) */
+    --color-primary:             #00c2ff;
+    --color-primary-hover:       #2bcbff;
+    --color-primary-dim:         #7adcff; /* soft glow for highlights */
+    --color-on-primary:          #06212b; /* dark ink on the bright cyan fill */
 
     /* Supporting */
     --color-secondary:           #a09898;
@@ -100,12 +104,12 @@
   }
 
   ::selection {
-    background-color: rgba(183, 16, 42, 0.15);
+    background-color: rgba(0, 134, 201, 0.18);
     color: var(--color-on-surface);
   }
 
   .dark ::selection {
-    background-color: rgba(168, 29, 41, 0.3);
+    background-color: rgba(0, 194, 255, 0.28);
   }
 
   /* Editor surface uses its own accent for selection, not the site's brand red. */
@@ -157,7 +161,7 @@
     gap: 0.5rem;
     padding: 0.5rem 1rem;
     background-color: var(--color-primary);
-    color: #ffffff;
+    color: var(--color-on-primary);
     border-radius: 4px;
     font-size: 0.875rem;
     font-weight: 500;
@@ -425,6 +429,183 @@
     to {
       opacity: 1;
       transform: none;
+    }
+  }
+}
+
+/* ── Landing v2 ───────────────────────────────────────────────────────────────
+   The redesigned marketing home (components/landing/*) uses its own cool
+   near-black palette, decoupled from the site's warm surfaces. Tokens are
+   scoped to .landing-root so no other route is repainted. Values mirror the
+   design's html / html[data-theme=light]; here they follow the app's own
+   .dark class instead (light in :root scope, dark under .dark). */
+
+.landing-root {
+  --bg: #f7f9fc;
+  --bg2: #ffffff;
+  --card: #ffffff;
+  --elev: #e9eef6;
+  --line: #dde3ee;
+  --line2: #e8edf5;
+  --text: #0d1320;
+  --muted: #5a6578;
+  --faint: #8b95a8;
+  --accent: #0086c9;
+  --ink: #ffffff;
+  --nav: rgba(247, 249, 252, 0.82);
+  --code: #0a0d14;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark .landing-root {
+  --bg: #06070a;
+  --bg2: #0a0d14;
+  --card: #0d1017;
+  --elev: #171d2b;
+  --line: #232938;
+  --line2: #1a1f2b;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --faint: #7a858b;
+  --accent: #00c2ff;
+  --ink: #04202a;
+  --nav: rgba(6, 7, 10, 0.78);
+  --code: #0a0d14;
+}
+
+/* Responsive split: the design swaps a desktop product-shot for a phone mockup
+   at 760px. Data attributes let the same markup carry both. */
+@media (max-width: 760px) {
+  .landing-root [data-lv-desktop] {
+    display: none !important;
+  }
+}
+@media (min-width: 761px) {
+  .landing-root [data-lv-mobile] {
+    display: none !important;
+  }
+}
+
+/* FAQ accordions — native <details>, custom caret, no default marker. */
+.landing-root details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.landing-root details > summary::-webkit-details-marker {
+  display: none;
+}
+.landing-root details[open] .lv-faq-caret {
+  transform: rotate(45deg);
+}
+
+/* Material Symbols baseline (icon font loaded in layout.tsx). */
+.landing-root .material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-variation-settings: 'opsz' 20, 'wght' 300, 'FILL' 0, 'GRAD' 0;
+  line-height: 1;
+  vertical-align: middle;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* Interaction states (the design expressed these via a non-standard
+   style-hover attribute; realised here as scoped hover rules). */
+.landing-root .lv-navlink:hover {
+  color: var(--text);
+  background: var(--elev);
+}
+.landing-root .lv-ghost:hover {
+  color: var(--text);
+}
+.landing-root .lv-pill:hover,
+.landing-root .lv-outline:hover,
+.landing-root .lv-copy:hover,
+.landing-root .lv-icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.landing-root .lv-accent-btn:hover {
+  filter: brightness(1.1);
+}
+.landing-root .lv-feature:hover {
+  background: var(--card);
+}
+.landing-root .lv-pgcard:hover {
+  border-color: var(--accent);
+  box-shadow: 0 12px 40px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.landing-root .lv-launch:hover {
+  gap: 10px;
+}
+.landing-root .lv-footlink:hover {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes lv-rise {
+    from {
+      opacity: 0;
+      transform: translateY(26px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes lv-phSweep {
+    from {
+      left: calc(92px + (100% - 92px) * 0.03);
+    }
+    to {
+      left: calc(92px + (100% - 92px) * 0.93);
+    }
+  }
+  @keyframes lv-phSweepMobile {
+    from {
+      left: calc(42px + (100% - 42px) * 0.05);
+    }
+    to {
+      left: calc(42px + (100% - 42px) * 0.92);
+    }
+  }
+  @keyframes lv-phSweepPct {
+    from {
+      left: 5%;
+    }
+    to {
+      left: 93%;
+    }
+  }
+  @keyframes lv-flowDot {
+    0% {
+      top: -4px;
+      opacity: 0;
+    }
+    25% {
+      opacity: 1;
+    }
+    75% {
+      opacity: 1;
+    }
+    100% {
+      top: calc(100% - 2px);
+      opacity: 0;
+    }
+  }
+  @keyframes lv-glowPulse {
+    0%,
+    100% {
+      opacity: 0.65;
+    }
+    50% {
+      opacity: 1;
     }
   }
 }

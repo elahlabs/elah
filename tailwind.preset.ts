@@ -39,6 +39,7 @@ const preset = {
         primary:              'var(--color-primary)',
         'primary-hover':      'var(--color-primary-hover)',
         'primary-dim':        'var(--color-primary-dim)',
+        'on-primary':         'var(--color-on-primary)',
         secondary:            'var(--color-secondary)',
         tertiary:             'var(--color-tertiary)',
 

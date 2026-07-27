@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Inter, Geist, Geist_Mono, Bricolage_Grotesque } from 'next/font/google'
 // Published-package stylesheets are imported here (root layout) rather than
 // in the playground/editor nested layouts so their cascade position is fixed
 // at first paint. When they were imported per-route, client-side back
@@ -20,11 +20,29 @@ const inter = Inter({
   display: 'swap',
 })
 
-const jetbrainsMono = JetBrains_Mono({
+// Geist is the landing-v2 body/UI face; --font-geist-sans was previously
+// referenced in globals.css but never loaded (fell back to system-ui).
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+  display: 'swap',
+})
+
+// Replaces JetBrains Mono as --font-geist-mono site-wide — the mono token now
+// resolves to a real Geist Mono instead of the CSS fallback stack.
+const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
   display: 'swap',
   weight: ['400', '500', '600'],
+})
+
+// Display face for landing-v2 headings and the wordmark.
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+  weight: ['500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -88,18 +106,9 @@ const webSiteJsonLd = {
   description: siteConfig.description,
 }
 
-// Runs synchronously before first paint to avoid flash of wrong theme.
-// Defaults to dark mode; only an explicit saved choice can switch to light.
-const themeInitScript = `
-(function(){
-  try{
-    var t=localStorage.getItem('ps-theme');
-    if(t!=='light') document.documentElement.classList.add('dark');
-  }catch(e){
-    document.documentElement.classList.add('dark');
-  }
-})();
-`
+// The site is dark-only. Apply the class before first paint so there is no
+// flash of the light fallback tokens.
+const themeInitScript = `document.documentElement.classList.add('dark');`
 
 export default function RootLayout({
   children,
@@ -110,6 +119,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Material Symbols icon font — used by the landing-v2 editor mockups
+            and section chrome. Variable axes requested so weights/fill match. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+        />
         {/* Plain <link> rather than metadata alternates.types: pages that set
             their own `alternates` (canonicals) would replace it entirely. */}
         <link
@@ -120,12 +141,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} bg-surface text-on-surface antialiased`}
+        className={`${inter.variable} ${geist.variable} ${geistMono.variable} ${bricolage.variable} bg-surface text-on-surface antialiased`}
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
       >
         <a
           href="#main"
-          className="sr-only rounded bg-primary px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+          className="sr-only rounded bg-primary px-4 py-2 text-sm font-medium text-on-primary focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
         >
           Skip to content
         </a>
