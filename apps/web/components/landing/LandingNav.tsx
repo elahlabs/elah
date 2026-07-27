@@ -2,14 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useTheme } from '@/components/ThemeProvider'
 import { Icon } from './Icon'
 import { navLinks, GITHUB_URL, GET_STARTED_URL } from './landingData'
 
 const linkStyle = { color: 'var(--muted)', padding: '6px 11px', borderRadius: 7 } as const
 
 export function LandingNav() {
-  const { theme, toggle } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -103,28 +101,6 @@ export function LandingNav() {
         >
           GitHub
         </a>
-
-        <button
-          onClick={toggle}
-          title="Toggle theme"
-          aria-label="Toggle theme"
-          className="lv-icon-btn"
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            border: '1px solid var(--line)',
-            background: 'transparent',
-            color: 'var(--muted)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-          }}
-        >
-          <Icon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} size={17} />
-        </button>
 
         <Link
           href={GET_STARTED_URL}

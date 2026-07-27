@@ -106,18 +106,9 @@ const webSiteJsonLd = {
   description: siteConfig.description,
 }
 
-// Runs synchronously before first paint to avoid flash of wrong theme.
-// Defaults to dark mode; only an explicit saved choice can switch to light.
-const themeInitScript = `
-(function(){
-  try{
-    var t=localStorage.getItem('ps-theme');
-    if(t!=='light') document.documentElement.classList.add('dark');
-  }catch(e){
-    document.documentElement.classList.add('dark');
-  }
-})();
-`
+// The site is dark-only. Apply the class before first paint so there is no
+// flash of the light fallback tokens.
+const themeInitScript = `document.documentElement.classList.add('dark');`
 
 export default function RootLayout({
   children,
