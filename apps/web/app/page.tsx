@@ -5,6 +5,7 @@ import { currentVersion } from '@/config/changelog'
 import { LandingNav } from '@/components/landing/LandingNav'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { SpecStrip, Architecture, DataFlow, Integration, Faq, Cta } from '@/components/landing/LandingSections'
+import { LandingLibraries } from '@/components/landing/LandingLibraries'
 import { LandingPlaygrounds } from '@/components/landing/LandingPlaygrounds'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 
@@ -33,6 +34,7 @@ export default function HomePage() {
       <main>
         <LandingHero />
         <SpecStrip />
+        <LandingLibraries />
         <Architecture />
         <DataFlow />
         <LandingPlaygrounds />

@@ -16,6 +16,20 @@ export const GET_STARTED_URL = '/docs/getting-started'
 export const EDITOR_URL = '/playground/production'
 export const INSTALL_COMMAND = 'npm install @elah/core @elah/timeline @elah/editor @elah/cli'
 
+export interface Library {
+  pkg: string
+  title: string
+  subtitle: string
+  href: string
+}
+
+export const libraries: Library[] = [
+  { pkg: '@elah/core', title: 'Media Runtime', subtitle: 'Framework-agnostic engine — resolver, WebGL2 renderer, WebCodecs decode, MP4 export.', href: '/docs' },
+  { pkg: '@elah/timeline', title: 'Timeline UI', subtitle: 'React timeline — tracks, clips, drag/trim/split, ruler, playhead.', href: '/playground/timeline' },
+  { pkg: '@elah/editor', title: 'Editor SDK', subtitle: 'Full editor — EditorProvider, Preview, AssetPanel, and Timeline in one composition.', href: '/playground/production' },
+  { pkg: '@elah/cli', title: 'Headless Rendering', subtitle: 'Server-side render pipeline — split/trim/build/export and an HTTP render server.', href: '/docs/cli' },
+]
+
 export interface Feature {
   idx: string
   title: string

@@ -223,7 +223,7 @@ export function LandingHero() {
 
         {/* scroll hint */}
         <a
-          href="#playgrounds"
+          href="#libraries"
           className="lv-ghost"
           style={{
             fontFamily: 'var(--font-geist-mono)',
