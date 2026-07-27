@@ -12,6 +12,7 @@ import '@/styles/globals.css'
 import { siteConfig } from '@/config/site'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { JsonLd } from '@/components/seo/JsonLd'
+import { RedditPixel } from '@/components/RedditPixel'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -130,6 +131,7 @@ export default function RootLayout({
         </a>
         <JsonLd data={organizationJsonLd} />
         <JsonLd data={webSiteJsonLd} />
+        <RedditPixel />
         <ThemeProvider>
           {children}
         </ThemeProvider>
