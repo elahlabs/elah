@@ -14,7 +14,7 @@ export const GITHUB_URL = 'https://github.com/elahlabs/elah'
 export const DISCORD_URL = 'https://discord.gg/8CeZ2XbPy'
 export const GET_STARTED_URL = '/docs/getting-started'
 export const EDITOR_URL = '/playground/production'
-export const INSTALL_COMMAND = 'npm install @elah/editor'
+export const INSTALL_COMMAND = 'npm install @elah/core @elah/timeline @elah/editor @elah/cli'
 
 export interface Feature {
   idx: string
