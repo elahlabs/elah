@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { ExportVideoCodec, ExportAudioCodec } from '@elah/editor'
+import posthog from 'posthog-js'
 
 // ---------------------------------------------------------------------------
 // Quality presets
@@ -269,6 +270,21 @@ function ErrorPhase({
   )
 }
 
+/**
+ * Every export event carries the same shape off the same preset, so the funnel
+ * can be broken down by any one property at every step. Derive it here rather
+ * than at each call site — that is how started/completed drifted apart before.
+ */
+function exportEventProps(preset: (typeof PRESETS)[number]) {
+  return {
+    resolution: preset.label,
+    output_height: preset.outputHeight,
+    video_bitrate: preset.videoBitrate,
+    video_codec: preset.videoCodec,
+    audio_codec: preset.audioCodec,
+  }
+}
+
 // ---------------------------------------------------------------------------
 // ExportModal — main component
 // ---------------------------------------------------------------------------
@@ -297,6 +313,8 @@ export function ExportModal({ onClose, onExport, isMobile = false }: ExportModal
     setFrame(0)
     setTotalFrames(0)
 
+    posthog.capture('export_started', exportEventProps(preset))
+
     try {
       await onExport({
         videoBitrate: preset.videoBitrate,
@@ -310,14 +328,18 @@ export function ExportModal({ onClose, onExport, isMobile = false }: ExportModal
         },
       })
       // success — modal closes (parent handles the download)
+      posthog.capture('export_completed', exportEventProps(preset))
       onClose()
     } catch (err) {
       if ((err as DOMException)?.name === 'AbortError') {
         // user-cancelled — go back to settings
         setPhase('settings')
       } else {
-        setErrorMessage(String(err))
+        const message = String(err)
+        setErrorMessage(message)
         setPhase('error')
+        posthog.capture('export_failed', exportEventProps(preset))
+        posthog.captureException(err instanceof Error ? err : new Error(message))
       }
     } finally {
       abortRef.current = null

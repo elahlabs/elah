@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, Copy, Play } from 'lucide-react'
+import posthog from 'posthog-js'
 
 function InstallCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
@@ -11,6 +12,7 @@ function InstallCommand({ command }: { command: string }) {
     navigator.clipboard?.writeText(command).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
+      posthog.capture('install_command_copied', { command })
     })
   }
 
