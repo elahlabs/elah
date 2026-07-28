@@ -16,7 +16,7 @@ Clips on the timeline reference assets by `id` rather than duplicating URLs and 
 | [`store.ts`](./store.ts) | Zustand store — in-memory asset registry |
 | [`importFiles.ts`](./importFiles.ts) | File import, metadata probing, thumbnail generation |
 | [`importFiles.test.ts`](./importFiles.test.ts) | Unit tests for import, probe, and thumbnail helpers |
-| [`index.ts`](./index.ts) | Public exports and `useMediaLibrary()` hook |
+| [`index.ts`](./index.ts) | Public exports (`mediaLibraryStore`, `importFiles`/`importUrl`/`importBlob`, types) — the `useMediaLibrary()` hook itself lives in `@elah/react` |
 
 UI integration lives in the `@elah/editor` package's [`AssetPanel.tsx`](../../../../editor/src/editor/AssetPanel/AssetPanel.tsx). Timeline drop handling consumes `MEDIA_DRAG_MIME` via the `@elah/timeline` package's [`useTimelineDrop.ts`](../../../../timeline/src/useTimelineDrop.ts).
 

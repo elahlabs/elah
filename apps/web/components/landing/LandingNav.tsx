@@ -148,12 +148,12 @@ export function LandingNav() {
         {menuOpen && (
           <div
             data-lv-mobile
+            className="lv-nav-panel"
             style={{
               borderTop: '1px solid var(--line2)',
               padding: '6px 20px 14px',
               display: 'flex',
               flexDirection: 'column',
-              position: 'relative',
               zIndex: 1,
             }}
           >

@@ -55,7 +55,8 @@
   "license": "Apache-2.0",
   "peerDependencies": {
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react-dom": ">=18.0.0",
+    "lucide-react": ">=0.400.0"
   },
   "dependencies": {
     "@elah/core": "^0.3.1",
@@ -68,6 +69,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.21",
+    "lucide-react": "^0.511.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",

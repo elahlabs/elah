@@ -23,7 +23,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
     <section className="mb-12">
       <h2
         id={id}
-        className="mb-5 border-b border-outline-variant pb-3 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+        className="mb-5 border-b border-outline-variant pb-3 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
         style={{ fontFamily: 'var(--font-inter), sans-serif' }}
       >
         {title}
@@ -52,9 +52,9 @@ function ApiEntry({ name, signature, description, params }: {
         {params && params.length > 0 && (
           <div className="space-y-1.5">
             {params.map((p) => (
-              <div key={p.name} className="flex gap-3 text-xs">
-                <code className="w-32 shrink-0 font-mono text-on-surface">{p.name}</code>
-                <code className="w-28 shrink-0 font-mono text-on-surface-variant">{p.type}</code>
+              <div key={p.name} className="flex flex-col gap-0.5 text-xs sm:flex-row sm:gap-3">
+                <code className="font-mono text-on-surface sm:w-32 sm:shrink-0">{p.name}</code>
+                <code className="font-mono text-on-surface-variant sm:w-28 sm:shrink-0">{p.type}</code>
                 <span className="text-on-surface-variant">{p.desc}</span>
               </div>
             ))}
@@ -67,7 +67,7 @@ function ApiEntry({ name, signature, description, params }: {
 
 export default function ApiPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Reference</div>

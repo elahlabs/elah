@@ -19,7 +19,7 @@ The editor `core/` namespace is split into three honest layers:
 
 | Layer | Role | Key modules |
 |---|---|---|
-| `core/assets/` | Asset/file manager — import, metadata, thumbnails | `useMediaLibrary`, `importFiles`, `MediaAsset` |
+| `core/assets/` | Asset/file manager — import, metadata, thumbnails | `mediaLibraryStore`, `importFiles`, `MediaAsset` (the `useMediaLibrary` hook is `@elah/react`) |
 | `core/media/` | Frame/sample producers — decode, caches, future audio/text/image | `core/media/video/` (`VideoFrameProvider`, `FrameCache`, demuxer) |
 | `core/renderer/` | Compositing only — imports `core/media/` **interfaces** via the public barrel | `GpuRenderer`, `VideoLayer`, `RenderGraph` |
 

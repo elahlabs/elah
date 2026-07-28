@@ -20,7 +20,7 @@ const toc = [
 
 export default function GettingStartedPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Getting Started</div>
@@ -37,7 +37,7 @@ export default function GettingStartedPage() {
 
         {/* Timeline only */}
         <section className="mb-10">
-          <h2 id="timeline-only" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="timeline-only" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Level 1: Timeline Only
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -118,7 +118,7 @@ export default function TimelineOnly() {
 
         {/* Preview component */}
         <section className="mb-10">
-          <h2 id="preview-component" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="preview-component" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Level 2: Timeline + Preview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -180,7 +180,7 @@ export default function App() {
 
         {/* Full editor */}
         <section className="mb-10">
-          <h2 id="full-editor" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="full-editor" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Level 3: Full Editor
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -294,7 +294,7 @@ export default function FullEditor() {
 
         {/* Keyboard shortcuts */}
         <section className="mb-10">
-          <h2 id="keyboard-shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="keyboard-shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Keyboard Shortcuts
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -314,7 +314,7 @@ export default function FullEditor() {
             ].map((row, i) => (
               <div
                 key={row.key}
-                className={`flex items-center gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
+                className={`flex flex-col items-start gap-1.5 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-center sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
                 <kbd className="min-w-0 rounded border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
                   {row.key}
@@ -327,7 +327,7 @@ export default function FullEditor() {
 
         {/* Adding clips programmatically */}
         <section className="mb-10">
-          <h2 id="adding-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="adding-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Adding Clips Programmatically
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">

@@ -2,7 +2,9 @@
 
 Framework-agnostic video timeline engine. No React. No renderer. Just the pure logic layer — project state, playback, frame resolution, and media management.
 
-Used internally by `@elah/timeline` and `@elah/editor`, but can be consumed directly for custom rendering pipelines or headless environments.
+Used internally by `@elah/react`, `@elah/timeline`, and `@elah/editor`, but can be consumed directly for custom rendering pipelines or headless environments.
+
+React hooks are **not** in this package — they live in [`@elah/react`](https://www.npmjs.com/package/@elah/react), which wraps the stores below for component use.
 
 [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core)
 [![gzip size](https://img.shields.io/badge/gzip-41%20KiB-brightgreen)](../../BUNDLE_STRATEGY.md)
@@ -29,13 +31,15 @@ npm install @elah/core
 | `resolveTimeline` | Pure function — project → active scene at a given frame |
 | `GpuRenderer` | WebGL2 renderer for video, image, text, shape, and freehand layers |
 | `AudioPlaybackController` | Multi-track audio mixer on the playback clock |
-| `useAudioMixer` / `useTrackLevels` / `useMasterVolume` | React hooks for volume + level-meter UIs |
-| `useTracksStore` | Zustand mirror of project state for React |
-| `usePlaybackStore` | Zustand mirror of playback state for React |
-| `useSelectionStore` | Zustand mirror of selection state for React |
-| `useMediaLibrary` / `useAssets` | Media asset library with thumbnail generation |
+| `tracksStore` | Vanilla Zustand store mirroring project state — bind it with `useTracksStore` from `@elah/react` |
+| `playbackStore` | Vanilla Zustand store mirroring playback state — bind it with `usePlaybackStore` from `@elah/react` |
+| `selectionStore` | Vanilla Zustand store for clip selection — bind it with `useSelectionStore` from `@elah/react` |
+| `transitionsStore` | Vanilla Zustand store mirroring transitions — bind it with `useTransitionsStore` from `@elah/react` |
+| `mediaLibraryStore` | Media asset registry (vanilla store) — bind it with `useMediaLibrary` from `@elah/react` |
 | `importFiles` / `importUrl` / `importBlob` | Import local files, remote URLs, or blobs into the media library |
 | `exportVideo` | Export the timeline to MP4 via a web worker |
+
+These stores are **vanilla** (`zustand/vanilla`) — no React, subscribable from anywhere (`store.getState()`, `store.subscribe()`). They are also **module-level singletons**: one `tracksStore`, one `playbackStore`, etc. per JS realm. `@elah/editor`'s `<EditorProvider>` wires each `TimelineEngine`/`PlaybackEngine` instance it creates into these same shared stores, so only **one active project per page** is supported today — mounting two `<EditorProvider>` (or two manually-wired engines) at once will have them overwrite each other's state in the stores. Multiple independent editors on one page need separate tabs/iframes/windows until scoped stores land.
 
 ---
 
@@ -100,6 +104,7 @@ const blob = await exportVideo(engine.getProject(), {
 
 - [Website](https://www.elah.dev)
 - [GitHub](https://github.com/elahlabs/elah)
+- [React bindings — @elah/react](https://www.npmjs.com/package/@elah/react)
 - [Full SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
 - [Headless CLI — @elah/cli](https://www.npmjs.com/package/@elah/cli)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)

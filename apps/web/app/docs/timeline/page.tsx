@@ -20,7 +20,7 @@ const toc = [
 
 export default function TimelinePage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Timeline</div>
@@ -34,7 +34,7 @@ export default function TimelinePage() {
 
         {/* Overview */}
         <section className="mb-10">
-          <h2 id="overview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="overview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Overview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -75,7 +75,7 @@ export default function TimelineOnlyDemo() {
 
         {/* Tracks & Clips */}
         <section className="mb-10">
-          <h2 id="tracks-and-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="tracks-and-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Tracks & Clips
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -148,7 +148,7 @@ splitClipAtPlayhead(engine)`}
 
         {/* Playback */}
         <section className="mb-10">
-          <h2 id="playback" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="playback" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Playback
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -189,7 +189,7 @@ export function TransportControls({ fps = 30 }) {
 
         {/* Zooming & snapping */}
         <section className="mb-10">
-          <h2 id="zooming" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="zooming" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Zooming & Snapping
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -216,7 +216,7 @@ const snappedFrame = snapFrame(frame, snapPoints, threshold)`}
 
         {/* Transitions */}
         <section className="mb-10">
-          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -249,7 +249,7 @@ engine.addTransition({
 
         {/* Shortcuts */}
         <section className="mb-10">
-          <h2 id="shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Keyboard Shortcuts
           </h2>
           <div className="overflow-hidden rounded-md border border-outline-variant">
@@ -266,7 +266,7 @@ engine.addTransition({
             ].map(([key, action], i) => (
               <div
                 key={key}
-                className={`flex items-center gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
+                className={`flex flex-col items-start gap-1.5 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-center sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
                 <kbd className="min-w-0 rounded border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
                   {key}

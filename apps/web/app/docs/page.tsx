@@ -20,7 +20,7 @@ const toc = [
 
 export default function DocsPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         {/* Page header */}
         <div className="mb-8 pb-6 border-b border-outline-variant">
@@ -68,7 +68,7 @@ export default function DocsPage() {
         <section className="mb-10">
           <h2
             id="architecture"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
           >
             Architecture
@@ -90,8 +90,8 @@ export default function DocsPage() {
               { label: 'Renderer Interface', items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'], bg: 'bg-surface-low' },
               { label: 'Media Pipeline', items: ['StreamingFrameProducer', 'WebCodecs API', 'mediabunny demux', 'ImageBitmap cache'], bg: 'bg-surface-lowest' },
             ].map((layer) => (
-              <div key={layer.label} className={`flex gap-4 border-b border-outline-variant p-3 last:border-0 ${layer.bg}`}>
-                <div className="w-32 shrink-0 pt-0.5">
+              <div key={layer.label} className={`flex flex-col gap-2 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:gap-4 ${layer.bg}`}>
+                <div className="pt-0.5 sm:w-32 sm:shrink-0">
                   <span className="label-mono text-2xs text-on-surface-variant" style={{ opacity: 0.65 }}>
                     {layer.label}
                   </span>
@@ -115,7 +115,7 @@ export default function DocsPage() {
         <section className="mb-10">
           <h2
             id="packages"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
           >
             Packages
@@ -160,7 +160,7 @@ export default function DocsPage() {
         <section className="mb-10">
           <h2
             id="design-principles"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
           >
             Design Principles
@@ -189,7 +189,7 @@ export default function DocsPage() {
         <section>
           <h2
             id="next-steps"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20"
+            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
             style={{ fontFamily: 'var(--font-inter), sans-serif' }}
           >
             Next Steps

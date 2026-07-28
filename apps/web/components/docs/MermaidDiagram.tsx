@@ -90,10 +90,12 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
     <>
       {/* Inline diagram */}
       <div className="group relative overflow-x-auto rounded-md border border-outline-variant bg-surface-low p-4 [&_svg]:mx-auto [&_svg]:max-w-full">
+        {/* Always visible on touch: fullscreen is the only way to read the
+            diagram at small sizes, and there is no hover to reveal it with. */}
         <button
           onClick={() => setFullscreen(true)}
           title="View fullscreen"
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded border border-outline-variant bg-surface text-on-surface-variant opacity-0 transition-opacity hover:bg-surface-high hover:text-on-surface group-hover:opacity-100"
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded border border-outline-variant bg-surface text-on-surface-variant transition-opacity hover:bg-surface-high hover:text-on-surface md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100"
         >
           <Maximize2 className="h-3.5 w-3.5" />
         </button>
@@ -110,7 +112,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                 onClick={() => setZoom(z => clampZoom(z - ZOOM_STEP))}
                 disabled={zoom <= MIN_ZOOM}
                 title="Zoom out (Ctrl −)"
-                className="flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
+                className="flex h-9 w-9 items-center justify-center rounded border border-outline-variant text-on-surface-variant md:h-7 md:w-7 transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
               >
                 <ZoomOut className="h-3.5 w-3.5" />
               </button>
@@ -123,7 +125,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                 onClick={() => setZoom(z => clampZoom(z + ZOOM_STEP))}
                 disabled={zoom >= MAX_ZOOM}
                 title="Zoom in (Ctrl +)"
-                className="flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
+                className="flex h-9 w-9 items-center justify-center rounded border border-outline-variant text-on-surface-variant md:h-7 md:w-7 transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
               >
                 <ZoomIn className="h-3.5 w-3.5" />
               </button>
@@ -132,7 +134,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                 onClick={() => setZoom(1)}
                 disabled={zoom === 1}
                 title="Reset zoom (Ctrl 0)"
-                className="ml-1 flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
+                className="ml-1 flex h-9 w-9 items-center justify-center rounded border border-outline-variant text-on-surface-variant md:h-7 md:w-7 transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-30"
               >
                 <RotateCcw className="h-3 w-3" />
               </button>
@@ -145,14 +147,14 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
             <button
               onClick={close}
               title="Close (Esc)"
-              className="flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              className="flex h-9 w-9 items-center justify-center rounded border border-outline-variant text-on-surface-variant md:h-7 md:w-7 transition-colors hover:bg-surface-container hover:text-on-surface"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {/* Diagram scroll area */}
-          <div ref={scrollAreaRef} className="flex-1 overflow-auto p-12">
+          <div ref={scrollAreaRef} className="flex-1 overflow-auto p-4 md:p-12">
             <div
               className="[&_svg]:block [&_svg]:h-auto [&_svg]:w-auto"
               style={{ zoom: zoom, transformOrigin: 'top left' }}

@@ -97,7 +97,7 @@ export function InlineCode({ children, className }: InlineCodeProps) {
   return (
     <code
       className={cn(
-        'rounded bg-surface-container px-1.5 py-0.5 text-xs text-on-surface',
+        'rounded bg-surface-container px-1.5 py-0.5 text-xs text-on-surface break-words',
         className
       )}
       style={{ fontFamily: 'var(--font-geist-mono), monospace' }}

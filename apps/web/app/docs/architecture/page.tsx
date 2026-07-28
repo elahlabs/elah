@@ -88,7 +88,7 @@ flowchart LR
 
 export default function ArchitecturePage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Architecture</div>
@@ -102,7 +102,7 @@ export default function ArchitecturePage() {
 
         {/* ── Ring States ── */}
         <section className="mb-12">
-          <h2 id="ring-states" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="ring-states" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Three-Ring State Model
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
@@ -118,7 +118,7 @@ export default function ArchitecturePage() {
 
         {/* ── Timeline Engine ── */}
         <section className="mb-12">
-          <h2 id="timeline-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="timeline-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Timeline Engine
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
@@ -134,7 +134,7 @@ export default function ArchitecturePage() {
 
         {/* ── Playback Clock ── */}
         <section className="mb-12">
-          <h2 id="playback-clock" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="playback-clock" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Playback Engine & Clock
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
@@ -150,7 +150,7 @@ export default function ArchitecturePage() {
 
         {/* ── Rendering Engine ── */}
         <section className="mb-12">
-          <h2 id="rendering-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="rendering-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Rendering Engine
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
@@ -166,7 +166,7 @@ export default function ArchitecturePage() {
 
         {/* ── Layer Reference ── */}
         <section className="mb-12">
-          <h2 id="overview" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="overview" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Layer Reference
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
