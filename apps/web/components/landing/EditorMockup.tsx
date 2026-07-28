@@ -5,7 +5,6 @@ import { tracks, type TrackClip } from './landingData'
 // A static, decorative reproduction of /playground/production, pinned dark in
 // both themes (it depicts a dark tool surface). Colours are intentionally
 // literal — this is a product screenshot rendered in markup, not a themed
-// surface. The desktop and mobile variants swap at 760px via [data-lv-*].
 
 const MONO = "var(--font-geist-mono), 'Geist Mono', monospace"
 
