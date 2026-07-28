@@ -12,12 +12,14 @@ const riseBase = 'lv-rise .8s cubic-bezier(.2,.7,.2,1)'
 
 const outlineBtn = {
   border: '1px solid var(--line)',
-  background: 'var(--card)',
+  background: 'linear-gradient(180deg, color-mix(in oklab, var(--elev) 60%, var(--card)), var(--card))',
   color: 'var(--text)',
   fontWeight: 500,
   fontSize: 'clamp(13px, 1.6vw, 14px)',
   padding: '10px 20px',
-  borderRadius: 9,
+  borderRadius: 999,
+  boxShadow: 'inset 0 1px 0 color-mix(in oklab, white 6%, transparent)',
+  transition: 'border-color .18s, transform .18s, box-shadow .18s, background .18s',
 } as const
 
 interface CommandLineProps {
@@ -173,14 +175,16 @@ export function LandingHero() {
             animation: `${riseBase} .18s both`,
           }}
         >
-          <Link href={GET_STARTED_URL} className="lv-outline" style={outlineBtn}>
+          <Link href={GET_STARTED_URL} className="lv-outline lv-hero-btn" style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="rocket_launch" size={15} color="var(--accent)" />
             Get Started
           </Link>
-          <Link href={EDITOR_URL} className="lv-outline" style={outlineBtn}>
+          <Link href={EDITOR_URL} className="lv-outline lv-hero-btn" style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="play_circle" size={15} color="var(--accent)" />
             Live Playground
           </Link>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="lv-outline" style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-            <Icon name="star" size={15} color="var(--accent)" />
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="lv-outline lv-hero-btn" style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="star" size={15} color="#f5c518" />
             GitHub
           </a>
         </div>

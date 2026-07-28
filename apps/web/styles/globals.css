@@ -648,6 +648,16 @@
   border-color: var(--accent);
   color: var(--text);
 }
+.landing-root .lv-hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 6%, transparent),
+    0 8px 20px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+.landing-root .lv-hero-btn:active {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, white 6%, transparent);
+}
 .landing-root .lv-accent-btn:hover {
   filter: brightness(1.1);
 }
