@@ -16,7 +16,9 @@ Ships `EditorProvider`, `Preview` (WebGL2 canvas + interactive transform overlay
 npm install @elah/editor
 ```
 
-Peer dependencies: `react`, `react-dom` >= 18.
+Peer dependencies: `react`, `react-dom` >= 18, `lucide-react` >= 0.400.0 (used by the
+bundled `@elah/timeline` UI for clip icons — install it alongside `react`/`react-dom`
+even though nothing in your own code imports it).
 
 **Bundle size:** ~10 KiB gzipped for the editor layer (51 KiB raw); ~63 KiB gzipped for the full SDK graph (`core` + `timeline` + `editor`, 330 KiB raw). `mediabunny` is injected, never bundled — see [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md).
 
@@ -142,15 +144,26 @@ Runs in a web worker. Reuses `resolveTimeline` + the GPU renderer's placement ma
 ## Package layers
 
 ```
-@elah/core      — engine, playback, resolver, stores, media, export (framework-agnostic)
-@elah/timeline  — React timeline UI components and hooks
-@elah/editor    — EditorProvider, Preview, AssetPanel + re-exports everything above
+@elah/core      — engine, playback, resolver, vanilla stores, media, export (framework-agnostic)
+@elah/react     — React bindings: EditorContext, store hooks, audio hooks
+@elah/timeline  — React timeline UI components and hooks (consumes @elah/core + @elah/react)
+@elah/editor    — EditorProvider, Preview, AssetPanel + re-exports @elah/core, @elah/react, @elah/timeline
 @elah/cli       — headless split/trim/build/export/serve on top of @elah/core
 ```
 
 Use `@elah/editor` for the full in-browser experience. Use `@elah/core` directly
-for headless or custom rendering pipelines. Use `@elah/cli` for automation,
+for headless or custom rendering pipelines, or pair it with `@elah/react` if you
+want the hooks without the timeline UI. Use `@elah/cli` for automation,
 AI-generation pipelines, and server-side rendering.
+
+**One active project per page.** `@elah/core`'s stores (`tracksStore`,
+`playbackStore`, `selectionStore`, `transitionsStore`, `mediaLibraryStore`) are
+module-level singletons, and `<EditorProvider>` wires the `TimelineEngine` /
+`PlaybackEngine` it creates into those same shared stores. Mounting a second
+`<EditorProvider>` on the same page (two independent projects at once) will have
+both instances overwrite each other's state — there is currently no per-instance
+scoping. If you need multiple concurrent editors, isolate each in its own
+tab/window/iframe.
 
 ---
 

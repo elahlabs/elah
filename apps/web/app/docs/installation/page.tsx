@@ -20,7 +20,7 @@ const toc = [
 
 export default function InstallationPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Getting Started</div>
@@ -39,7 +39,7 @@ export default function InstallationPage() {
 
         {/* Requirements */}
         <section className="mb-10">
-          <h2 id="requirements" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="requirements" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Requirements
           </h2>
           <div className="overflow-hidden rounded-md border border-outline-variant">
@@ -52,10 +52,10 @@ export default function InstallationPage() {
             ].map((row, i) => (
               <div
                 key={row.dep}
-                className={`flex items-start gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
+                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <div className="w-28 shrink-0 font-mono text-xs font-medium text-on-surface">{row.dep}</div>
-                <div className="w-24 shrink-0 font-mono text-xs text-on-surface-variant">{row.version}</div>
+                <div className="font-mono text-xs font-medium text-on-surface sm:w-28 sm:shrink-0">{row.dep}</div>
+                <div className="font-mono text-xs text-on-surface-variant sm:w-24 sm:shrink-0">{row.version}</div>
                 <div className="text-xs text-on-surface-variant">{row.note}</div>
               </div>
             ))}
@@ -64,7 +64,7 @@ export default function InstallationPage() {
 
         {/* Install */}
         <section className="mb-10">
-          <h2 id="npm-install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="npm-install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Install
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -89,7 +89,7 @@ bun add @elah/editor`}
 
         {/* CLI install */}
         <section className="mb-10">
-          <h2 id="cli-install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="cli-install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             CLI (optional)
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -113,7 +113,7 @@ bun add @elah/editor`}
 
         {/* Peer dependencies */}
         <section className="mb-10">
-          <h2 id="peer-deps" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="peer-deps" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Peer Dependencies
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -138,7 +138,7 @@ bun add @elah/editor`}
 
         {/* Next.js setup */}
         <section className="mb-10">
-          <h2 id="nextjs-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="nextjs-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Next.js Setup
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -180,7 +180,7 @@ export default function Page() {
 
         {/* Vite setup */}
         <section className="mb-10">
-          <h2 id="vite-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="vite-config" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Vite Setup
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">

@@ -21,7 +21,7 @@ const toc = [
 
 export default function EditorPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Editor</div>
@@ -35,7 +35,7 @@ export default function EditorPage() {
 
         {/* EditorProvider */}
         <section className="mb-10">
-          <h2 id="editor-provider" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="editor-provider" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             EditorProvider
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -62,8 +62,8 @@ function App() {
   )
 }`}
           />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <table className="w-full text-xs">
+          <div className="mt-4 overflow-x-auto rounded-md border border-outline-variant bg-surface-low p-4">
+            <table className="w-full min-w-[30rem] text-xs">
               <thead>
                 <tr className="border-b border-outline-variant">
                   <th className="pb-2 text-left font-mono font-medium text-on-surface">Prop</th>
@@ -90,7 +90,7 @@ function App() {
 
         {/* Preview */}
         <section className="mb-10">
-          <h2 id="preview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="preview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Preview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -133,7 +133,7 @@ function MyPreview() {
 
         {/* AssetPanel */}
         <section className="mb-10">
-          <h2 id="asset-panel" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="asset-panel" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             AssetPanel
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -172,7 +172,7 @@ function CustomLibrary() {
 
         {/* Transforms */}
         <section className="mb-10">
-          <h2 id="transforms" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="transforms" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Transforms
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -207,7 +207,7 @@ engine.updateClip(clipId, trackId, {
 
         {/* Text overlays */}
         <section className="mb-10">
-          <h2 id="text-overlays" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="text-overlays" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Text Overlays
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -250,7 +250,7 @@ engine.updateClip(clipId, textTrack.id, {
 
         {/* Transitions */}
         <section className="mb-10">
-          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -280,7 +280,7 @@ engine.removeTransition(transitionId)`}
 
         {/* Stage aspect */}
         <section className="mb-10">
-          <h2 id="stage-aspect" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="stage-aspect" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Stage / Aspect Ratio
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">

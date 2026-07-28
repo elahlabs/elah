@@ -179,11 +179,16 @@ Full documentation lands with the release phase; see `elah --help`.
 ## Package layers
 
 ```
-@elah/core      — engine, playback, resolver, stores, media, export (framework-agnostic)
+@elah/core      — engine, playback, resolver, vanilla stores, media, export (framework-agnostic)
+@elah/react     — React bindings: EditorContext, store hooks, audio hooks
 @elah/timeline  — React timeline UI components and hooks
 @elah/editor    — EditorProvider, Preview, AssetPanel + re-exports everything above
 @elah/cli       — headless split/trim/build/export/serve on top of @elah/core (this package)
 ```
+
+`@elah/cli` depends only on `@elah/core` — it never touches `@elah/react`,
+`@elah/timeline`, or React at all, so it has no peer dependencies on React or
+`lucide-react`.
 
 Use `@elah/cli` for automation, AI-generation pipelines, and server-side rendering.
 Use `@elah/editor` when you need an interactive, in-browser editing UI.
@@ -195,6 +200,7 @@ Use `@elah/editor` when you need an interactive, in-browser editing UI.
 - [Website](https://www.elah.dev)
 - [GitHub](https://github.com/elahlabs/elah)
 - [Engine — @elah/core](https://www.npmjs.com/package/@elah/core)
+- [React bindings — @elah/react](https://www.npmjs.com/package/@elah/react)
 - [React timeline UI — @elah/timeline](https://www.npmjs.com/package/@elah/timeline)
 - [Full editor SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)

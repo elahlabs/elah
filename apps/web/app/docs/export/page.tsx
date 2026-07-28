@@ -19,7 +19,7 @@ const toc = [
 
 export default function ExportPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Export</div>
@@ -33,7 +33,7 @@ export default function ExportPage() {
 
         {/* exportVideo */}
         <section className="mb-10">
-          <h2 id="export-video" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="export-video" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             exportVideo()
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -100,7 +100,7 @@ export function ExportButton() {
 
         {/* Worker */}
         <section className="mb-10">
-          <h2 id="worker" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="worker" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Export Worker
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -116,10 +116,10 @@ export function ExportButton() {
             ].map((row, i) => (
               <div
                 key={row.step}
-                className={`flex items-start gap-4 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
+                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <span className="label-mono w-4 shrink-0 text-xs text-primary">{row.step}</span>
-                <div className="w-32 shrink-0 text-xs font-medium text-on-surface">{row.label}</div>
+                <span className="label-mono text-xs text-primary sm:w-4 sm:shrink-0">{row.step}</span>
+                <div className="text-xs font-medium text-on-surface sm:w-32 sm:shrink-0">{row.label}</div>
                 <div className="text-xs text-on-surface-variant">{row.desc}</div>
               </div>
             ))}
@@ -139,7 +139,7 @@ const blob = await lazyExportVideo(project, options)`}
 
         {/* Audio pipeline */}
         <section className="mb-10">
-          <h2 id="audio" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="audio" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Audio Pipeline
           </h2>
           <div className="mb-4 rounded-md border border-outline-variant bg-amber-50 p-4">
@@ -170,7 +170,7 @@ const toggleMute = usePlaybackStore((s) => s.toggleMute)
 
         {/* Progress */}
         <section className="mb-10">
-          <h2 id="progress" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="progress" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Progress Tracking
           </h2>
           <CodeBlock
@@ -192,7 +192,7 @@ const blob = await exportVideo(project, {
 
         {/* Browser limits */}
         <section className="mb-10">
-          <h2 id="limits" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="limits" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Browser Limits
           </h2>
           <div className="overflow-hidden rounded-md border border-outline-variant">
@@ -208,7 +208,7 @@ const blob = await exportVideo(project, {
                 key={row.item}
                 className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <div className="w-48 shrink-0 text-xs font-medium text-on-surface">{row.item}</div>
+                <div className="text-xs font-medium text-on-surface sm:w-48 sm:shrink-0">{row.item}</div>
                 <div className="text-xs text-on-surface-variant">{row.detail}</div>
               </div>
             ))}

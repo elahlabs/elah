@@ -17,7 +17,7 @@ const toc = [
 
 export default function PluginsPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Plugins</div>
@@ -30,7 +30,7 @@ export default function PluginsPage() {
         </div>
 
         <section className="mb-10">
-          <h2 id="custom-renderers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="custom-renderers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Custom Renderers
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -89,7 +89,7 @@ export class CanvasRenderer implements Renderer {
         </section>
 
         <section className="mb-10">
-          <h2 id="custom-layers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="custom-layers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Custom GPU Layers
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -115,7 +115,7 @@ renderer.registerLayer('gradient', GradientLayer)
         </section>
 
         <section className="mb-10">
-          <h2 id="custom-demuxers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="custom-demuxers" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Custom Demuxers
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">

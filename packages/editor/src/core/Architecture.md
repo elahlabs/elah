@@ -7,29 +7,34 @@
 > **Scope:** the shipped engine — the `@elah/core` package plus the GPU renderer,
 > decode pipeline, audio, and export that sit beside it.
 >
-> **Note:** the codebase is split into three published packages. The `core/X`
+> **Note:** the codebase is split into four published packages. The `core/X`
 > paths below are shorthand for `packages/core/src/X` (the `@elah/core` package).
+> React hooks that used to live under `core/` (store hooks, `EditorContext`,
+> audio hooks) were extracted into `@elah/react` so `@elah/core` has zero React
+> imports — see §2 and §9 for exactly what moved.
 
 ---
 
-## 1. Position in the three-package architecture
+## 1. Position in the four-package architecture
 
 ```
 packages/
-  core/       (@elah/core)     ← THIS DOCUMENT — runtime; framework-agnostic
-  timeline/   (@elah/timeline) ← timeline UI surface; imports @elah/core
+  core/       (@elah/core)     ← THIS DOCUMENT — runtime; framework-agnostic, zero React
+  react/      (@elah/react)    ← React bindings: EditorContext, store hooks, audio hooks
+  timeline/   (@elah/timeline) ← timeline UI surface; imports @elah/core + @elah/react
   editor/     (@elah/editor)   ← composition: EditorProvider, hooks, Preview, AssetPanel
 ```
 
 **Dependency rule (enforced by the package graph):**
 
 ```
-@elah/core  ←  @elah/timeline  ←  @elah/editor
+@elah/core  ←  @elah/react  ←  @elah/timeline  ←  @elah/editor
 ```
 
-- `@elah/core` may **not** import from `@elah/timeline` or `@elah/editor`.
-- `@elah/timeline` may **not** import from `@elah/editor`.
-- `@elah/editor` may import from both (and re-exports them).
+- `@elah/core` may **not** import from `@elah/react`, `@elah/timeline`, or `@elah/editor`.
+- `@elah/react` may import from `@elah/core` only.
+- `@elah/timeline` may import from `@elah/core` and `@elah/react`, **not** from `@elah/editor`.
+- `@elah/editor` may import from all three (and re-exports them).
 
 ---
 
@@ -45,14 +50,14 @@ packages/
 | `core/media/` | Frame/sample producers. `media/video/` = WebCodecs decode (`StreamingFrameProducer`, `FrameCache`, mediabunny demuxer); `media/audio/` = `AudioPlaybackController`. | `createVideoFrameProvider`, `StreamingFrameProducer`, `AudioPlaybackController` |
 | `core/export/` | `exportVideo()` + `ExportWorker` — OffscreenCanvas frame render → mediabunny MP4 mux. | `exportVideo` |
 | `core/debug/` | Channel-based `trace()` frame-lifecycle logging (`window.__trace`). | `trace`, `traceEnabled` |
-| `core/stores/` | Zustand stores that mirror engine state into React. Components subscribe with granular selectors. | `useTracksStore`, `usePlaybackStore`, `useSelectionStore`, `useTransitionsStore` |
-| `core/assets/` | `MediaLibrary` — in-memory asset registry. Zustand store + typed hooks. Drag MIME constant. File import + thumbnail generation. | `useMediaLibrary`, `useMediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
+| `core/stores/` | **Vanilla** (`zustand/vanilla`) stores that mirror engine state — no React. Module-level singletons; see §5. | `tracksStore`, `playbackStore`, `selectionStore`, `transitionsStore` |
+| `core/assets/` | `MediaLibrary` — in-memory asset registry. Vanilla Zustand store, no React. Drag MIME constant. File import + thumbnail generation. | `mediaLibraryStore`, `importFiles`, `MEDIA_DRAG_MIME`, `MediaAsset` |
 | `core/elements/` | Clip factory functions. Pure constructors, no side-effects. | `createVideoClip`, `createAudioClip`, `createTextClip`, `createImageClip` |
 | `core/track/` | Track factory. | `createTrack` |
 | `core/actions/` | Compound operations (multi-step mutations + engine calls). Currently: `splitClipAtPlayhead`. | `splitClipAtPlayhead` |
 | `core/visitor/` | Immer-based project mutation primitives. Used internally by `TimelineEngine`. Not exported publicly. | `addClip`, `removeClip`, `updateClip`, `splitClip`, `cloneClip`, `removeTrack`, `updateTrack` |
 | `core/utils/` | Pure helpers: frame math, timecode formatting, snap, ID generation. | `framesToTimecode`, `secondsToFrames`, `framesToSeconds`, `getTotalFrames`, `generateId` |
-| `core/editor-context.ts` | React context + hooks that expose the engines to the component tree. Lives in `core/` so `editor/` and `timeline/` can both import without a circular dependency. | `useEditor`, `useTimelineEngine`, `usePlaybackEngine`, `EditorContext` |
+| `@elah/react`'s `editor-context.ts` | React context + hooks that expose the engines to the component tree. Lives in the separate `@elah/react` package (not under `core/`) so `editor/` and `timeline/` can both import it, and so `@elah/core` stays React-free. | `useEditor`, `useTimelineEngine`, `usePlaybackEngine`, `EditorContext` |
 
 ---
 
@@ -107,10 +112,10 @@ flowchart LR
     PE["PlaybackEngine\ncore/playback/"]
   end
 
-  subgraph stores ["Zustand stores (core/stores/)"]
-    TS["useTracksStore\n.tracks / .clips / .totalFrames"]
-    PS["usePlaybackStore\n.currentFrame / .zoom / .isPlaying"]
-    SS["useSelectionStore\n.selectedClipIds"]
+  subgraph stores ["Vanilla stores (core/stores/), bound to React by @elah/react"]
+    TS["tracksStore → useTracksStore\n.tracks / .clips / .totalFrames"]
+    PS["playbackStore → usePlaybackStore\n.currentFrame / .zoom / .isPlaying"]
+    SS["selectionStore → useSelectionStore\n.selectedClipIds"]
   end
 
   subgraph resolver ["Resolver (core/resolver/)"]
@@ -149,7 +154,17 @@ flowchart LR
 
 ## 5. Store contracts
 
-### `useTracksStore` (`core/stores/tracks.store.ts`)
+Each store below is a **vanilla** Zustand store (`zustand/vanilla`) defined in
+`@elah/core`, and a **module-level singleton** — one instance per JS realm,
+shared by every engine `<EditorProvider>` wires up. `@elah/react` exports a
+React-bound version of each (`useTracksStore`, `usePlaybackStore`,
+`useSelectionStore`) that wraps the same underlying store — `useTracksStore ===
+tracksStore` bound to a hook, not a separate copy of the state. Because the
+store is a singleton, only one active `TimelineEngine`/`PlaybackEngine` pair
+can be mirrored into it at a time; see §9 and the root READMEs' "one active
+project per page" notes.
+
+### `tracksStore` / `useTracksStore` (`core/stores/tracks.store.ts`)
 
 Mirrors `Project` from the engine into React. **Never mutate directly** — always go through the engine.
 
@@ -159,11 +174,11 @@ Mirrors `Project` from the engine into React. **Never mutate directly** — alwa
 | `clips` | `Record<string, Clip[]>` | Indexed by `trackId` |
 | `totalFrames` | `number` | Computed max end frame across all clips |
 | `canUndo` / `canRedo` | `boolean` | Engine history state |
-| `sync(project, meta)` | method | Called by `<Timeline>` in its engine `'change'` listener |
+| `sync(project, meta)` | method | Called by `<EditorProvider>` in its engine `'change'` listener |
 
 The `tracks` reference replacement on every `sync()` call is the cheapest "project mutated" signal. `useResolvedScene` subscribes to it via `useTracksStore((s) => s.tracks)` purely for this trigger.
 
-### `usePlaybackStore` (`core/stores/playback.store.ts`)
+### `playbackStore` / `usePlaybackStore` (`core/stores/playback.store.ts`)
 
 Partially persisted to `localStorage` key `myeditor-playback`. Persisted fields: `zoom`, `volume`, `muted`, `playbackRate`, `loop`, `snapEnabled`.
 
@@ -175,7 +190,7 @@ Partially persisted to `localStorage` key `myeditor-playback`. Persisted fields:
 | `zoom` | Pixels per frame (timeline zoom level) |
 | `snapEnabled` | Snap-to-grid toggle |
 
-### `useSelectionStore` (`core/stores/selection.store.ts`)
+### `selectionStore` / `useSelectionStore` (`core/stores/selection.store.ts`)
 
 Holds `selectedClipIds: string[]`. Not mirrored from the engine — selection is a pure UI concern.
 
@@ -198,7 +213,7 @@ The engine is a typed event emitter. Listeners registered with `.on(event, handl
 | `'transition:removed'` | `string` (transitionId) | After `removeTransition()` |
 | `'history:change'` | `{ canUndo, canRedo }` | After any mutation or undo/redo |
 
-`<Timeline>` subscribes to `'change'` and calls `useTracksStore.sync()`. That is the only bridge between the engine and React stores.
+`<EditorProvider>` subscribes to `'change'` and calls `tracksStore.getState().sync()`. That is the only bridge between the engine and the stores.
 
 ---
 
@@ -218,8 +233,8 @@ The engine is a typed event emitter. Listeners registered with `.on(event, handl
 In-memory registry of source assets. Not yet persisted (IndexedDB/OPFS arrives in Phase 3).
 
 - `importFiles(files, opts?)` — takes `File[]`, creates object URLs, probes metadata via `<video>` / `<audio>` / `<img>`, registers `MediaAsset`s in the store, and generates thumbnails asynchronously on the main thread (`thumbnailUrl` patched via `updateAsset`)
-- `useMediaLibrary()` — React hook for reading assets in insertion order (`getAsset`, ordered `assets` list)
-- `useMediaLibraryStore` — raw Zustand store for granular subscriptions and imperative access (`addAsset`, `removeAsset`, `updateAsset`, `getAsset`)
+- `mediaLibraryStore` (`@elah/core`) — vanilla Zustand store for granular subscriptions and imperative access (`addAsset`, `removeAsset`, `updateAsset`, `getAsset`)
+- `useMediaLibrary()` / `useMediaLibraryStore` (`@elah/react`) — React hook for reading assets in insertion order (`getAsset`, ordered `assets` list), and the React-bound store
 - `MEDIA_DRAG_MIME = 'application/x-elah-media'` — MIME type placed on `dataTransfer` when dragging from `AssetPanel`
 - `DragMediaPayload = { kind: 'media-asset'; assetId: string }` — JSON-encoded payload
 
@@ -244,6 +259,10 @@ Knowing what is absent is as important as knowing what is present:
 
 | Concern | Lives in |
 |---------|----------|
+| `EditorContext`, `useEditor`, `useTimelineEngine`, `usePlaybackEngine` | `@elah/react` |
+| `useTracksStore`, `usePlaybackStore`, `useSelectionStore`, `useTransitionsStore`, `useMediaLibraryStore`, `useMediaLibrary` (React-bound stores) | `@elah/react` |
+| `useAudioMixer`, `useTrackLevels`, `useMasterVolume` (audio hooks) | `@elah/react` |
+| Any React import at all | not in `@elah/core` — zero React in its module graph |
 | `<Timeline>` component, `<ClipBlock>`, `<TrackRow>`, `<Ruler>`, `<Playhead>` | `@elah/timeline` |
 | `useTracks`, `usePlayback`, `useSelection` hooks (public API) | `@elah/timeline` (`src/hooks/`) |
 | `useTimeline`, `useTimelineDrop` drop handler | `@elah/timeline` (`src/`) |

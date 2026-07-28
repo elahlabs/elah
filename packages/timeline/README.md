@@ -13,10 +13,13 @@ A consumer of `@elah/core`. Owns no project state — all state lives in the cor
 ## Install
 
 ```bash
-npm install @elah/timeline @elah/core
+npm install @elah/timeline @elah/core @elah/react lucide-react
 ```
 
-Peer dependencies: `react`, `react-dom` >= 18.
+Peer dependencies: `react`, `react-dom` >= 18, `lucide-react` >= 0.400.0 (used directly by
+`TrackRow`/`ClipBlock` for clip icons — install it even if nothing else in your app
+needs it). Engine/playback context (`EditorContext`, `useTimelineEngine`) comes from
+`@elah/react`, a runtime dependency pulled in automatically.
 
 **Bundle size:** ~12 KiB gzipped (61 KiB raw, `tsc` ESM output). UI layer only — project state lives in `@elah/core`.
 
@@ -37,12 +40,13 @@ Peer dependencies: `react`, `react-dom` >= 18.
 ## Quick start
 
 `Timeline` reads the engine and playback clock from React context — it has no
-`engine` prop. Wrap it in an `EditorContext.Provider` (or use `EditorProvider`
-from `@elah/editor`, which does this for you):
+`engine` prop. Wrap it in an `EditorContext.Provider` from `@elah/react` (or use
+`EditorProvider` from `@elah/editor`, which does this for you):
 
 ```tsx
 import { Timeline } from '@elah/timeline'
-import { TimelineEngine, PlaybackEngine, EditorContext } from '@elah/core'
+import { TimelineEngine, PlaybackEngine } from '@elah/core'
+import { EditorContext } from '@elah/react'
 
 const engine = new TimelineEngine({ fps: 30, stage: { width: 1920, height: 1080 } })
 const playback = new PlaybackEngine({ fps: 30, getTotalFrames: () => engine.getTotalFrames() })
@@ -55,6 +59,19 @@ function App() {
   )
 }
 ```
+
+`EditorContext` supplies the engine pair only — it does **not** wire `engine`
+events into the Zustand mirrors the way `<EditorProvider>` does, so a bare
+`EditorContext.Provider` like this needs its own `engine.on('change', ...)` →
+`tracksStore.sync(...)` wiring (see `@elah/editor`'s `EditorProvider` source) or
+the UI won't update. Prefer `EditorProvider` unless you specifically need a
+custom store-sync strategy.
+
+The stores `Timeline` reads (`tracksStore`, `playbackStore`, `selectionStore`, ...)
+are module-level singletons in `@elah/core` — only one engine's state can be
+mirrored into them at a time. Rendering two `<Timeline>` trees backed by two
+different engines on the same page will have them fight over the same store; see
+[`@elah/core`'s README](https://www.npmjs.com/package/@elah/core) for details.
 
 ---
 

@@ -96,7 +96,8 @@ controller.destroy() // stops all audio, detaches clock, closes context
 
 ## Hook abstractions
 
-All hooks are exported from `@elah/core`.
+All hooks below are exported from `@elah/react` (not `@elah/core` — `core` only
+ships `AudioPlaybackController` itself; the React wrappers live one layer up).
 
 ### `useAudioMixer(controller)`
 

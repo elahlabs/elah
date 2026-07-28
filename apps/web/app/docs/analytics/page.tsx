@@ -20,7 +20,7 @@ const mono = 'rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono'
 
 export default function AnalyticsDocsPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 max-w-3xl flex-1">
         <div className="mb-8 border-b border-outline-variant pb-6">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">Privacy</div>
@@ -39,7 +39,7 @@ export default function AnalyticsDocsPage() {
         </div>
 
         <section className="mb-10">
-          <h2 id="what-we-track" className="mb-4 scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="what-we-track" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             What we track
           </h2>
           <ul className="space-y-3 text-sm leading-relaxed text-on-surface-variant">
@@ -58,7 +58,7 @@ export default function AnalyticsDocsPage() {
         </section>
 
         <section className="mb-10">
-          <h2 id="env" className="mb-4 scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="env" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Environment variables
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -85,7 +85,7 @@ export default function AnalyticsDocsPage() {
         </section>
 
         <section className="mb-10">
-          <h2 id="consent" className="mb-4 scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="consent" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Consent &amp; Do-Not-Track
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -101,7 +101,7 @@ export default function AnalyticsDocsPage() {
         </section>
 
         <section className="mb-10">
-          <h2 id="opt-out" className="mb-4 scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="opt-out" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Changing your choice
           </h2>
           <p className="text-sm leading-relaxed text-on-surface-variant">
@@ -112,7 +112,7 @@ export default function AnalyticsDocsPage() {
         </section>
 
         <section className="mb-10">
-          <h2 id="self-hosting" className="mb-4 scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="self-hosting" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Self-hosting
           </h2>
           <p className="text-sm leading-relaxed text-on-surface-variant">

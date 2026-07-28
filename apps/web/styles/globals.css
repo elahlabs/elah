@@ -589,6 +589,33 @@
 .landing-root .lv-nav[data-open='true']::after {
   opacity: 0;
 }
+/* The dropdown panel overlays the page instead of pushing it down — it's
+   absolutely positioned off the pill rather than sitting in normal flow. */
+.landing-root .lv-nav-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--bg2) 82%, transparent),
+      color-mix(in oklab, var(--bg) 62%, transparent)
+    ),
+    var(--nav);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  box-shadow:
+    0 10px 30px -14px rgba(13, 19, 32, 0.45),
+    0 2px 10px rgba(13, 19, 32, 0.08);
+}
+.dark .landing-root .lv-nav-panel {
+  box-shadow:
+    0 14px 40px -16px rgba(0, 0, 0, 0.85),
+    0 2px 10px rgba(0, 0, 0, 0.35);
+}
 /* Glossy CTA — gradient fill plus an inner top highlight. */
 .landing-root .lv-nav-cta {
   background: linear-gradient(

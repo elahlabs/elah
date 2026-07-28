@@ -49,7 +49,7 @@ const commands = [
 
 export default function CliPage() {
   return (
-    <div className="flex gap-12">
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       <article className="min-w-0 flex-1 max-w-3xl">
         <div className="mb-8 pb-6 border-b border-outline-variant">
           <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">CLI &amp; Server</div>
@@ -71,7 +71,7 @@ export default function CliPage() {
 
         {/* Install */}
         <section className="mb-10">
-          <h2 id="install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="install" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Install
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -98,7 +98,7 @@ npx @elah/cli serve`}
 
         {/* Commands */}
         <section className="mb-10">
-          <h2 id="commands" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="commands" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Commands
           </h2>
           <div className="overflow-hidden rounded-md border border-outline-variant">
@@ -125,7 +125,7 @@ npx @elah/cli serve`}
 
         {/* Build spec */}
         <section className="mb-10">
-          <h2 id="build-spec" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="build-spec" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             The Build Spec
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -177,7 +177,7 @@ npx @elah/cli serve`}
 
         {/* Serve */}
         <section className="mb-10">
-          <h2 id="serve" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="serve" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Serve Mode
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -190,14 +190,14 @@ npx @elah/cli serve`}
             code={`elah serve --port 8080 --concurrency 2 --media-root ./assets`}
           />
           <div className="mt-4 overflow-hidden rounded-md border border-outline-variant">
-            <div className="flex items-start gap-4 border-b border-outline-variant bg-surface-low p-3">
-              <div className="w-32 shrink-0 font-mono text-xs font-medium text-on-surface">GET /healthz</div>
+            <div className="flex flex-col gap-1 border-b border-outline-variant bg-surface-low p-3 sm:flex-row sm:items-start sm:gap-4">
+              <div className="font-mono text-xs font-medium text-on-surface sm:w-32 sm:shrink-0">GET /healthz</div>
               <div className="text-xs text-on-surface-variant">
                 <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">200 {'{'} status, browser: &quot;connected&quot; | &quot;disconnected&quot; {'}'}</code>
               </div>
             </div>
-            <div className="flex items-start gap-4 bg-surface-lowest p-3">
-              <div className="w-32 shrink-0 font-mono text-xs font-medium text-on-surface">POST /render</div>
+            <div className="flex flex-col gap-1 bg-surface-lowest p-3 sm:flex-row sm:items-start sm:gap-4">
+              <div className="font-mono text-xs font-medium text-on-surface sm:w-32 sm:shrink-0">POST /render</div>
               <div className="text-xs text-on-surface-variant">
                 Body = a build spec JSON document; blocks until the render finishes and
                 returns the MP4 bytes. <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">422</code> on
@@ -220,7 +220,7 @@ npx @elah/cli serve`}
 
         {/* How rendering works */}
         <section className="mb-10">
-          <h2 id="rendering" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="rendering" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             How Rendering Works
           </h2>
           <p className="text-sm leading-relaxed text-on-surface-variant">
@@ -237,7 +237,7 @@ npx @elah/cli serve`}
 
         {/* Docker */}
         <section className="mb-10">
-          <h2 id="docker" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="docker" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Docker &amp; Self-Hosting
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -268,7 +268,7 @@ docker run -p 8080:8080 elah-render`}
 
         {/* Library API */}
         <section className="mb-10">
-          <h2 id="library-api" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+          <h2 id="library-api" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
             Library API
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">

@@ -30,7 +30,9 @@ playback clock.
 | `Playhead` | The playhead needle; positioned from `usePlaybackStore.currentFrame`. |
 | `TransitionChip` / `TransitionPicker` | Render and edit transitions between clips (rendered by `TrackRow`). |
 
-## Public API (re-exported from `@elah/editor`)
+## Public API
+
+`@elah/timeline` is independently installable and exports these directly — `@elah/editor` merely re-exports the same names for convenience, it does not own them:
 
 ```ts
 import {
@@ -39,7 +41,8 @@ import {
   useTracks, usePlayback, useSelection,  // Ring 1 hooks
   useTimelineDrop,        // attach a media-drop target to a lane
   ELEMENT_DRAG_MIME, type DragElementPayload, type ElementKind,
-} from '@elah/editor'
+} from '@elah/timeline'
+// or, equivalently, from '@elah/editor' if you're already using the full SDK
 ```
 
 - `Timeline` must run inside an `EditorContext` provider — either `<EditorProvider>`
@@ -74,9 +77,11 @@ Live drag uses `engine.previewClip()` (no history) during the gesture and
 
 ## Dependencies
 
-- `core/stores/` (Ring 1 mirrors), `core/editor-context.ts` (engine access),
-  `core/assets/` (drag MIME), `core/utils/` (frame math, snap). React only — no
-  renderer, no decode.
+- `@elah/core`'s `core/stores/` (Ring 1 vanilla mirrors), `core/assets/` (drag
+  MIME), `core/utils/` (frame math, snap).
+- `@elah/react`'s `useTimelineEngine` (engine access via `EditorContext`) — see
+  [`engine-context.ts`](../engine-context.ts).
+- React only — no renderer, no decode.
 
 ## Current limitations
 
