@@ -189,7 +189,7 @@ export default async function BlogPostPage({
                     Get started
                   </Link>
                   <a
-                    href="https://discord.gg/8CeZ2XbPy"
+                    href={siteConfig.links.discord}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="rounded border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"

@@ -27,6 +27,7 @@ export interface RedditMapping {
 // these while still allowing any snake_case event to be sent posthog-only.
 export type AnalyticsEventName =
   | 'playground_launched'
+  | 'discord_clicked'
   | 'pwa_install_prompt_shown'
   | 'pwa_install_clicked'
   | 'pwa_installed'

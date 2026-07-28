@@ -4,6 +4,7 @@ import { Package, ExternalLink } from 'lucide-react'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { releases, currentVersion, type ChangeKind } from '@/config/changelog'
+import { siteConfig } from '@/config/site'
 import { formatDate, cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -153,7 +154,7 @@ export default function ChangelogPage() {
               </a>
               . Have a question about a release? Ask on{' '}
               <a
-                href="https://discord.gg/8CeZ2XbPy"
+                href={siteConfig.links.discord}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"

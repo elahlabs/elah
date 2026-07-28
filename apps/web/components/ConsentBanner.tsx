@@ -6,9 +6,12 @@ import { useConsent } from '@/components/ConsentProvider'
 // Shown only until the visitor makes a choice, and never when Do-Not-Track is
 // set (that already resolves to denied). Fixed to the bottom, above content.
 export function ConsentBanner() {
-  const { consent, dnt, accept, decline } = useConsent()
+  const { consent, dnt, resolved, accept, decline } = useConsent()
 
-  if (dnt || consent !== 'unset') return null
+  // Wait for the localStorage/DNT read on mount before rendering anything —
+  // otherwise a returning visitor's already-resolved choice flashes as a
+  // one-frame "unset" banner that immediately vanishes.
+  if (!resolved || dnt || consent !== 'unset') return null
 
   return (
     <div
