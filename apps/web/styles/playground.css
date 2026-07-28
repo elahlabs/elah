@@ -28,6 +28,15 @@
   --pg-accent-glow:      rgba(225, 29, 72, 0.35);
   --pg-accent-soft:      rgba(225, 29, 72, 0.12);
 
+  /* Elah editor tokens — shared chrome (nav tabs, BackButton) rendered here on
+     Timeline/Raw, and inside .elah-root on Production, needs these outside
+     .elah-root too, otherwise the ed-* utility classes silently fail to
+     resolve (values match globals.css .elah-root exactly). */
+  --elah-accent: #00c2ff;
+  --elah-bg-elevated: #171d2b;
+  --elah-border: #232938;
+  --elah-text: #f3f4f6;
+
   /* ── Typography ── */
   --pg-font-ui:    'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --pg-font-mono:  'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
@@ -122,12 +131,10 @@
 
 .pg-nav-tabs {
   display: flex;
-  gap: 2px;
   margin-left: auto;
-  padding: 2px;
-  border-radius: 8px;
-  background: var(--pg-bg);
-  border: 1px solid var(--pg-border-subtle);
+  border: 1px solid var(--elah-accent);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 /* In the merged production header the tabs sit beside the brand, not pushed
@@ -139,14 +146,19 @@
 .pg-nav-tab {
   position: relative;
   padding: 4px 14px;
-  border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
   font-family: var(--pg-font-ui);
   letter-spacing: 0.01em;
   color: var(--pg-text-muted);
   text-decoration: none;
-  transition: color 0.12s, background 0.12s;
+  background: transparent;
+  border-right: 1px solid var(--elah-accent);
+  transition: color 0.12s;
+}
+
+.pg-nav-tab:last-child {
+  border-right: none;
 }
 
 .pg-nav-tab:hover {
@@ -154,9 +166,8 @@
 }
 
 .pg-nav-tab[data-active='true'] {
-  color: var(--pg-text);
-  background: var(--pg-bg-elevated);
-  box-shadow: inset 0 0 0 1px var(--pg-border);
+  color: var(--elah-accent);
+  font-weight: 600;
 }
 
 /* ── External / GitHub link ──────────────────────────────────────────────── */

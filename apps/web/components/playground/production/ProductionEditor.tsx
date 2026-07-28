@@ -2,7 +2,6 @@
 
 import posthog from 'posthog-js'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Type as TypeIcon,
@@ -29,6 +28,7 @@ import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
+import { BackButton } from '../shared/BackButton'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { AgenticPanel } from './AgenticPanel'
 import { TracePanel } from './TracePanel'
@@ -218,14 +218,7 @@ const AppHeader = memo(function AppHeader({
     <header className="elah-app-header grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
       {/* Left — folded playground nav + brand + demo CTA */}
       <div className="flex items-center gap-3">
-        {!isStandalone && (
-          <Link
-            href="/playgrounds"
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-mono tracking-[0.04em] text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
-          >
-            ← Playgrounds
-          </Link>
-        )}
+        {!isStandalone && <BackButton />}
         {!isMobile && (
           <>
             {!isStandalone && <div className="w-px h-4 bg-ed-border shrink-0" />}
@@ -302,19 +295,6 @@ const AppHeader = memo(function AppHeader({
             <Code2 size={14} /> Code
           </button>
         )}
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md font-sans cursor-pointer transition-colors"
-          style={{
-            background: 'var(--elah-accent)',
-            color: '#04202a',
-            boxShadow: '0 0 10px var(--elah-accent-glow)',
-          }}
-          onClick={onExport}
-          title="Export to MP4"
-        >
-          ⬇ Export
-        </button>
         {!isMobile && !isStandalone && (
           <>
             <div className="relative">
@@ -342,6 +322,19 @@ const AppHeader = memo(function AppHeader({
             <PlaygroundTabs />
           </>
         )}
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 ml-1 text-xs font-semibold rounded-md font-sans cursor-pointer transition-colors"
+          style={{
+            background: 'var(--elah-accent)',
+            color: '#04202a',
+            boxShadow: '0 0 10px var(--elah-accent-glow)',
+          }}
+          onClick={onExport}
+          title="Export to MP4"
+        >
+          ⬇ Export
+        </button>
         {!isMobile && (
           <a
             href={siteConfig.links.github}
@@ -407,7 +400,7 @@ const RAIL_ITEMS: {
 }[] = [
   { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
-  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles, danger: true },
+  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
 ]
@@ -436,14 +429,13 @@ const LeftRail = memo(function LeftRail({
             <span
               className={cn(
                 'flex items-center justify-center w-10 h-10 rounded-xl transition-colors',
-                on ? 'text-white' : 'text-ed-text-muted',
+                !on && 'text-ed-text-muted',
               )}
               style={
                 on
                   ? {
-                      background: danger
-                        ? 'linear-gradient(160deg, rgba(255,107,107,0.5), rgba(255,107,107,0.1))'
-                        : 'linear-gradient(160deg, rgba(0,194,255,0.5), rgba(0,194,255,0.1))',
+                      background: danger ? 'var(--elah-danger-text)' : 'var(--elah-accent)',
+                      color: danger ? '#fff' : 'var(--elah-accent-text)',
                     }
                   : danger
                     ? { color: 'var(--elah-danger-text)' }
@@ -730,7 +722,7 @@ export default function ProductionEditor() {
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  const [activePanel, setActivePanel] = useState('stock')
+  const [activePanel, setActivePanel] = useState('agentic')
   const [loadingPixabay, setLoadingPixabay] = useState(false)
   const isMobile = useIsMobile()
   const [mobileSheet, setMobileSheet] = useState<MobileSheetKind>(null)
