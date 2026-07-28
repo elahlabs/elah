@@ -12,7 +12,7 @@
     "build": "npm run build --workspace=apps/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint:tokens": "node scripts/check-tokens.mjs",
-    "test": "npm run test --workspace=packages/core --workspace=packages/timeline --workspace=packages/cli"
+    "test": "npm run test --workspace=packages/core --workspace=packages/react --workspace=packages/timeline --workspace=packages/cli"
   },
   "devDependencies": {
     "rollup-plugin-visualizer": "^7.0.1"

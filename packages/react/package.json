@@ -1,6 +1,6 @@
 {
   "name": "@elah/react",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "React bindings for the Elah video engine — editor context, store hooks, and audio mixer hooks",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +20,8 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
   },
   "keywords": [
@@ -44,11 +46,14 @@
     "react": ">=18.0.0"
   },
   "dependencies": {
-    "@elah/core": "^0.3.1",
+    "@elah/core": "^0.4.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
-    "typescript": "^5.7.3"
+    "@types/react-dom": "^18.3.5",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
   }
 }
