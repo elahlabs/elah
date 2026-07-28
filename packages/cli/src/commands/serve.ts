@@ -1,7 +1,7 @@
 import { usageError } from '../lib/errors'
 import { parsePositiveInt } from '../lib/flags'
 import { CODECS, createRenderSession } from '../lib/render-session'
-import { startServe } from '../lib/serve'
+import { curlExample, powershellExample, startServe } from '../lib/serve'
 
 export interface ServeArgs {
   port?: string
@@ -58,6 +58,15 @@ export async function runServe(args: ServeArgs): Promise<void> {
   stderr(`elah serve listening on http://${host}:${handle.port} (concurrency ${concurrency}, media root ${mediaRoot})`)
   if (host !== '127.0.0.1') {
     stderr('warning: no authentication — expose only on a trusted network')
+  }
+  stderr('')
+  const renderOrigin = `http://${host}:${handle.port}`
+  stderr('render your first video:')
+  if (process.platform === 'win32') {
+    stderr(`  ${powershellExample(renderOrigin)}`)
+    stderr(`  (or, with curl.exe: ${curlExample(renderOrigin)})`)
+  } else {
+    stderr(`  ${curlExample(renderOrigin)}`)
   }
 
   await new Promise<void>((resolve) => {

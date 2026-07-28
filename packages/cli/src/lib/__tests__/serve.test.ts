@@ -36,6 +36,28 @@ async function withServer<T>(deps: ServeHandlerDeps, run: (origin: string) => Pr
 }
 
 describe('createServeHandler', () => {
+  it('GET / serves the welcome page with a copy-paste render example', async () => {
+    await withServer(makeDeps(), async (origin) => {
+      const res = await fetch(`${origin}/`)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toContain('text/html')
+      const html = await res.text()
+      expect(html).toContain(`${origin}/render`)
+      expect(html).toContain('browser connected')
+    })
+    await withServer(makeDeps({ browserConnected: () => false }), async (origin) => {
+      const html = await (await fetch(`${origin}/`)).text()
+      expect(html).toContain('browser disconnected')
+    })
+  })
+
+  it('405s on POST /', async () => {
+    await withServer(makeDeps(), async (origin) => {
+      const res = await fetch(`${origin}/`, { method: 'POST', body: '{}' })
+      expect(res.status).toBe(405)
+    })
+  })
+
   it('GET /healthz reports the browser state', async () => {
     await withServer(makeDeps({ browserConnected: () => true }), async (origin) => {
       const res = await fetch(`${origin}/healthz`)

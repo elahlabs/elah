@@ -101,5 +101,6 @@ const blob = await exportVideo(engine.getProject(), {
 - [Website](https://www.elah.dev)
 - [GitHub](https://github.com/elahlabs/elah)
 - [Full SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
+- [Headless CLI — @elah/cli](https://www.npmjs.com/package/@elah/cli)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
 - [Commercial licensing](mailto:paul@elah.dev)

@@ -1,6 +1,6 @@
 {
   "name": "@elah/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Headless command-line runtime for the Elah video engine — split, trim, and export projects using @elah/core",
   "type": "module",
   "bin": {

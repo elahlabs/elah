@@ -3,6 +3,27 @@
 Headless command-line runtime for the Elah video engine. A thin consumer of
 `@elah/core`'s public APIs — no rendering or timeline logic lives here.
 
+[![npm](https://img.shields.io/npm/v/@elah/cli)](https://www.npmjs.com/package/@elah/cli)
+[![node](https://img.shields.io/node/v/@elah/cli)](https://www.npmjs.com/package/@elah/cli)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
+
+---
+
+## Install
+
+```bash
+npm install -g @elah/cli
+```
+
+Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17.
+`export`/`build --export`/`serve` additionally require a system Google Chrome
+(or `--browser <path>` / `ELAH_BROWSER`) — see [Serve mode](#serve-mode) and
+[Docker](#docker) for headless environments.
+
+---
+
+## Commands
+
 ```
 elah split  --project <in.json> --clip <clipId> --at <frame|timecode> [--out <out.json>]
 elah trim   --project <in.json> --clip <clipId> [--start <frame|timecode>] [--duration <frames|timecode>] [--out <out.json>]
@@ -17,6 +38,8 @@ launches the system Google Chrome headlessly (or `--browser <path>` /
 output is identical to Editor output by construction. Exit codes: `0` success,
 `1` validation/runtime failure, `2` usage error. Diagnostics go to stderr;
 `split`/`trim` print the resulting project JSON to stdout unless `--out` is given.
+
+---
 
 ## The build spec — the AI-generation contract
 
@@ -68,6 +91,8 @@ Rules:
 Then: `elah build --spec spec.json --export final.mp4` (add `--out project.json`
 to keep the editable project; export options like `--height` pass through).
 
+---
+
 ## Library API
 
 `@elah/cli` is also importable — no shelling out, no stderr parsing:
@@ -100,6 +125,8 @@ await session.close()
 Errors throw `CliError` (aliased `ElahError`) with a `.message` that is
 already the human-readable, path-addressed text (`clips[2].duration must be …`).
 
+---
+
 ## Serve mode
 
 `elah serve` runs a long-lived HTTP render server with a warm browser, so
@@ -123,11 +150,15 @@ There is no job queue — this is a synchronous, retry-on-503 contract. See
 [docs/deploy-render-server.md](../../docs/deploy-render-server.md) for the
 full contract, security notes, and deployment options.
 
+---
+
 ## Docker
 
 A Dockerfile that installs branded Chrome + fonts and runs `elah serve` is at
 [`Dockerfile`](./Dockerfile) (build from the repo root — see
 [docs/deploy-render-server.md](../../docs/deploy-render-server.md)).
+
+---
 
 ## Validation tooling
 
@@ -142,3 +173,29 @@ A Dockerfile that installs branded Chrome + fonts and runs `elah serve` is at
   both pipelines are individually deterministic).
 
 Full documentation lands with the release phase; see `elah --help`.
+
+---
+
+## Package layers
+
+```
+@elah/core      — engine, playback, resolver, stores, media, export (framework-agnostic)
+@elah/timeline  — React timeline UI components and hooks
+@elah/editor    — EditorProvider, Preview, AssetPanel + re-exports everything above
+@elah/cli       — headless split/trim/build/export/serve on top of @elah/core (this package)
+```
+
+Use `@elah/cli` for automation, AI-generation pipelines, and server-side rendering.
+Use `@elah/editor` when you need an interactive, in-browser editing UI.
+
+---
+
+## Links
+
+- [Website](https://www.elah.dev)
+- [GitHub](https://github.com/elahlabs/elah)
+- [Engine — @elah/core](https://www.npmjs.com/package/@elah/core)
+- [React timeline UI — @elah/timeline](https://www.npmjs.com/package/@elah/timeline)
+- [Full editor SDK — @elah/editor](https://www.npmjs.com/package/@elah/editor)
+- [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
+- [Commercial licensing](mailto:paul@elah.dev)

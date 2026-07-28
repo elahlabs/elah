@@ -35,6 +35,23 @@ versions independently, starting from its own 0.1.0.
     Imperative call sites migrate as
     `useTracksStore.getState()` → `tracksStore.getState()`.
 
+## `@elah/cli` [0.1.1] — 2026-07-12
+
+### Added
+
+- **`elah serve` welcome page** — `GET /` now serves an HTML orientation page
+  (route table, browser-connected status, copy-paste `/render` example)
+  instead of a bare 404, for humans who open the listen address in a browser.
+- **Copy-paste startup example** — `elah serve` now prints a ready-to-run
+  render example on startup: `curl` on macOS/Linux, `Invoke-RestMethod` on
+  Windows (PowerShell's `curl` alias doesn't accept `-H`/`-d`).
+
+## [0.3.2] — 2026-07-12
+
+Documentation only — reworked `@elah/core`, `@elah/timeline`, and
+`@elah/editor` READMEs to cross-link `@elah/cli` and stay consistent with its
+README pattern. No code changes.
+
 ## [0.3.1] — 2026-07-11
 
 License changed from the Elah Community License (ECL) v1.0 to Apache-2.0,

@@ -145,9 +145,12 @@ Runs in a web worker. Reuses `resolveTimeline` + the GPU renderer's placement ma
 @elah/core      — engine, playback, resolver, stores, media, export (framework-agnostic)
 @elah/timeline  — React timeline UI components and hooks
 @elah/editor    — EditorProvider, Preview, AssetPanel + re-exports everything above
+@elah/cli       — headless split/trim/build/export/serve on top of @elah/core
 ```
 
-Use `@elah/editor` for the full experience. Use `@elah/core` directly for headless or custom rendering pipelines.
+Use `@elah/editor` for the full in-browser experience. Use `@elah/core` directly
+for headless or custom rendering pipelines. Use `@elah/cli` for automation,
+AI-generation pipelines, and server-side rendering.
 
 ---
 
@@ -156,5 +159,6 @@ Use `@elah/editor` for the full experience. Use `@elah/core` directly for headle
 - [Website](https://www.elah.dev)
 - [GitHub](https://github.com/elahlabs/elah)
 - [Discord](https://discord.gg/8CeZ2XbPy)
+- [Headless CLI — @elah/cli](https://www.npmjs.com/package/@elah/cli)
 - [License](https://github.com/elahlabs/elah/blob/main/LICENSE)
 - [Commercial licensing](mailto:paul@elah.dev)
