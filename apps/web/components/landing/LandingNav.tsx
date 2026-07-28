@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Icon } from './Icon'
-import { navLinks, GITHUB_URL, GET_STARTED_URL } from './landingData'
+import { navLinks, GITHUB_URL, DISCORD_URL, GET_STARTED_URL } from './landingData'
+import { trackEvent } from '@/lib/analytics'
 
 const linkStyle = { color: 'var(--muted)', padding: '6px 11px', borderRadius: 8 } as const
 
@@ -95,6 +96,18 @@ export function LandingNav() {
 
           <a
             data-lv-desktop
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lv-ghost"
+            style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500, flexShrink: 0 }}
+            onClick={() => trackEvent('discord_clicked', { source: 'nav_desktop' })}
+          >
+            Discord
+          </a>
+
+          <a
+            data-lv-desktop
             href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
@@ -175,11 +188,23 @@ export function LandingNav() {
               )
             })}
             <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                trackEvent('discord_clicked', { source: 'nav_mobile' })
+                setMenuOpen(false)
+              }}
+              style={{ color: 'var(--muted)', fontSize: 13, padding: '12px 2px 2px', fontFamily: 'var(--font-geist-mono)' }}
+            >
+              Discord ↗
+            </a>
+            <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMenuOpen(false)}
-              style={{ color: 'var(--muted)', fontSize: 13, padding: '12px 2px 2px', fontFamily: 'var(--font-geist-mono)' }}
+              style={{ color: 'var(--muted)', fontSize: 13, padding: '2px 2px 2px', fontFamily: 'var(--font-geist-mono)' }}
             >
               <span style={{ color: 'var(--accent)' }}>v0.3.1</span> · What&apos;s new — GitHub ↗
             </a>

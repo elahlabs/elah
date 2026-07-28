@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Github, Mail, MessageCircle, Check } from 'lucide-react'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
+import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -119,7 +120,7 @@ export default function PricingPage() {
                   <span className="text-sm font-medium text-on-surface">paul@elah.dev</span>
                 </a>
                 <a
-                  href="https://discord.gg/8CeZ2XbPy"
+                  href={siteConfig.links.discord}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 rounded-md border border-outline-variant bg-surface-container p-4 transition-colors hover:border-outline"

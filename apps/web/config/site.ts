@@ -7,6 +7,7 @@ export const siteConfig = {
   ogImage: 'https://www.elah.dev/opengraph-image',
   links: {
     github: 'https://github.com/elahlabs/elah',
+    discord: 'https://discord.gg/qKJXvc4Pwu',
     docs: '/docs',
     playgrounds: '/playgrounds',
   },

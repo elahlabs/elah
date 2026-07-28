@@ -2,6 +2,8 @@
 // components stay presentational. Copy mirrors the approved design; hrefs point
 // at the app's real routes.
 
+import { siteConfig } from '@/config/site'
+
 export const navLinks = [
   { label: 'Docs', href: '/docs' },
   { label: 'Examples', href: '/examples' },
@@ -10,8 +12,8 @@ export const navLinks = [
   { label: 'Pricing', href: '/pricing' },
 ]
 
-export const GITHUB_URL = 'https://github.com/elahlabs/elah'
-export const DISCORD_URL = 'https://discord.gg/8CeZ2XbPy'
+export const GITHUB_URL = siteConfig.links.github
+export const DISCORD_URL = siteConfig.links.discord
 export const GET_STARTED_URL = '/docs/getting-started'
 export const EDITOR_URL = '/playground/production'
 

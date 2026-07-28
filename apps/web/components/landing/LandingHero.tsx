@@ -4,10 +4,11 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { Icon } from './Icon'
+import { DiscordIcon } from './DiscordIcon'
 import { CardHeader } from './CardHeader'
 import { EditorMockup } from './EditorMockup'
-import { EDITOR_URL, GET_STARTED_URL, GITHUB_URL, libraries } from './landingData'
-import { trackPlaygroundLaunch } from '@/lib/analytics'
+import { DISCORD_URL, EDITOR_URL, GET_STARTED_URL, GITHUB_URL, libraries } from './landingData'
+import { trackEvent, trackPlaygroundLaunch } from '@/lib/analytics'
 
 const riseBase = 'lv-rise .8s cubic-bezier(.2,.7,.2,1)'
 
@@ -199,6 +200,17 @@ export function LandingHero() {
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="lv-outline lv-hero-btn" style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             <Icon name="star" size={15} color="#f5c518" />
             GitHub
+          </a>
+          <a
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lv-outline lv-hero-btn"
+            style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}
+            onClick={() => trackEvent('discord_clicked', { source: 'hero' })}
+          >
+            <DiscordIcon size={15} />
+            Discord
           </a>
         </div>
 

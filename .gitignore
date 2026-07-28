@@ -24,4 +24,5 @@ doc/
 packages/**/src/**/*.js
 packages/*/vitest.config.js
 apps/web/**/*.js
+!apps/web/public/**/*.js
 playground/*/**/*.js
