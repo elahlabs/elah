@@ -1,11 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { Icon } from './Icon'
 import { EditorMockup } from './EditorMockup'
-import { EDITOR_URL, INSTALL_COMMAND, GET_STARTED_URL, GITHUB_URL } from './landingData'
+import { EDITOR_URL, GET_STARTED_URL, GITHUB_URL, libraries } from './landingData'
 
 const riseBase = 'lv-rise .8s cubic-bezier(.2,.7,.2,1)'
 
@@ -19,20 +19,79 @@ const outlineBtn = {
   borderRadius: 9,
 } as const
 
+interface CommandLineProps {
+  command: string
+  copied: boolean
+  onCopy: () => void
+  trailing?: ReactNode
+}
+
+function CommandLine({ command, copied, onCopy, trailing }: CommandLineProps) {
+  return (
+    <div
+      className="lv-copy"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        fontFamily: 'var(--font-geist-mono)',
+        fontSize: 'clamp(10px, 1.5vw, 12.5px)',
+        color: 'var(--muted)',
+        background: 'var(--card)',
+        border: '1px solid var(--line)',
+        borderRadius: 10,
+        padding: '13px 12px 13px 16px',
+      }}
+    >
+      <button
+        onClick={onCopy}
+        title={`Copy ${command}`}
+        aria-label={`Copy ${command}`}
+        style={{
+          all: 'unset',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          flex: 1,
+          minWidth: 0,
+          overflowX: 'auto',
+          cursor: 'pointer',
+        }}
+      >
+        <span style={{ color: 'var(--accent)' }}>$</span>
+        <span style={{ whiteSpace: 'nowrap' }}>{command}</span>
+        <Icon
+          name={copied ? 'check' : 'content_copy'}
+          size={16}
+          color="var(--faint)"
+          style={{ flexShrink: 0, marginLeft: 'auto' }}
+        />
+      </button>
+      {trailing}
+    </div>
+  )
+}
+
 export function LandingHero() {
-  const [copied, setCopied] = useState(false)
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
+  const [infoPkg, setInfoPkg] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  function copyCmd() {
+  function copyCmd(command: string, pkg: string) {
     try {
-      navigator.clipboard.writeText(INSTALL_COMMAND)
+      navigator.clipboard.writeText(command)
     } catch {
       // clipboard may be unavailable (insecure context) — still flash feedback
     }
-    posthog.capture('install_command_copied', { command: INSTALL_COMMAND })
-    setCopied(true)
+    posthog.capture('install_command_copied', { command, package: pkg })
+    setCopiedCmd(command)
     clearTimeout(timer.current)
-    timer.current = setTimeout(() => setCopied(false), 1400)
+    timer.current = setTimeout(() => setCopiedCmd(null), 1400)
+  }
+
+  function scrollToLibraries() {
+    setInfoPkg(null)
+    document.getElementById('libraries')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
@@ -59,7 +118,7 @@ export function LandingHero() {
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: 'clamp(48px, 8vw, 84px) 24px 0',
+          padding: 'clamp(110px, 12vw, 146px) 24px 0',
           position: 'relative',
           textAlign: 'center',
           display: 'flex',
@@ -68,32 +127,6 @@ export function LandingHero() {
           gap: 24,
         }}
       >
-        {/* wordmark */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            fontFamily: 'var(--font-display)',
-            fontWeight: 700,
-            fontSize: 22,
-            letterSpacing: '-0.02em',
-            color: 'var(--text)',
-            animation: `${riseBase} both`,
-          }}
-        >
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: 'var(--accent)',
-              boxShadow: '0 0 12px color-mix(in oklab, var(--accent) 60%, transparent)',
-            }}
-          />
-          elah
-        </div>
-
         <h1
           style={{
             fontFamily: 'var(--font-display)',
@@ -191,35 +224,76 @@ export function LandingHero() {
           </span>
         </div>
 
-        {/* install command */}
-        <button
-          onClick={copyCmd}
-          title="Copy install command"
-          className="lv-copy"
+        {/* install commands — one per package, each independently copyable */}
+        <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 10,
             width: '100%',
             maxWidth: 720,
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-geist-mono)',
-            fontSize: 'clamp(10px, 1.5vw, 12.5px)',
-            color: 'var(--muted)',
-            background: 'var(--card)',
-            border: '1px solid var(--line)',
-            borderRadius: 10,
-            padding: '13px 16px',
-            cursor: 'pointer',
             animation: `${riseBase} .3s both`,
           }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflowX: 'auto' }}>
-            <span style={{ color: 'var(--accent)' }}>$</span>
-            <span style={{ whiteSpace: 'nowrap' }}>{INSTALL_COMMAND}</span>
-          </span>
-          <Icon name={copied ? 'check' : 'content_copy'} size={16} color="var(--faint)" />
-        </button>
+          {libraries.map((lib) => {
+            const installCmd = `npm install ${lib.pkg}`
+            return (
+              <div key={lib.pkg} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <CommandLine
+                  command={installCmd}
+                  copied={copiedCmd === installCmd}
+                  onCopy={() => copyCmd(installCmd, lib.pkg)}
+                  trailing={
+                    <button
+                      onClick={() => setInfoPkg(infoPkg === lib.pkg ? null : lib.pkg)}
+                      title={`About ${lib.pkg}`}
+                      aria-label={`About ${lib.pkg}`}
+                      aria-expanded={infoPkg === lib.pkg}
+                      className="lv-icon-btn"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 2,
+                        display: 'flex',
+                        color: infoPkg === lib.pkg ? 'var(--accent)' : 'var(--faint)',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon name="info" size={16} />
+                    </button>
+                  }
+                />
+
+                {lib.extraCmd && (
+                  <CommandLine
+                    command={lib.extraCmd}
+                    copied={copiedCmd === lib.extraCmd}
+                    onCopy={() => copyCmd(lib.extraCmd as string, lib.pkg)}
+                  />
+                )}
+
+                {infoPkg === lib.pkg && (
+                  <div className="lv-info-popover" role="tooltip">
+                    <strong>{lib.title}</strong>
+                    <p>{lib.subtitle}</p>
+                    {lib.extraCmd && <code className="lv-info-cmd">$ {lib.extraCmd}</code>}
+                    <button type="button" onClick={scrollToLibraries} className="lv-ghost lv-info-learnmore">
+                      Learn more →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {infoPkg && (
+          <div
+            onClick={() => setInfoPkg(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 55 }}
+            aria-hidden
+          />
+        )}
 
         {/* scroll hint */}
         <a

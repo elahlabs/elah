@@ -3,7 +3,14 @@
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { Icon } from './Icon'
-import { playgrounds } from './landingData'
+import { CardHeader, type CardHeaderKind } from './CardHeader'
+import { playgrounds, type PlaygroundEntry } from './landingData'
+
+const headerKindByVariant: Record<PlaygroundEntry['variant'], CardHeaderKind> = {
+  full: 'editor',
+  timeline: 'timeline',
+  demo: 'demo',
+}
 
 export function LandingPlaygrounds() {
   return (
@@ -41,36 +48,7 @@ export function LandingPlaygrounds() {
                 transition: 'border-color .18s, box-shadow .18s',
               }}
             >
-              <div
-                style={{
-                  height: 110,
-                  background: 'linear-gradient(160deg, #0a0d14, #121a2e)',
-                  borderBottom: '1px solid var(--line2)',
-                  position: 'relative',
-                  padding: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 5,
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <span style={{ display: 'block', height: 8, borderRadius: 3, width: '62%', background: 'linear-gradient(180deg,#3b82f6,#1d4ed8)' }} />
-                <span style={{ display: 'block', height: 8, borderRadius: 3, width: '40%', marginLeft: '14%', background: '#7a2e10', border: '1px solid #ad5621' }} />
-                <span style={{ display: 'block', height: 8, borderRadius: 3, width: '76%', background: '#0c2a26', border: '1px solid #0d4d3c' }} />
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: p.playhead,
-                    width: 1.5,
-                    background: '#fff',
-                    opacity: 0.8,
-                    animation: 'lv-phSweepPct 9s linear infinite alternate',
-                    animationDelay: p.delay,
-                  }}
-                />
-              </div>
+              <CardHeader kind={headerKindByVariant[p.variant]} playheadPct={p.playhead} delay={p.delay} />
               <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                 <span
                   style={{

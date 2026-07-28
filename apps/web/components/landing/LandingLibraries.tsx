@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Icon } from './Icon'
+import { CardHeader } from './CardHeader'
 import { libraries } from './landingData'
 
 export function LandingLibraries() {
@@ -32,37 +33,39 @@ export function LandingLibraries() {
                 border: '1px solid var(--line)',
                 borderRadius: 12,
                 background: 'var(--card)',
-                padding: 22,
+                overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 10,
                 transition: 'border-color .18s, box-shadow .18s',
               }}
             >
-              <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
-                {lib.pkg}
-              </span>
-              <h3 style={{ fontSize: 16, margin: 0, fontWeight: 600, letterSpacing: '-0.015em' }}>{lib.title}</h3>
-              <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.62, margin: 0, flex: 1, textWrap: 'pretty' }}>
-                {lib.subtitle}
-              </p>
-              <Link
-                href={lib.href}
-                className="lv-launch"
-                style={{
-                  marginTop: 4,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  color: 'var(--accent)',
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  transition: 'gap .18s',
-                }}
-              >
-                Try
-                <Icon name="arrow_forward" size={15} />
-              </Link>
+              <CardHeader kind={lib.variant} />
+              <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
+                  {lib.pkg}
+                </span>
+                <h3 style={{ fontSize: 16, margin: 0, fontWeight: 600, letterSpacing: '-0.015em' }}>{lib.title}</h3>
+                <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.62, margin: 0, flex: 1, textWrap: 'pretty' }}>
+                  {lib.subtitle}
+                </p>
+                <Link
+                  href={lib.href}
+                  className="lv-launch"
+                  style={{
+                    marginTop: 4,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    color: 'var(--accent)',
+                    fontWeight: 600,
+                    fontSize: 13.5,
+                    transition: 'gap .18s',
+                  }}
+                >
+                  Try
+                  <Icon name="arrow_forward" size={15} />
+                </Link>
+              </div>
             </div>
           ))}
         </div>
