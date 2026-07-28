@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Icon } from './Icon'
 import { navLinks, GITHUB_URL, DISCORD_URL, GET_STARTED_URL } from './landingData'
 import { trackEvent } from '@/lib/analytics'
+import { currentVersion } from '@/config/changelog'
 
 const linkStyle = { color: 'var(--muted)', padding: '6px 11px', borderRadius: 8 } as const
 
@@ -91,7 +92,7 @@ export function LandingNav() {
               flexShrink: 0,
             }}
           >
-            <span style={{ color: 'var(--accent)' }}>v0.3.1</span> · What&apos;s new
+            <span style={{ color: 'var(--accent)' }}>v{currentVersion}</span> · What&apos;s new
           </Link>
 
           <a
@@ -206,7 +207,7 @@ export function LandingNav() {
               onClick={() => setMenuOpen(false)}
               style={{ color: 'var(--muted)', fontSize: 13, padding: '2px 2px 2px', fontFamily: 'var(--font-geist-mono)' }}
             >
-              <span style={{ color: 'var(--accent)' }}>v0.3.1</span> · What&apos;s new — GitHub ↗
+              <span style={{ color: 'var(--accent)' }}>v{currentVersion}</span> · What&apos;s new — GitHub ↗
             </a>
           </div>
         )}

@@ -11,6 +11,8 @@ versions independently, starting from its own 0.1.0.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-28
+
 ### Added
 
 - **New package `@elah/react`** — all React bindings in one place: the editor
@@ -21,6 +23,9 @@ versions independently, starting from its own 0.1.0.
   `useMasterVolume`, `useTrackLevels`). Store hooks keep the imperative
   surface too (`useTracksStore.getState()` still works).
 - `@elah/editor` now also re-exports the audio hooks.
+- Test coverage for `@elah/react` (binding-layer tests for every hook,
+  mirroring the `vitest`/`jsdom` conventions already used by
+  `@elah/timeline` and `@elah/editor`).
 
 ### Changed
 
@@ -155,6 +160,8 @@ timeline**. Additive — no breaking changes to the 0.2.x public API.
 - First public release of the three-package split: `@elah/core`,
   `@elah/timeline`, `@elah/editor`.
 
+[0.4.0]: https://github.com/elahlabs/elah/releases/tag/v0.4.0
+[0.3.2]: https://github.com/elahlabs/elah/releases/tag/v0.3.2
 [0.3.1]: https://github.com/elahlabs/elah/releases/tag/v0.3.1
 [0.3.0]: https://github.com/elahlabs/elah/releases/tag/v0.3.0
 [0.2.1]: https://github.com/elahlabs/elah/releases/tag/v0.2.1

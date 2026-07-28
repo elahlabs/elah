@@ -33,7 +33,10 @@ export default function InstallationPage() {
           </h1>
           <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
             Add elah to your React application. The SDK is published to npm as{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/editor</code> — install it with your package manager and wire it into Next.js or Vite.
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/editor</code> — install it with your package manager and wire it into Next.js or Vite. It pulls in{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/core</code>,{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/timeline</code>, and{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/react</code> automatically.
           </p>
         </div>
 
@@ -117,7 +120,7 @@ bun add @elah/editor`}
             Peer Dependencies
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> only expects React to be provided by your app — <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> and the rest of the pipeline are pulled in transitively. A typical <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code> looks like:
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> only expects React to be provided by your app — <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>, and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> are pulled in transitively. A typical <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code> looks like:
           </p>
           <CodeBlock
             language="json"
@@ -133,6 +136,10 @@ bun add @elah/editor`}
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
             The package ships ESM with bundled TypeScript declarations — no separate{' '}
             <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@types</code> install required.
+          </p>
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+            Building custom UI on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor? Install{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly for the hooks (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useAudioMixer</code>, etc.) without pulling in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>&apos;s UI components.
           </p>
         </section>
 
