@@ -265,6 +265,9 @@ renderer.dispose()               // cleanup on unmount`}
 
         {/* Hooks */}
         <Section id="hooks" title="Hooks">
+          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
+            All hooks below live in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> and are re-exported by <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> — install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly if you&apos;re building custom UI on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor SDK.
+          </p>
           <div className="space-y-4">
             {[
               {
@@ -301,6 +304,21 @@ renderer.dispose()               // cleanup on unmount`}
                 hook: 'useMediaLibrary()',
                 returns: 'UseMediaLibraryApi',
                 desc: 'Access the media library. Returns { assets, getAsset, removeAsset, updateAsset, importFiles, importUrl, importBlob }.',
+              },
+              {
+                hook: 'useAudioMixer(controller)',
+                returns: 'AudioMixerApi',
+                desc: 'Click-free master/track gain controls for an AudioPlaybackController. Pass null while the controller isn’t initialized yet — methods become no-ops.',
+              },
+              {
+                hook: 'useMasterVolume(controller, engine)',
+                returns: 'MasterVolumeApi',
+                desc: 'Master volume with both immediate audio-graph control and persistence to the project model.',
+              },
+              {
+                hook: 'useTrackLevels(controller)',
+                returns: 'Map<string, TrackLevel>',
+                desc: 'Polls per-track RMS levels on every animation frame, for building level meters.',
               },
             ].map(({ hook, returns, desc }) => (
               <div key={hook} className="rounded-md border border-outline-variant bg-surface-low p-4">

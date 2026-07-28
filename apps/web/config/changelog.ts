@@ -28,15 +28,87 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.4.0',
+    date: '2026-07-28',
+    latest: true,
+    summary:
+      'New @elah/react package — all React bindings split out of @elah/core, which is now truly framework-agnostic.',
+    groups: [
+      {
+        kind: 'added',
+        scope: '@elah/react',
+        items: [
+          'New package @elah/react — all React bindings in one place: the editor context (EditorContext, useEditor, useTimelineEngine, usePlaybackEngine), store hooks (useTracksStore, usePlaybackStore, useSelectionStore, useTransitionsStore, useMediaLibraryStore, useMediaLibrary / useAssets), and the audio hooks (useAudioMixer, useMasterVolume, useTrackLevels). Store hooks keep the imperative surface too (useTracksStore.getState() still works).',
+          '@elah/editor now also re-exports the audio hooks.',
+          'Test coverage for @elah/react, mirroring the vitest/jsdom conventions already used by @elah/timeline and @elah/editor.',
+        ],
+      },
+      {
+        kind: 'changed',
+        scope: '@elah/core',
+        items: [
+          'BREAKING: core is now truly framework-agnostic — zero React in its module graph (fixes #42; importing @elah/core from Vue/Nuxt/Node no longer requires React).',
+          'All React hooks moved to @elah/react (re-exported unchanged by @elah/editor, so @elah/editor users are unaffected).',
+          'The Zustand mirrors are now vanilla stores exported as tracksStore, playbackStore, selectionStore, transitionsStore, and mediaLibraryStore (previously the React-bound useXStore exports). Imperative call sites migrate as useTracksStore.getState() → tracksStore.getState().',
+        ],
+      },
+    ],
+  },
+  {
+    version: '0.1.1',
+    date: '2026-07-12',
+    summary: 'elah serve gets a browser-friendly welcome page and a copy-paste startup example.',
+    groups: [
+      {
+        kind: 'added',
+        scope: '@elah/cli',
+        items: [
+          'elah serve welcome page — GET / now serves an HTML orientation page (route table, browser-connected status, copy-paste /render example) instead of a bare 404.',
+          "Copy-paste startup example — elah serve now prints a ready-to-run render example on startup: curl on macOS/Linux, Invoke-RestMethod on Windows (PowerShell's curl alias doesn't accept -H/-d).",
+        ],
+      },
+    ],
+  },
+  {
+    version: '0.3.2',
+    date: '2026-07-12',
+    summary: 'Documentation only — reworked package READMEs to cross-link @elah/cli. No code changes.',
+    groups: [
+      {
+        kind: 'changed',
+        items: [
+          'Reworked @elah/core, @elah/timeline, and @elah/editor READMEs to cross-link @elah/cli and stay consistent with its README pattern.',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.3.1',
     date: '2026-07-11',
-    latest: true,
     summary: 'License changed from ECL v1.0 to Apache-2.0. No code changes.',
     groups: [
       {
         kind: 'changed',
         items: [
           'License changed from the Elah Community License (ECL) v1.0 to Apache-2.0, across @elah/core, @elah/timeline, and @elah/editor. Copyright remains with Elah Labs Private Limited.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '0.1.0',
+    date: '2026-07-11',
+    summary:
+      'Initial release of @elah/cli — a headless CLI and self-hosted render server, bit-identical to browser export.',
+    groups: [
+      {
+        kind: 'added',
+        scope: '@elah/cli',
+        items: [
+          'CLI commands — elah split, trim, export, and build for headless project editing and MP4 export.',
+          'elah serve — a long-lived HTTP render server (POST /render: spec JSON in, MP4 out) with a warm browser and concurrency control.',
+          'Seconds-based build spec for programmatic and AI-generated projects, with path-addressed validation errors.',
+          'Library API — build, exportProject, createRenderSession, startServe, validateSpec, probeMedia — importable directly from Node.',
         ],
       },
     ],
@@ -90,24 +162,6 @@ export const releases: Release[] = [
         items: [
           'Backward-seek frame-cache stability and video-decoder pivot handling.',
           'Generated clips can grow left without being clamped by source bounds.',
-        ],
-      },
-    ],
-  },
-  {
-    version: '0.1.0',
-    date: '2026-07-11',
-    summary:
-      'Initial release of @elah/cli — a headless CLI and self-hosted render server, bit-identical to browser export.',
-    groups: [
-      {
-        kind: 'added',
-        scope: '@elah/cli',
-        items: [
-          'CLI commands — elah split, trim, export, and build for headless project editing and MP4 export.',
-          'elah serve — a long-lived HTTP render server (POST /render: spec JSON in, MP4 out) with a warm browser and concurrency control.',
-          'Seconds-based build spec for programmatic and AI-generated projects, with path-addressed validation errors.',
-          'Library API — build, exportProject, createRenderSession, startServe, validateSpec, probeMedia — importable directly from Node.',
         ],
       },
     ],

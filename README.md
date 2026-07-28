@@ -178,16 +178,17 @@ Right-click any clip on the timeline to open the context menu (Delete).
 
 ## Install
 
-Elah ships as four published npm packages:
+Elah ships as five published npm packages:
 
 | Package | npm | What it is |
 |---|---|---|
 | [`@elah/editor`](https://www.npmjs.com/package/@elah/editor) | [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor) | Full React editor SDK — `EditorProvider`, `Preview`, `Timeline`, `AssetPanel` + re-exports everything below |
 | [`@elah/timeline`](https://www.npmjs.com/package/@elah/timeline) | [![npm](https://img.shields.io/npm/v/@elah/timeline)](https://www.npmjs.com/package/@elah/timeline) | React timeline UI components and hooks |
+| [`@elah/react`](https://www.npmjs.com/package/@elah/react) | [![npm](https://img.shields.io/npm/v/@elah/react)](https://www.npmjs.com/package/@elah/react) | React bindings — editor context, store hooks, and audio mixer hooks (used by `@elah/timeline` and `@elah/editor`, or standalone) |
 | [`@elah/core`](https://www.npmjs.com/package/@elah/core) | [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core) | Framework-agnostic engine, resolver, renderer, export (headless) |
 | [`@elah/cli`](https://www.npmjs.com/package/@elah/cli) | [![npm](https://img.shields.io/npm/v/@elah/cli)](https://www.npmjs.com/package/@elah/cli) | Headless `elah` command-line runtime — split/trim/build/export/serve on `@elah/core` |
 
-For the full experience, install `@elah/editor` — it pulls in the other two:
+For the full experience, install `@elah/editor` — it pulls in the other three:
 
 ```bash
 npm install @elah/editor
