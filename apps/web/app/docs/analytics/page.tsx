@@ -13,6 +13,7 @@ const toc = [
   { id: 'env', title: 'Environment variables', level: 2 },
   { id: 'consent', title: 'Consent & Do-Not-Track', level: 2 },
   { id: 'opt-out', title: 'Changing your choice', level: 2 },
+  { id: 'pwa', title: 'Install & offline', level: 2 },
   { id: 'self-hosting', title: 'Self-hosting', level: 2 },
 ]
 
@@ -46,13 +47,19 @@ export default function AnalyticsDocsPage() {
             <li>
               <strong className="text-on-surface">PostHog</strong> — privacy-friendly product analytics:
               page views and a few interaction events (install-command copies, playground launches, export
-              flow). Reverse-proxied through <code className={mono}>/ingest</code> so it is resilient to
-              ad-blockers.
+              flow, and the PWA install prompt — <code className={mono}>pwa_install_prompt_shown</code>,{' '}
+              <code className={mono}>pwa_install_clicked</code>, <code className={mono}>pwa_installed</code>,{' '}
+              <code className={mono}>pwa_install_dismissed</code>). Reverse-proxied through{' '}
+              <code className={mono}>/ingest</code> so it is resilient to ad-blockers.
             </li>
             <li>
               <strong className="text-on-surface">Reddit Pixel</strong> — fires a{' '}
               <code className={mono}>PageVisit</code> event on load and on client-side route changes, used to
-              measure Reddit ad campaigns.
+              measure Reddit ad campaigns. The PWA install prompt above also maps to Reddit&apos;s conversion
+              events (<code className={mono}>ViewContent</code>, <code className={mono}>Lead</code>,{' '}
+              <code className={mono}>SignUp</code>, and a <code className={mono}>Custom</code> event for
+              dismissals) — only a small metadata object is forwarded for each, never the full PostHog
+              payload.
             </li>
           </ul>
         </section>
@@ -107,7 +114,27 @@ export default function AnalyticsDocsPage() {
           <p className="text-sm leading-relaxed text-on-surface-variant">
             Clearing the site&apos;s <code className={mono}>localStorage</code> (or the{' '}
             <code className={mono}>elah-analytics-consent</code> key) resets the banner on next load. Enabling
-            Do-Not-Track in your browser disables both tools immediately.
+            Do-Not-Track in your browser disables both tools immediately. Also clearing{' '}
+            <code className={mono}>elah-pwa-install-dismissed-until</code> and{' '}
+            <code className={mono}>elah-pwa-installed</code> resets the install prompt banner described below.
+          </p>
+        </section>
+
+        <section className="mb-10">
+          <h2 id="pwa" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+            Install &amp; offline
+          </h2>
+          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
+            elah.dev can be installed as an app on desktop and Android Chromium browsers. A small service
+            worker at <code className={mono}>/sw.js</code> registers for <strong className="text-on-surface">every</strong>{' '}
+            visitor, regardless of your analytics choice — it is not tracking. It only stores an offline
+            fallback page and the site logo, sends nothing anywhere, and can be removed at any time from your
+            browser&apos;s DevTools (Application → Service Workers → Unregister).
+          </p>
+          <p className="text-sm leading-relaxed text-on-surface-variant">
+            The install banner itself only appears after you accept the consent banner above, so its{' '}
+            <code className={mono}>ViewContent</code> impression event is never sent before the Reddit pixel
+            is loaded.
           </p>
         </section>
 
