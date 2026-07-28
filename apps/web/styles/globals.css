@@ -644,64 +644,9 @@
 }
 .landing-root .lv-pill:hover,
 .landing-root .lv-outline:hover,
-.landing-root .lv-copy:hover,
-.landing-root .lv-icon-btn:hover {
+.landing-root .lv-copy:hover {
   border-color: var(--accent);
   color: var(--text);
-}
-
-/* Per-package install-command info popover. */
-.landing-root .lv-info-popover {
-  position: absolute;
-  z-index: 60;
-  bottom: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
-  text-align: left;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
-}
-.landing-root .lv-info-popover strong {
-  display: block;
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.landing-root .lv-info-popover p {
-  margin: 0 0 8px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.landing-root .lv-info-popover a,
-.landing-root .lv-info-popover .lv-info-learnmore {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--accent);
-}
-.landing-root .lv-info-popover .lv-info-learnmore {
-  display: inline-block;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  cursor: pointer;
-}
-.landing-root .lv-info-popover .lv-info-cmd {
-  display: block;
-  font-family: var(--font-geist-mono);
-  font-size: 11.5px;
-  color: var(--text);
-  background: var(--elev);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 6px 8px;
-  margin: 0 0 8px;
-  white-space: nowrap;
-  overflow-x: auto;
 }
 .landing-root .lv-accent-btn:hover {
   filter: brightness(1.1);

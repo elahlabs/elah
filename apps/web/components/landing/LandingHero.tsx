@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { Icon } from './Icon'
+import { CardHeader } from './CardHeader'
 import { EditorMockup } from './EditorMockup'
 import { EDITOR_URL, GET_STARTED_URL, GITHUB_URL, libraries } from './landingData'
 
@@ -23,10 +24,9 @@ interface CommandLineProps {
   command: string
   copied: boolean
   onCopy: () => void
-  trailing?: ReactNode
 }
 
-function CommandLine({ command, copied, onCopy, trailing }: CommandLineProps) {
+function CommandLine({ command, copied, onCopy }: CommandLineProps) {
   return (
     <div
       className="lv-copy"
@@ -67,14 +67,12 @@ function CommandLine({ command, copied, onCopy, trailing }: CommandLineProps) {
           style={{ flexShrink: 0, marginLeft: 'auto' }}
         />
       </button>
-      {trailing}
     </div>
   )
 }
 
 export function LandingHero() {
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
-  const [infoPkg, setInfoPkg] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   function copyCmd(command: string, pkg: string) {
@@ -87,11 +85,6 @@ export function LandingHero() {
     setCopiedCmd(command)
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setCopiedCmd(null), 1400)
-  }
-
-  function scrollToLibraries() {
-    setInfoPkg(null)
-    document.getElementById('libraries')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
@@ -228,72 +221,82 @@ export function LandingHero() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: 10,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 14,
             width: '100%',
-            maxWidth: 720,
             animation: `${riseBase} .3s both`,
           }}
         >
           {libraries.map((lib) => {
             const installCmd = `npm install ${lib.pkg}`
             return (
-              <div key={lib.pkg} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <CommandLine
-                  command={installCmd}
-                  copied={copiedCmd === installCmd}
-                  onCopy={() => copyCmd(installCmd, lib.pkg)}
-                  trailing={
-                    <button
-                      onClick={() => setInfoPkg(infoPkg === lib.pkg ? null : lib.pkg)}
-                      title={`About ${lib.pkg}`}
-                      aria-label={`About ${lib.pkg}`}
-                      aria-expanded={infoPkg === lib.pkg}
-                      className="lv-icon-btn"
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        padding: 2,
-                        display: 'flex',
-                        color: infoPkg === lib.pkg ? 'var(--accent)' : 'var(--faint)',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon name="info" size={16} />
-                    </button>
-                  }
-                />
-
-                {lib.extraCmd && (
+              <div
+                key={lib.pkg}
+                className="lv-pgcard"
+                style={{
+                  border: '1px solid var(--line)',
+                  borderRadius: 12,
+                  background: 'var(--card)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  textAlign: 'left',
+                  transition: 'border-color .18s, box-shadow .18s',
+                }}
+              >
+                <Link href={lib.href} aria-label={`Try ${lib.title}`} style={{ display: 'block' }}>
+                  <CardHeader kind={lib.variant} />
+                </Link>
+                <div
+                  style={{
+                    padding: '10px 10px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{lib.title}</span>
+                  <Link
+                    href={lib.href}
+                    className="lv-launch"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      color: 'var(--accent)',
+                      fontWeight: 600,
+                      fontSize: 11.5,
+                      background: 'color-mix(in oklab, var(--bg) 55%, transparent)',
+                      border: '1px solid var(--accent)',
+                      borderRadius: 5,
+                      padding: '3px 8px',
+                      flexShrink: 0,
+                      transition: 'gap .18s',
+                    }}
+                  >
+                    Try now
+                    <Icon name="arrow_forward" size={12} />
+                  </Link>
+                </div>
+                <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <CommandLine
-                    command={lib.extraCmd}
-                    copied={copiedCmd === lib.extraCmd}
-                    onCopy={() => copyCmd(lib.extraCmd as string, lib.pkg)}
+                    command={installCmd}
+                    copied={copiedCmd === installCmd}
+                    onCopy={() => copyCmd(installCmd, lib.pkg)}
                   />
-                )}
-
-                {infoPkg === lib.pkg && (
-                  <div className="lv-info-popover" role="tooltip">
-                    <strong>{lib.title}</strong>
-                    <p>{lib.subtitle}</p>
-                    {lib.extraCmd && <code className="lv-info-cmd">$ {lib.extraCmd}</code>}
-                    <button type="button" onClick={scrollToLibraries} className="lv-ghost lv-info-learnmore">
-                      Learn more →
-                    </button>
-                  </div>
-                )}
+                  {lib.extraCmd && (
+                    <CommandLine
+                      command={lib.extraCmd}
+                      copied={copiedCmd === lib.extraCmd}
+                      onCopy={() => copyCmd(lib.extraCmd as string, lib.pkg)}
+                    />
+                  )}
+                </div>
               </div>
             )
           })}
         </div>
-        {infoPkg && (
-          <div
-            onClick={() => setInfoPkg(null)}
-            style={{ position: 'fixed', inset: 0, zIndex: 55 }}
-            aria-hidden
-          />
-        )}
 
         {/* scroll hint */}
         <a
