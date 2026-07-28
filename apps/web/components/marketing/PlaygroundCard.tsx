@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Play, Layers, Clock, Cpu } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import posthog from 'posthog-js'
+import { trackPlaygroundLaunch } from '@/lib/analytics'
 
 interface PlaygroundCardProps {
   title: string
@@ -118,7 +118,7 @@ export function PlaygroundCard({
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = accentColor + '08'
           }}
-          onClick={() => posthog.capture('playground_launched', { title, href, variant, status })}
+          onClick={() => trackPlaygroundLaunch({ source: 'playground_card', title, href, variant, status })}
         >
           <Play className="h-3 w-3" />
           Launch Playground

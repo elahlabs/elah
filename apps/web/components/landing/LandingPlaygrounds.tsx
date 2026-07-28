@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import posthog from 'posthog-js'
+import { trackPlaygroundLaunch } from '@/lib/analytics'
 import { Icon } from './Icon'
 import { CardHeader, type CardHeaderKind } from './CardHeader'
 import { playgrounds, type PlaygroundEntry } from './landingData'
@@ -74,7 +74,8 @@ export function LandingPlaygrounds() {
                 <Link
                   href={p.href}
                   onClick={() =>
-                    posthog.capture('playground_launched', {
+                    trackPlaygroundLaunch({
+                      source: 'landing_playgrounds',
                       title: p.title,
                       href: p.href,
                       variant: p.variant,

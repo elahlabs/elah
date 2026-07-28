@@ -4,16 +4,7 @@ import { Suspense, useEffect, useRef } from 'react'
 import Script from 'next/script'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useConsent } from '@/components/ConsentProvider'
-
-declare global {
-  interface Window {
-    rdt?: {
-      (...args: unknown[]): void
-      callQueue: unknown[][]
-      sendEvent?: (...args: unknown[]) => void
-    }
-  }
-}
+// Window.rdt is declared globally in lib/analytics.ts
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_REDDIT_PIXEL_ID
 

@@ -7,6 +7,7 @@ import { Icon } from './Icon'
 import { CardHeader } from './CardHeader'
 import { EditorMockup } from './EditorMockup'
 import { EDITOR_URL, GET_STARTED_URL, GITHUB_URL, libraries } from './landingData'
+import { trackPlaygroundLaunch } from '@/lib/analytics'
 
 const riseBase = 'lv-rise .8s cubic-bezier(.2,.7,.2,1)'
 
@@ -179,7 +180,19 @@ export function LandingHero() {
             <Icon name="rocket_launch" size={15} color="var(--accent)" />
             Get Started
           </Link>
-          <Link href={EDITOR_URL} className="lv-outline lv-hero-btn" style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          <Link
+            href={EDITOR_URL}
+            className="lv-outline lv-hero-btn"
+            style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}
+            onClick={() =>
+              trackPlaygroundLaunch({
+                source: 'hero_live_playground',
+                title: 'Live Playground',
+                href: EDITOR_URL,
+                variant: 'full',
+              })
+            }
+          >
             <Icon name="play_circle" size={15} color="var(--accent)" />
             Live Playground
           </Link>
@@ -248,7 +261,14 @@ export function LandingHero() {
                   transition: 'border-color .18s, box-shadow .18s',
                 }}
               >
-                <Link href={lib.href} aria-label={`Try ${lib.title}`} style={{ display: 'block' }}>
+                <Link
+                  href={lib.href}
+                  aria-label={`Try ${lib.title}`}
+                  style={{ display: 'block' }}
+                  onClick={() =>
+                    trackPlaygroundLaunch({ source: 'hero_library_card', title: lib.title, href: lib.href, variant: lib.variant })
+                  }
+                >
                   <CardHeader kind={lib.variant} />
                 </Link>
                 <div
@@ -278,6 +298,9 @@ export function LandingHero() {
                       flexShrink: 0,
                       transition: 'gap .18s',
                     }}
+                    onClick={() =>
+                      trackPlaygroundLaunch({ source: 'hero_library_card', title: lib.title, href: lib.href, variant: lib.variant })
+                    }
                   >
                     Try now
                     <Icon name="arrow_forward" size={12} />
