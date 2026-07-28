@@ -4,12 +4,16 @@
  *   - public/elah-mark.png       transparent red "e" for navbar/footer (any theme)
  *   - app/icon.png               256² favicon (red "e" on brand charcoal)
  *   - app/apple-icon.png         180² apple touch icon
+ *   - public/icons/icon-192.png  PWA manifest icon
+ *   - public/icons/icon-512.png  PWA manifest icon
+ *   - public/icons/maskable-512.png  PWA maskable icon (extra safe-zone padding)
  *
  * Run once: `node scripts/gen-logo-assets.mjs`
  */
 import sharp from 'sharp'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { mkdirSync } from 'node:fs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const web = resolve(__dirname, '..')
@@ -47,16 +51,16 @@ async function run() {
 
   // 2) Favicons: the mark centred on a brand-charcoal rounded square.
   const PAD = 0.16
-  const inner = Math.round(SIZE * (1 - PAD * 2))
-  const padded = await sharp(markBuf)
-    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .toBuffer()
 
-  const makeIcon = async (size, out) => {
-    const innerSized = Math.round(size * (1 - PAD * 2))
-    const fg = await sharp(padded).resize(innerSized, innerSized, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer()
+  const makeIcon = async (size, out, pad = PAD) => {
+    const paddedForSize = await sharp(markBuf)
+      .resize(Math.round(size * (1 - pad * 2)), Math.round(size * (1 - pad * 2)), {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .toBuffer()
     await sharp({ create: { width: size, height: size, channels: 4, background: BRAND_BG } })
-      .composite([{ input: fg, gravity: 'center' }])
+      .composite([{ input: paddedForSize, gravity: 'center' }])
       .png()
       .toFile(resolve(web, out))
   }
@@ -64,7 +68,18 @@ async function run() {
   await makeIcon(256, 'app/icon.png')
   await makeIcon(180, 'app/apple-icon.png')
 
-  console.log('Generated: public/elah-mark.png, app/icon.png, app/apple-icon.png')
+  // PWA manifest icons.
+  mkdirSync(resolve(web, 'public/icons'), { recursive: true })
+  await makeIcon(192, 'public/icons/icon-192.png')
+  await makeIcon(512, 'public/icons/icon-512.png')
+  // maskable: android crops to a circle inscribed in the 80% safe zone, so the
+  // mark needs noticeably more breathing room than the favicon build.
+  await makeIcon(512, 'public/icons/maskable-512.png', 0.26)
+
+  console.log(
+    'Generated: public/elah-mark.png, app/icon.png, app/apple-icon.png, ' +
+      'public/icons/icon-192.png, public/icons/icon-512.png, public/icons/maskable-512.png',
+  )
 }
 
 run().catch((err) => {

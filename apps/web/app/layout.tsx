@@ -15,6 +15,8 @@ import { JsonLd } from '@/components/seo/JsonLd'
 import { RedditPixel } from '@/components/RedditPixel'
 import { ConsentProvider } from '@/components/ConsentProvider'
 import { ConsentBanner } from '@/components/ConsentBanner'
+import { InstallBanner } from '@/components/InstallBanner'
+import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -112,6 +114,25 @@ const webSiteJsonLd = {
 // flash of the light fallback tokens.
 const themeInitScript = `document.documentElement.classList.add('dark');`
 
+// beforeinstallprompt can fire before React hydrates (e.g. a repeat visit
+// with an already-active service worker), so a useEffect listener in
+// useInstallPrompt would miss it. Park the event on window here, before
+// hydration, and re-broadcast it as a plain event the hook can pick up
+// whenever it mounts. preventDefault() is mandatory — without it Chromium
+// shows its own mini-infobar and we lose control of the moment.
+const installPromptScript = `
+  window.__elahInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.__elahInstallPrompt = e;
+    window.dispatchEvent(new Event('elah:installprompt'));
+  });
+  window.addEventListener('appinstalled', function () {
+    window.__elahInstallPrompt = null;
+    window.dispatchEvent(new Event('elah:appinstalled'));
+  });
+`
+
 export default function RootLayout({
   children,
 }: {
@@ -121,6 +142,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: installPromptScript }} />
         {/* Material Symbols icon font — used by the landing-v2 editor mockups
             and section chrome. Variable axes requested so weights/fill match. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -154,10 +176,12 @@ export default function RootLayout({
         </a>
         <JsonLd data={organizationJsonLd} />
         <JsonLd data={webSiteJsonLd} />
+        <ServiceWorkerRegistrar />
         <ConsentProvider>
           <RedditPixel />
           <ThemeProvider>{children}</ThemeProvider>
           <ConsentBanner />
+          <InstallBanner />
         </ConsentProvider>
       </body>
     </html>
