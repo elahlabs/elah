@@ -4,23 +4,32 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
+  useState,
 } from 'react'
 import type { TimelineEngine } from '@elah/core'
 import type { PlaybackEngine } from '@elah/core'
 import type { Clip } from '@elah/core'
 import type { CreateClipOptions } from '@elah/core'
-import { useTracksStore } from '@elah/core'
-import { usePlaybackStore } from '@elah/core'
-import { useSelectionStore } from '@elah/core'
+import { useTracksStore } from '@elah/react'
+import { usePlaybackStore } from '@elah/react'
+import { useSelectionStore } from '@elah/react'
 import { splitClipAtPlayhead } from '@elah/core'
-import { useEditor } from '@elah/core'
+import { useEditor } from '@elah/react'
 import { Ruler } from './Ruler'
 import { Playhead } from './Playhead'
 import { TrackRow } from './TrackRow'
 import { AudioDropDialog } from './AudioDropDialog'
 import { cn } from './cn'
 import type { TimelineClassNames } from './classNames'
+import {
+  VisibleWindowContext,
+  SHOW_ALL_WINDOW,
+  computeVisibleWindow,
+  QUANTUM_PX,
+  type VisibleWindow,
+} from './visible-window'
 
 export interface TimelineRef {
   engine: TimelineEngine
@@ -115,6 +124,11 @@ export const Timeline = memo(
     const rulerWrapRef = useRef<HTMLDivElement>(null)
     const clipboardRef = useRef<Clip[]>([])
 
+    // Cached container width — the scroll handler reads this instead of
+    // clientWidth so it never forces a reflow on every scroll event.
+    const containerWidthRef = useRef(0)
+    const [visibleWindow, setVisibleWindow] = useState<VisibleWindow>(SHOW_ALL_WINDOW)
+
     // Fit the entire timeline into the visible lane width. Falls back to a
     // 10-second baseline (matching the ruler) when the timeline is empty.
     const fitToWindow = useCallback(() => {
@@ -146,6 +160,59 @@ export const Timeline = memo(
         rulerWrapRef.current.scrollLeft = scrollRef.current.scrollLeft
       }
     }, [])
+
+    // Recomputes the virtualization window from the cached width + current
+    // scrollLeft. Bails the setState when both bounds are unchanged so the
+    // VisibleWindowContext value (and its subscriber re-renders) stay quantized
+    // to QUANTUM_PX steps instead of firing every scroll frame.
+    const updateWindow = useCallback(() => {
+      const el = scrollRef.current
+      if (!el) return
+      const next = computeVisibleWindow(
+        el.scrollLeft,
+        containerWidthRef.current,
+        sidebarWidth,
+        QUANTUM_PX,
+      )
+      setVisibleWindow((prev) =>
+        prev.start === next.start && prev.end === next.end ? prev : next,
+      )
+    }, [sidebarWidth])
+
+    const handleTrackAreaScroll = useCallback(() => {
+      syncRulerScroll()
+      updateWindow()
+    }, [syncRulerScroll, updateWindow])
+
+    // Keep the cached container width current via ResizeObserver, and
+    // recompute the window whenever it changes. Seeds containerWidthRef
+    // synchronously (not just from the observer's async callback) — this is a
+    // layout effect specifically so it runs before the [zoom, updateWindow]
+    // layout effect below, guaranteeing the very first updateWindow() call
+    // (on mount) sees the real width instead of the useRef(0) default. Without
+    // this, the initial window is computed as [0,0] and stays wrong until the
+    // ResizeObserver's first callback fires — which can lag mount by seconds
+    // under load, culling clips that are actually on-screen.
+    useLayoutEffect(() => {
+      const el = scrollRef.current
+      if (!el) return
+      containerWidthRef.current = el.clientWidth
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0]
+        if (!entry) return
+        containerWidthRef.current = entry.contentRect.width
+        updateWindow()
+      })
+      observer.observe(el)
+      return () => observer.disconnect()
+    }, [updateWindow])
+
+    // Recompute on mount and whenever zoom changes — zoom changes clip pixel
+    // positions, so the same scrollLeft maps to a different visible clip set.
+    // Layout-effect timing avoids a first-paint flash where all clips mount.
+    useLayoutEffect(() => {
+      updateWindow()
+    }, [zoom, updateWindow])
 
     // Ctrl/Cmd + scroll → zoom
     useEffect(() => {
@@ -376,7 +443,7 @@ export const Timeline = memo(
         {/* Track area — single scroll source; scrollbar sits at the bottom */}
         <div
           ref={scrollRef}
-          onScroll={syncRulerScroll}
+          onScroll={handleTrackAreaScroll}
           style={{
             flex: 1,
             overflow: 'auto',
@@ -387,29 +454,31 @@ export const Timeline = memo(
             touchAction: 'pan-x pan-y',
           }}
         >
-          {tracks.map((track) => (
-            <TrackRow
-              key={track.id}
-              track={track}
-              totalFrames={Math.max(totalFrames, fps * 10)}
-              zoom={zoom}
-              fps={fps}
-              sidebarWidth={sidebarWidth}
-              compact={compactSidebar}
-              className={classNames?.track}
-              labelClassName={classNames?.trackLabel}
-              laneClassName={classNames?.lane}
-              clipClassName={classNames?.clip}
-              clipVideo={classNames?.clipVideo}
-              clipAudio={classNames?.clipAudio}
-              clipText={classNames?.clipText}
-              clipImage={classNames?.clipImage}
-              clipVideoAccent={classNames?.clipVideoAccent}
-              clipAudioAccent={classNames?.clipAudioAccent}
-              clipTextAccent={classNames?.clipTextAccent}
-              clipImageAccent={classNames?.clipImageAccent}
-            />
-          ))}
+          <VisibleWindowContext.Provider value={visibleWindow}>
+            {tracks.map((track) => (
+              <TrackRow
+                key={track.id}
+                track={track}
+                totalFrames={Math.max(totalFrames, fps * 10)}
+                zoom={zoom}
+                fps={fps}
+                sidebarWidth={sidebarWidth}
+                compact={compactSidebar}
+                className={classNames?.track}
+                labelClassName={classNames?.trackLabel}
+                laneClassName={classNames?.lane}
+                clipClassName={classNames?.clip}
+                clipVideo={classNames?.clipVideo}
+                clipAudio={classNames?.clipAudio}
+                clipText={classNames?.clipText}
+                clipImage={classNames?.clipImage}
+                clipVideoAccent={classNames?.clipVideoAccent}
+                clipAudioAccent={classNames?.clipAudioAccent}
+                clipTextAccent={classNames?.clipTextAccent}
+                clipImageAccent={classNames?.clipImageAccent}
+              />
+            ))}
+          </VisibleWindowContext.Provider>
 
           {tracks.length === 0 && (
             <div

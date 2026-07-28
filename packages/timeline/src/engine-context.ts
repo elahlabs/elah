@@ -1,4 +1,4 @@
-import { useTimelineEngine } from '@elah/core'
+import { useTimelineEngine } from '@elah/react'
 
 export const useTimeline = useTimelineEngine
 

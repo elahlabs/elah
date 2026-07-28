@@ -1,7 +1,7 @@
 'use client'
 
+import posthog from 'posthog-js'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Type as TypeIcon,
@@ -10,7 +10,6 @@ import {
   Square,
   Maximize2,
   ChevronDown,
-  RectangleHorizontal,
   Film,
   Image as ImageIcon,
   Music,
@@ -29,6 +28,7 @@ import { TimelineControls } from '../shared/TimelineControls'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
+import { BackButton } from '../shared/BackButton'
 import { MediaPanel, type PanelMode } from './MediaPanel'
 import { AgenticPanel } from './AgenticPanel'
 import { TracePanel } from './TracePanel'
@@ -218,14 +218,7 @@ const AppHeader = memo(function AppHeader({
     <header className="elah-app-header grid grid-cols-[1fr_auto_1fr] items-center px-4 h-[46px] bg-ed-bg-2 border-b border-ed-border shrink-0">
       {/* Left — folded playground nav + brand + demo CTA */}
       <div className="flex items-center gap-3">
-        {!isStandalone && (
-          <Link
-            href="/playgrounds"
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-mono tracking-[0.04em] text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated transition-colors"
-          >
-            ← Playgrounds
-          </Link>
-        )}
+        {!isStandalone && <BackButton />}
         {!isMobile && (
           <>
             {!isStandalone && <div className="w-px h-4 bg-ed-border shrink-0" />}
@@ -302,19 +295,6 @@ const AppHeader = memo(function AppHeader({
             <Code2 size={14} /> Code
           </button>
         )}
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md font-sans cursor-pointer transition-colors"
-          style={{
-            background: 'var(--elah-accent)',
-            color: '#04202a',
-            boxShadow: '0 0 10px var(--elah-accent-glow)',
-          }}
-          onClick={onExport}
-          title="Export to MP4"
-        >
-          ⬇ Export
-        </button>
         {!isMobile && !isStandalone && (
           <>
             <div className="relative">
@@ -342,6 +322,19 @@ const AppHeader = memo(function AppHeader({
             <PlaygroundTabs />
           </>
         )}
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 ml-1 text-xs font-semibold rounded-md font-sans cursor-pointer transition-colors"
+          style={{
+            background: 'var(--elah-accent)',
+            color: '#04202a',
+            boxShadow: '0 0 10px var(--elah-accent-glow)',
+          }}
+          onClick={onExport}
+          title="Export to MP4"
+        >
+          ⬇ Export
+        </button>
         {!isMobile && (
           <a
             href={siteConfig.links.github}
@@ -407,7 +400,7 @@ const RAIL_ITEMS: {
 }[] = [
   { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
-  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles, danger: true },
+  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
 ]
@@ -427,20 +420,22 @@ const LeftRail = memo(function LeftRail({
           <button
             key={id}
             type="button"
-            onClick={() => onSelect(id)}
+            onClick={() => {
+              onSelect(id)
+              posthog.capture('editor_panel_switched', { panel: id })
+            }}
             className="w-full flex flex-col items-center gap-1.5 py-1 cursor-pointer"
           >
             <span
               className={cn(
                 'flex items-center justify-center w-10 h-10 rounded-xl transition-colors',
-                on ? 'text-white' : 'text-ed-text-muted',
+                !on && 'text-ed-text-muted',
               )}
               style={
                 on
                   ? {
-                      background: danger
-                        ? 'linear-gradient(160deg, rgba(255,107,107,0.5), rgba(255,107,107,0.1))'
-                        : 'linear-gradient(160deg, rgba(0,194,255,0.5), rgba(0,194,255,0.1))',
+                      background: danger ? 'var(--elah-danger-text)' : 'var(--elah-accent)',
+                      color: danger ? '#fff' : 'var(--elah-accent-text)',
                     }
                   : danger
                     ? { color: 'var(--elah-danger-text)' }
@@ -487,7 +482,10 @@ const AspectControl = memo(function AspectControl() {
           <button
             key={a.label}
             type="button"
-            onClick={() => engine.setStage(a.w, a.h)}
+            onClick={() => {
+              engine.setStage(a.w, a.h)
+              posthog.capture('aspect_ratio_changed', { aspect_ratio: a.label, width: a.w, height: a.h })
+            }}
             title={`${a.label} aspect ratio`}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs cursor-pointer transition-colors',
@@ -559,6 +557,7 @@ const MobileAspectSelect = memo(function MobileAspectSelect() {
                 onClick={() => {
                   engine.setStage(a.w, a.h)
                   setOpen(false)
+                  posthog.capture('aspect_ratio_changed', { aspect_ratio: a.label, width: a.w, height: a.h })
                 }}
                 className={cn(
                   'flex items-center gap-2 w-full px-3 py-2 text-xs transition-colors hover:bg-ed-highest',
@@ -708,21 +707,9 @@ const TransportBar = memo(function TransportBar() {
             </button>
           </>
         ) : (
-          <>
-            <button type="button" title="Fullscreen" className={ghostIcon}>
-              <Maximize2 size={14} />
-            </button>
-            <button
-              type="button"
-              title="Fit"
-              className="inline-flex items-center gap-1 px-2 h-7 rounded border border-ed-border text-ed-text-muted text-[11px] hover:text-ed-text transition-colors cursor-pointer"
-            >
-              Fit <ChevronDown size={12} />
-            </button>
-            <button type="button" title="Frame" className={ghostIcon}>
-              <RectangleHorizontal size={15} />
-            </button>
-          </>
+          <button type="button" title="Fullscreen" className={cn(ghostIcon, 'hidden')}>
+            <Maximize2 size={14} />
+          </button>
         )}
       </div>
     </div>
@@ -735,7 +722,7 @@ export default function ProductionEditor() {
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  const [activePanel, setActivePanel] = useState('stock')
+  const [activePanel, setActivePanel] = useState('agentic')
   const [loadingPixabay, setLoadingPixabay] = useState(false)
   const isMobile = useIsMobile()
   const [mobileSheet, setMobileSheet] = useState<MobileSheetKind>(null)
@@ -776,7 +763,10 @@ export default function ProductionEditor() {
     onProgress: (frame: number, totalFrames: number) => void
   }) => {
     const e = timelineRef.current?.engine
-    if (!e) return
+    // Returning quietly here resolved the modal's await as success: it closed
+    // with nothing exported and no error shown. Throw so the modal's existing
+    // catch surfaces the failure.
+    if (!e) throw new Error('Editor is not ready yet — try again in a moment.')
     usePlaybackStore.getState().pause()
     const project = e.getProject()
     const { lazyExportVideo } = await import('@elah/editor')
@@ -794,6 +784,8 @@ export default function ProductionEditor() {
     a.download = 'export.mp4'
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    // `export_completed` is emitted by ExportModal, which owns the whole funnel
+    // and the preset the other two events are derived from.
   }, [])
 
   return (
@@ -807,7 +799,10 @@ export default function ProductionEditor() {
         className="elah-root flex flex-col h-full"
       >
         <AppHeader
-          onExport={() => setShowExportModal(true)}
+          onExport={() => {
+            setShowExportModal(true)
+            posthog.capture('export_modal_opened')
+          }}
           onToggleCode={() => setShowCode((o) => !o)}
           codeOpen={showCode}
         />

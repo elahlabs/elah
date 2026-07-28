@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AudioPlaybackController } from './AudioPlaybackController'
+import type { AudioPlaybackController } from '@elah/core'
 
 export interface TrackLevel {
   left: number

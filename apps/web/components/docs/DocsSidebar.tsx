@@ -35,7 +35,7 @@ export function DocsSidebar() {
                   >
                     <span>{item.title}</span>
                     {item.label && (
-                      <span className="label-mono rounded bg-primary px-1.5 py-0.5 text-2xs text-white">
+                      <span className="label-mono rounded bg-primary px-1.5 py-0.5 text-2xs text-on-primary">
                         {item.label}
                       </span>
                     )}

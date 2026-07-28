@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createStore } from 'zustand/vanilla'
 import type { Clip, Project, Track } from '../types'
 
 export interface TracksState {
@@ -17,18 +17,19 @@ export interface TracksActions {
 }
 
 /**
- * Zustand store that mirrors engine project state into React.
+ * Vanilla Zustand store that mirrors engine project state for UI consumers.
  *
- * Components subscribe with granular selectors — only the slice they need.
- * A trim on track 3 never re-renders a component subscribed to track 7.
+ * React components subscribe via `useTracksStore` from @elah/react with
+ * granular selectors — only the slice they need. A trim on track 3 never
+ * re-renders a component subscribed to track 7.
  *
  * @example
  * ```ts
- * const tracks = useTracksStore(s => s.tracks)
- * const clips  = useTracksStore(s => s.clips[trackId] ?? [])
+ * const tracks = useTracksStore(s => s.tracks)          // React (@elah/react)
+ * const clips  = tracksStore.getState().clips[trackId]  // imperative
  * ```
  */
-export const useTracksStore = create<TracksState & TracksActions>()((set) => ({
+export const tracksStore = createStore<TracksState & TracksActions>()((set) => ({
   tracks: [],
   clips: {},
   stage: { width: 1080, height: 1920 },

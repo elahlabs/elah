@@ -5,6 +5,7 @@ import { Sparkles, Send, X } from 'lucide-react'
 import { useTimelineEngine, type TimelineRef } from '@elah/editor'
 import { loadPixabayTopic } from './loadRandomPixabay'
 import type { TopicOption } from '@/lib/ai/types'
+import posthog from 'posthog-js'
 
 type PanelState = 'idle' | 'thinking' | 'choosing'
 
@@ -47,6 +48,8 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
       setError('')
       setState('thinking')
 
+      posthog.capture('agentic_prompt_submitted', { prompt_length: trimmed.length })
+
       try {
         const res = await fetch('/api/ai/topics', {
           method: 'POST',
@@ -88,6 +91,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
       setOptions([])
       setState('idle')
       setBusy(true)
+      posthog.capture('agentic_topic_selected', { topic_name: option.name })
       console.log('[playground] Agentic AI topic chosen', {
         name: option.name,
         videotags: option.topic.videotags,
@@ -123,7 +127,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
   return (
     <div className="flex h-full flex-col bg-ed-panel text-ed-text" style={style}>
       <div className="flex items-center gap-2 border-b border-ed-border px-3.5 py-2.5">
-        <Sparkles size={14} className="text-ed-error" />
+        <Sparkles size={14} style={{ color: 'var(--elah-accent)' }} />
         <span className="text-[13px] font-semibold">Agentic AI</span>
       </div>
 
@@ -146,7 +150,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
                 type="button"
                 onClick={() => pickSample(sample)}
                 disabled={disabled}
-                className="rounded-full border border-ed-border bg-ed-elevated px-2.5 py-1 text-[11px] text-ed-text-muted transition-colors hover:border-[var(--elah-color-error)] hover:text-ed-text disabled:opacity-50"
+                className="rounded-full border border-ed-border bg-ed-elevated px-2.5 py-1 text-[11px] text-ed-text-muted transition-colors hover:border-[var(--elah-accent)] hover:text-ed-text disabled:opacity-50"
               >
                 {sample}
               </button>
@@ -164,7 +168,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
           <div className="flex items-center gap-2 text-[11px] text-ed-text-muted">
             <span
               className="h-3 w-3 rounded-full border-2 border-white/20 animate-spin"
-              style={{ borderTopColor: 'var(--elah-danger-text)' }}
+              style={{ borderTopColor: 'var(--elah-accent)' }}
             />
             Planning directions…
           </div>
@@ -191,7 +195,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
                   key={i}
                   type="button"
                   onClick={() => void pick(option)}
-                  className="rounded-md border border-ed-border bg-ed-elevated px-2.5 py-2 text-left transition-colors hover:border-[var(--elah-color-error)]"
+                  className="rounded-md border border-ed-border bg-ed-elevated px-2.5 py-2 text-left transition-colors hover:border-[var(--elah-accent)]"
                 >
                   <div className="text-[12px] font-medium text-ed-text">{option.name}</div>
                   <div className="truncate text-[11px] text-ed-text-muted">
@@ -207,7 +211,7 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
           <div className="flex items-center gap-2 text-[11px] text-ed-text-muted">
             <span
               className="h-3 w-3 rounded-full border-2 border-white/20 animate-spin"
-              style={{ borderTopColor: 'var(--elah-danger-text)' }}
+              style={{ borderTopColor: 'var(--elah-accent)' }}
             />
             Composing your project on the timeline…
           </div>
@@ -226,14 +230,15 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
             onKeyDown={handleKeyDown}
             disabled={disabled}
             placeholder={state === 'choosing' ? 'Pick a direction above…' : 'What do you want to create?'}
-            className="min-w-0 flex-1 rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] placeholder:text-ed-text-muted focus:border-[var(--elah-color-error)] focus:outline-none disabled:opacity-50"
+            className="min-w-0 flex-1 rounded-md border border-ed-border bg-ed-bg-2 px-2.5 py-1.5 text-[12px] placeholder:text-ed-text-muted focus:border-[var(--elah-accent)] focus:outline-none disabled:opacity-50"
           />
           <button
             type="button"
             onClick={() => void submit()}
             disabled={disabled || !prompt.trim()}
             aria-label="Send"
-            className="inline-flex items-center justify-center w-[30px] h-[30px] shrink-0 rounded-md bg-ed-error text-white disabled:opacity-40"
+            className="inline-flex items-center justify-center w-[30px] h-[30px] shrink-0 rounded-md disabled:opacity-40"
+            style={{ background: 'var(--elah-accent)', color: 'var(--elah-accent-text)' }}
           >
             <Send size={13} />
           </button>

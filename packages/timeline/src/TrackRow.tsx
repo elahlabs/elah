@@ -1,7 +1,7 @@
 import { memo, useState, useMemo } from 'react'
 import type { Track } from '@elah/core'
-import { useTracksStore } from '@elah/core'
-import { useSelectionStore } from '@elah/core'
+import { useTracksStore } from '@elah/react'
+import { useSelectionStore } from '@elah/react'
 import {
   Film,
   Music,
@@ -19,6 +19,7 @@ import { TransitionChip } from './TransitionChip'
 import { useTimeline } from './engine-context'
 import { useTimelineDrop } from './useTimelineDrop'
 import { cn } from './cn'
+import { useVisibleWindow, isClipVisible, VIRTUALIZATION_BUFFER_PX } from './visible-window'
 
 /** Sidebar width — kept in sync with SIDEBAR_WIDTH in Timeline.tsx (ruler offset). */
 const SIDEBAR_WIDTH = 184
@@ -120,6 +121,8 @@ export const TrackRow = memo(function TrackRow({
   }, [clips, track.kind])
   const isActive = useSelectionStore((s) => s.activeTrackId === track.id)
   const setActiveTrack = useSelectionStore((s) => s.setActiveTrack)
+  const selectedClipIds = useSelectionStore((s) => s.selectedClipIds)
+  const visibleWindow = useVisibleWindow()
   const engine = useTimeline()
   const [laneEl, setLaneEl] = useState<HTMLDivElement | null>(null)
 
@@ -346,23 +349,36 @@ export const TrackRow = memo(function TrackRow({
                 : undefined,
         }}
       >
-        {clips.map((clip) => (
-          <ClipBlock
-            key={clip.id}
-            clip={clip}
-            zoom={zoom}
-            trackHeight={track.height}
-            className={clipClassName}
-            clipVideo={clipVideo}
-            clipAudio={clipAudio}
-            clipText={clipText}
-            clipImage={clipImage}
-            clipVideoAccent={clipVideoAccent}
-            clipAudioAccent={clipAudioAccent}
-            clipTextAccent={clipTextAccent}
-            clipImageAccent={clipImageAccent}
-          />
-        ))}
+        {clips.map((clip) => {
+          const clipStartPx = clip.startFrame * zoom
+          const clipEndPx = (clip.startFrame + clip.durationFrames) * zoom
+          // Selected clips stay mounted even off-window: a drag can auto-scroll
+          // the window while the dragged clip's committed startFrame doesn't
+          // move, and unmounting it mid-gesture would drop pointer capture.
+          if (
+            !isClipVisible(clipStartPx, clipEndPx, visibleWindow, VIRTUALIZATION_BUFFER_PX) &&
+            !selectedClipIds.has(clip.id)
+          )
+            return null
+
+          return (
+            <ClipBlock
+              key={clip.id}
+              clip={clip}
+              zoom={zoom}
+              trackHeight={track.height}
+              className={clipClassName}
+              clipVideo={clipVideo}
+              clipAudio={clipAudio}
+              clipText={clipText}
+              clipImage={clipImage}
+              clipVideoAccent={clipVideoAccent}
+              clipAudioAccent={clipAudioAccent}
+              clipTextAccent={clipTextAccent}
+              clipImageAccent={clipImageAccent}
+            />
+          )
+        })}
 
         {adjacentPairs.map(({ from, to }) => (
           <TransitionChip

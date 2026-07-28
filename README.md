@@ -66,7 +66,7 @@ Three goals shape every decision:
 | **Project aspect ratio / letterbox** | ✅ Working — canvas `gl.viewport` contain-fit + per-clip object-fit **contain** (off-aspect clips letterboxed *within* the frame, never stretched); switchable stage aspect via `TimelineEngine.setStage` (16:9 ↔ 9:16) with a `<StageBorder>` frame outline |
 | **Text overlays** (GPU `TextLayer` + interactive `TextOverlay`) | ✅ Working — paint via 2D-canvas→texture; drag / resize / inline-edit; `transform.scale` (re-rasterized to stay crisp) + `transform.rotation` applied |
 | **Video & image transform overlay** (`MediaTransformOverlay`) | ✅ Working — click-select, drag-move, corner-drag uniform scale for video and image clips; `transform` flows to both renderers so export matches preview automatically |
-| **Audio playback** (`AudioPlaybackController` on the `PlaybackEngine` clock) | ✅ Working — **multi-track**, per-clip control, master/track volume via `useAudioMixer` / `useTrackLevels` / `useMasterVolume`; mounted by `<Preview enableAudio>` |
+| **Audio playback** (`AudioPlaybackController` on the `PlaybackEngine` clock) | ✅ Working — **multi-track**, per-clip control, master/track volume via `useAudioMixer` / `useTrackLevels` / `useMasterVolume` (from `@elah/react`); mounted by `<Preview enableAudio>` |
 | **Image clips** (GPU `ImageLayer`) | ✅ Working — static image load → textured quad, same object-fit contain as video; decode cache warming (`warmImageSrc`, `preloadProjectImages`) |
 | **Shape & freehand clips** (GPU `ShapeLayer`, `FreehandLayer`) | ✅ Working — `createShapeClip` / `createFreehandClip`; resolver exposes `scene.shapes` + `scene.freehand`; interactive `ShapeOverlay` for select / move / scale |
 | **Timeline thumbnails + waveforms** | ✅ Working — filmstrip tiles per clip (4-frame strip, tiled by zoom), real waveform peaks from `decodeAudioData`; both generated once per asset and cached on `MediaAsset` |
@@ -129,6 +129,7 @@ elah/
     │       ├── assets/           # media library store + import (files / url / blob)
     │       ├── stores/           # Zustand mirrors of engine state
     │       └── debug/            # channel-based trace logging
+    ├── react/                    # @elah/react — React bindings (context, store hooks, audio hooks)
     ├── timeline/                 # @elah/timeline — Timeline, Ruler, TrackRow, ClipBlock, hooks
     ├── editor/                   # @elah/editor — EditorProvider, Preview, AssetPanel, SourcePanel
     └── cli/                      # @elah/cli — headless split/trim/build/export + `elah serve` render server (Dockerfile included)
@@ -315,6 +316,16 @@ A [`Dockerfile`](./packages/cli/Dockerfile) that installs Chrome + fonts and run
 - **Small surface area.** No plugin systems, no event buses, no dependency injection. Until proven needed.
 
 For the longer treatment, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+---
+
+## Analytics & privacy
+
+The published website uses opt-in product analytics (PostHog) and a Reddit
+pixel — both gated behind a consent banner and disabled under Do-Not-Track, and
+inert unless their `NEXT_PUBLIC_*` variables are set (see
+[`.env.example`](./.env.example)). The elah libraries ship no telemetry. Full
+details on the [Analytics docs page](https://www.elah.dev/docs/analytics).
 
 ---
 

@@ -58,8 +58,9 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@elah/core": "^0.3.0",
-    "@elah/timeline": "^0.3.0",
+    "@elah/core": "^0.3.1",
+    "@elah/react": "^0.3.1",
+    "@elah/timeline": "^0.3.1",
     "immer": "^10.1.1",
     "zustand": "^5.0.3"
   },

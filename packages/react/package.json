@@ -1,0 +1,54 @@
+{
+  "name": "@elah/react",
+  "version": "0.3.1",
+  "description": "React bindings for the Elah video engine — editor context, store hooks, and audio mixer hooks",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
+  },
+  "keywords": [
+    "video-editor",
+    "timeline",
+    "react",
+    "hooks",
+    "video-engine",
+    "typescript",
+    "browser"
+  ],
+  "homepage": "https://www.elah.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elahlabs/elah.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elahlabs/elah/issues"
+  },
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "dependencies": {
+    "@elah/core": "^0.3.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "typescript": "^5.7.3"
+  }
+}

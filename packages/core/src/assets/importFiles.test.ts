@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useMediaLibraryStore } from './store'
+import { mediaLibraryStore } from './store'
 import {
   computeWaveform,
   importBlob,
@@ -126,7 +126,7 @@ describe('importFiles', () => {
     createdCanvases = []
     objectUrlCounter = 0
 
-    useMediaLibraryStore.setState({ assets: {}, order: [] })
+    mediaLibraryStore.setState({ assets: {}, order: [] })
 
     vi.stubGlobal('URL', {
       createObjectURL: vi.fn(() => {
@@ -210,7 +210,7 @@ describe('importFiles', () => {
       lastModified: 1_700_000_000_000,
     })
 
-    const store = useMediaLibraryStore.getState()
+    const store = mediaLibraryStore.getState()
     expect(Object.keys(store.assets)).toHaveLength(2)
     expect(store.order).toEqual([result.imported[0].id, result.imported[1].id])
   })
@@ -272,7 +272,7 @@ describe('importFiles', () => {
     }
 
     await vi.waitFor(() => {
-      const updated = useMediaLibraryStore.getState().getAsset(result.imported[0].id)
+      const updated = mediaLibraryStore.getState().getAsset(result.imported[0].id)
       expect(updated?.thumbnailStrip).toHaveLength(4)
       expect(updated?.thumbnailUrl).toBe('data:image/jpeg;base64,thumb')
     })
@@ -317,7 +317,7 @@ describe('importFiles', () => {
       file,
     })
     expect(result.skipped[0].existingAssetId).toBeUndefined()
-    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(1)
+    expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(1)
   })
 
   it('skips files that match an asset already in the store', async () => {
@@ -340,7 +340,7 @@ describe('importFiles', () => {
       reason: 'duplicate',
       existingAssetId: first.imported[0].id,
     })
-    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(1)
+    expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(1)
   })
 })
 
@@ -351,7 +351,7 @@ describe('importUrl', () => {
   beforeEach(() => {
     createdMedia = []
     objectUrlCounter = 0
-    useMediaLibraryStore.setState({ assets: {}, order: [] })
+    mediaLibraryStore.setState({ assets: {}, order: [] })
 
     vi.stubGlobal('URL', {
       createObjectURL: vi.fn(() => {
@@ -396,7 +396,7 @@ describe('importUrl', () => {
       height: 1080,
       byteSize: 0,
     })
-    expect(useMediaLibraryStore.getState().getAsset(asset.id)).toBeDefined()
+    expect(mediaLibraryStore.getState().getAsset(asset.id)).toBeDefined()
   })
 
   it('returns the existing asset when the same URL is imported twice', async () => {
@@ -411,7 +411,7 @@ describe('importUrl', () => {
     const second = await importUrl(url)
 
     expect(second).toBe(first)
-    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(1)
+    expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(1)
   })
 
   it('honors an explicit kind override and name', async () => {
@@ -449,7 +449,7 @@ describe('importUrl', () => {
     await expect(importUrl('https://cdn.example.com/page')).rejects.toThrow(
       /Could not determine media kind/,
     )
-    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(0)
+    expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(0)
   })
 })
 
@@ -460,7 +460,7 @@ describe('importBlob', () => {
   beforeEach(() => {
     createdMedia = []
     objectUrlCounter = 0
-    useMediaLibraryStore.setState({ assets: {}, order: [] })
+    mediaLibraryStore.setState({ assets: {}, order: [] })
 
     vi.stubGlobal('URL', {
       createObjectURL: vi.fn(() => {
@@ -517,13 +517,13 @@ describe('importBlob', () => {
   it('rejects unsupported blob types', async () => {
     const blob = new Blob(['x'], { type: 'text/plain' })
     await expect(importBlob(blob)).rejects.toThrow(/Unsupported blob type/)
-    expect(Object.keys(useMediaLibraryStore.getState().assets)).toHaveLength(0)
+    expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(0)
   })
 })
 
 describe('media probe helpers', () => {
   beforeEach(() => {
-    useMediaLibraryStore.setState({ assets: {}, order: [] })
+    mediaLibraryStore.setState({ assets: {}, order: [] })
   })
 
   afterEach(() => {

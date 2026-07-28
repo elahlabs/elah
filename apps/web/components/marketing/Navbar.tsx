@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { Menu, X, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { VersionBadge } from '@/components/marketing/VersionBadge'
 
 const navLinks = [
@@ -40,7 +39,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -78,10 +77,9 @@ export function Navbar() {
             GitHub
             <ExternalLink className="h-3 w-3" />
           </Link>
-          <ThemeToggle />
           <Link
             href="/docs/getting-started"
-            className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+            className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
           >
             Get Started
           </Link>
@@ -107,7 +105,7 @@ export function Navbar() {
             transition={{ duration: 0.15 }}
             className="border-t border-outline-variant bg-surface px-4 pb-4 pt-2 md:hidden"
           >
-            <nav className="flex flex-col gap-1">
+            <nav aria-label="Mobile" className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -146,12 +144,11 @@ export function Navbar() {
                 GitHub
                 <ExternalLink className="h-3 w-3" />
               </Link>
-              <div className="mt-2 flex items-center justify-between border-t border-outline-variant pt-2">
-                <ThemeToggle />
+              <div className="mt-2 border-t border-outline-variant pt-2">
                 <Link
                   href="/docs/getting-started"
                   onClick={() => setMobileOpen(false)}
-                  className="block rounded bg-primary px-3 py-2 text-center text-sm font-medium text-white"
+                  className="block rounded bg-primary px-3 py-2 text-center text-sm font-medium text-on-primary"
                 >
                   Get Started
                 </Link>

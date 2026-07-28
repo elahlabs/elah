@@ -13,13 +13,12 @@ import {
   importUrl,
   MEDIA_DRAG_MIME,
   mediaDragKindMime,
-  useMediaLibrary,
-  useMediaLibraryStore,
   type SkippedImport,
   type MediaAsset,
   type MediaKind,
   type DragMediaPayload,
 } from '@elah/core'
+import { useMediaLibrary, useMediaLibraryStore } from '@elah/react'
 import { ELEMENT_DRAG_MIME, cn, type DragElementPayload, type ElementKind, type ShapeVariant } from '@elah/timeline'
 import {
   isActivationKey,

@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
-import type { AudioPlaybackController } from './AudioPlaybackController'
-import type { TimelineEngine } from '../../editor/TimelineEngine'
+import type { AudioPlaybackController, TimelineEngine } from '@elah/core'
 
 export interface MasterVolumeApi {
   /** Current master volume (linear, 0..2). Reads from the project model. */

@@ -31,7 +31,10 @@ export async function generateMetadata({
       title: post.title,
       description: post.excerpt,
       publishedTime: post.date,
-      authors: ['elah'],
+      modifiedTime: post.date,
+      authors: [siteConfig.url],
+      section: post.category,
+      tags: [post.category],
     },
     twitter: { card: 'summary_large_image', title: post.title, description: post.excerpt },
   }
@@ -118,7 +121,9 @@ export default async function BlogPostPage({
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
+    image: `${siteConfig.url}/blog/${post.slug}/opengraph-image`,
     datePublished: post.date,
+    dateModified: post.date,
     articleSection: post.category,
     author: { '@type': 'Organization', name: 'elah', url: siteConfig.url },
     publisher: { '@type': 'Organization', name: 'elah', url: siteConfig.url },
@@ -130,7 +135,7 @@ export default async function BlogPostPage({
       <JsonLd data={articleJsonLd} />
       <Navbar />
 
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
@@ -156,7 +161,9 @@ export default async function BlogPostPage({
               {post.title}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">{post.excerpt}</p>
-            <time className="mt-4 block text-xs text-on-surface-variant">{post.date}</time>
+            <time dateTime={post.date} className="mt-4 block text-xs text-on-surface-variant">
+              {post.date}
+            </time>
           </div>
         </div>
 
@@ -177,7 +184,7 @@ export default async function BlogPostPage({
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href="/docs/getting-started"
-                    className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-hover"
+                    className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover"
                   >
                     Get started
                   </Link>
@@ -195,7 +202,7 @@ export default async function BlogPostPage({
 
             {/* TOC */}
             {toc.length > 0 && (
-              <nav className="hidden w-48 shrink-0 lg:block">
+              <nav aria-label="Table of contents" className="hidden w-48 shrink-0 lg:block">
                 <div className="sticky top-24">
                   <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
                     On this page

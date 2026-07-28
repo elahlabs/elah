@@ -16,11 +16,13 @@ import type {
 import {
   computeTextLayout,
   computeContainViewport,
+  SIDE_MARGIN,
+} from '@elah/core'
+import {
   useTimelineEngine,
   useSelectionStore,
   usePlaybackStore,
-  SIDE_MARGIN,
-} from '@elah/core'
+} from '@elah/react'
 import { useResolvedScene } from '../useResolvedScene'
 
 /**

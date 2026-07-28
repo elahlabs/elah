@@ -59,12 +59,13 @@ export type { AudioPlaybackControllerOptions } from '@elah/core'
 export { defaultAudioResolver } from '@elah/core'
 export type { AudioResolver } from '@elah/core'
 
-export { useMediaLibrary, useMediaLibraryStore, MEDIA_DRAG_MIME, mediaDragKindMime, importFiles, importUrl } from '@elah/core'
+export { MEDIA_DRAG_MIME, mediaDragKindMime, importFiles, importUrl } from '@elah/core'
+export { useMediaLibrary, useMediaLibraryStore } from '@elah/react'
 export type { MediaAsset, MediaKind, DragMediaPayload, ImportFilesOptions, ImportFilesResult, SkippedImport } from '@elah/core'
 
-export { useTracksStore } from '@elah/core'
-export { usePlaybackStore } from '@elah/core'
-export { useSelectionStore } from '@elah/core'
+export { useTracksStore } from '@elah/react'
+export { usePlaybackStore } from '@elah/react'
+export { useSelectionStore } from '@elah/react'
 
 export { createVideoClip } from '@elah/core'
 export { createAudioClip } from '@elah/core'
@@ -108,7 +109,11 @@ export type {
 export { EditorProvider } from './editor/EditorProvider'
 export type { EditorProviderProps } from './editor/EditorProvider'
 
-export { useEditor, useTimelineEngine, usePlaybackEngine } from '@elah/core'
+export { useEditor, useTimelineEngine, usePlaybackEngine } from '@elah/react'
+
+// --- Audio mixer hooks ---
+export { useAudioMixer, useMasterVolume, useTrackLevels } from '@elah/react'
+export type { AudioMixerApi, MasterVolumeApi, TrackLevel } from '@elah/react'
 
 export { useResolvedScene } from './editor/useResolvedScene'
 

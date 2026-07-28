@@ -81,23 +81,13 @@ export type { AudioPlaybackControllerOptions } from './media/audio/AudioPlayback
 export { defaultAudioResolver } from './media/audio/audioResolver'
 export type { AudioResolver } from './media/audio/audioResolver'
 
-// --- Audio mixer hooks ---
-export { useAudioMixer } from './media/audio/useAudioMixer'
-export type { AudioMixerApi } from './media/audio/useAudioMixer'
-export { useTrackLevels } from './media/audio/useTrackLevels'
-export type { TrackLevel } from './media/audio/useTrackLevels'
-export { useMasterVolume } from './media/audio/useMasterVolume'
-export type { MasterVolumeApi } from './media/audio/useMasterVolume'
-
 // --- Image decode cache (warming) ---
 export { warmImageSrc, preloadProjectImages } from './renderer/gpu/layers/imageCache'
 export type { ImageLoader, LoadedImage } from './renderer/gpu/layers/imageCache'
 
 // --- Assets / Media Library ---
 export {
-  useMediaLibrary,
-  useAssets,
-  useMediaLibraryStore,
+  mediaLibraryStore,
   MEDIA_DRAG_MIME,
   mediaDragKindMime,
   importFiles,
@@ -108,22 +98,24 @@ export type {
   MediaAsset,
   MediaKind,
   DragMediaPayload,
+  MediaLibraryState,
+  MediaLibraryActions,
   ImportFilesOptions,
   ImportFilesResult,
   ImportUrlOptions,
   ImportBlobOptions,
   SkippedImport,
-  UseMediaLibraryApi,
 } from './assets'
 
-// --- Stores (Ring 1: Zustand mirrors) ---
-export { useTracksStore } from './stores/tracks.store'
+// --- Stores (Ring 1: vanilla Zustand mirrors; React hooks live in @elah/react) ---
+export { tracksStore } from './stores/tracks.store'
 export type { TracksState, TracksActions } from './stores/tracks.store'
-export { usePlaybackStore } from './stores/playback.store'
+export { playbackStore } from './stores/playback.store'
 export type { PlaybackState, PlaybackActions } from './stores/playback.store'
-export { useSelectionStore } from './stores/selection.store'
+export { selectionStore } from './stores/selection.store'
 export type { SelectionState, SelectionActions } from './stores/selection.store'
-export { useTransitionsStore } from './stores/transitions.store'
+export { transitionsStore } from './stores/transitions.store'
+export type { TransitionsState, TransitionsActions } from './stores/transitions.store'
 
 // --- Clip factories ---
 export type { CreateClipOptions, ShapeClipMetadata, FreehandClipMetadata } from './elements/base'
@@ -146,18 +138,13 @@ export { framesToTimecode, secondsToFrames, framesToSeconds, getTotalFrames, cli
 export { generateId } from './utils/id'
 export { snapFrame, buildSnapPoints, resolveOverlapEdgeSnap, DEFAULT_OVERLAP_TOLERANCE } from './utils/snap'
 
+// --- Project serialization ---
+export { serializeProject, deserializeProject } from './project/serialization'
+
 // --- Export pipeline ---
 export { exportVideo } from './export'
 export { lazyExportVideo } from './export/lazyExport'
 export type { ExportOptions, ExportProgress, ExportVideoCodec, ExportAudioCodec } from './export'
-
-// --- Engine context hooks (for consumers) ---
-export {
-  useEditor,
-  useTimelineEngine,
-  usePlaybackEngine,
-  EditorContext,
-} from './editor-context'
 
 // --- Debug/trace ---
 export { installTraceGlobal, trace } from './debug/trace'

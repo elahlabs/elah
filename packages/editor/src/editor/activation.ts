@@ -1,5 +1,6 @@
 import { useCallback, useContext } from 'react'
-import { EditorContext, type MediaAsset } from '@elah/core'
+import type { MediaAsset } from '@elah/core'
+import { EditorContext } from '@elah/react'
 import {
   insertElement,
   insertMediaAsset,

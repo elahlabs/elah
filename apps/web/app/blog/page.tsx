@@ -16,7 +16,7 @@ export default function BlogPage() {
     <div className="flex min-h-screen flex-col bg-surface">
       <Navbar />
 
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -60,10 +60,12 @@ export default function BlogPage() {
                 </p>
 
                 <div className="flex items-center justify-between">
-                  <time className="text-xs text-on-surface-variant">{post.date}</time>
+                  <time dateTime={post.date} className="text-xs text-on-surface-variant">
+                    {post.date}
+                  </time>
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:underline"
+                    className="flex items-center gap-1 text-xs font-medium text-on-surface underline underline-offset-2 transition-colors hover:text-primary"
                   >
                     Read
                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
