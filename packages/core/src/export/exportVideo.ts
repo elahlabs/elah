@@ -129,8 +129,14 @@ async function renderAudioMix(
  * the finished ArrayBuffer. Progress is forwarded via `options.onProgress`.
  *
  * The worker must be bundled as a module worker by the consuming app's bundler.
- * The `new URL('./ExportWorker.ts', import.meta.url)` pattern is recognised by
- * Vite, webpack 5, and Turbopack, which each bundle the worker from source.
+ * The `new URL('./ExportWorker', import.meta.url)` pattern is recognised by Vite,
+ * webpack 5, and Turbopack, which each bundle the worker as a separate chunk.
+ *
+ * The specifier below says `.ts` because that is what exists next to this file,
+ * and `apps/web` aliases `@elah/*` straight to `src/`. The published package ships
+ * only the compiled `ExportWorker.js`, so `scripts/fix-worker-specifier.mjs`
+ * rewrites the extension in `dist/` as the last step of `npm run build`.
+ * Consumers therefore need no workaround — do not "fix" this literal in source.
  *
  * @example
  * ```ts

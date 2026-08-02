@@ -6,10 +6,10 @@ apps/*/.env.local
 apps/*/node_modules
 apps/*/.next
 apps/server/output/
-playground/*/node_modules
-playground/*/.next
-playground/*/dist
-playground/*/package-lock.json
+examples/*/node_modules
+examples/*/.next
+examples/*/dist
+examples/*/package-lock.json
 dist
 *.tsbuildinfo
 .DS_Store
@@ -25,4 +25,4 @@ packages/**/src/**/*.js
 packages/*/vitest.config.js
 apps/web/**/*.js
 !apps/web/public/**/*.js
-playground/*/**/*.js
+examples/*/**/*.js

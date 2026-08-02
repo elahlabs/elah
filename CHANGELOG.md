@@ -11,6 +11,67 @@ versions independently, starting from its own 0.1.0.
 
 ## [Unreleased]
 
+### Documentation
+
+- **`playground/` is now `examples/`.** The three standalone apps that install
+  `@elah/editor` from npm moved to [`examples/`](examples), and the `/examples`
+  page on the site links to their new paths. The live in-browser playgrounds at
+  `elah.dev/playground/*` are unrelated and unchanged.
+- All three examples were verified against the published **0.4.1** packages from
+  a clean registry install: `typecheck`, `dev`, and `build` for each, plus a full
+  MP4 export in `examples/react` and `examples/next` under both the dev server
+  and the production build.
+- New [`examples/AGENTS.md`](examples/AGENTS.md) — the integration contract in one
+  page, as an entry point for agents landing on the folder.
+  [`docs/ai/ELAH_FOR_AI_AGENTS.md`](docs/ai/ELAH_FOR_AI_AGENTS.md) now links to
+  the three runnable apps.
+- New root `npm run verify:examples` — builds all three examples against the
+  published packages. It is the only check in the repo that exercises the
+  published tarballs rather than local source.
+- The examples declare an inline favicon (no more `/favicon.ico` 404 in the
+  console), and the Next example pins `turbopack.root` / `outputFileTracingRoot`
+  so it stops inferring the monorepo root.
+- `/docs/installation` corrected: the sample `package.json` pinned `^0.2.0`, the
+  `transpilePackages` and Vite `optimizeDeps.exclude` lists omitted
+  `@elah/react`, and the peer-dependency section did not mention `lucide-react`.
+
+## [0.4.1] — 2026-08-02
+
+### Fixed
+
+- **`@elah/core`: the MP4 export worker now resolves in installed packages.**
+  `exportVideo` spawned the worker via `new URL('./ExportWorker.ts', …)`, but the
+  published package ships only the compiled `ExportWorker.js`. The `.ts` specifier
+  was unresolvable, so any consumer bundler (Turbopack, webpack, Vite) failed on
+  the `@elah/editor` barrel — on first page load, not just on export. The build now
+  rewrites the extension in `dist/` as its final step. **Apps no longer need a
+  `postinstall` patch script**; if you added one, delete it.
+- **`@elah/editor` re-exports the full public API.** 40+ identifiers were missing
+  from the barrel, including ones the docs told you to import from it:
+  `snapFrame`, `buildSnapPoints`, `resolveOverlapEdgeSnap`, `clipsOverlap`,
+  `DEFAULT_OVERLAP_TOLERANCE`, `useTransitionsStore`, `useAssets`, `importBlob`,
+  `createShapeClip`, `createFreehandClip`, `serializeProject`,
+  `deserializeProject`, `warmImageSrc`, `preloadProjectImages`, `cn`,
+  `EditorContext`, the vanilla stores (`tracksStore`, `playbackStore`,
+  `selectionStore`, `transitionsStore`, `mediaLibraryStore`), and the
+  corresponding types (`ActiveShapeClip`, `ActiveFreehandClip`,
+  `CreateClipOptions`, `TimelineClassNames`, `TimelineDropState`,
+  `UseMediaLibraryApi`, `EditorContextValue`, `BoundStoreHook`, and the store
+  `*State`/`*Actions` pairs). Renderer and debug internals stay `@elah/core`-only
+  by design.
+
+### Documentation
+
+- New [`AGENTS.md`](AGENTS.md) — the brief for coding agents working in this
+  checkout — and [`docs/ai/ELAH_FOR_AI_AGENTS.md`](docs/ai/ELAH_FOR_AI_AGENTS.md),
+  a single self-contained integration guide for AI tools that have no repo access.
+- New `playground/minimal` example: the smallest complete custom editor UI.
+- The `playground/next` and `playground/react` examples now import all three
+  required stylesheets and declare the `lucide-react` peer dependency explicitly.
+- Corrected the code samples on the `/examples` page, which did not compile
+  against 0.4.x (`exportVideo` options, `ExportProgress` shape, the
+  `DemuxerBackend` interface, and `ActiveTextClip` field access).
+
 ## [0.4.0] — 2026-07-28
 
 ### Added

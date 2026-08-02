@@ -28,9 +28,40 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.4.1',
+    date: '2026-08-02',
+    latest: true,
+    summary:
+      'Export works out of the box for npm consumers, and @elah/editor finally re-exports its full public API.',
+    groups: [
+      {
+        kind: 'fixed',
+        scope: '@elah/core',
+        items: [
+          'The MP4 export worker now resolves in installed packages. exportVideo spawned the worker via new URL("./ExportWorker.ts", …), but the published package ships only the compiled ExportWorker.js — so the specifier was unresolvable and any consumer bundler (Turbopack, webpack, Vite) failed on the @elah/editor barrel, on first page load rather than on export. The build now rewrites the extension in dist/ as its final step. Apps no longer need a postinstall patch script; if you added one, delete it.',
+        ],
+      },
+      {
+        kind: 'fixed',
+        scope: '@elah/editor',
+        items: [
+          'The barrel re-exports the full public API. 40+ identifiers were missing, including ones the docs told you to import from it: snapFrame, buildSnapPoints, resolveOverlapEdgeSnap, clipsOverlap, DEFAULT_OVERLAP_TOLERANCE, useTransitionsStore, useAssets, importBlob, createShapeClip, createFreehandClip, serializeProject, deserializeProject, warmImageSrc, preloadProjectImages, cn, EditorContext, the vanilla stores (tracksStore, playbackStore, selectionStore, transitionsStore, mediaLibraryStore), and their types. Renderer and debug internals stay @elah/core-only by design.',
+        ],
+      },
+      {
+        kind: 'added',
+        items: [
+          'AGENTS.md — the brief for coding agents working in the repo — plus docs/ai/ELAH_FOR_AI_AGENTS.md, a single self-contained integration guide for AI tools with no repo access (Lovable, Google AI Studio, Emergent, v0).',
+          'New playground/minimal example: the smallest complete custom editor UI, meant as the thing you point an AI at.',
+          'The playground/next and playground/react examples now import all three required stylesheets and declare the lucide-react peer dependency explicitly.',
+          'Corrected the /examples code samples, which did not compile against 0.4.x (exportVideo options, ExportProgress shape, the DemuxerBackend interface, and ActiveTextClip field access).',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.4.0',
     date: '2026-07-28',
-    latest: true,
     summary:
       'New @elah/react package — all React bindings split out of @elah/core, which is now truly framework-agnostic.',
     groups: [

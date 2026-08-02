@@ -1,0 +1,26 @@
+{
+  "name": "elah-example-minimal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The smallest complete @elah/editor app — the starting point for a custom UI",
+  "scripts": {
+    "dev": "vite --port 4003",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4003",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@elah/editor": "^0.4.1",
+    "lucide-react": "^0.511.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5",
+    "vite": "^6.0.0"
+  }
+}

@@ -27,7 +27,7 @@ flowchart LR
 
 ## Task 1 — Enable All UI Configs on the Timeline Playground
 
-**File:** `apps/web/components/playground/TimelineEditor.tsx`
+**File:** `apps/web/components/playground/timeline/TimelineEditor.tsx`
 
 The `<Timeline>` component accepts a `classNames` prop (`TimelineClassNames`) and the wrapping `<EditorProvider>` has additional configuration props. None of these are currently wired up in the playground — everything uses defaults. Add UI controls to let users toggle/tweak each config live.
 
@@ -137,7 +137,7 @@ flowchart TB
 
 ## Task 2 — Show `resolveTimeline` JSON Output (Timeline Playground)
 
-**File:** `apps/web/components/playground/TimelineEditor.tsx`
+**File:** `apps/web/components/playground/timeline/TimelineEditor.tsx`
 
 Currently there is no output panel. Instead of adding a preview screen (no renderer is wired in the timeline playground), show the live JSON output of `resolveTimeline`.
 
@@ -158,6 +158,8 @@ The `Scene` shape:
   audios: ActiveAudioClip[]
   texts:  ActiveTextClip[]
   images: ActiveImageClip[]
+  shapes: ActiveShapeClip[]
+  freehand: ActiveFreehandClip[]
   transitions: ActiveTransition[]
 }
 ```
@@ -218,7 +220,7 @@ const scene = resolveTimeline(currentFrame, engine.getProject())
 
 ## Task 3 — Live JSON Output for the Left Panel (Production Editor)
 
-**File:** `apps/web/components/playground/ProductionEditor.tsx`
+**File:** `apps/web/components/playground/production/ProductionEditor.tsx`
 
 Mirror Task 2, but for the Production Editor's left panel. Instead of firing only on play, the JSON should update **continuously** as the user edits — whenever tracks, clips, or their properties change.
 
@@ -334,8 +336,8 @@ function LiveJsonPanel() {
 
 | File | Purpose |
 |---|---|
-| `apps/web/components/playground/TimelineEditor.tsx` | Timeline-only playground (Tasks 1 & 2) |
-| `apps/web/components/playground/ProductionEditor.tsx` | Full production editor (Task 3) |
+| `apps/web/components/playground/timeline/TimelineEditor.tsx` | Timeline-only playground (Tasks 1 & 2) |
+| `apps/web/components/playground/production/ProductionEditor.tsx` | Full production editor (Task 3) |
 | `packages/timeline/src/classNames.ts` | `TimelineClassNames` interface — all slot names and docs |
 | `packages/timeline/src/Timeline.tsx` | `TimelineProps` — `classNames`, `fps`, `className`, `style` |
 | `packages/editor/src/editor/EditorProvider.tsx` | `EditorProviderProps` — `fps`, `stage`, `defaultTrackHeight`, `maxHistorySize`, `initialTracks` |
