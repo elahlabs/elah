@@ -49,12 +49,39 @@ body {
   overflow: hidden;
 }
 
-/* The editor root fills the viewport. */
+/* The editor root fills the viewport, and re-themes the SDK.
+ *
+ * `@elah/editor/styles/tokens.css` (imported in app/layout.tsx) supplies dark
+ * defaults for all 130+ --elah-* tokens. Everything below just *overrides* the
+ * ones that carry this app's crimson identity — that is the whole white-label
+ * story: no forks, no CSS overrides on SDK internals, just variables.
+ *
+ * Every token the SDK reads is listed in docs/design-tokens.md. Anything you
+ * don't override keeps its default, so a partial override like this is safe.
+ */
 .elah-root {
-  --elah-bg: var(--pg-bg);
-  --elah-border: var(--pg-border);
-  --elah-accent: var(--pg-accent);
-  --elah-text: var(--pg-text);
+  /* Surfaces */
+  --elah-bg:            var(--pg-bg);
+  --elah-bg-secondary:  var(--pg-bg-secondary);
+  --elah-bg-panel:      var(--pg-bg-panel);
+  --elah-bg-card:       var(--pg-bg-container);
+  --elah-bg-elevated:   var(--pg-bg-elevated);
+  --elah-bg-highest:    var(--pg-bg-highest);
+
+  /* Borders */
+  --elah-border:        var(--pg-border);
+  --elah-border-subtle: var(--pg-border-subtle);
+
+  /* Text */
+  --elah-text:           var(--pg-text);
+  --elah-text-secondary: var(--pg-text-secondary);
+  --elah-text-muted:     var(--pg-text-muted);
+
+  /* Accent */
+  --elah-accent:       var(--pg-accent);
+  --elah-accent-hover: var(--pg-accent-hover);
+  --elah-accent-text:  var(--pg-accent-text);
+  --elah-accent-dim:   var(--pg-accent-dim);
 
   height: 100vh;
   font-family: var(--pg-font-ui);

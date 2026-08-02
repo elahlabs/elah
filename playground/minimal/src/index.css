@@ -1,0 +1,29 @@
+/* Deliberately almost empty — the SDK stylesheets imported in main.tsx do the
+ * work. Everything here is page chrome, not editor styling.
+ *
+ * To re-theme the editor, override --elah-* tokens inside `.elah-root`:
+ *
+ *   .elah-root {
+ *     --elah-accent: #7c3aed;
+ *     --elah-bg: #0b0b12;
+ *   }
+ *
+ * See docs/design-tokens.md for the full list.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

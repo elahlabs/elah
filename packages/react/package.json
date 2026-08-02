@@ -1,6 +1,6 @@
 {
   "name": "@elah/react",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "React bindings for the Elah video engine — editor context, store hooks, and audio mixer hooks",
   "type": "module",
   "main": "./dist/index.js",
@@ -46,7 +46,7 @@
     "react": ">=18.0.0"
   },
   "dependencies": {
-    "@elah/core": "^0.4.0",
+    "@elah/core": "^0.4.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

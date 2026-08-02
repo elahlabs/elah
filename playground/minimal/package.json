@@ -1,13 +1,13 @@
 {
-  "name": "elah-playground-react",
+  "name": "elah-playground-minimal",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Standalone Vite + React showcase for @elah/editor (installed from npm, not the monorepo)",
+  "description": "The smallest complete @elah/editor app — the starting point for a custom UI",
   "scripts": {
-    "dev": "vite --port 4002",
+    "dev": "vite --port 4003",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --port 4002",
+    "preview": "vite preview --port 4003",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

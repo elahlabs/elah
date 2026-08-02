@@ -4,14 +4,14 @@
   "private": true,
   "description": "Standalone Next.js showcase for @elah/editor (installed from npm, not the monorepo)",
   "scripts": {
-    "postinstall": "node scripts/patch-elah-worker.mjs",
     "dev": "next dev --port 4001",
     "build": "next build",
     "start": "next start --port 4001",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@elah/editor": "^0.3.0",
+    "@elah/editor": "^0.4.1",
+    "lucide-react": "^0.511.0",
     "next": "^16.2.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

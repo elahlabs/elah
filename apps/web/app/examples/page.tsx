@@ -8,6 +8,13 @@ import { siteConfig } from '@/config/site'
 
 const fullExamples = [
   {
+    framework: 'Minimal starter',
+    runtime: 'Vite + React 19 · ~130 lines',
+    description:
+      'The smallest complete editor: import media, drag it onto the timeline, scrub, play. Start here when you are building a custom UI — it is all integration contract and nothing else, with the four silent-failure gotchas called out inline.',
+    href: `${siteConfig.links.github}/tree/main/playground/minimal`,
+  },
+  {
     framework: 'React',
     runtime: 'Vite + React 19',
     description:
@@ -89,30 +96,54 @@ export default function TimelineOnlyExample() {
   Preview,
   Timeline,
   type DemuxerFactory,
+  type DemuxerBackend,
 } from '@elah/editor'
 
-// Implement DemuxerFactory with your own backend
-const myDemuxerFactory: DemuxerFactory = () => ({
-  async probe(src: string) {
+// DemuxerBackend is a pull-based interface — the decode pipeline asks you for
+// packets over a time range; you do not push chunks to a callback.
+//
+//   open(src)                 → Promise<void>
+//   getConfig()               → VideoDecoderConfig
+//   packets([start, end])     → AsyncIterable<EncodedVideoChunk>   (seconds)
+//   seekToKeyframe(time)      → Promise<void>
+//   dispose()                 → void
+
+class MyBackend implements DemuxerBackend {
+  private config!: VideoDecoderConfig
+
+  async open(src: string) {
     const res = await fetch(\`/api/probe?src=\${encodeURIComponent(src)}\`)
-    return res.json() // { width, height, durationSeconds, fps }
-  },
-  async demux(src, opts, onChunk) {
-    const res = await fetch(src)
-    const reader = res.body!.getReader()
-    // Feed chunks to your WebCodecs VideoDecoder
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      onChunk(new EncodedVideoChunk({
-        type: 'key',
-        timestamp: opts.startTimestamp,
-        data: value,
-      }))
+    // Whatever your container parser needs to produce a decoder config.
+    this.config = await res.json() // { codec, codedWidth, codedHeight, description }
+  }
+
+  getConfig(): VideoDecoderConfig {
+    return this.config
+  }
+
+  async *packets(timeRange: [number, number]): AsyncIterable<EncodedVideoChunk> {
+    const [start, end] = timeRange
+    for await (const pkt of myContainerReader(start, end)) {
+      yield new EncodedVideoChunk({
+        type: pkt.isKeyframe ? 'key' : 'delta',
+        timestamp: pkt.timestampMicroseconds,
+        duration: pkt.durationMicroseconds,
+        data: pkt.bytes,
+      })
     }
-  },
-  destroy() {},
-})
+  }
+
+  async seekToKeyframe(time: number) {
+    await myContainerReader.seek(time)
+  }
+
+  dispose() {
+    myContainerReader.close()
+  }
+}
+
+// A DemuxerFactory is just \`() => DemuxerBackend\` — one backend per source.
+const myDemuxerFactory: DemuxerFactory = () => new MyBackend()
 
 export default function CustomDemuxerExample() {
   return (
@@ -128,29 +159,38 @@ export default function CustomDemuxerExample() {
     category: 'Export',
     title: 'Export with Progress UI',
     description: 'Full export flow with progress bar, cancel support, and MP4 download trigger.',
-    code: `import { useState, useCallback } from 'react'
+    code: `import { useState, useCallback, useRef } from 'react'
 import {
-  exportVideo,
+  lazyExportVideo,
+  usePlaybackStore,
   useTimelineEngine,
-  createDefaultDemuxerFactory,
   type ExportProgress,
 } from '@elah/editor'
 
-const demuxerFactory = createDefaultDemuxerFactory()
+// Note: export takes NO fps and NO demuxerFactory. fps comes from the project,
+// and the export worker builds its own decode pipeline.
 
 export function ExportPanel() {
   const engine = useTimelineEngine()
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const handleExport = useCallback(async () => {
     setError(null)
+    usePlaybackStore.getState().pause()
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
     try {
-      const blob = await exportVideo(engine.getProject(), {
-        fps: 30,
-        demuxerFactory,
+      const blob = await lazyExportVideo(engine.getProject(), {
         videoCodec: 'avc',
+        audioCodec: 'aac',
         videoBitrate: 8_000_000,
+        outputHeight: 1080,
+        signal: controller.signal,
+        // ExportProgress is { frame, totalFrames } — derive the percentage.
         onProgress: setProgress,
       })
 
@@ -162,11 +202,18 @@ export function ExportPanel() {
       a.click()
       URL.revokeObjectURL(a.href)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Export failed')
+      if ((e as Error).name !== 'AbortError') {
+        setError(e instanceof Error ? e.message : 'Export failed')
+      }
     } finally {
       setProgress(null)
+      abortRef.current = null
     }
   }, [engine])
+
+  const percent = progress
+    ? Math.round((progress.frame / progress.totalFrames) * 100)
+    : 0
 
   return (
     <div style={{ padding: 16 }}>
@@ -175,15 +222,16 @@ export function ExportPanel() {
         disabled={!!progress}
         style={{ padding: '8px 16px', background: '#b7102a', color: '#fff' }}
       >
-        {progress ? \`Exporting \${Math.round(progress.percent)}%\` : 'Export MP4'}
+        {progress ? \`Exporting \${percent}%\` : 'Export MP4'}
       </button>
 
       {progress && (
         <div style={{ marginTop: 8 }}>
-          <progress value={progress.percent} max={100} style={{ width: '100%' }} />
+          <progress value={percent} max={100} style={{ width: '100%' }} />
           <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
-            {progress.phase} · frame {progress.frame} / {progress.totalFrames}
+            frame {progress.frame} / {progress.totalFrames}
           </div>
+          <button onClick={() => abortRef.current?.abort()}>Cancel</button>
         </div>
       )}
 
@@ -224,15 +272,17 @@ function DomPreview() {
     if (!containerRef.current) return
     containerRef.current.innerHTML = ''
 
-    // Render text clips as DOM elements
+    // Render text clips as DOM elements.
+    // ActiveTextClip fields are FLAT — content/fontSize/color sit directly on
+    // the clip. (Nesting under \`text: {...}\` applies only when CREATING a clip.)
     for (const text of scene.texts) {
       const el = document.createElement('div')
-      el.textContent = text.text?.content ?? ''
+      el.textContent = text.content
       el.style.cssText = \`
         position: absolute;
         opacity: \${text.opacity};
-        font-size: \${text.text?.fontSize ?? 32}px;
-        color: \${text.text?.color ?? '#fff'};
+        font-size: \${text.fontSize ?? 32}px;
+        color: \${text.color ?? '#fff'};
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);

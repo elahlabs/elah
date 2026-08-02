@@ -26,16 +26,28 @@ npm run dev      # http://localhost:4001
 | Concern | File |
 | --- | --- |
 | Mount (client-only) | [`app/page.tsx`](app/page.tsx) — `dynamic(..., { ssr: false })` |
-| SDK stylesheet | [`app/layout.tsx`](app/layout.tsx) — `import '@elah/editor/styles.css'` |
+| SDK stylesheets (all **three**) | [`app/layout.tsx`](app/layout.tsx) |
 | Editor composition | [`components/ProductionEditor.tsx`](components/ProductionEditor.tsx) |
 | Bundler config | [`next.config.mjs`](next.config.mjs) — `transpilePackages` |
+| Theming (`--elah-*` overrides) | [`app/globals.css`](app/globals.css) |
 
 ## Notes
 
-- The editor is browser-only (Canvas / Web Audio / Workers), hence `ssr: false`.
+- The editor is browser-only (Canvas / WebGL2 / Web Audio / Workers), hence `ssr: false`.
+- **Three stylesheets are required** — `@elah/timeline/styles.css`,
+  `@elah/editor/styles.css`, and `@elah/editor/styles/tokens.css`. Each package compiles
+  its own, so they don't contain each other's classes.
+- **`lucide-react` is a peer dependency** of `@elah/editor` and is declared explicitly in
+  `package.json`. npm auto-installs peers; pnpm and yarn do not.
 - The video decoder is wired with the SDK's built-in
   `createDefaultDemuxerFactory()` — no need to install or import `mediabunny`
   yourself; `@elah/core` depends on it directly.
-- `transpilePackages` must include `@elah/editor`, `@elah/core`, `@elah/timeline`,
-  and `mediabunny` so Next/Turbopack transpiles their ESM and resolves the export
-  Web Worker that `@elah/core` spawns.
+- `transpilePackages` must include the `@elah/*` packages and `mediabunny` so
+  Next/Turbopack transpiles their ESM and resolves the export Web Worker that
+  `@elah/core` spawns.
+
+## Building a custom UI?
+
+Start from [`../minimal`](../minimal) — the same integration in ~130 readable lines. The
+complete API reference with copy-paste recipes is
+[`docs/ai/ELAH_FOR_AI_AGENTS.md`](../../docs/ai/ELAH_FOR_AI_AGENTS.md).

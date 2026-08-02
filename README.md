@@ -14,10 +14,16 @@
 Using the React layer (`@elah/editor`):
 
 ```bash
-npm install @elah/editor
+npm install @elah/editor lucide-react
 ```
 
 ```tsx
+// Import all three stylesheets once at your app root — each package compiles
+// its own, so they do not contain each other's classes.
+import '@elah/timeline/styles.css'
+import '@elah/editor/styles.css'
+import '@elah/editor/styles/tokens.css'
+
 import { EditorProvider, Preview, Timeline, AssetPanel, createDefaultDemuxerFactory } from '@elah/editor'
 
 const demuxerFactory = createDefaultDemuxerFactory()
@@ -25,15 +31,24 @@ const demuxerFactory = createDefaultDemuxerFactory()
 export default function App() {
   return (
     <EditorProvider fps={30}>
-      <AssetPanel style={{ width: 220 }} />
-      <Preview demuxerFactory={demuxerFactory} style={{ height: 480 }} />
-      <Timeline style={{ height: 300 }} />
+      {/* elah-root scopes the --elah-* design tokens */}
+      <div className="elah-root" style={{ display: 'flex', height: '100vh' }}>
+        <AssetPanel style={{ width: 220 }} />
+        <Preview demuxerFactory={demuxerFactory} style={{ height: 480 }} />
+        <Timeline style={{ height: 300 }} />
+      </div>
     </EditorProvider>
   )
 }
 ```
 
 That's a working editor: drag a file into the asset panel, drop it on the timeline, hit **Space** to play. See [Install](#install) for the package layers and [How to use the SDK](#how-to-use-the-sdk-in-your-own-app) for more — or skip the UI entirely and render from a JSON spec with the [headless CLI & render server](#headless-cli-node-api--render-server).
+
+### Building with an AI coding tool?
+
+Point it at **[`docs/ai/ELAH_FOR_AI_AGENTS.md`](./docs/ai/ELAH_FOR_AI_AGENTS.md)** — one self-contained file with the full API surface, bundler setup for Vite and Next.js, 12 copy-paste recipes, and the mistakes that produce silently-broken editors. It needs no checkout, so it works for Lovable, Google AI Studio, Emergent, and v0 as well as for repo-aware agents.
+
+Agents working *inside this repo* should read [`AGENTS.md`](./AGENTS.md). Each example app in [`playground/`](./playground) has its own scoped `AGENTS.md`, and [`playground/minimal`](./playground/minimal) is the smallest complete editor to start a custom UI from.
 
 ---
 
@@ -111,11 +126,16 @@ elah/
 ├── PERFORMANCE.md                # performance philosophy + techniques
 ├── BUNDLE_STRATEGY.md            # dependency budget + tree-shaking + measured sizes (~63 KiB gz full SDK)
 ├── CONTRIBUTING.md               # branch/commit conventions, PR rules
+├── AGENTS.md                     # brief for coding agents working in this repo
+├── docs/
+│   └── ai/
+│       └── ELAH_FOR_AI_AGENTS.md # self-contained SDK guide for AI tools (no checkout needed)
 ├── apps/
 │   └── web/                      # Next.js site + docs + playgrounds (www.elah.dev)
 ├── playground/
-│   ├── next/                     # minimal Next.js integration example
-│   └── react/                    # minimal Vite + React integration example
+│   ├── minimal/                  # smallest complete editor — start here for a custom UI
+│   ├── next/                     # production editor on Next.js (App Router)
+│   └── react/                    # production editor on Vite + React
 └── packages/
     ├── core/                     # @elah/core — framework-agnostic engine
     │   └── src/

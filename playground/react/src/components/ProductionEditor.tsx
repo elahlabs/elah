@@ -23,8 +23,8 @@ import {
 
 const FPS = 30
 
-// One video lane on top, an elements (text/shape) lane, then two audio lanes —
-// 0.3.0 supports any number of audio/elements tracks. Order is top→bottom in the
+// One video lane on top, an elements (text/shape) lane, then two audio lanes.
+// Any number of audio/elements tracks is supported. Order is top→bottom in the
 // UI (lower index renders on top). The demo/asset APIs fill these lanes.
 const INITIAL_TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },

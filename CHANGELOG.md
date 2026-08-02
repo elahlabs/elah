@@ -11,6 +11,43 @@ versions independently, starting from its own 0.1.0.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-08-02
+
+### Fixed
+
+- **`@elah/core`: the MP4 export worker now resolves in installed packages.**
+  `exportVideo` spawned the worker via `new URL('./ExportWorker.ts', …)`, but the
+  published package ships only the compiled `ExportWorker.js`. The `.ts` specifier
+  was unresolvable, so any consumer bundler (Turbopack, webpack, Vite) failed on
+  the `@elah/editor` barrel — on first page load, not just on export. The build now
+  rewrites the extension in `dist/` as its final step. **Apps no longer need a
+  `postinstall` patch script**; if you added one, delete it.
+- **`@elah/editor` re-exports the full public API.** 40+ identifiers were missing
+  from the barrel, including ones the docs told you to import from it:
+  `snapFrame`, `buildSnapPoints`, `resolveOverlapEdgeSnap`, `clipsOverlap`,
+  `DEFAULT_OVERLAP_TOLERANCE`, `useTransitionsStore`, `useAssets`, `importBlob`,
+  `createShapeClip`, `createFreehandClip`, `serializeProject`,
+  `deserializeProject`, `warmImageSrc`, `preloadProjectImages`, `cn`,
+  `EditorContext`, the vanilla stores (`tracksStore`, `playbackStore`,
+  `selectionStore`, `transitionsStore`, `mediaLibraryStore`), and the
+  corresponding types (`ActiveShapeClip`, `ActiveFreehandClip`,
+  `CreateClipOptions`, `TimelineClassNames`, `TimelineDropState`,
+  `UseMediaLibraryApi`, `EditorContextValue`, `BoundStoreHook`, and the store
+  `*State`/`*Actions` pairs). Renderer and debug internals stay `@elah/core`-only
+  by design.
+
+### Documentation
+
+- New [`AGENTS.md`](AGENTS.md) — the brief for coding agents working in this
+  checkout — and [`docs/ai/ELAH_FOR_AI_AGENTS.md`](docs/ai/ELAH_FOR_AI_AGENTS.md),
+  a single self-contained integration guide for AI tools that have no repo access.
+- New `playground/minimal` example: the smallest complete custom editor UI.
+- The `playground/next` and `playground/react` examples now import all three
+  required stylesheets and declare the `lucide-react` peer dependency explicitly.
+- Corrected the code samples on the `/examples` page, which did not compile
+  against 0.4.x (`exportVideo` options, `ExportProgress` shape, the
+  `DemuxerBackend` interface, and `ActiveTextClip` field access).
+
 ## [0.4.0] — 2026-07-28
 
 ### Added

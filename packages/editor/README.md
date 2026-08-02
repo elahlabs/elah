@@ -2,7 +2,7 @@
 
 The full Elah video editor SDK for React. Combines the core engine, timeline UI, WebGL2 renderer, media library, and export pipeline into a single package.
 
-Ships `EditorProvider`, `Preview` (WebGL2 canvas + interactive transform overlays), `Timeline`, `AssetPanel`, `SourcePanel`, and `ElementsPanel`, and re-exports the entire `@elah/core` and `@elah/timeline` API. Supports video, image, text, **shape**, and **freehand** clips, **multi-track audio**, and MP4 export.
+Ships `EditorProvider`, `Preview` (WebGL2 canvas + interactive transform overlays), `Timeline`, `AssetPanel`, `SourcePanel`, and `ElementsPanel`, and re-exports the public `@elah/core`, `@elah/react`, and `@elah/timeline` API — so most apps only ever import from `@elah/editor`. (Renderer and debug internals are the exception; import those from `@elah/core` directly.) Supports video, image, text, **shape**, and **freehand** clips, **multi-track audio**, and MP4 export.
 
 [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 [![gzip size](https://img.shields.io/badge/gzip-~63%20KiB%20full%20SDK-brightgreen)](../../BUNDLE_STRATEGY.md)
@@ -86,14 +86,16 @@ function App() {
 ## Import media
 
 ```ts
-import { importFiles, importUrl, useMediaLibrary } from '@elah/editor'
+import { importFiles, importUrl, importBlob, useMediaLibrary } from '@elah/editor'
 
-await importFiles(Array.from(fileList))   // local files
-await importUrl('https://example.com/clip.mp4') // remote URL (also importBlob for blobs)
+await importFiles(Array.from(fileList))          // local files
+await importUrl('https://example.com/clip.mp4')  // remote URL
+await importBlob(recordedBlob, { name: 'take-1.webm' })
 
 // Subscribe in React — useMediaLibrary() takes no arguments and returns
-// { assets, getAsset, removeAsset, updateAsset } with assets in insertion order.
-const { assets } = useMediaLibrary()
+// { assets, getAsset, removeAsset, updateAsset, importFiles, importUrl, importBlob }
+// with assets in insertion order. `useAssets` is an alias for the same hook.
+const { assets, importFiles: addFiles } = useMediaLibrary()
 ```
 
 ### Programmatic insertion (no drag)

@@ -1,0 +1,7 @@
+# Build output from the standalone example apps. These live outside the root
+# workspace and are built independently, so their artifacts are not covered by
+# the repo-root .gitignore.
+node_modules/
+.next/
+dist/
+*.tsbuildinfo

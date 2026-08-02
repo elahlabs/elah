@@ -49,6 +49,12 @@ const POSTS: DocLink[] = posts.map((post) => ({
 }))
 
 const EXTERNAL: DocLink[] = [
+  {
+    title: 'Elah for AI agents — complete integration guide',
+    path: 'https://raw.githubusercontent.com/elahlabs/elah/main/docs/ai/ELAH_FOR_AI_AGENTS.md',
+    description:
+      'Single self-contained file with the full API surface, bundler setup, 12 copy-paste recipes, and the common mistakes. Written for coding agents building a custom editor UI — start here if you are generating code against this SDK.',
+  },
   { title: 'GitHub repository', path: siteConfig.links.github, description: 'Source, ARCHITECTURE.md, and AGENTS.md (the brief for coding agents in the checkout).' },
   { title: '@elah/editor on npm', path: 'https://www.npmjs.com/package/@elah/editor', description: 'The full React editor SDK package.' },
   { title: '@elah/timeline on npm', path: 'https://www.npmjs.com/package/@elah/timeline', description: 'React timeline UI components and hooks.' },
