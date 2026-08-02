@@ -37,8 +37,8 @@ packages/timeline  # React timeline UI components and hooks
 packages/editor    # full React editor SDK (bundles core + timeline)
 packages/cli       # @elah/cli — headless runtime (split/trim/build/export via system Chrome)
 apps/web           # dev playground started by `npm run dev`
-playground/        # standalone apps consuming @elah/editor from npm — not
-                   # part of the workspace; see playground/README.md
+examples/          # standalone apps consuming @elah/editor from npm — not
+                   # part of the workspace; see examples/README.md
 ```
 
 ---

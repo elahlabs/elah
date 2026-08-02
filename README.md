@@ -48,7 +48,7 @@ That's a working editor: drag a file into the asset panel, drop it on the timeli
 
 Point it at **[`docs/ai/ELAH_FOR_AI_AGENTS.md`](./docs/ai/ELAH_FOR_AI_AGENTS.md)** — one self-contained file with the full API surface, bundler setup for Vite and Next.js, 12 copy-paste recipes, and the mistakes that produce silently-broken editors. It needs no checkout, so it works for Lovable, Google AI Studio, Emergent, and v0 as well as for repo-aware agents.
 
-Agents working *inside this repo* should read [`AGENTS.md`](./AGENTS.md). Each example app in [`playground/`](./playground) has its own scoped `AGENTS.md`, and [`playground/minimal`](./playground/minimal) is the smallest complete editor to start a custom UI from.
+Agents working *inside this repo* should read [`AGENTS.md`](./AGENTS.md). The runnable example apps live in [`examples/`](./examples) — start at [`examples/AGENTS.md`](./examples/AGENTS.md) for the integration contract, then pick an app ([`minimal`](./examples/minimal) is the smallest complete editor to build a custom UI from). Each app has its own scoped `AGENTS.md`.
 
 ---
 
@@ -132,7 +132,7 @@ elah/
 │       └── ELAH_FOR_AI_AGENTS.md # self-contained SDK guide for AI tools (no checkout needed)
 ├── apps/
 │   └── web/                      # Next.js site + docs + playgrounds (www.elah.dev)
-├── playground/
+├── examples/                     # standalone apps installing @elah/* from npm
 │   ├── minimal/                  # smallest complete editor — start here for a custom UI
 │   ├── next/                     # production editor on Next.js (App Router)
 │   └── react/                    # production editor on Vite + React

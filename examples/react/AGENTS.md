@@ -1,4 +1,4 @@
-# AGENTS.md — React (Vite) playground
+# AGENTS.md — React (Vite) example
 
 A full production editor on `@elah/editor`, in Vite + React 19. Same composition as
 [`../next`](../next), without the Next.js specifics.

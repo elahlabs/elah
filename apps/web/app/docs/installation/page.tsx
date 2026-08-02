@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { currentVersion } from '@/config/changelog'
 
 export const metadata: Metadata = {
   title: 'Installation',
@@ -71,12 +72,15 @@ export default function InstallationPage() {
             Install
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code>. The decode/export backend (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code>) ships bundled — there's nothing else to add:
+            Install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> and{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code>. The decode/export
+            backend (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code>) ships bundled —
+            there&apos;s nothing else to add:
           </p>
           <CodeBlock
             language="bash"
             filename="npm"
-            code={`npm install @elah/editor`}
+            code={`npm install @elah/editor lucide-react`}
           />
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
             Using a different package manager:
@@ -84,9 +88,9 @@ export default function InstallationPage() {
           <CodeBlock
             language="bash"
             filename="pnpm / yarn / bun"
-            code={`pnpm add @elah/editor
-yarn add @elah/editor
-bun add @elah/editor`}
+            code={`pnpm add @elah/editor lucide-react
+yarn add @elah/editor lucide-react
+bun add @elah/editor lucide-react`}
           />
         </section>
 
@@ -120,19 +124,34 @@ bun add @elah/editor`}
             Peer Dependencies
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> only expects React to be provided by your app — <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>, and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> are pulled in transitively. A typical <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code> looks like:
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> expects your app to
+            provide <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">react</code>,{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">react-dom</code>, and{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code> (the timeline uses it
+            for clip icons). <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>,{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>,{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>, and{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> are pulled in
+            transitively. A typical <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code>{' '}
+            looks like:
           </p>
           <CodeBlock
             language="json"
             filename="package.json"
             code={`{
   "dependencies": {
-    "@elah/editor": "^0.2.0",
+    "@elah/editor": "^${currentVersion}",
+    "lucide-react": "^0.400.0",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   }
 }`}
           />
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+            npm auto-installs peer dependencies, so omitting{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code> can appear to work —
+            pnpm and yarn do not, and neither do most AI hosting sandboxes. Always declare it.
+          </p>
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
             The package ships ESM with bundled TypeScript declarations — no separate{' '}
             <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@types</code> install required.
@@ -157,9 +176,10 @@ bun add @elah/editor`}
             code={`/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // @elah/editor (+ its @elah/core / @elah/timeline deps) and mediabunny
-  // ship modern ESM that must be transpiled by the consuming app.
-  transpilePackages: ['@elah/editor', '@elah/core', '@elah/timeline', 'mediabunny'],
+  // @elah/editor (+ its @elah/core / @elah/react / @elah/timeline deps) and
+  // mediabunny ship modern ESM that must be transpiled by the consuming app.
+  // Required — without it the build fails on the @elah/editor barrel.
+  transpilePackages: ['@elah/editor', '@elah/core', '@elah/react', '@elah/timeline', 'mediabunny'],
 }
 
 export default nextConfig`}
@@ -202,15 +222,35 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   worker: {
-    // @elah/core spawns the MP4 export worker as a module worker.
+    // @elah/core spawns the MP4 export worker as a module worker. Vite's default
+    // worker format is IIFE, which cannot use \`import\` — the export would crash.
     format: 'es',
   },
   optimizeDeps: {
-    exclude: ['@elah/editor', '@elah/core', '@elah/timeline', 'mediabunny'],
+    // Serve these from their real files so the \`new URL(...)\` worker reference
+    // survives esbuild's pre-bundle step.
+    exclude: ['@elah/editor', '@elah/core', '@elah/react', '@elah/timeline', 'mediabunny'],
   },
 })`}
           />
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+            Both settings are required, and both are about the export worker — omit either and MP4 export fails at runtime.
+          </p>
         </section>
+
+        {/* Working copies of everything above */}
+        <div className="mb-5 rounded-md border border-outline-variant bg-surface-low p-5">
+          <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Working code</div>
+          <div className="text-sm font-medium text-on-surface mb-1">Runnable examples</div>
+          <p className="text-xs leading-relaxed text-on-surface-variant mb-3">
+            Every config on this page, applied and verified in three standalone apps that install{' '}
+            <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">@elah/editor</code> from npm — a minimal
+            starter, a full Vite editor, and the same on Next.js.
+          </p>
+          <a href="/examples" className="text-xs font-medium text-primary hover:underline">
+            Browse the examples →
+          </a>
+        </div>
 
         {/* Next */}
         <div className="rounded-md border border-outline-variant bg-surface-low p-5">

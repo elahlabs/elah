@@ -1,4 +1,4 @@
-# @elah/editor — Next.js Playground
+# @elah/editor — Next.js Example
 
 A standalone Next.js (App Router) app showcasing the **production editor** built on
 [`@elah/editor`](https://www.npmjs.com/package/@elah/editor), installed **from npm** —
@@ -8,7 +8,7 @@ package, not the local `packages/editor` source.
 ## Run
 
 ```bash
-cd playground/next
+cd examples/next
 npm install
 npm run dev      # http://localhost:4001
 ```

@@ -1,4 +1,4 @@
-# Playground
+# Examples
 
 Standalone example apps that consume **`@elah/editor` from the npm registry** — not the
 local monorepo `packages/`. They live outside the root `workspaces` globs (`packages/*`,
@@ -13,12 +13,16 @@ SDK works for a real external consumer.
 
 ```bash
 # each app is self-contained — install + run independently
-cd playground/minimal && npm install && npm run dev
-cd playground/react   && npm install && npm run dev
-cd playground/next    && npm install && npm run dev
+cd examples/minimal && npm install && npm run dev
+cd examples/react   && npm install && npm run dev
+cd examples/next    && npm install && npm run dev
 ```
 
 They track the latest published SDK — currently **`@elah/editor@^0.4.1`**.
+
+> **Verified against `@elah/editor@0.4.1` on 2026-08-02** — clean `npm install` from the
+> registry, then `typecheck`, `dev`, and `build` for all three, plus a full MP4 export in
+> `react/` and `next/` under both the dev server and the production build.
 
 `react/` and `next/` render the same **production editor** composition (`ProductionEditor`):
 preview, timeline, asset/element panels, a text-properties inspector, and MP4 export.
@@ -27,8 +31,9 @@ plays.
 
 ## Pointing an AI at these
 
-Each app has an `AGENTS.md` scoping what to change and what not to touch. For a tool with no
-repo access — Lovable, Google AI Studio, Emergent, v0 — give it
+Start with [`AGENTS.md`](AGENTS.md) — the integration contract in one page. Each app then has
+its own `AGENTS.md` scoping what to change and what not to touch. For a tool with no repo
+access — Lovable, Google AI Studio, Emergent, v0 — give it
 [`docs/ai/ELAH_FOR_AI_AGENTS.md`](../docs/ai/ELAH_FOR_AI_AGENTS.md) instead: one
 self-contained file with the full API, 12 copy-paste recipes, and the mistakes to avoid.
 

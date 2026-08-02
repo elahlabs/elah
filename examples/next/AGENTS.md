@@ -1,4 +1,4 @@
-# AGENTS.md — Next.js playground
+# AGENTS.md — Next.js example
 
 A full production editor on `@elah/editor`, in Next.js 16 (App Router).
 

@@ -1,5 +1,5 @@
 {
-  "name": "elah-playground-next",
+  "name": "elah-example-next",
   "version": "0.1.0",
   "private": true,
   "description": "Standalone Next.js showcase for @elah/editor (installed from npm, not the monorepo)",

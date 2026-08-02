@@ -15,8 +15,13 @@ import '@elah/editor/styles/tokens.css'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '@elah/editor — Next.js Playground',
+  title: '@elah/editor — Next.js Example',
   description: 'Standalone Next.js showcase of the @elah/editor production editor, installed from npm.',
+  // Declared inline so the browser's automatic /favicon.ico request does not
+  // 404 into the console. Swap it for your own icon.
+  icons: {
+    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23b7102a'/%3E%3Cpath d='M6 4.5v7l5-3.5z' fill='%23fff'/%3E%3C/svg%3E",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

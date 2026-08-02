@@ -35,7 +35,7 @@ Three invariants hold everywhere. Do not violate them:
 | `packages/cli` | `elah build / export / serve` — headless rendering via Playwright + system Chrome. Versioned independently. |
 | `apps/web` | The marketing + docs site (elah.dev). Docs pages are hand-written TSX, not MDX. |
 | `apps/server` | Render-server example built on `@elah/cli`. |
-| `playground/` | Standalone example apps that install from **npm**. Outside the root workspace on purpose. |
+| `examples/` | Standalone example apps that install from **npm**. Outside the root workspace on purpose — see [`examples/AGENTS.md`](examples/AGENTS.md). |
 
 ## Commands
 
@@ -45,7 +45,11 @@ npm run test             # vitest across core, react, timeline, cli
 npm run typecheck        # tsc --noEmit across all workspaces
 npm run dev              # apps/web on :3000
 npm run lint:tokens      # check --elah-* design token usage
+npm run verify:examples  # build all three examples/ apps against the published npm packages
 ```
+
+`verify:examples` is the only check that exercises the *published* tarballs — everything else
+runs against local source. Run it after a release, and after changing anything in `examples/`.
 
 ## The src/dist asymmetry — read this before debugging a stale build
 

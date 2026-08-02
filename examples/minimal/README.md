@@ -4,11 +4,11 @@ The smallest complete Elah editor: **6 files, ~130 lines.** Import media, drag i
 the timeline, scrub, play.
 
 This is the example to copy when you are building a **custom UI**. The
-[`next/`](../next) and [`react/`](../react) playgrounds show a full production editor;
+[`next/`](../next) and [`react/`](../react) examples show a full production editor;
 this one shows the integration contract with nothing on top of it.
 
 ```bash
-cd playground/minimal
+cd examples/minimal
 npm install
 npm run dev      # http://localhost:4003
 ```

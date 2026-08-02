@@ -15,7 +15,7 @@ export default defineConfig({
     // reference inside @elah/core resolves correctly instead of being rewritten
     // by the esbuild pre-bundle step. mediabunny is excluded for the same reason.
     //
-    // Both of these are required — see playground/minimal for the same config
+    // Both of these are required — see examples/minimal for the same config
     // on a bare app.
     exclude: ['@elah/editor', '@elah/core', '@elah/react', '@elah/timeline', 'mediabunny'],
   },

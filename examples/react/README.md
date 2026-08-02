@@ -1,4 +1,4 @@
-# @elah/editor — React (Vite) Playground
+# @elah/editor — React (Vite) Example
 
 A standalone Vite + React + TypeScript app showcasing the **production editor** built on
 [`@elah/editor`](https://www.npmjs.com/package/@elah/editor), installed **from npm** —
@@ -8,7 +8,7 @@ package, not the local `packages/editor` source.
 ## Run
 
 ```bash
-cd playground/react
+cd examples/react
 npm install
 npm run dev      # http://localhost:4002
 ```

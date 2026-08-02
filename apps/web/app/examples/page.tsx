@@ -12,21 +12,21 @@ const fullExamples = [
     runtime: 'Vite + React 19 · ~130 lines',
     description:
       'The smallest complete editor: import media, drag it onto the timeline, scrub, play. Start here when you are building a custom UI — it is all integration contract and nothing else, with the four silent-failure gotchas called out inline.',
-    href: `${siteConfig.links.github}/tree/main/playground/minimal`,
+    href: `${siteConfig.links.github}/tree/main/examples/minimal`,
   },
   {
     framework: 'React',
     runtime: 'Vite + React 19',
     description:
       'A complete production editor — preview, timeline, asset/element panels, text inspector, and MP4 export — wired as a standalone Vite app consuming @elah/editor from npm.',
-    href: `${siteConfig.links.github}/tree/main/playground/react`,
+    href: `${siteConfig.links.github}/tree/main/examples/react`,
   },
   {
     framework: 'Next.js',
     runtime: 'Next.js 16 · App Router',
     description:
       'The same full editor composition in a Next.js App Router app, with the client-only dynamic import and transpilePackages config needed to ship it in production.',
-    href: `${siteConfig.links.github}/tree/main/playground/next`,
+    href: `${siteConfig.links.github}/tree/main/examples/next`,
   },
 ]
 

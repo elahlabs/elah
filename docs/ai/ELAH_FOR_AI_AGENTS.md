@@ -9,6 +9,15 @@ Nothing here requires reading another file.
 - **Version:** `@elah/editor@0.4.1` · **License:** Apache-2.0
 - **Repo:** https://github.com/elahlabs/elah · **Docs:** https://www.elah.dev/docs
 
+**Working code, if you can fetch a URL.** Three runnable apps that install this exact version
+from npm — every config and import in this guide is applied and verified there:
+
+| Example | Stack | Use it for |
+| --- | --- | --- |
+| [`examples/minimal`](https://github.com/elahlabs/elah/tree/main/examples/minimal) | Vite + React 19 | The smallest complete editor, ~130 lines. **Copy this to start a custom UI.** |
+| [`examples/react`](https://github.com/elahlabs/elah/tree/main/examples/react) | Vite + React 19 | A finished editor — panels, inspector, MP4 export modal. |
+| [`examples/next`](https://github.com/elahlabs/elah/tree/main/examples/next) | Next.js 16 App Router | The same, plus `ssr: false` mounting and `transpilePackages`. |
+
 **Contents:** [1 What it is](#1-what-elah-is-and-is-not) · [2 Install](#2-install) ·
 [3 Stylesheets](#3-the-three-stylesheets-most-common-mistake) · [4 Bundler](#4-bundler-setup) ·
 [5 Mental model](#5-mental-model) · [6 API reference](#6-api-reference) ·
