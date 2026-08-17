@@ -5,13 +5,17 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Activity,
 } from 'lucide-react'
 import {
   useSelectionStore,
   useTracksStore,
   useTimelineEngine,
   type Clip,
+  type AnimationDirection,
+  type AnimationEasing,
   type TextAnimationKind,
+  type TextLoopAnimationKind,
   type TextAnimation,
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
@@ -63,8 +67,30 @@ function AlignBtn({
 }
 
 function mergeAnim(c: Partial<Clip>): TextAnimation {
-  return { durationFrames: 15, ...c.textAnimation }
+  return { durationFrames: 15, easing: 'ease-out', direction: 'up', ...c.textAnimation }
 }
+
+const PHASE_PRESETS: Array<{ value: TextAnimationKind | 'none'; label: string }> = [
+  { value: 'none', label: 'None' },
+  { value: 'fade', label: 'Fade' },
+  { value: 'slide', label: 'Slide' },
+  { value: 'pop', label: 'Pop' },
+  { value: 'typewriter', label: 'Typewriter' },
+]
+
+const DIRECTIONS: Array<{ value: AnimationDirection; label: string }> = [
+  { value: 'up', label: 'Up' },
+  { value: 'down', label: 'Down' },
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+]
+
+const EASINGS: Array<{ value: AnimationEasing; label: string }> = [
+  { value: 'ease-out', label: 'Ease Out' },
+  { value: 'ease-in-out', label: 'Ease In Out' },
+  { value: 'ease-in', label: 'Ease In' },
+  { value: 'linear', label: 'Linear' },
+]
 
 function useSelectedTextClip(): Clip | null {
   const selectedClipIds = useSelectionStore((s) => s.selectedClipIds)
@@ -105,6 +131,19 @@ export function TextClipProperties() {
   const commit = (updates: Partial<Clip>) => {
     setLocal((prev) => ({ ...prev, ...updates }))
     engine.updateClip(clip.id, clip.trackId, updates)
+  }
+
+  const commitAnimation = (patch: Partial<TextAnimation>) => {
+    const next = { ...mergeAnim(effective), ...patch }
+    commit({
+      textAnimation: next.in || next.out || next.loop ? next : undefined,
+    })
+  }
+
+  const previewAnimation = (patch: Partial<TextAnimation>) => {
+    const next = { ...mergeAnim(effective), ...patch }
+    setLocal((prev) => ({ ...prev, textAnimation: next }))
+    engine.previewClip(clip.id, clip.trackId, { textAnimation: next })
   }
 
   const startSec = (clip.startFrame / 30).toFixed(0)
@@ -287,64 +326,149 @@ export function TextClipProperties() {
 
         {tab === 'animate' && (
           <>
+            <div className="mb-4 flex items-start gap-2.5 rounded-md border border-ed-border bg-ed-bg px-3 py-2.5">
+              <Activity size={14} className="mt-0.5 shrink-0 text-ed-accent-dim" />
+              <div>
+                <div className="text-[11px] font-medium text-ed-text">Clip-relative motion</div>
+                <div className="mt-0.5 text-[10px] leading-relaxed text-ed-text-muted">
+                  Presets use integer frames, so preview, scrubbing, and export stay identical.
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Fade In">
+              <Field label="Entrance">
                 <select
                   value={effective.textAnimation?.in ?? 'none'}
                   onChange={(e) => {
-                    const val = e.target.value
-                    commit({
-                      textAnimation: {
-                        durationFrames: effective.textAnimation?.durationFrames ?? 15,
-                        ...effective.textAnimation,
-                        in: val === 'none' ? undefined : (val as TextAnimationKind),
-                      },
-                    })
+                    const value = e.target.value as TextAnimationKind | 'none'
+                    commitAnimation({ in: value === 'none' ? undefined : value })
                   }}
                   className={cn(inputCls, 'cursor-pointer')}
                 >
-                  <option value="none">None</option>
-                  <option value="fade">Fade</option>
+                  {PHASE_PRESETS.map((preset) => (
+                    <option key={preset.value} value={preset.value}>{preset.label}</option>
+                  ))}
                 </select>
               </Field>
-              <Field label="Fade Out">
+              <Field label="Exit">
                 <select
                   value={effective.textAnimation?.out ?? 'none'}
                   onChange={(e) => {
-                    const val = e.target.value
-                    commit({
-                      textAnimation: {
-                        durationFrames: effective.textAnimation?.durationFrames ?? 15,
-                        ...effective.textAnimation,
-                        out: val === 'none' ? undefined : (val as TextAnimationKind),
-                      },
-                    })
+                    const value = e.target.value as TextAnimationKind | 'none'
+                    commitAnimation({ out: value === 'none' ? undefined : value })
+                  }}
+                  className={cn(inputCls, 'cursor-pointer')}
+                >
+                  {PHASE_PRESETS.map((preset) => (
+                    <option key={preset.value} value={preset.value}>{preset.label}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {effective.textAnimation?.in && (
+                <Field label="Entrance Duration">
+                  <NumberField
+                    value={effective.textAnimation.inDurationFrames ?? effective.textAnimation.durationFrames}
+                    step={1}
+                    min={1}
+                    max={clip.durationFrames}
+                    suffix="f"
+                    onChange={(value) => previewAnimation({ inDurationFrames: value })}
+                    onCommit={() => engine.commitInteraction('Edit text animation')}
+                  />
+                </Field>
+              )}
+              {effective.textAnimation?.out && (
+                <Field label="Exit Duration">
+                  <NumberField
+                    value={effective.textAnimation.outDurationFrames ?? effective.textAnimation.durationFrames}
+                    step={1}
+                    min={1}
+                    max={clip.durationFrames}
+                    suffix="f"
+                    onChange={(value) => previewAnimation({ outDurationFrames: value })}
+                    onCommit={() => engine.commitInteraction('Edit text animation')}
+                  />
+                </Field>
+              )}
+            </div>
+
+            {(effective.textAnimation?.in === 'slide' || effective.textAnimation?.out === 'slide') && (
+              <Field label="Direction">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {DIRECTIONS.map((direction) => {
+                    const active = (effective.textAnimation?.direction ?? 'up') === direction.value
+                    return (
+                      <button
+                        key={direction.value}
+                        type="button"
+                        onClick={() => commitAnimation({ direction: direction.value })}
+                        className={cn(
+                          'rounded-md border px-2 py-1.5 text-[11px] transition-colors',
+                          active
+                            ? 'border-ed-accent bg-ed-accent-soft text-ed-accent-hover'
+                            : 'border-ed-border bg-ed-bg text-ed-text-muted hover:text-ed-text',
+                        )}
+                      >
+                        {direction.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </Field>
+            )}
+
+            {(effective.textAnimation?.in || effective.textAnimation?.out) && (
+              <Field label="Easing">
+                <select
+                  value={effective.textAnimation.easing ?? 'ease-out'}
+                  onChange={(e) => commitAnimation({ easing: e.target.value as AnimationEasing })}
+                  className={cn(inputCls, 'cursor-pointer')}
+                >
+                  {EASINGS.map((easing) => (
+                    <option key={easing.value} value={easing.value}>{easing.label}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
+            <div className="my-4 border-t border-ed-border-subtle" />
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Loop">
+                <select
+                  value={effective.textAnimation?.loop ?? 'none'}
+                  onChange={(e) => {
+                    const value = e.target.value as TextLoopAnimationKind | 'none'
+                    commitAnimation({ loop: value === 'none' ? undefined : value })
                   }}
                   className={cn(inputCls, 'cursor-pointer')}
                 >
                   <option value="none">None</option>
-                  <option value="fade">Fade</option>
+                  <option value="pulse">Pulse</option>
                 </select>
               </Field>
+              {effective.textAnimation?.loop && (
+                <Field label="Loop Duration">
+                  <NumberField
+                    value={effective.textAnimation.loopDurationFrames ?? 30}
+                    step={1}
+                    min={2}
+                    max={clip.durationFrames}
+                    suffix="f"
+                    onChange={(value) => previewAnimation({ loopDurationFrames: value })}
+                    onCommit={() => engine.commitInteraction('Edit text animation')}
+                  />
+                </Field>
+              )}
             </div>
-            {(effective.textAnimation?.in || effective.textAnimation?.out) && (
-              <Field label="Duration">
-                <NumberField
-                  value={effective.textAnimation?.durationFrames ?? 15}
-                  step={1}
-                  min={1}
-                  max={clip.durationFrames}
-                  suffix="f"
-                  onChange={(v) =>
-                    setLocal((p) => ({
-                      ...p,
-                      textAnimation: { ...mergeAnim(effective), durationFrames: v },
-                    }))
-                  }
-                  onCommit={() => commit({ textAnimation: mergeAnim(effective) })}
-                />
-              </Field>
-            )}
+
+            <div className="mt-1 text-[10px] leading-relaxed text-ed-text-muted">
+              Custom opacity, position, scale, and rotation keyframes are available through the SDK. Visual keyframe lanes will follow in the timeline editor.
+            </div>
           </>
         )}
       </div>
