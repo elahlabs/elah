@@ -2,6 +2,11 @@ import type { Draft } from 'immer'
 import type { Clip, Project, Track } from '../types'
 import { toFrame } from '../utils/frames'
 import { findOverlaps } from '../utils/frames'
+import {
+  normalizeAnimationChannels,
+  normalizeShapeAnimation,
+  normalizeTextAnimation,
+} from '../animation/normalize'
 
 /**
  * Update clip properties in place.
@@ -26,6 +31,15 @@ export function updateClip(
   }
   if (updates.durationFrames !== undefined) {
     updates.durationFrames = Math.max(1, toFrame(updates.durationFrames))
+  }
+  if (updates.animations !== undefined) {
+    updates.animations = normalizeAnimationChannels(updates.animations)
+  }
+  if (updates.textAnimation !== undefined) {
+    updates.textAnimation = normalizeTextAnimation(updates.textAnimation)
+  }
+  if (updates.shapeAnimation !== undefined) {
+    updates.shapeAnimation = normalizeShapeAnimation(updates.shapeAnimation)
   }
 
   const merged = { ...clip, ...updates } as Clip

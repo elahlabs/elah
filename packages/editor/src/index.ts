@@ -17,8 +17,15 @@ export type {
   Track,
   Project,
   Transform,
+  AnimationChannel,
+  AnimationKeyframe,
+  AnimationProperty,
+  AnimationEasing,
+  AnimationDirection,
   TextAnimation,
+  ShapeAnimation,
   TextAnimationKind,
+  TextLoopAnimationKind,
   ClipType,
   TrackKind,
   FrameCount,
@@ -30,6 +37,8 @@ export type {
   TransitionEasing,
   TransitionDirection,
 } from '@elah/core'
+
+export { applyAnimationEasing, evaluateAnimationChannel } from '@elah/core'
 
 export { TimelineEngine } from '@elah/core'
 export { PlaybackEngine } from '@elah/core'

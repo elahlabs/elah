@@ -265,6 +265,36 @@ describe('resolveTimeline', () => {
     expect(scenePlain.texts[0].color).toBeUndefined()
   })
 
+  it('resolves text presets and custom channels from clip-relative frames', () => {
+    const track = makeTrack({ id: 'tt', kind: 'elements' })
+    const animated = makeClip({
+      id: 'c-animated',
+      trackId: 'tt',
+      type: 'text',
+      startFrame: 20,
+      durationFrames: 40,
+      sourceDurationFrames: 40,
+      content: 'Title',
+      textAnimation: {
+        in: 'typewriter',
+        durationFrames: 10,
+        easing: 'linear',
+      },
+      animations: [
+        {
+          property: 'transform.x',
+          keyframes: [{ frame: 0, value: 0.25 }, { frame: 10, value: 0.75 }],
+        },
+      ],
+    })
+    const project = makeProject({ tracks: [track], clips: { tt: [animated] } })
+
+    const text = resolveTimeline(25, project).texts[0]
+    expect(text.content).toBe('Ti')
+    expect(text.transform?.x).toBe(0.5)
+    expect(resolveTimeline(25, project)).toEqual(resolveTimeline(25, project))
+  })
+
   it('image clips follow video solo rules', () => {
     const trackVid = makeTrack({ id: 'tVid', kind: 'video', order: 0, solo: true })
     const trackImg = makeTrack({ id: 'tImg', kind: 'video', order: 1, solo: false })

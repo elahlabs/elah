@@ -8,6 +8,7 @@ import type {
   ActiveShapeClip,
   ActiveFreehandClip,
 } from './scene'
+import { resolveTextAnimation } from '../animation/evaluate'
 
 /** Elements tracks always render above every video/audio track. */
 const ELEMENTS_ZINDEX_BASE = 1000000
@@ -163,31 +164,20 @@ export function resolveTimeline(frame: number, project: Project): Scene {
         }
         scene.audios.push(active)
       } else if (clip.type === 'text') {
-        // Resolve entry/exit animation into opacity so both renderers get the
-        // animated value for free — neither renderer needs to know about animations.
-        let resolvedOpacity = opacity
-        const anim = clip.textAnimation
-        if (anim) {
-          const d = Math.max(1, anim.durationFrames)
-          const localFrame = frame - clip.startFrame
-          if (anim.in === 'fade') {
-            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, localFrame / d))
-          }
-          if (anim.out === 'fade') {
-            resolvedOpacity = Math.min(resolvedOpacity, Math.min(1, (clip.durationFrames - localFrame) / d))
-          }
-        }
+        // Text presets and custom keyframes resolve to ordinary render values.
+        // Preview and export remain animation-agnostic and therefore identical.
+        const resolved = resolveTextAnimation(clip, frame - clip.startFrame)
 
         const active: ActiveTextClip = {
           type: 'text',
           id: clip.id,
           trackId: clip.trackId,
           name: clip.name,
-          content: clip.content ?? '',
+          content: resolved.content,
           sourceFrame,
-          opacity: resolvedOpacity,
+          opacity: resolved.opacity,
           zIndex,
-          ...(clip.transform ? { transform: clip.transform } : {}),
+          ...(resolved.transform ? { transform: resolved.transform } : {}),
           ...(clip.fontSize !== undefined ? { fontSize: clip.fontSize } : {}),
           ...(clip.color !== undefined ? { color: clip.color } : {}),
           ...(clip.fontFamily !== undefined ? { fontFamily: clip.fontFamily } : {}),
