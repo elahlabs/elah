@@ -110,6 +110,40 @@ const result = await insertMediaAsset(engine, assetId, { desiredStartFrame: 0 })
 
 ---
 
+## Text animation
+
+Text animation is clip-attached—no separate animation track is required. Add a
+preset while creating the clip, or update the flat stored `Clip` later:
+
+```ts
+engine.addClip({
+  type: 'text',
+  trackId,
+  startFrame: 0,
+  durationFrames: 90,
+  text: { content: 'New chapter' },
+  textAnimation: {
+    in: 'slide',       // 'fade' | 'slide' | 'pop' | 'typewriter'
+    out: 'fade',
+    loop: 'pulse',
+    durationFrames: 12,
+    direction: 'up',
+    easing: 'ease-out',
+  },
+  animations: [{
+    property: 'transform.x',
+    keyframes: [{ frame: 0, value: 0.4 }, { frame: 12, value: 0.5 }],
+  }],
+})
+```
+
+Channel frames are integer offsets from the clip start. Supported properties
+are `opacity`, `transform.x`, `transform.y`, `transform.scale`, and
+`transform.rotation`. Both the interactive preview and MP4 export consume the
+same resolved scene.
+
+---
+
 ## Export to MP4
 
 ```ts

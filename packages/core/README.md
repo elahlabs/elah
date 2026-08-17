@@ -83,7 +83,24 @@ const rect = createShapeClip({
   durationFrames: 90,
   shape: { shapeKind: 'rect', shapeFill: '#22d3ee' }, // 'rect' | 'circle' | 'triangle'
 })
+
+const title = createTextClip({
+  trackId: 'el1',
+  startFrame: 0,
+  durationFrames: 90,
+  text: { content: 'Frame accurate' },
+  textAnimation: { in: 'slide', out: 'fade', durationFrames: 12, direction: 'up', easing: 'ease-out' },
+  animations: [{
+    property: 'transform.scale',
+    keyframes: [{ frame: 0, value: 0.9 }, { frame: 12, value: 1 }],
+  }],
+})
 ```
+
+Text presets (`fade`, `slide`, `pop`, `typewriter`, and looping `pulse`) and
+custom property channels are evaluated at integer frames relative to the clip.
+`resolveTimeline` emits only the resolved content, opacity, and transform, so
+preview, seeking, and export use the same deterministic result.
 
 ---
 

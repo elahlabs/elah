@@ -330,7 +330,8 @@ engine.addClip({
 })
 ```
 
-All types also accept `name?`, `volume?`, `opacity?`, `transform?`.
+All types also accept `name?`, `volume?`, `opacity?`, `transform?`, and
+clip-relative `animations?`. Text clips additionally accept `textAnimation?`.
 
 ⚠️ **Nested on creation, flat on the `Clip`.** You *create* text with `text: { content }`, but
 the stored `Clip` and the resolved `ActiveTextClip` both expose `content`, `fontSize`, `color`
@@ -352,6 +353,41 @@ interface Transform {
 ```
 
 Normalized so a project is resolution-independent.
+
+### Text animation
+
+Animations attach to the text clip; do not create a separate animation track.
+Preset and keyframe timing uses integer frame offsets from `clip.startFrame`:
+
+```ts
+interface TextAnimation {
+  in?: 'fade' | 'slide' | 'pop' | 'typewriter'
+  out?: 'fade' | 'slide' | 'pop' | 'typewriter'
+  loop?: 'pulse'
+  durationFrames: number
+  inDurationFrames?: number
+  outDurationFrames?: number
+  loopDurationFrames?: number
+  direction?: 'left' | 'right' | 'up' | 'down'
+  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+}
+
+interface AnimationChannel {
+  property: 'opacity' | 'transform.x' | 'transform.y' |
+            'transform.scale' | 'transform.rotation'
+  keyframes: Array<{
+    frame: number
+    value: number
+    easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  }>
+}
+```
+
+`resolveTimeline(frame, project)` evaluates these into ordinary scene content,
+opacity, and transform values. Renderers remain animation-agnostic, which keeps
+scrubbing, browser preview, and export deterministic. Use
+`evaluateAnimationChannel(channel, localFrame)` when custom tooling needs the
+same interpolation behavior.
 
 ### Export
 

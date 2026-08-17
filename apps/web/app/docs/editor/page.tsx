@@ -238,12 +238,23 @@ engine.addClip({
     rotation: 0,            // radians
     anchor: { x: 0.5, y: 0.5 },
   },
+  textAnimation: {
+    in: 'slide',
+    out: 'fade',
+    durationFrames: 12,
+    direction: 'up',
+    easing: 'ease-out',
+  },
+  animations: [{
+    property: 'transform.scale',
+    keyframes: [{ frame: 0, value: 0.9 }, { frame: 12, value: 1 }],
+  }],
 })
 
-// Entry/exit animation lives on the clip as 'textAnimation', not on 'text'.
-// Set it after creation via updateClip (in/out ramp, kind is 'fade'):
+// Animations live on the clip, not on a separate animation track. Updates are
+// flat and pass through TimelineEngine so they participate in undo/redo:
 engine.updateClip(clipId, textTrack.id, {
-  textAnimation: { in: 'fade', out: 'fade', durationFrames: 10 },
+  textAnimation: { in: 'pop', out: 'fade', durationFrames: 10 },
 })`}
           />
         </section>

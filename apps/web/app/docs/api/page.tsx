@@ -395,6 +395,8 @@ interface Clip {
   fontWeight?: 'normal' | 'bold'
   textAlign?: 'left' | 'center' | 'right'
   textAnimation?: TextAnimation
+  animations?: AnimationChannel[]
+  shapeAnimation?: { in?: 'fade'; out?: 'fade'; durationFrames: number }
   // Shape / freehand clips have their own shape*/stroke*/pathData fields.
 }
 
@@ -406,11 +408,29 @@ interface Transform {
   anchor: { x: number; y: number } // 0..1 within the clip box
 }
 
-// Entry/exit ramp for text (and shape) clips.
+type AnimationEasing = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+
+// Clip-attached text presets. All durations are integer frames.
 interface TextAnimation {
-  in?: 'fade'
-  out?: 'fade'
+  in?: 'fade' | 'slide' | 'pop' | 'typewriter'
+  out?: 'fade' | 'slide' | 'pop' | 'typewriter'
+  loop?: 'pulse'
   durationFrames: number
+  inDurationFrames?: number
+  outDurationFrames?: number
+  loopDurationFrames?: number
+  direction?: 'left' | 'right' | 'up' | 'down'
+  easing?: AnimationEasing
+}
+
+interface AnimationChannel {
+  property: 'opacity' | 'transform.x' | 'transform.y' |
+            'transform.scale' | 'transform.rotation'
+  keyframes: Array<{
+    frame: FrameCount       // relative to clip.startFrame
+    value: number
+    easing?: AnimationEasing
+  }>
 }
 
 interface Transition {
