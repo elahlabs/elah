@@ -1,6 +1,14 @@
-import type { Clip, ClipType, ShapeVariant, Transform } from '../types'
+import type {
+  AnimationChannel,
+  Clip,
+  ClipType,
+  ShapeVariant,
+  TextAnimation,
+  Transform,
+} from '../types'
 import { generateId } from '../utils/id'
 import { toFrame } from '../utils/frames'
+import { normalizeAnimationChannels, normalizeTextAnimation } from '../animation/normalize'
 
 // ---------------------------------------------------------------------------
 // Per-type option shapes (discriminated union)
@@ -14,6 +22,8 @@ interface BaseCreateOptions {
   volume?: number
   opacity?: number
   transform?: Transform
+  /** Clip-relative, frame-based property channels. */
+  animations?: AnimationChannel[]
 }
 
 interface CreateVideoOptions extends BaseCreateOptions {
@@ -48,6 +58,8 @@ interface CreateTextOptions extends BaseCreateOptions {
   type: 'text'
   /** Required for text clips — carries content + style. */
   text: TextClipMetadata
+  /** Optional text entrance, exit, and loop presets. */
+  textAnimation?: TextAnimation
 }
 
 /** Style metadata for a shape clip. */
@@ -114,6 +126,7 @@ export function createClip(options: CreateClipOptions): Clip {
     locked: false,
     disabled: false,
     ...(options.transform ? { transform: options.transform } : {}),
+    ...(options.animations ? { animations: normalizeAnimationChannels(options.animations) } : {}),
   }
 
   if (options.type === 'text') {
@@ -127,6 +140,7 @@ export function createClip(options: CreateClipOptions): Clip {
       ...(text.fontFamily !== undefined ? { fontFamily: text.fontFamily } : {}),
       ...(text.fontWeight !== undefined ? { fontWeight: text.fontWeight } : {}),
       ...(text.textAlign !== undefined ? { textAlign: text.textAlign } : {}),
+      ...(options.textAnimation ? { textAnimation: normalizeTextAnimation(options.textAnimation) } : {}),
     }
   }
 

@@ -7,17 +7,56 @@
 /** An exact frame position. Always a non-negative integer. */
 export type FrameCount = number
 
-export type TextAnimationKind = 'fade'
+export type AnimationEasing = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+
+/** Numeric clip properties that can be evaluated from clip-relative keyframes. */
+export type AnimationProperty =
+  | 'opacity'
+  | 'transform.x'
+  | 'transform.y'
+  | 'transform.scale'
+  | 'transform.rotation'
+
+/** A value pinned to an integer frame relative to the clip's start. */
+export interface AnimationKeyframe {
+  frame: FrameCount
+  value: number
+  /** Controls interpolation from the previous keyframe into this keyframe. */
+  easing?: AnimationEasing
+}
+
+/** One independently animated numeric property. */
+export interface AnimationChannel {
+  property: AnimationProperty
+  keyframes: AnimationKeyframe[]
+}
+
+export type TextAnimationKind = 'fade' | 'slide' | 'pop' | 'typewriter'
+export type TextLoopAnimationKind = 'pulse'
+export type AnimationDirection = 'left' | 'right' | 'up' | 'down'
 
 /**
- * Entry/exit animation descriptor for text clips.
- * Resolved into opacity inside resolveTimeline — both renderers consume it
- * via the existing opacity field, so parity is automatic.
+ * Entrance, exit, and loop animation descriptor for text clips.
+ * Resolved into ordinary scene properties inside resolveTimeline, so preview
+ * and export consume exactly the same frame result.
  */
 export interface TextAnimation {
   in?: TextAnimationKind
   out?: TextAnimationKind
-  /** Duration of the in/out ramp in frames (shared by both directions) */
+  loop?: TextLoopAnimationKind
+  /** Backwards-compatible shared duration used when a phase-specific duration is absent. */
+  durationFrames: number
+  inDurationFrames?: number
+  outDurationFrames?: number
+  loopDurationFrames?: number
+  direction?: AnimationDirection
+  easing?: AnimationEasing
+}
+
+/** Legacy fade ramp supported by shape clips. */
+export interface ShapeAnimation {
+  in?: 'fade'
+  out?: 'fade'
   durationFrames: number
 }
 
@@ -115,7 +154,9 @@ export interface Clip {
   /** Entry/exit animation for text clips */
   textAnimation?: TextAnimation
   /** Entry/exit animation for shape clips */
-  shapeAnimation?: TextAnimation
+  shapeAnimation?: ShapeAnimation
+  /** Custom text property channels. Frames are relative to the clip start. */
+  animations?: AnimationChannel[]
 }
 
 /** A track lane that holds clips */

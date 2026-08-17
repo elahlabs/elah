@@ -11,8 +11,15 @@ export type {
   Track,
   Project,
   Transform,
+  AnimationChannel,
+  AnimationKeyframe,
+  AnimationProperty,
+  AnimationEasing,
+  AnimationDirection,
   TextAnimation,
+  ShapeAnimation,
   TextAnimationKind,
+  TextLoopAnimationKind,
   ClipType,
   ShapeVariant,
   TrackKind,
@@ -25,6 +32,12 @@ export type {
   TransitionEasing,
   TransitionDirection,
 } from './types'
+
+// --- Animation (pure, frame-based) ---
+export {
+  applyAnimationEasing,
+  evaluateAnimationChannel,
+} from './animation/evaluate'
 
 // --- Engine ---
 export { TimelineEngine } from './editor/TimelineEngine'

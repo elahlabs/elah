@@ -32,6 +32,19 @@ function buildNonTrivialEngine(): TimelineEngine {
     startFrame: 10,
     durationFrames: 45,
     text: { content: 'Hello world', fontSize: 48, color: '#ff0000' },
+    textAnimation: {
+      in: 'slide',
+      out: 'fade',
+      durationFrames: 12,
+      direction: 'up',
+      easing: 'ease-out',
+    },
+    animations: [
+      {
+        property: 'transform.scale',
+        keyframes: [{ frame: 0, value: 0.9 }, { frame: 12, value: 1 }],
+      },
+    ],
   })
 
   engine.addTransition({

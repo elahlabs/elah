@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useRef, useState, type RefObject } from 'react'
-import { Sparkles, Send, X } from 'lucide-react'
+import { Activity, Sparkles, Send, X } from 'lucide-react'
 import { useTimelineEngine, type TimelineRef } from '@elah/editor'
 import { loadPixabayTopic } from './loadRandomPixabay'
+import { loadTextAnimationDemo } from './loadTextAnimationDemo'
 import type { TopicOption } from '@/lib/ai/types'
 import posthog from 'posthog-js'
 
@@ -124,6 +125,17 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
     [submit],
   )
 
+  const loadAnimationDemo = useCallback(() => {
+    if (disabled) return
+    setError('')
+    try {
+      loadTextAnimationDemo({ engine, timelineRef })
+      posthog.capture('text_animation_demo_loaded')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load the animation demo.')
+    }
+  }, [disabled, engine, timelineRef])
+
   return (
     <div className="flex h-full flex-col bg-ed-panel text-ed-text" style={style}>
       <div className="flex items-center gap-2 border-b border-ed-border px-3.5 py-2.5">
@@ -138,6 +150,21 @@ export function AgenticPanel({ style, timelineRef, busy, setBusy }: AgenticPanel
             then compose it on the timeline.
           </p>
         )}
+
+        <button
+          type="button"
+          onClick={loadAnimationDemo}
+          disabled={disabled}
+          className="flex w-full items-center gap-2 rounded-md border border-ed-border bg-ed-elevated px-2.5 py-2 text-left text-[11px] text-ed-text transition-colors hover:border-[var(--elah-accent)] disabled:opacity-50"
+        >
+          <Activity size={13} style={{ color: 'var(--elah-accent)' }} />
+          <span>
+            <span className="block font-medium">Load text animation demo</span>
+            <span className="block text-[10px] text-ed-text-muted">
+              Presets and custom frame keyframes
+            </span>
+          </span>
+        </button>
 
         <details open={!askedPrompt} className="group">
           <summary className="cursor-pointer select-none text-[10px] font-semibold tracking-wide text-ed-text-muted hover:text-ed-text">

@@ -26,6 +26,17 @@ export interface Release {
   groups: ChangeGroup[]
 }
 
+/** Changes on main that have not been assigned a package version yet. */
+export const unreleasedChanges: ChangeGroup[] = [
+  {
+    kind: 'added',
+    scope: '@elah/core / @elah/editor',
+    items: [
+      'Frame-accurate text animation: clip-attached fade, slide, pop, typewriter, and pulse presets; named easing and per-phase frame durations; custom opacity and transform keyframe channels; and matching native Elah inspector controls. The pure resolver evaluates motion at clip-relative integer frames so preview, seeking, and export stay identical without a runtime dependency or separate animation track.',
+    ],
+  },
+]
+
 export const releases: Release[] = [
   {
     version: '0.4.1',

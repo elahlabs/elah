@@ -11,6 +11,18 @@ versions independently, starting from its own 0.1.0.
 
 ## [Unreleased]
 
+### Added
+
+- **Frame-accurate text animation.** Text clips now support clip-attached
+  entrance/exit presets (`fade`, `slide`, `pop`, `typewriter`), looping `pulse`,
+  named easing, per-phase frame durations, and custom opacity/transform
+  keyframe channels. The pure resolver evaluates all motion at clip-relative
+  integer frames, keeping preview, seeking, and export identical without a new
+  runtime dependency or separate animation track.
+- The production playground's text inspector includes native Elah controls for
+  choosing presets, direction, easing, and frame durations, with preview/commit
+  interactions that produce one undo step per duration edit.
+
 ### Documentation
 
 - **`playground/` is now `examples/`.** The three standalone apps that install

@@ -1,4 +1,4 @@
-import type { Clip } from '../types'
+import type { AnimationChannel, Clip, TextAnimation, Transform } from '../types'
 import { createClip, type TextClipMetadata } from './base'
 
 /** Inputs for createTextClip; `text` carries the styled content, and text clips have no source media so they trim freely. */
@@ -10,6 +10,9 @@ export interface CreateTextClipOptions {
   text: TextClipMetadata
   volume?: number
   opacity?: number
+  transform?: Transform
+  animations?: AnimationChannel[]
+  textAnimation?: TextAnimation
 }
 
 /** Typed wrapper over createClip that pins `type: 'text'` and supplies a default name so callers can't omit them. */

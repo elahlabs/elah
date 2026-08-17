@@ -6,8 +6,7 @@ import {
   useTracksStore,
   useTimelineEngine,
   type Clip,
-  type TextAnimationKind,
-  type TextAnimation,
+  type ShapeAnimation,
 } from '@elah/editor'
 import { cn } from '@/lib/utils'
 import {
@@ -27,7 +26,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'animate', label: 'Animate' },
 ]
 
-function mergeAnim(c: Partial<Clip>): TextAnimation {
+function mergeAnim(c: Partial<Clip>): ShapeAnimation {
   return { durationFrames: 15, ...c.shapeAnimation }
 }
 
@@ -238,7 +237,7 @@ export function ShapeClipProperties() {
                       shapeAnimation: {
                         durationFrames: effective.shapeAnimation?.durationFrames ?? 15,
                         ...effective.shapeAnimation,
-                        in: val === 'none' ? undefined : (val as TextAnimationKind),
+                        in: val === 'none' ? undefined : 'fade',
                       },
                     })
                   }}
@@ -257,7 +256,7 @@ export function ShapeClipProperties() {
                       shapeAnimation: {
                         durationFrames: effective.shapeAnimation?.durationFrames ?? 15,
                         ...effective.shapeAnimation,
-                        out: val === 'none' ? undefined : (val as TextAnimationKind),
+                        out: val === 'none' ? undefined : 'fade',
                       },
                     })
                   }}
