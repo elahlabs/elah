@@ -5,6 +5,9 @@ import {
   useSelectionStore,
   useTracksStore,
   useTimelineEngine,
+  BUILT_IN_TEXT_TEMPLATES,
+  TEXT_ANIMATION_KINDS,
+  applyTextTemplate,
   type Clip,
   type TextAnimationKind,
   type TextAnimation,
@@ -421,7 +424,31 @@ export function TextClipProperties() {
       </CollapsibleSection>
 
       <CollapsibleSection title="ANIMATION" defaultOpen={false}>
-        <FieldRow label="Fade In">
+        <FieldRow label="Template">
+          <select
+            value=""
+            onChange={(e) => {
+              const template = BUILT_IN_TEXT_TEMPLATES.find((t) => t.id === e.target.value)
+              // applyTextTemplate is pure: it reads the CLIP (not `effective`) so the
+              // entry/exit ramp is resolved against the clip's real length, and it
+              // returns the Partial<Clip> patch. Committing that patch in one
+              // updateClip keeps the template a single undo step.
+              if (template) commit(applyTextTemplate(template, clip))
+            }}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+          >
+            <option value="">Apply a template…</option>
+            {BUILT_IN_TEXT_TEMPLATES.map((t) => (
+              <option key={t.id} value={t.id} title={t.description}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <div style={{ fontSize: 10, color: theme.textMuted, marginTop: 4 }}>
+            Replaces the clip's look and motion. Your text is kept.
+          </div>
+        </FieldRow>
+        <FieldRow label="Entry">
           <select
             value={effective.textAnimation?.in ?? 'none'}
             onChange={(e) => {
@@ -437,10 +464,14 @@ export function TextClipProperties() {
             style={{ ...inputStyle, cursor: 'pointer' }}
           >
             <option value="none">None</option>
-            <option value="fade">Fade</option>
+            {TEXT_ANIMATION_KINDS.map((option) => (
+              <option key={option.kind} value={option.kind}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </FieldRow>
-        <FieldRow label="Fade Out">
+        <FieldRow label="Exit">
           <select
             value={effective.textAnimation?.out ?? 'none'}
             onChange={(e) => {
@@ -456,7 +487,11 @@ export function TextClipProperties() {
             style={{ ...inputStyle, cursor: 'pointer' }}
           >
             <option value="none">None</option>
-            <option value="fade">Fade</option>
+            {TEXT_ANIMATION_KINDS.map((option) => (
+              <option key={option.kind} value={option.kind}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </FieldRow>
         {(effective.textAnimation?.in || effective.textAnimation?.out) && (

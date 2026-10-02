@@ -85,6 +85,7 @@ you break one, the failure is silent or looks like an SDK bug.
 
 ## Verified
 
-`@elah/editor@0.4.1`, 2026-08-02 — clean registry install, then `typecheck` + `dev` + `build`
+`@elah/editor@0.6.0`, 2026-10-02 — clean registry install, then `typecheck` + `dev` + `build`
 for all three, and a full MP4 export in `react/` and `next/` under both the dev server and the
-production build. If you change an app, re-run `npm run verify:examples` from the repo root.
+production build (`vite preview` / `next start`), including a text clip restyled with
+`applyTextTemplate`. If you change an app, re-run `npm run verify:examples` from the repo root.
