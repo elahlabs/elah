@@ -94,6 +94,7 @@ import type {
 } from '../resolver/scene'
 import { resolveDrawRect, normalizeCrop, type CropRect } from '../renderer/gpu/layers/drawRect'
 import { computeTextLayout } from '../renderer/gpu/layers/textLayout'
+import { encoderPrimingFrames } from './encoderPriming'
 import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
 
 // ---------------------------------------------------------------------------
@@ -251,7 +252,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   await timed('mediabunny', 'output.start()', () => output.start())
 
   if (audio && audioSource) {
-    await timed('mediabunny', 'audioSource.add() — encoding mixed PCM', () => addAudioMix(audioSource!, audio))
+    await timed('mediabunny', 'audioSource.add() — encoding mixed PCM', () =>
+      addAudioMix(audioSource!, audio, options.audioCodec ?? 'aac'),
+    )
   }
 
   // --- Per-clip sequential decoders ---
@@ -388,11 +391,24 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
  * we respect encoder backpressure and avoid allocating one enormous sample for
  * long projects. `await source.add()` applies the backpressure.
  */
-async function addAudioMix(source: mb.AudioSampleSource, audio: RenderedAudio): Promise<void> {
-  const { sampleRate, numberOfChannels, length } = audio
-  const channels = audio.channels.map(b => new Float32Array(b))
+async function addAudioMix(
+  source: mb.AudioSampleSource,
+  audio: RenderedAudio,
+  codec: string,
+): Promise<void> {
+  const { sampleRate, numberOfChannels } = audio
+  // See encoderPrimingFrames: the encoder puts its own samples in front of
+  // these, and nothing in the container says to skip them.
+  const skip = encoderPrimingFrames(codec, audio.length)
+  const length = audio.length - skip
+  const channels = audio.channels.map(b => new Float32Array(b, skip * Float32Array.BYTES_PER_ELEMENT))
   const chunkFrames = sampleRate // 1 second per chunk
   const totalChunks = Math.ceil(length / chunkFrames)
+  if (skip > 0) {
+    xlog('audio', `dropping ${skip} frames for the encoder's own priming`, {
+      ms: ((skip / sampleRate) * 1000).toFixed(1),
+    })
+  }
   xlog('audio', `encoding PCM in chunks`, { totalChunks, chunkFrames, numberOfChannels, sampleRate })
 
   let chunkIndex = 0
