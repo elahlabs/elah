@@ -320,23 +320,29 @@ export function resolveTimeline(frame: number, project: Project): Scene {
     const fromZIndex = (maxOrder - (project.tracks.find((tr) => tr.id === transition.trackId)?.order ?? 0)) * 1000
     const toZIndex = fromZIndex + 1
 
-    // Source frames — clamped so we never seek past the clip's source bounds.
-    const fromSourceFrame = Math.min(
-      Math.max(0, frame - fromClip.startFrame + fromClip.sourceStartFrame),
-      fromClip.sourceDurationFrames - 1,
-    )
-    const toSourceFrame = Math.max(
-      0,
-      Math.min(
-        frame - toClip.startFrame + toClip.sourceStartFrame,
-        toClip.sourceDurationFrames - 1,
-      ),
-    )
+    // Source frames. A transition deliberately reaches OUTSIDE each clip's trim
+    // window: for the half of the window where the outgoing clip has already
+    // ended (or the incoming one has not started), the frames both sides need
+    // are their handles — the source either side of the cut. Clamped only at
+    // frame 0, the one place there is genuinely nothing to read; a clip with no
+    // handle holds its edge frame there, which is what any editor does.
+    const fromSourceFrame = Math.max(0, frame - fromClip.startFrame + fromClip.sourceStartFrame)
+    const toSourceFrame = Math.max(0, frame - toClip.startFrame + toClip.sourceStartFrame)
 
-    // fromClip: opacity=0 so GPU does not draw it (TransitionOverlay/export snapshot shows it).
-    // toClip: opacity=1 so GPU renders it fully (revealed as the overlay fades away).
-    const fromOpacity = 0
-    const toOpacity = 1
+    // A crossfade is `to * t + from * (1 - t)`, which premultiplied-alpha
+    // compositing gives for free when the outgoing clip is drawn at full
+    // opacity and the incoming one over it at `t`. Both are live: the measured
+    // cost of the old snapshot route was a picture that fell to 48% brightness
+    // across the first half of the fade (the incoming clip had no decoded frame
+    // to dissolve INTO, so it dissolved into black) and then jumped back on the
+    // cut frame.
+    //
+    // Slide and wipe still move a frozen snapshot of the outgoing clip across
+    // the stage in the overlay / export compositor, so they keep asking the GPU
+    // not to draw it.
+    const crossfade = transition.kind === 'fade'
+    const fromOpacity = crossfade ? 1 : 0
+    const toOpacity = crossfade ? t : 1
 
     const toTrackMuted = project.tracks.find((tr) => tr.id === toClip.trackId)?.muted ?? false
 
@@ -346,6 +352,12 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       if (existing) {
         existing.opacity = fromOpacity
         existing.sourceFrame = fromSourceFrame
+        // The transition's own stacking, not the one the ordinary pass gave it.
+        // Both clips sit on the same track and so computed the SAME zIndex, and
+        // a stable sort then draws whichever was added first underneath — which
+        // for the second half of a transition is the incoming clip, buried under
+        // the outgoing one. The dissolve simply stopped halfway.
+        existing.zIndex = fromZIndex
       } else {
         scene.videos.push({
           type: 'video',
@@ -366,6 +378,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       if (existing) {
         existing.opacity = toOpacity
         existing.sourceFrame = toSourceFrame
+        existing.zIndex = toZIndex
       } else {
         scene.videos.push({
           type: 'video',
@@ -387,6 +400,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       const existing = scene.images.find((v) => v.id === fromClip.id)
       if (existing) {
         existing.opacity = fromOpacity
+        existing.zIndex = fromZIndex
       } else {
         scene.images.push({
           type: 'image',
@@ -405,6 +419,7 @@ export function resolveTimeline(frame: number, project: Project): Scene {
       const existing = scene.images.find((v) => v.id === toClip.id)
       if (existing) {
         existing.opacity = toOpacity
+        existing.zIndex = toZIndex
       } else {
         scene.images.push({
           type: 'image',

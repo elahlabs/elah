@@ -272,6 +272,20 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     const sink = videoSinks.get(clip.src!)
     if (!sink) continue
     const clipEndFrame = clip.startFrame + clip.durationFrames
+
+    // A clip in a transition is on screen outside its own span: as the incoming
+    // side it is already being dissolved into before it starts, and as the
+    // outgoing side it is still visible after it ends. Decoding only its own
+    // span is why the first half of a fade used to dissolve into black — there
+    // was no canvas for the incoming clip yet. Widen the window to every
+    // transition this clip takes part in.
+    let decodeStartFrame = clip.startFrame
+    let decodeEndFrame = clipEndFrame
+    for (const tr of project.transitions) {
+      if (tr.fromClipId !== clip.id && tr.toClipId !== clip.id) continue
+      decodeStartFrame = Math.min(decodeStartFrame, tr.startFrame)
+      decodeEndFrame = Math.max(decodeEndFrame, tr.startFrame + tr.durationFrames)
+    }
     // Pre-compute source timestamps for every export frame this clip covers.
     // Using +0.5 midpoint matches the preview's Math.round(PTS / usPerFrame)
     // convention and avoids off-by-one on sources with a different frame rate.
@@ -280,13 +294,19 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     // speed >= 0, so the sequential canvasesAtTimestamps() generator handles
     // 2x/4x by naturally skipping source frames, with no re-seek required.
     const speed = clip.speed ?? 1
-    const sourceTimestamps = Array.from({ length: clip.durationFrames }, (_, i) =>
-      (clip.sourceStartFrame + i * speed + 0.5) / fps,
+    // Indexed from the widened window, so the handles either side of the cut
+    // are read at their real source position. Clamped at zero: a clip trimmed
+    // to the very start of its source has nothing in front of it and holds its
+    // first frame, which is also what the resolver asks for.
+    const sourceTimestamps = Array.from(
+      { length: decodeEndFrame - decodeStartFrame },
+      (_, i) =>
+        (Math.max(0, clip.sourceStartFrame + (decodeStartFrame - clip.startFrame + i) * speed) + 0.5) / fps,
     )
     clipDecoders.set(clip.id, {
       gen: sink.canvasesAtTimestamps(sourceTimestamps),
-      clipStartFrame: clip.startFrame,
-      clipEndFrame,
+      clipStartFrame: decodeStartFrame,
+      clipEndFrame: decodeEndFrame,
     })
   }
 
@@ -332,6 +352,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
     // Capture a snapshot of the outgoing clip on the first frame of each
     // transition. The canvas is already decoded above — no extra seek needed.
     for (const tr of scene.transitions) {
+      // A fade is composited from two live clips (see resolveTimeline); only
+      // the kinds that MOVE the outgoing picture still need a frozen copy of it.
+      if (tr.kind === 'fade') continue
       if (transitionSnapshots.has(tr.id)) continue
       const fromVideo = scene.videos.find(v => v.id === tr.fromClipId)
       const fromImage = scene.images.find(i => i.id === tr.fromClipId)
@@ -548,7 +571,8 @@ async function renderFrame(
       ctx.clip()
       drawMedia(ctx, snap.source, undefined, stageW, stageH)
     } else {
-      // fade (default)
+      // Fallback for a kind with no geometry of its own. A 'fade' never gets
+      // here — it is composited from two live clips and has no snapshot.
       ctx.globalAlpha = 1 - tr.t
       drawMedia(ctx, snap.source, undefined, stageW, stageH)
     }

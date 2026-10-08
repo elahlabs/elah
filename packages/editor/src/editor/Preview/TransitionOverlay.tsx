@@ -50,6 +50,11 @@ export const TransitionOverlay = forwardRef<TransitionOverlayHandle>(
         if (!root) return
 
         for (const tr of scene.transitions) {
+          // A fade is composited by the GPU from two live clips (see
+          // resolveTimeline): the outgoing one is drawn at full opacity and the
+          // incoming one over it at `t`. Freezing it here would put a still of
+          // the first shot back on top of the dissolve.
+          if (tr.kind === 'fade') continue
           if (snapshotsRef.current.has(tr.id)) continue
 
           // Copy the WebGL canvas at its full internal resolution.
@@ -97,7 +102,8 @@ export const TransitionOverlay = forwardRef<TransitionOverlayHandle>(
             snap.div.style.transform = ''
             snap.div.style.clipPath = `inset(0 ${tr.t * 100}% 0 0)`
           } else {
-            // fade (default)
+            // Fallback for a kind with no geometry of its own. A 'fade' never
+            // gets here — it has no snapshot to advance.
             snap.div.style.opacity = String(1 - tr.t)
             snap.div.style.transform = ''
             snap.div.style.clipPath = ''
