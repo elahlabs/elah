@@ -94,6 +94,7 @@ import type {
 } from '../resolver/scene'
 import { resolveDrawRect, normalizeCrop, type CropRect } from '../renderer/gpu/layers/drawRect'
 import { computeTextLayout } from '../renderer/gpu/layers/textLayout'
+import { transitionGeometry } from '../renderer/transitionGeometry'
 import type { ExportOptions, RenderedAudio, WorkerOutMessage } from './types'
 
 // ---------------------------------------------------------------------------
@@ -560,15 +561,22 @@ async function renderFrame(
     if (!snap) continue
     ctx.save()
 
-    if (tr.kind === 'slide') {
-      const sign = tr.direction === 'left' ? -1 : 1
-      ctx.translate(sign * tr.t * stageW, 0)
-      drawMedia(ctx, snap.source, undefined, stageW, stageH)
-    } else if (tr.kind === 'wipe') {
-      // Reveal incoming clip from the right by shrinking the snapshot's visible area
-      ctx.beginPath()
-      ctx.rect(0, 0, stageW * (1 - tr.t), stageH)
-      ctx.clip()
+    if (tr.kind === 'slide' || tr.kind === 'wipe') {
+      // Shared with the preview's overlay so the two compositors cannot drift
+      // on which way a transition goes.
+      const geometry = transitionGeometry(tr.kind, tr.direction, tr.t)
+      ctx.translate(geometry.x * stageW, geometry.y * stageH)
+      const { bottom, left, right, top } = geometry.inset
+      if (bottom || left || right || top) {
+        ctx.beginPath()
+        ctx.rect(
+          left * stageW,
+          top * stageH,
+          stageW * (1 - left - right),
+          stageH * (1 - top - bottom),
+        )
+        ctx.clip()
+      }
       drawMedia(ctx, snap.source, undefined, stageW, stageH)
     } else {
       // Fallback for a kind with no geometry of its own. A 'fade' never gets

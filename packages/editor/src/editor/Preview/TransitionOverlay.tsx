@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { transitionGeometry } from '@elah/core'
 import type { Scene } from '@elah/core'
 
 /**
@@ -92,15 +93,14 @@ export const TransitionOverlay = forwardRef<TransitionOverlayHandle>(
           const snap = snapshotsRef.current.get(tr.id)
           if (!snap) continue
 
-          if (tr.kind === 'slide') {
-            const sign = tr.direction === 'left' ? -1 : 1
+          if (tr.kind === 'slide' || tr.kind === 'wipe') {
+            // Shared with the export compositor so the two cannot drift on
+            // which way a transition goes.
+            const g = transitionGeometry(tr.kind, tr.direction, tr.t)
+            const pct = (v: number) => `${v * 100}%`
             snap.div.style.opacity = '1'
-            snap.div.style.transform = `translateX(${sign * tr.t * 100}%)`
-            snap.div.style.clipPath = ''
-          } else if (tr.kind === 'wipe') {
-            snap.div.style.opacity = '1'
-            snap.div.style.transform = ''
-            snap.div.style.clipPath = `inset(0 ${tr.t * 100}% 0 0)`
+            snap.div.style.transform = `translate(${pct(g.x)}, ${pct(g.y)})`
+            snap.div.style.clipPath = `inset(${pct(g.inset.top)} ${pct(g.inset.right)} ${pct(g.inset.bottom)} ${pct(g.inset.left)})`
           } else {
             // Fallback for a kind with no geometry of its own. A 'fade' never
             // gets here — it has no snapshot to advance.

@@ -100,6 +100,8 @@ export type { RendererOptions } from './renderer/gpu/types'
 export { resolveDrawRect, transformFromContainRect, transformFromCoverRect, normalizeCrop, FULL_CROP } from './renderer/gpu/layers/drawRect'
 export type { CropRect } from './renderer/gpu/layers/drawRect'
 export { computeContainViewport } from './renderer/gpu/viewport'
+export { transitionGeometry } from './renderer/transitionGeometry'
+export type { TransitionGeometry } from './renderer/transitionGeometry'
 export { computeTextLayout, SIDE_MARGIN, LINE_HEIGHT } from './renderer/gpu/layers/textLayout'
 export type { TextLayout } from './renderer/gpu/layers/textLayout'
 
