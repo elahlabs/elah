@@ -268,7 +268,13 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       const playing = usePlaybackStore.getState().isPlaying
       const now = performance.now()
       const hasLoading = Object.values(clipLoadStore.getState().byClipId).some((s) => s === 'loading')
-      if (!playing && !dirty && !hasLoading) {
+      // A seek is one dirty tick, but decode is async: the tick paints whatever
+      // frame the cache already holds, and when the right one arrives nothing
+      // marks the loop dirty again. Clicking the ruler therefore used to leave
+      // the PREVIOUS seek's frame on screen until the user dragged or played.
+      // `isAwaitingFrames` keeps the loop awake until the frame that was asked
+      // for is the frame on screen (and gives up by itself if it never comes).
+      if (!playing && !dirty && !hasLoading && !renderer.isAwaitingFrames) {
         // Idle: no scene change possible; just keep the prewarm horizon warm.
         if (now - lastPrewarmAt >= PAUSED_PREWARM_INTERVAL_MS) {
           lastPrewarmAt = now

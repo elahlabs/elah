@@ -135,6 +135,21 @@ const DEFAULT_MAX_IDLE_PROVIDERS = 4
 const IDLE_REARM_AFTER_FRACTION = 0.5
 
 /**
+ * How long a clip may keep asking the render loop to come back for a frame the
+ * decoder has not produced yet.
+ *
+ * `draw()` paints whatever texture it holds when the cache misses, so a seek
+ * that lands on an undecoded frame leaves the PREVIOUS frame on screen. While
+ * paused the loop renders exactly one tick per dirty flag, and nothing marks it
+ * dirty again when the frame finally arrives — so that stale image is what the
+ * user looks at until they drag the playhead or press play. `isAwaitingFrames`
+ * is how the layer says "ask me again"; this deadline is what stops a frame
+ * that will never arrive (seek past the end of the media, a dead decoder) from
+ * spinning the loop at 60 Hz forever.
+ */
+const AWAIT_FRAME_TIMEOUT_MS = 4000
+
+/**
  * What a clip's media is doing while it has nothing drawable on screen.
  * Mirrors `ClipLoadState` in the clip-load store without importing it — this
  * layer has no business knowing a store exists.
@@ -248,6 +263,12 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private _holdoverContentSize: { width: number; height: number } | null = null
   /** Timeline frame at which each active clip last drew — stamps the holdover on release. */
   private readonly _lastDrawFrameByItemId = new Map<string, number>()
+  /**
+   * Clips drawn at a sourceFrame the cache could not supply, with the wall
+   * clock of the first miss for that frame. Read through `isAwaitingFrames` by
+   * the host's render loop; see AWAIT_FRAME_TIMEOUT_MS.
+   */
+  private readonly _awaitingByItemId = new Map<string, { since: number; sourceFrame: number }>()
 
   constructor(
     pool: TexturePool,
@@ -394,6 +415,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._contentSizeByItemId.delete(itemId)
     this._lastLoggedSourceFrameByItemId.delete(itemId)
     this._lastDrawFrameByItemId.delete(itemId)
+    this._awaitingByItemId.delete(itemId)
 
     const entry = this._providers.get(itemId)
     if (!entry) return
@@ -498,6 +520,17 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     provider.setPlayhead(item.sourceFrame)
     const frame = provider.getCurrent(item.sourceFrame)
 
+    if (frame === null) {
+      // Remember WHICH frame we are waiting for: a scrub walks the playhead, and
+      // a miss on a new frame is a fresh wait, not a continuation of the old one.
+      const pending = this._awaitingByItemId.get(item.id)
+      if (pending?.sourceFrame !== item.sourceFrame) {
+        this._awaitingByItemId.set(item.id, { since: Date.now(), sourceFrame: item.sourceFrame })
+      }
+    } else {
+      this._awaitingByItemId.delete(item.id)
+    }
+
     if (frame !== null) {
       // Single-owner rule: the FrameCache owns this frame and closes it on
       // eviction. We only BORROW it here — VideoTexture.upload() never closes it,
@@ -580,6 +613,25 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     ctx.gl.bindVertexArray(null)
   }
 
+  /**
+   * True while a drawn clip is still waiting for the frame it was asked to show.
+   *
+   * The host's render loop goes idle as soon as its dirty flag is consumed, and
+   * a cache miss is invisible to it — the layer silently keeps the previous
+   * frame. This is the only signal that says the picture on screen is not the
+   * picture that was asked for, so the loop should tick again instead of
+   * sleeping on a stale image. Waits older than AWAIT_FRAME_TIMEOUT_MS stop
+   * counting, so a frame that never arrives cannot hold the loop awake.
+   */
+  get isAwaitingFrames(): boolean {
+    if (this._awaitingByItemId.size === 0) return false
+    const cutoff = Date.now() - AWAIT_FRAME_TIMEOUT_MS
+    for (const pending of this._awaitingByItemId.values()) {
+      if (pending.since > cutoff) return true
+    }
+    return false
+  }
+
   dispose(): void {
     for (const texture of this._textures.values()) {
       texture.dispose()
@@ -589,6 +641,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._providerSrcByItemId.clear()
     this._contentSizeByItemId.clear()
     this._lastDrawFrameByItemId.clear()
+    this._awaitingByItemId.clear()
     this._holdoverTexture?.dispose()
     this._holdoverTexture = null
     this._holdoverFrame = Number.NEGATIVE_INFINITY

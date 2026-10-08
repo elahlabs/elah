@@ -292,6 +292,20 @@ export class GpuRenderer implements Renderer {
     this._noOpTicks = 0
   }
 
+  /**
+   * True while a drawn video clip is still waiting for the frame it was asked
+   * to show — i.e. the canvas is holding an older frame than the scene it was
+   * last given.
+   *
+   * A host that only renders when something changes has no other way to learn
+   * this: render() is synchronous and decode is not, so a seek onto an
+   * undecoded frame returns having painted the previous one. Treat this like a
+   * dirty flag the renderer sets for itself.
+   */
+  get isAwaitingFrames(): boolean {
+    return this._videoLayer?.isAwaitingFrames ?? false
+  }
+
   /** True while the WebGL context is lost. Hosts should pause resolve/prewarm work. */
   get isContextLost(): boolean {
     return this._glCtx?.isLost ?? false

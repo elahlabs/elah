@@ -492,6 +492,71 @@ describe('VideoLayer', () => {
       }
     }
   })
+
+  // Регресія: клік по лінійці — це один «брудний» тік. Якщо шар мовчить про
+  // промах кеша, цикл засинає на попередньому кадрі, і прев'ю назавжди
+  // відстає на один перехід.
+  it('reports an awaited frame when the cache misses, and stops once it arrives', () => {
+    const clip = makeClip({ sourceFrame: 120 })
+    layer.acquire(clip, ctx)
+
+    expect(layer.isAwaitingFrames).toBe(false)
+
+    provider.getCurrent.mockReturnValue(null)
+    layer.draw(clip, ctx)
+    expect(layer.isAwaitingFrames).toBe(true)
+
+    provider.getCurrent.mockReturnValue(mockFrame())
+    layer.draw(clip, ctx)
+    expect(layer.isAwaitingFrames).toBe(false)
+  })
+
+  it('gives up on a frame that never arrives instead of holding the loop awake', () => {
+    vi.useFakeTimers()
+    try {
+      const clip = makeClip({ sourceFrame: 9999 })
+      layer.acquire(clip, ctx)
+      provider.getCurrent.mockReturnValue(null)
+
+      layer.draw(clip, ctx)
+      expect(layer.isAwaitingFrames).toBe(true)
+
+      // Довше за AWAIT_FRAME_TIMEOUT_MS: далі такий кліп уже не будить цикл.
+      vi.advanceTimersByTime(5000)
+      expect(layer.isAwaitingFrames).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('restarts the wait when the playhead moves to another frame', () => {
+    vi.useFakeTimers()
+    try {
+      const clip = makeClip({ sourceFrame: 10 })
+      layer.acquire(clip, ctx)
+      provider.getCurrent.mockReturnValue(null)
+      layer.draw(clip, ctx)
+
+      vi.advanceTimersByTime(5000)
+      expect(layer.isAwaitingFrames).toBe(false)
+
+      layer.draw(makeClip({ sourceFrame: 11 }), ctx)
+      expect(layer.isAwaitingFrames).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a released clip stops asking for frames', () => {
+    const clip = makeClip({ sourceFrame: 42 })
+    layer.acquire(clip, ctx)
+    provider.getCurrent.mockReturnValue(null)
+    layer.draw(clip, ctx)
+    expect(layer.isAwaitingFrames).toBe(true)
+
+    layer.release(clip.id)
+    expect(layer.isAwaitingFrames).toBe(false)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -668,5 +733,5 @@ describe('VideoLayer provider replacement and holdover', () => {
     const stretched = buildVideoTransformMatrix(clipB, 1280, 720, undefined, undefined)
     expect(Array.from(fitted)).not.toEqual(Array.from(stretched))
     expect(Array.from(used)).toEqual(Array.from(fitted))
-  })
+})
 })
