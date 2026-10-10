@@ -112,6 +112,13 @@ function Harness() {
 
   const timelineRef = useRef<TimelineRef>(null)
   const lanesWidth = useRef(0)
+  // The store clamps to ZOOM_MIN / ZOOM_MAX. Pinch zoom is RN-T7; these buttons let RN-T5's
+  // ruler / playhead alignment be checked at several zoom levels until then.
+  const zoomBy = (factor: number) => {
+    const { zoom } = usePlaybackStore.getState()
+    run(`Zoom ×${factor.toFixed(2)}`, { type: 'setZoom', zoom: zoom * factor })
+  }
+
   const scrollToEnd = () => {
     const { totalFrames } = useTracksStore.getState()
     const { zoom } = usePlaybackStore.getState()
@@ -137,6 +144,8 @@ function Harness() {
             }}
           />
           <View style={styles.buttons}>
+            <Button label="Zoom −" onPress={() => zoomBy(1 / 1.5)} />
+            <Button label="Zoom +" onPress={() => zoomBy(1.5)} />
             <Button label="Scroll to start" onPress={() => timelineRef.current?.scrollTo(0)} />
             <Button label="Scroll to end" onPress={scrollToEnd} />
             <Button label="Load 200 clips" onPress={() => { loadStressFixture(engine); setLastCommand('(200 clips loaded; Reset to restore A, B, Title)') }} />
