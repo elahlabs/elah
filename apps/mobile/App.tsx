@@ -29,7 +29,7 @@ import {
 import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3, RN-T4).
+ * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
  * model, running on Hermes, drawn by the library's <Timeline>. The buttons
@@ -127,7 +127,7 @@ function Harness() {
 
         <Transport isPlaying={isPlaying} onToggle={togglePlay} />
 
-        <Section title="Timeline (RN-T4)">
+        <Section title="Timeline (RN-T4, RN-T5)">
           <Timeline
             ref={timelineRef}
             style={styles.timeline}
@@ -170,7 +170,9 @@ function Transport({ isPlaying, onToggle }: { isPlaying: boolean; onToggle: () =
   return (
     <View style={styles.transport}>
       <Button label={isPlaying ? 'Pause' : 'Play'} onPress={onToggle} />
-      <Text style={styles.timecode}>{framesToTimecode(frame, FPS)}</Text>
+      <Text style={styles.timecode}>
+        {framesToTimecode(frame, FPS)} · f{frame}
+      </Text>
       <Text style={styles.muted}>
         frame {frame} / {total}
       </Text>

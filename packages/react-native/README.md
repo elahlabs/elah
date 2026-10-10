@@ -6,7 +6,7 @@ React Native binding for the Elah video engine: the same `Project` document, the
 > **Status: pre-release, not on npm.** The timeline is being built first. The engine, the shared
 > `EditorProvider` and the timeline model bundle for Hermes and run in the dev harness
 > ([`apps/mobile`](../../apps/mobile/README.md)), verified on its web target so far; the first
-> run on a phone is owed. The `<Timeline>` component is next. Contributor
+> run on a phone is owed. The `<Timeline>` component has lanes, a ruler and a playhead; gestures on the lanes are next. Contributor
 > issues: [`docs/react-native/issues/`](../../docs/react-native/issues/README.md).
 
 ## Status
@@ -19,7 +19,7 @@ React Native binding for the Elah video engine: the same `Project` document, the
 | `EditorProvider` from this package | works | RN-T2 |
 | Dev harness (`apps/mobile`) | works (bundles verified; first on-device run owed) | RN-T3 |
 | `<Timeline>` lanes and clips | works (bundles verified; first on-device run owed) | RN-T4 |
-| Ruler, playhead, seek | not yet | RN-T5 |
+| Ruler, playhead, seek | works (bundles verified; first on-device run owed) | RN-T5 |
 | Move, trim, pinch, selection, undo on device | not yet | RN-T6 to RN-T9 |
 | `<Preview>` (Skia), video decode, audio, import, export | not yet | RN-P4 to RN-P10 |
 

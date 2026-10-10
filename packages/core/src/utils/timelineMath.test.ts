@@ -16,6 +16,7 @@ import {
   pinchZoom,
   pxToFrames,
   resolveZoomAnchorX,
+  seekFrameAtX,
   snapThresholdFrames,
   timelineContentWidth,
   TIMELINE_MIN_CONTENT_WIDTH,
@@ -50,6 +51,17 @@ describe('pxToFrames / xToFrame', () => {
   it('maps an absolute x to a non-negative frame', () => {
     expect(xToFrame(100, 4)).toBe(25)
     expect(xToFrame(-30, 4)).toBe(0)
+  })
+})
+
+describe('seekFrameAtX', () => {
+  it('adds scrollX before converting to a frame', () => {
+    expect(seekFrameAtX(100, 0, 4)).toBe(25)
+    expect(seekFrameAtX(100, 200, 4)).toBe(75)
+  })
+
+  it('clamps a touch left of the lanes to frame 0', () => {
+    expect(seekFrameAtX(-50, 0, 4)).toBe(0)
   })
 })
 

@@ -44,6 +44,11 @@ export function xToFrame(x: number, zoom: number): number {
   return Math.max(0, Math.round(x / zoom))
 }
 
+/** Viewport x (a touch on a ruler fixed above scrolled lanes) to a non-negative frame. */
+export function seekFrameAtX(x: number, scrollX: number, zoom: number): number {
+  return xToFrame(x + scrollX, zoom)
+}
+
 /**
  * Snap distance in frames for a given pixel tolerance. Snapping is a screen
  * property (how close the finger or pointer is), so the frame threshold grows

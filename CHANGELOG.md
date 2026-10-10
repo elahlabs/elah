@@ -16,7 +16,7 @@ versions independently, starting from its own 0.1.0.
 - **`@elah/core`: timeline geometry.** Pure helpers shared by every timeline UI, in
   `utils/timelineMath.ts`: `timelineContentWidth`, `computeRulerTicks`, `formatRulerLabel`,
   `computeAnchoredScrollLeft`, `resolveZoomAnchorX`, `wheelZoomStep`, `pinchZoom`, `clampZoom`
-  (`ZOOM_MIN` / `ZOOM_MAX`), `pxToFrames`, `xToFrame`, `snapThresholdFrames`,
+  (`ZOOM_MIN` / `ZOOM_MAX`), `pxToFrames`, `xToFrame`, `seekFrameAtX`, `snapThresholdFrames`,
   `isCompatibleTrackKind`, `isClipAllowedOnTrack`, and the trim limits `maxTrimDuration`,
   `minTrimDuration`, `minLeftTrimStart`, `neighbourBounds`, `clampLeftTrim`, `clampRightTrim`.
   Re-exported by `@elah/editor`.

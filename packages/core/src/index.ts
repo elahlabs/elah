@@ -242,6 +242,7 @@ export {
   timelineContentWidth,
   pxToFrames,
   xToFrame,
+  seekFrameAtX,
   snapThresholdFrames,
   ZOOM_MIN,
   ZOOM_MAX,

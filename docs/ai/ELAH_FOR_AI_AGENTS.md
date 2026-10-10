@@ -463,7 +463,7 @@ entries share store instances. `EditorProvider` is exported by `@elah/react` (an
 `getTotalFrames(project)` · `generateId()` · `splitClipAtPlayhead(engine)` ·
 `snapFrame(frame, points, threshold)` · `buildSnapPoints(clipsByTrack, excludeId?)` ·
 `clipsOverlap(a, b)` · `DEFAULT_OVERLAP_TOLERANCE` ·
-timeline geometry (pure): `timelineContentWidth(totalFrames, zoom)` · `computeRulerTicks(fps, totalFrames, zoom)` ·
+timeline geometry (pure): `timelineContentWidth(totalFrames, zoom)` · `seekFrameAtX(x, scrollX, zoom)` · `computeRulerTicks(fps, totalFrames, zoom)` ·
 `computeAnchoredScrollLeft(prevZoom, nextZoom, scrollLeft, anchorX)` · `pinchZoom` · `clampZoom` ·
 `isCompatibleTrackKind` · `isClipAllowedOnTrack` · `clampLeftTrim` / `clampRightTrim` · `neighbourBounds` ·
 `serializeProject(engine)` → string / `deserializeProject(engine, json)` → void ·
