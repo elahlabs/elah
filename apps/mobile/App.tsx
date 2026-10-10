@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
@@ -8,31 +8,34 @@ import {
   applyEngineCommand,
   beginMove,
   beginTrim,
-  clipRect,
   computeLaneSlots,
   defaultCommandTargets,
   endMove,
   endTrim,
-  fitToWindowZoom,
   framesToTimecode,
   snapshotFromStores,
+  Timeline,
+  timelineContentWidth,
+  timelineColors,
   updateMove,
   updateTrim,
   usePlaybackStore,
   useTimelineEngine,
   useTracksStore,
   type EngineCommand,
+  type TimelineRef,
+  type Track,
 } from '@elah/react-native'
-import { FPS, INITIAL_TRACKS, loadFixture, type FixtureIds } from './src/fixture'
+import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3).
+ * @elah/react-native dev harness (RN-T3, RN-T4).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
- * model, running on Hermes. The buttons drive the same begin/update/end
- * reducers a gesture will call, with the finger travel a gesture would report,
- * and apply the resulting command to the engine. The <Timeline> component
- * (RN-T4) replaces the debug view below.
+ * model, running on Hermes, drawn by the library's <Timeline>. The buttons
+ * drive the same begin/update/end reducers a gesture will call, with the
+ * finger travel a gesture would report, and apply the resulting command to
+ * the engine; the timeline shows each command land.
  */
 export default function App() {
   return (
@@ -107,6 +110,14 @@ function Harness() {
   const canUndo = useTracksStore((s) => s.canUndo)
   const canRedo = useTracksStore((s) => s.canRedo)
 
+  const timelineRef = useRef<TimelineRef>(null)
+  const lanesWidth = useRef(0)
+  const scrollToEnd = () => {
+    const { totalFrames } = useTracksStore.getState()
+    const { zoom } = usePlaybackStore.getState()
+    timelineRef.current?.scrollTo(Math.max(0, timelineContentWidth(totalFrames, zoom) - lanesWidth.current))
+  }
+
   return (
     <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
       <StatusBar style="light" />
@@ -116,8 +127,20 @@ function Harness() {
 
         <Transport isPlaying={isPlaying} onToggle={togglePlay} />
 
-        <Section title="Debug view (the real <Timeline> is RN-T4)">
-          <DebugLanes />
+        <Section title="Timeline (RN-T4)">
+          <Timeline
+            ref={timelineRef}
+            style={styles.timeline}
+            renderTrackIcon={TrackIcon}
+            onLayoutLanes={(layout) => {
+              lanesWidth.current = layout.width
+            }}
+          />
+          <View style={styles.buttons}>
+            <Button label="Scroll to start" onPress={() => timelineRef.current?.scrollTo(0)} />
+            <Button label="Scroll to end" onPress={scrollToEnd} />
+            <Button label="Load 200 clips" onPress={() => { loadStressFixture(engine); setLastCommand('(200 clips loaded; Reset to restore A, B, Title)') }} />
+          </View>
         </Section>
 
         <Section title="Gesture model → engine">
@@ -155,45 +178,11 @@ function Transport({ isPlaying, onToggle }: { isPlaying: boolean; onToggle: () =
   )
 }
 
-/** Fit-to-width, read-only drawing of the lanes using the model's layout helpers. */
-function DebugLanes() {
-  const tracks = useTracksStore((s) => s.tracks)
-  const clips = useTracksStore((s) => s.clips)
-  const totalFrames = useTracksStore((s) => s.totalFrames)
-  const frame = usePlaybackStore((s) => s.currentFrame)
-  const [width, setWidth] = useState(0)
+/** The library takes icons as a render prop; the harness uses text glyphs so it needs no icon set. */
+const TRACK_GLYPHS: Record<Track['kind'], string> = { video: '▶', audio: '♪', elements: 'T' }
 
-  const lanes = computeLaneSlots(tracks)
-  const zoom = width > 0 ? fitToWindowZoom(width, Math.max(totalFrames, FPS * 8), FPS) : 1
-  const height = lanes.length > 0 ? lanes[lanes.length - 1].bottom : 0
-
-  return (
-    <View style={[styles.lanes, { height }]} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
-      {lanes.map((lane) => (
-        <View key={lane.trackId} style={[styles.lane, { top: lane.top, height: lane.height }]} />
-      ))}
-      {lanes.flatMap((lane) =>
-        (clips[lane.trackId] ?? []).map((clip) => {
-          const r = clipRect(clip, zoom, lane)
-          return (
-            <View
-              key={clip.id}
-              style={[
-                styles.clip,
-                clip.type === 'text' ? styles.clipText : styles.clipVideo,
-                { left: r.x, top: r.y, width: r.width, height: r.height },
-              ]}
-            >
-              <Text numberOfLines={1} style={styles.clipLabel}>
-                {clip.name} {clip.startFrame}–{clip.startFrame + clip.durationFrames}
-              </Text>
-            </View>
-          )
-        }),
-      )}
-      {width > 0 && <View style={[styles.playhead, { left: frame * zoom, height }]} />}
-    </View>
-  )
+function TrackIcon(track: Track) {
+  return <Text style={styles.trackIcon}>{TRACK_GLYPHS[track.kind]}</Text>
 }
 
 function ClipList() {
@@ -241,13 +230,8 @@ const styles = StyleSheet.create({
   timecode: { color: '#f2f3f5', fontSize: 18, fontVariant: ['tabular-nums'] },
   section: { gap: 8 },
   sectionTitle: { color: '#c9ccd2', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  lanes: { position: 'relative', backgroundColor: '#161a21', borderRadius: 6, overflow: 'hidden' },
-  lane: { position: 'absolute', left: 0, right: 0, borderBottomWidth: 1, borderBottomColor: '#232833' },
-  clip: { position: 'absolute', borderRadius: 4, paddingHorizontal: 4, justifyContent: 'center' },
-  clipVideo: { backgroundColor: '#2f6fde' },
-  clipText: { backgroundColor: '#9a4fd0' },
-  clipLabel: { color: '#ffffff', fontSize: 11 },
-  playhead: { position: 'absolute', top: 0, width: 2, backgroundColor: '#ff5c5c' },
+  timeline: { borderRadius: 6, overflow: 'hidden' },
+  trackIcon: { color: timelineColors.textMuted, fontSize: 12, width: 12, textAlign: 'center' },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   button: { backgroundColor: '#262b35', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6, minHeight: 40, justifyContent: 'center' },
   buttonPressed: { backgroundColor: '#323946' },

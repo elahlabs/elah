@@ -18,7 +18,7 @@ React Native binding for the Elah video engine: the same `Project` document, the
 | Bundles under Metro / Hermes (via `@elah/core/engine`) | works (Android + iOS bundles) | RN-T1 |
 | `EditorProvider` from this package | works | RN-T2 |
 | Dev harness (`apps/mobile`) | works (bundles verified; first on-device run owed) | RN-T3 |
-| `<Timeline>` lanes and clips | not yet | RN-T4 |
+| `<Timeline>` lanes and clips | works (bundles verified; first on-device run owed) | RN-T4 |
 | Ruler, playhead, seek | not yet | RN-T5 |
 | Move, trim, pinch, selection, undo on device | not yet | RN-T6 to RN-T9 |
 | `<Preview>` (Skia), video decode, audio, import, export | not yet | RN-P4 to RN-P10 |

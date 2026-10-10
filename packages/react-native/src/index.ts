@@ -54,6 +54,7 @@ export {
   framesToSeconds,
   framesToTimecode,
   splitClipAtPlayhead,
+  timelineContentWidth,
   tracksStore,
   playbackStore,
   selectionStore,

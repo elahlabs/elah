@@ -1,7 +1,19 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src"
+    "rootDir": "./src",
+    // React Native needs React 19 and the root workspace hoists React 18, so
+    // the RN peers are not installed at the root (see the package's
+    // peerDependenciesMeta). Types for them, and for React, come from the
+    // harness install: run `npm install` in apps/mobile first.
+    "paths": {
+      "react": ["../../apps/mobile/node_modules/@types/react"],
+      "react/*": ["../../apps/mobile/node_modules/@types/react/*"],
+      "react-native": ["../../apps/mobile/node_modules/react-native"],
+      "react-native-gesture-handler": ["../../apps/mobile/node_modules/react-native-gesture-handler"],
+      "react-native-reanimated": ["../../apps/mobile/node_modules/react-native-reanimated"],
+      "react-native-worklets": ["../../apps/mobile/node_modules/react-native-worklets"]
+    }
   },
   "include": ["src"]
 }

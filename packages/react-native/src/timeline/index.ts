@@ -1,10 +1,11 @@
 /**
  * The mobile timeline.
  *
- * Today this is the model only (`./model`): lane layout, the move / trim /
- * pinch reducers and the command applier, all platform-free and tested in
- * Node. The `<Timeline>` component that renders lanes with Reanimated and
- * wires react-native-gesture-handler recognisers to these reducers is the
- * RN-T3 .. RN-T7 workstreams in `docs/react-native/04-workstreams.md`.
+ * `./model` is platform-free: lane layout, the move / trim / pinch reducers
+ * and the command applier, tested in Node. `./components` renders it with
+ * React Native and Reanimated: `<Timeline>` draws the lanes and clips and
+ * scrolls (RN-T4); the ruler, playhead and gestures that drive the reducers
+ * are RN-T5 to RN-T9 in `docs/react-native/04-workstreams.md`.
  */
 export * from './model'
+export * from './components'

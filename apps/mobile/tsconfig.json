@@ -8,8 +8,9 @@
     // from src; TypeScript reading src would pull core's DOM-typed renderer
     // into a React Native program.
     //
-    // react / react-native are pinned to THIS app's copies: the packages'
-    // declarations would otherwise resolve the repo root's React 18 types.
+    // react, react-native and the Reanimated / gesture-handler peers are pinned
+    // to THIS app's copies: the packages' declarations would otherwise resolve
+    // the repo root's React 18 types.
     "paths": {
       "@elah/core": ["../../packages/core/dist/index.d.ts"],
       "@elah/core/engine": ["../../packages/core/dist/engine.d.ts"],
@@ -17,6 +18,10 @@
       "@elah/react-native": ["../../packages/react-native/dist/index.d.ts"],
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"],
+      "react-native": ["./node_modules/react-native"],
+      "react-native-gesture-handler": ["./node_modules/react-native-gesture-handler"],
+      "react-native-reanimated": ["./node_modules/react-native-reanimated"],
+      "react-native-worklets": ["./node_modules/react-native-worklets"],
       "zustand": ["./node_modules/zustand"],
       "zustand/*": ["./node_modules/zustand/*"],
       "immer": ["./node_modules/immer"]
