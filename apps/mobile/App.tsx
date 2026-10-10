@@ -29,7 +29,7 @@ import {
 import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3, RN-T4).
+ * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T8).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
  * model, running on Hermes, drawn by the library's <Timeline>. The buttons
@@ -127,7 +127,7 @@ function Harness() {
 
         <Transport isPlaying={isPlaying} onToggle={togglePlay} />
 
-        <Section title="Timeline (RN-T4)">
+        <Section title="Timeline (RN-T4, RN-T5, RN-T8)">
           <Timeline
             ref={timelineRef}
             style={styles.timeline}
@@ -136,7 +136,11 @@ function Harness() {
               lanesWidth.current = layout.width
             }}
           />
+          <ZoomReadout />
           <View style={styles.buttons}>
+            <Button label="Zoom −" onPress={() => timelineRef.current?.zoomAtPlayhead(usePlaybackStore.getState().zoom * (1 / 1.5))} />
+            <Button label="Zoom +" onPress={() => timelineRef.current?.zoomAtPlayhead(usePlaybackStore.getState().zoom * 1.5)} />
+            <Button label="Fit" onPress={() => timelineRef.current?.fitToWindow()} />
             <Button label="Scroll to start" onPress={() => timelineRef.current?.scrollTo(0)} />
             <Button label="Scroll to end" onPress={scrollToEnd} />
             <Button label="Load 200 clips" onPress={() => { loadStressFixture(engine); setLastCommand('(200 clips loaded; Reset to restore A, B, Title)') }} />
@@ -170,11 +174,35 @@ function Transport({ isPlaying, onToggle }: { isPlaying: boolean; onToggle: () =
   return (
     <View style={styles.transport}>
       <Button label={isPlaying ? 'Pause' : 'Play'} onPress={onToggle} />
-      <Text style={styles.timecode}>{framesToTimecode(frame, FPS)}</Text>
+      <Text style={styles.timecode}>
+        {framesToTimecode(frame, FPS)} · f{frame}
+      </Text>
       <Text style={styles.muted}>
         frame {frame} / {total}
       </Text>
     </View>
+  )
+}
+
+/**
+ * Shows the committed zoom and how many times the store's zoom has changed. A pinch
+ * should add exactly one to the counter when it ends, never one per move.
+ */
+function ZoomReadout() {
+  const zoom = usePlaybackStore((s) => s.zoom)
+  const [, setTick] = useState(0)
+  const count = useRef(0)
+  const lastZoom = useRef(zoom)
+  useEffect(() => {
+    if (lastZoom.current === zoom) return // first render, or a re-render without a change
+    lastZoom.current = zoom
+    count.current += 1
+    setTick((t) => t + 1) // re-render so the counter on screen catches up
+  }, [zoom])
+  return (
+    <Text style={styles.muted}>
+      zoom {zoom.toFixed(2)} · setZoom ×{count.current}
+    </Text>
   )
 }
 

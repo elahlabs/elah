@@ -27,6 +27,8 @@ export type EngineCommand =
   | { type: 'setZoom'; zoom: number }
   | { type: 'undo' }
   | { type: 'redo' }
+  | { type: 'play' }
+  | { type: 'pause' }
 
 /**
  * The narrow surface a command may touch. Structural so tests can pass fakes
@@ -34,7 +36,7 @@ export type EngineCommand =
  */
 export interface CommandTargets {
   engine: Pick<TimelineEngine, 'moveClip' | 'trimClip' | 'removeClip' | 'undo' | 'redo'>
-  playback: { getState(): Pick<PlaybackActions, 'setCurrentFrame' | 'setZoom'> }
+  playback: { getState(): Pick<PlaybackActions, 'setCurrentFrame' | 'setZoom' | 'play' | 'pause'> }
   selection: { getState(): Pick<SelectionActions, 'selectClip' | 'clearSelection'> }
 }
 
@@ -81,6 +83,12 @@ export function applyEngineCommand(targets: CommandTargets, command: EngineComma
       return
     case 'redo':
       targets.engine.redo()
+      return
+    case 'play':
+      targets.playback.getState().play()
+      return
+    case 'pause':
+      targets.playback.getState().pause()
       return
     default: {
       // Exhaustiveness: a new command variant fails to compile here until it is handled.

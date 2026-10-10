@@ -22,6 +22,14 @@ export const timelineColors = {
   textOnClip: 'rgba(255, 255, 255, 0.95)',
   /** --elah-selection-border */
   selection: '#00c2ff',
+  /** --elah-bg-panel: the ruler strip (the web ruler uses `bg-ed-panel`). */
+  rulerBackground: '#121722',
+  /** --elah-tick-color: ruler tick marks. */
+  tick: '#394146',
+  /** --elah-tick-label: ruler timecode labels. */
+  tickLabel: '#7a858b',
+  /** --elah-playhead: the playhead needle (white by default on web). */
+  playhead: '#ffffff',
   /** --elah-clip-<type>-{mid|bottom} as body, --elah-clip-<type>-accent as the left stripe. */
   clip: {
     video: { body: '#2563eb', accent: '#60a5fa' },

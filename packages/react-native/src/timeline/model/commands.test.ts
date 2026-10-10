@@ -157,6 +157,15 @@ describe('transport, selection and zoom commands', () => {
     expect(playbackStore.getState().zoom).toBe(50)
   })
 
+  it('plays and pauses through the playback store', () => {
+    const f = buildFixture()
+    const targets = defaultCommandTargets(f.engine)
+    applyEngineCommand(targets, { type: 'play' })
+    expect(playbackStore.getState().isPlaying).toBe(true)
+    applyEngineCommand(targets, { type: 'pause' })
+    expect(playbackStore.getState().isPlaying).toBe(false)
+  })
+
   it('removes a clip, and undo / redo go through the engine', () => {
     const f = buildFixture()
     const targets = defaultCommandTargets(f.engine)
@@ -176,7 +185,7 @@ describe('transport, selection and zoom commands', () => {
       undo: vi.fn(() => true),
       redo: vi.fn(() => true),
     }
-    const playback = { setCurrentFrame: vi.fn(), setZoom: vi.fn() }
+    const playback = { setCurrentFrame: vi.fn(), setZoom: vi.fn(), play: vi.fn(), pause: vi.fn() }
     const selection = { selectClip: vi.fn(), clearSelection: vi.fn() }
     const targets: CommandTargets = {
       engine,
@@ -190,6 +199,11 @@ describe('transport, selection and zoom commands', () => {
     expect(engine.trimClip).toHaveBeenCalledWith('c', 't1', 3, 9)
     applyEngineCommand(targets, { type: 'seek', frame: 5 })
     expect(playback.setCurrentFrame).toHaveBeenCalledWith(5)
+    applyEngineCommand(targets, { type: 'play' })
+    expect(playback.play).toHaveBeenCalledOnce()
+    expect(playback.pause).not.toHaveBeenCalled()
+    applyEngineCommand(targets, { type: 'pause' })
+    expect(playback.pause).toHaveBeenCalledOnce()
     expect(selection.selectClip).not.toHaveBeenCalled()
     expect(engine.removeClip).not.toHaveBeenCalled()
   })

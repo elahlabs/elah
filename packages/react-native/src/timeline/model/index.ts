@@ -33,5 +33,12 @@ export type { MoveSession, MoveInput, MovePreview, MoveOptions } from './moveGes
 export { beginTrim, updateTrim, endTrim } from './trimGesture'
 export type { TrimEdge, TrimSession, TrimPreview, TrimOptions } from './trimGesture'
 
-export { beginPinch, updatePinch, anchoredZoom, zoomAtPlayhead, fitToWindowZoom } from './zoomGesture'
+export {
+  beginPinch,
+  updatePinch,
+  pinchPreviewTransform,
+  anchoredZoom,
+  zoomAtPlayhead,
+  fitToWindowZoom,
+} from './zoomGesture'
 export type { PinchSession, ZoomPreview } from './zoomGesture'
