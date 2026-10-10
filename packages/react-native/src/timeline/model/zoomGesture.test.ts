@@ -1,6 +1,34 @@
 import { describe, expect, it } from 'vitest'
 import { computeAnchoredScrollLeft, ZOOM_MAX, ZOOM_MIN } from '@elah/core'
-import { anchoredZoom, beginPinch, fitToWindowZoom, updatePinch, zoomAtPlayhead } from './zoomGesture'
+import {
+  anchoredZoom,
+  beginPinch,
+  fitToWindowZoom,
+  pinchPreviewTransform,
+  updatePinch,
+  zoomAtPlayhead,
+} from './zoomGesture'
+
+describe('pinchPreviewTransform', () => {
+  it('is the identity when the preview equals the starting state', () => {
+    const s = beginPinch(4, 100, 50)
+    expect(pinchPreviewTransform(s, updatePinch(s, 1))).toEqual({ scale: 1, tx: 0 })
+  })
+
+  it('maps a 2x pinch onto the previewed scroll offset', () => {
+    const s = beginPinch(4, 100, 50)
+    const preview = updatePinch(s, 2)
+    expect(preview.scrollX).toBe(250)
+    expect(pinchPreviewTransform(s, preview)).toEqual({ scale: 2, tx: -150 })
+  })
+
+  it('keeps the anchor frame under the midpoint', () => {
+    const s = beginPinch(4, 100, 50)
+    const { scale, tx } = pinchPreviewTransform(s, updatePinch(s, 2))
+    // Frame 37.5 (under x = 50 at the start) is laid out at 37.5 * 4 at zoom 4, then scaled and shifted.
+    expect(37.5 * 4 * scale + tx - s.startScrollX).toBeCloseTo(50, 10)
+  })
+})
 
 describe('pinch', () => {
   it('scales the starting zoom and keeps the frame under the fingers still', () => {

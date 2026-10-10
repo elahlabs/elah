@@ -9,6 +9,16 @@ export interface PlayheadProps {
   scrollX: SharedValue<number>
   /** Pixels per frame. */
   zoom: number
+  /**
+   * Live pinch preview scale. 1 when idle. Written on the UI thread by `Timeline`
+   * during a pinch; the needle position follows it without a React re-render.
+   */
+  pinchScale: SharedValue<number>
+  /**
+   * Live pinch preview translation, px. 0 when idle. Used with `pinchScale` to
+   * place the needle on the previewed zoom.
+   */
+  pinchTx: SharedValue<number>
 }
 
 /**
@@ -17,8 +27,11 @@ export interface PlayheadProps {
  * frame changes every tick, and routing that through `useState` would
  * re-render the timeline on every frame. Writing the shared value moves the
  * needle on the UI thread without touching React at all.
+ *
+ * During a pinch the needle follows the live preview (`pinchScale` / `pinchTx`)
+ * with the same formula as the lanes and ruler.
  */
-export const Playhead = memo(function Playhead({ scrollX, zoom }: PlayheadProps) {
+export const Playhead = memo(function Playhead({ scrollX, zoom, pinchScale, pinchTx }: PlayheadProps) {
   const frame = useSharedValue(playbackStore.getState().currentFrame)
 
   useEffect(() => {
@@ -30,7 +43,9 @@ export const Playhead = memo(function Playhead({ scrollX, zoom }: PlayheadProps)
   }, [frame])
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: frame.value * zoom - scrollX.value }],
+    transform: [
+      { translateX: frame.value * zoom * pinchScale.value + pinchTx.value - scrollX.value },
+    ],
   }))
 
   return (

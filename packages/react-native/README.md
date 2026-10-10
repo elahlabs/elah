@@ -20,7 +20,8 @@ React Native binding for the Elah video engine: the same `Project` document, the
 | Dev harness (`apps/mobile`) | works (bundles verified; first on-device run owed) | RN-T3 |
 | `<Timeline>` lanes and clips | works (bundles verified; first on-device run owed) | RN-T4 |
 | Ruler, playhead, seek | works (bundles verified; first on-device run owed) | RN-T5 |
-| Move, trim, pinch, selection, undo on device | not yet | RN-T6 to RN-T9 |
+| Pinch zoom, fit to window | works (first on-device run owed) | RN-T8 |
+| Move, trim, selection, undo on device | not yet | RN-T6, RN-T7, RN-T9 |
 | `<Preview>` (Skia), video decode, audio, import, export | not yet | RN-P4 to RN-P10 |
 
 ## How the timeline model works

@@ -48,6 +48,18 @@ export function updatePinch(
   return { zoom, scrollX }
 }
 
+/**
+ * Transform that shows `preview` on content laid out at `session.startZoom` and
+ * scrolled to `session.startScrollX`. A content point at lane x `c` lands at
+ * `c * scale + tx - startScrollX` while the ScrollView is still at its start offset.
+ */
+export function pinchPreviewTransform(
+  session: PinchSession,
+  preview: ZoomPreview,
+): { scale: number; tx: number } {
+  return { scale: preview.zoom / session.startZoom, tx: session.startScrollX - preview.scrollX }
+}
+
 /** A discrete zoom change anchored at `anchorX` (lane space). */
 export function anchoredZoom(
   prevZoom: number,

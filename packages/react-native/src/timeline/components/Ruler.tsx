@@ -23,6 +23,16 @@ export interface RulerProps {
   height: number
   /** Target distance between labels, px. */
   targetSpacingPx: number
+  /**
+   * Live pinch preview scale, applied to the inner row with `transformOrigin: 'left'`.
+   * 1 when idle. Written on the UI thread by `Timeline` during a pinch; never re-renders.
+   */
+  pinchScale: SharedValue<number>
+  /**
+   * Live pinch preview translation, px, applied before `pinchScale`. 0 when idle.
+   * Together with `pinchScale` it makes the strip follow a pinch without React re-renders.
+   */
+  pinchTx: SharedValue<number>
 }
 
 /**
@@ -34,6 +44,10 @@ export interface RulerProps {
  * pauses for the scrub and resumes on release. Seeks go through
  * `applyEngineCommand`, the package's only mutation funnel.
  *
+ * During a pinch the strip shows a live preview: the inner row is scaled and
+ * translated by `pinchScale` / `pinchTx` (see `Timeline`), so labels stretch
+ * briefly until the committed zoom re-lays them out.
+ *
  * Reads no `currentFrame`: the playhead owns that subscription.
  */
 export const Ruler = memo(function Ruler({
@@ -43,6 +57,8 @@ export const Ruler = memo(function Ruler({
   fps,
   height,
   targetSpacingPx,
+  pinchScale,
+  pinchTx,
 }: RulerProps) {
   const ticks = useMemo(
     () => computeRulerTicks(fps, totalFrames, zoom, targetSpacingPx),
@@ -95,7 +111,7 @@ export const Ruler = memo(function Ruler({
   }, [seek, targets])
 
   const innerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -scrollX.value }],
+    transform: [{ translateX: pinchTx.value - scrollX.value }, { scaleX: pinchScale.value }],
   }))
 
   return (
@@ -120,6 +136,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     position: 'relative',
+    transformOrigin: 'left',
   },
   tick: {
     position: 'absolute',
