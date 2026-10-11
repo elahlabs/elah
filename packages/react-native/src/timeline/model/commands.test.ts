@@ -177,11 +177,34 @@ describe('transport, selection and zoom commands', () => {
     expect(f.engine.findClip(f.b.id)).toBeNull()
   })
 
+  it('removes several clips as one batched, undoable delete', () => {
+    const f = buildFixture()
+    const targets = defaultCommandTargets(f.engine)
+    const batch = vi.spyOn(f.engine, 'batch')
+    applyEngineCommand(targets, {
+      type: 'removeClips',
+      clips: [
+        { clipId: f.a.id, trackId: f.v1.id },
+        { clipId: f.title.id, trackId: f.elements.id },
+      ],
+    })
+    expect(batch).toHaveBeenCalledOnce()
+    expect(batch).toHaveBeenCalledWith(expect.any(Function), 'Delete clip')
+    expect(f.engine.findClip(f.a.id)).toBeNull()
+    expect(f.engine.findClip(f.title.id)).toBeNull()
+    expect(f.engine.findClip(f.b.id)).not.toBeNull()
+
+    applyEngineCommand(targets, { type: 'undo' })
+    expect(f.engine.findClip(f.a.id)).not.toBeNull()
+    expect(f.engine.findClip(f.title.id)).not.toBeNull()
+  })
+
   it('touches nothing but the named target for each command', () => {
     const engine = {
       moveClip: vi.fn(),
       trimClip: vi.fn(),
       removeClip: vi.fn(),
+      batch: vi.fn((fn: () => void) => fn()),
       undo: vi.fn(() => true),
       redo: vi.fn(() => true),
     }
@@ -206,5 +229,35 @@ describe('transport, selection and zoom commands', () => {
     expect(playback.pause).toHaveBeenCalledOnce()
     expect(selection.selectClip).not.toHaveBeenCalled()
     expect(engine.removeClip).not.toHaveBeenCalled()
+  })
+
+  it('removeClips batches once with the Delete description and removes each clip', () => {
+    const engine = {
+      moveClip: vi.fn(),
+      trimClip: vi.fn(),
+      removeClip: vi.fn(),
+      batch: vi.fn((fn: () => void) => fn()),
+      undo: vi.fn(() => true),
+      redo: vi.fn(() => true),
+    }
+    const targets: CommandTargets = {
+      engine,
+      playback: { getState: () => ({ setCurrentFrame: vi.fn(), setZoom: vi.fn(), play: vi.fn(), pause: vi.fn() }) },
+      selection: { getState: () => ({ selectClip: vi.fn(), clearSelection: vi.fn() }) },
+    }
+
+    applyEngineCommand(targets, {
+      type: 'removeClips',
+      clips: [
+        { clipId: 'c1', trackId: 't1' },
+        { clipId: 'c2', trackId: 't2' },
+      ],
+    })
+    expect(engine.batch).toHaveBeenCalledOnce()
+    expect(engine.batch).toHaveBeenCalledWith(expect.any(Function), 'Delete clip')
+    expect(engine.removeClip).toHaveBeenCalledTimes(2)
+    expect(engine.removeClip).toHaveBeenNthCalledWith(1, 'c1', 't1')
+    expect(engine.removeClip).toHaveBeenNthCalledWith(2, 'c2', 't2')
+    expect(engine.moveClip).not.toHaveBeenCalled()
   })
 })

@@ -21,6 +21,7 @@ export type EngineCommand =
   | { type: 'moveClip'; clipId: string; fromTrackId: string; toTrackId: string; startFrame: number }
   | { type: 'trimClip'; clipId: string; trackId: string; startFrame: number; durationFrames: number }
   | { type: 'removeClip'; clipId: string; trackId: string }
+  | { type: 'removeClips'; clips: ReadonlyArray<{ clipId: string; trackId: string }> }
   | { type: 'seek'; frame: number }
   | { type: 'selectClip'; clipId: string }
   | { type: 'clearSelection' }
@@ -35,7 +36,7 @@ export type EngineCommand =
  * and so the package does not import zustand's types for a `getState`.
  */
 export interface CommandTargets {
-  engine: Pick<TimelineEngine, 'moveClip' | 'trimClip' | 'removeClip' | 'undo' | 'redo'>
+  engine: Pick<TimelineEngine, 'moveClip' | 'trimClip' | 'removeClip' | 'batch' | 'undo' | 'redo'>
   playback: { getState(): Pick<PlaybackActions, 'setCurrentFrame' | 'setZoom' | 'play' | 'pause'> }
   selection: { getState(): Pick<SelectionActions, 'selectClip' | 'clearSelection'> }
 }
@@ -65,6 +66,12 @@ export function applyEngineCommand(targets: CommandTargets, command: EngineComma
       return
     case 'removeClip':
       targets.engine.removeClip(command.clipId, command.trackId)
+      return
+    case 'removeClips':
+      // One undo entry for the whole selection, as the web timeline's Delete does.
+      targets.engine.batch(() => {
+        for (const c of command.clips) targets.engine.removeClip(c.clipId, c.trackId)
+      }, 'Delete clip')
       return
     case 'seek':
       targets.playback.getState().setCurrentFrame(command.frame)

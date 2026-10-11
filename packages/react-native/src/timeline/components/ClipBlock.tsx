@@ -43,11 +43,17 @@ export interface ClipBlockProps {
  * (`beginMove` / `updateMove` / `endMove`); this component only recognises the
  * gesture and shows it.
  *
+ * RN-T9: tap a clip to select it (`selectClip`). Picking a clip up with the
+ * long press also selects it, so a locked clip is selectable even though it
+ * cannot be dragged. The tap and the pan are combined with `Gesture.Exclusive`:
+ * the pan wins, and a quick tap fails the long-press pan, which lets the tap fire.
+ *
  * Callbacks run on the JS thread (`runOnJS(true)`) because the model is plain
  * JS. During the drag only shared values change: the block's transform, its
  * lift, and the timecode bubble's text. React does not re-render per move. The
  * release makes exactly one engine command (`applyEngineCommand`, in `onEnd`),
  * and the block then re-renders at its new place and the offset is reset.
+ * Selection changes go through `applyEngineCommand` too.
  *
  * Memoised, and nothing it reads changes while the lanes scroll (the offset is
  * a shared value, never React state), so scrolling re-renders no block.
@@ -89,65 +95,74 @@ export const ClipBlock = memo(function ClipBlock({ clip, lane, zoom }: ClipBlock
     }
   }, [clip.startFrame, lane.top, lane.trackId, reset])
 
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .activateAfterLongPress(LONG_PRESS_MS)
-        .onStart((e) => {
-          const s = beginMove(clip.id, snapshotFromStores(), { snapTolerancePx: TOUCH_SNAP_TOLERANCE_PX })
-          session.current = s
-          if (!s) return
-          // `e.y` is relative to the block, which is untransformed at the start.
-          startY.current = clipRect(clip, zoom, lane).y + e.y
-          dragging.value = 1
-          const p = updateMove(s, { translationX: 0, pointerY: startY.current })
-          preview.current = p
+  const gesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      .runOnJS(true)
+      .activateAfterLongPress(LONG_PRESS_MS)
+      .onStart((e) => {
+        // Picking a clip up selects it, even when it is locked and cannot move.
+        applyEngineCommand(targets, { type: 'selectClip', clipId: clip.id })
+        const s = beginMove(clip.id, snapshotFromStores(), { snapTolerancePx: TOUCH_SNAP_TOLERANCE_PX })
+        session.current = s
+        if (!s) return
+        // `e.y` is relative to the block, which is untransformed at the start.
+        startY.current = clipRect(clip, zoom, lane).y + e.y
+        dragging.value = 1
+        const p = updateMove(s, { translationX: 0, pointerY: startY.current })
+        preview.current = p
+        bubbleText.value = framesToTimecode(p.startFrame, fps)
+      })
+      .onUpdate((e) => {
+        const s = session.current
+        if (!s) return
+        const p = updateMove(s, {
+          translationX: e.translationX,
+          pointerY: startY.current + e.translationY,
+        })
+        const prev = preview.current
+        preview.current = p
+        dx.value = p.dx
+        dy.value = p.dy
+        if (!prev || prev.startFrame !== p.startFrame) {
           bubbleText.value = framesToTimecode(p.startFrame, fps)
-        })
-        .onUpdate((e) => {
-          const s = session.current
-          if (!s) return
-          const p = updateMove(s, {
-            translationX: e.translationX,
-            pointerY: startY.current + e.translationY,
-          })
-          const prev = preview.current
-          preview.current = p
-          dx.value = p.dx
-          dy.value = p.dy
-          if (!prev || prev.startFrame !== p.startFrame) {
-            bubbleText.value = framesToTimecode(p.startFrame, fps)
-          }
-        })
-        .onEnd((_e, success) => {
-          const s = session.current
-          const p = preview.current
-          if (!success || !s || !p) {
-            reset()
-            return
-          }
-          const cmd = endMove(s, p, snapshotFromStores())
-          if (cmd) applyEngineCommand(targets, cmd)
+        }
+      })
+      .onEnd((_e, success) => {
+        const s = session.current
+        const p = preview.current
+        if (!success || !s || !p) {
+          reset()
+          return
+        }
+        const cmd = endMove(s, p, snapshotFromStores())
+        if (cmd) applyEngineCommand(targets, cmd)
 
-          const after = findClipInSnapshot(tracksStore.getState(), s.clip.id)
-          const moved =
-            after !== null && (after.trackId !== s.originTrackId || after.clip.startFrame !== s.clip.startFrame)
-          if (moved) {
-            pendingReset.current = true
-          } else {
-            // Nothing changed, or the engine rejected the move: nothing will re-render.
-            reset()
-          }
-        })
-        .onFinalize(() => {
-          // A cancelled gesture never reaches onEnd. A committed move keeps its offset until the re-render.
-          if (!pendingReset.current) reset()
-          session.current = null
-          preview.current = null
-        }),
-    [clip, lane, zoom, targets, fps, dx, dy, dragging, bubbleText, reset],
-  )
+        const after = findClipInSnapshot(tracksStore.getState(), s.clip.id)
+        const moved =
+          after !== null && (after.trackId !== s.originTrackId || after.clip.startFrame !== s.clip.startFrame)
+        if (moved) {
+          pendingReset.current = true
+        } else {
+          // Nothing changed, or the engine rejected the move: nothing will re-render.
+          reset()
+        }
+      })
+      .onFinalize(() => {
+        // A cancelled gesture never reaches onEnd. A committed move keeps its offset until the re-render.
+        if (!pendingReset.current) reset()
+        session.current = null
+        preview.current = null
+      })
+
+    // A quick tap fails the long-press pan, so the tap fires. A long press or a move wins the pan.
+    const tap = Gesture.Tap()
+      .runOnJS(true)
+      .onEnd((_e, success) => {
+        if (success) applyEngineCommand(targets, { type: 'selectClip', clipId: clip.id })
+      })
+
+    return Gesture.Exclusive(pan, tap)
+  }, [clip, lane, zoom, targets, fps, dx, dy, dragging, bubbleText, reset])
 
   const blockStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: dx.value }, { translateY: dy.value }],

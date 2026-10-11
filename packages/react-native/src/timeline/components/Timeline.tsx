@@ -7,7 +7,15 @@ import {
   useRef,
   type ReactNode,
 } from 'react'
-import { StyleSheet, Text, View, type LayoutRectangle, type StyleProp, type ViewStyle } from 'react-native'
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutRectangle,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
 import Animated, {
   useAnimatedRef,
   useAnimatedStyle,
@@ -92,7 +100,9 @@ export interface TimelineProps {
  * (RN-T5). Pinch anywhere in the right column to zoom (RN-T8): the pinch
  * shows a live preview on the UI thread and commits one zoom change on
  * release. Long-press a clip, then drag to move it (RN-T6); the gesture lives
- * in `ClipBlock`.
+ * in `ClipBlock`. RN-T9: the lanes are no longer read-only. Tap a clip to select
+ * it, and tap empty lane space to clear the selection. Both go through
+ * `applyEngineCommand`; the lane backgrounds are `Pressable`s under the clip blocks.
  *
  * Geometry comes from the platform-free model (`computeLaneSlots`, `clipRect`)
  * and `timelineContentWidth` from core, so positions match the web timeline
@@ -285,7 +295,13 @@ export const Timeline = forwardRef<TimelineRef, TimelineProps>(function Timeline
           >
             <Animated.View style={[{ width: contentWidth, height, transformOrigin: 'left' }, lanesStyle]}>
               {lanes.map((lane) => (
-                <View key={lane.trackId} style={[styles.lane, { top: lane.top, height: lane.height }]} />
+                <Pressable
+                  key={lane.trackId}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear selection"
+                  onPress={() => applyEngineCommand(targets, { type: 'clearSelection' })}
+                  style={[styles.lane, { top: lane.top, height: lane.height }]}
+                />
               ))}
               {lanes.flatMap((lane) =>
                 (clips[lane.trackId] ?? []).map((clip) => <ClipBlock key={clip.id} clip={clip} lane={lane} zoom={zoom} />),

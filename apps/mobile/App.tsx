@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
@@ -10,11 +10,14 @@ import {
   beginTrim,
   computeLaneSlots,
   defaultCommandTargets,
+  deserializeProject,
   endMove,
   endTrim,
   framesToTimecode,
+  serializeProject,
   snapshotFromStores,
   Timeline,
+  TimelineToolbar,
   timelineContentWidth,
   timelineColors,
   updateMove,
@@ -29,7 +32,7 @@ import {
 import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T6, RN-T8).
+ * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T6, RN-T8, RN-T9).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
  * model, running on Hermes, drawn by the library's <Timeline>. The buttons
@@ -53,6 +56,9 @@ function Harness() {
   const engine = useTimelineEngine()
   const [ids, setIds] = useState<FixtureIds | null>(null)
   const [lastCommand, setLastCommand] = useState<string>('(none yet)')
+  const [exportedJson, setExportedJson] = useState<string>('')
+  const [importText, setImportText] = useState<string>('')
+  const [importStatus, setImportStatus] = useState<string>('')
 
   useEffect(() => {
     setIds(loadFixture(engine))
@@ -127,7 +133,7 @@ function Harness() {
 
         <Transport isPlaying={isPlaying} onToggle={togglePlay} />
 
-        <Section title="Timeline (RN-T4, RN-T5, RN-T6, RN-T8)">
+        <Section title="Timeline (RN-T4 to RN-T9)">
           <Timeline
             ref={timelineRef}
             style={styles.timeline}
@@ -136,12 +142,12 @@ function Harness() {
               lanesWidth.current = layout.width
             }}
           />
-          <Text style={styles.muted}>Long-press a clip, then drag to move it.</Text>
+          <TimelineToolbar timelineRef={timelineRef} />
+          <Text style={styles.muted}>Tap a clip to select it. Long-press, then drag to move it.</Text>
           <ZoomReadout />
           <View style={styles.buttons}>
             <Button label="Zoom −" onPress={() => timelineRef.current?.zoomAtPlayhead(usePlaybackStore.getState().zoom * (1 / 1.5))} />
             <Button label="Zoom +" onPress={() => timelineRef.current?.zoomAtPlayhead(usePlaybackStore.getState().zoom * 1.5)} />
-            <Button label="Fit" onPress={() => timelineRef.current?.fitToWindow()} />
             <Button label="Scroll to start" onPress={() => timelineRef.current?.scrollTo(0)} />
             <Button label="Scroll to end" onPress={scrollToEnd} />
             <Button label="Load 200 clips" onPress={() => { loadStressFixture(engine); setLastCommand('(200 clips loaded; Reset to restore A, B, Title)') }} />
@@ -159,6 +165,63 @@ function Harness() {
             <Button label="Reset" onPress={() => { setIds(loadFixture(engine)); setLastCommand('(reset)') }} />
           </View>
           <Text style={styles.code}>{lastCommand}</Text>
+        </Section>
+
+        <Section title="Project JSON (RN-T9)">
+          <View style={styles.buttons}>
+            <Button
+              label="Export JSON"
+              onPress={() => {
+                setExportedJson(serializeProject(engine))
+              }}
+            />
+            <Button
+              label="Share"
+              disabled={!exportedJson}
+              onPress={() => {
+                Share.share({ message: exportedJson }).catch((e: unknown) => {
+                  setImportStatus(`Share failed: ${String(e instanceof Error ? e.message : e)}`)
+                })
+              }}
+            />
+          </View>
+          {exportedJson ? (
+            // Controlled and read-only: edits are reverted, but the text stays selectable for copying.
+            <TextInput
+              value={exportedJson}
+              onChangeText={() => {}}
+              multiline
+              editable
+              scrollEnabled
+              style={styles.jsonBox}
+            />
+          ) : null}
+          <Text style={styles.muted}>Import JSON: paste a project below, then Load.</Text>
+          <TextInput
+            value={importText}
+            onChangeText={setImportText}
+            multiline
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="{ ... }"
+            placeholderTextColor="#5c636e"
+            style={styles.jsonBox}
+          />
+          <View style={styles.buttons}>
+            <Button
+              label="Load"
+              onPress={() => {
+                try {
+                  deserializeProject(engine, importText)
+                  run('Import JSON', { type: 'clearSelection' })
+                  setImportStatus('Loaded')
+                } catch (e) {
+                  setImportStatus(String(e instanceof Error ? e.message : e))
+                }
+              }}
+            />
+          </View>
+          {importStatus ? <Text style={styles.code}>{importStatus}</Text> : null}
         </Section>
 
         <Section title="tracksStore">
@@ -267,5 +330,15 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.4 },
   buttonLabel: { color: '#f2f3f5', fontSize: 14 },
   code: { color: '#b8e0a8', fontFamily: 'monospace', fontSize: 12, backgroundColor: '#161a21', padding: 8, borderRadius: 6 },
+  jsonBox: {
+    color: '#d6d9de',
+    fontFamily: 'monospace',
+    fontSize: 11,
+    backgroundColor: '#161a21',
+    padding: 8,
+    borderRadius: 6,
+    maxHeight: 200,
+    textAlignVertical: 'top',
+  },
   mono: { color: '#d6d9de', fontFamily: 'monospace', fontSize: 12 },
 })
