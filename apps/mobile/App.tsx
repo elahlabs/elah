@@ -29,7 +29,7 @@ import {
 import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T8).
+ * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T6, RN-T8).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
  * model, running on Hermes, drawn by the library's <Timeline>. The buttons
@@ -127,7 +127,7 @@ function Harness() {
 
         <Transport isPlaying={isPlaying} onToggle={togglePlay} />
 
-        <Section title="Timeline (RN-T4, RN-T5, RN-T8)">
+        <Section title="Timeline (RN-T4, RN-T5, RN-T6, RN-T8)">
           <Timeline
             ref={timelineRef}
             style={styles.timeline}
@@ -136,6 +136,7 @@ function Harness() {
               lanesWidth.current = layout.width
             }}
           />
+          <Text style={styles.muted}>Long-press a clip, then drag to move it.</Text>
           <ZoomReadout />
           <View style={styles.buttons}>
             <Button label="Zoom −" onPress={() => timelineRef.current?.zoomAtPlayhead(usePlaybackStore.getState().zoom * (1 / 1.5))} />

@@ -91,7 +91,8 @@ export interface TimelineProps {
  * and the playhead needle spanning both. Tap or drag on the ruler to seek
  * (RN-T5). Pinch anywhere in the right column to zoom (RN-T8): the pinch
  * shows a live preview on the UI thread and commits one zoom change on
- * release. The lanes themselves are still read-only until RN-T6.
+ * release. Long-press a clip, then drag to move it (RN-T6); the gesture lives
+ * in `ClipBlock`.
  *
  * Geometry comes from the platform-free model (`computeLaneSlots`, `clipRect`)
  * and `timelineContentWidth` from core, so positions match the web timeline
