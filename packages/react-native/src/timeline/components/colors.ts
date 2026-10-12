@@ -22,6 +22,8 @@ export const timelineColors = {
   textOnClip: 'rgba(255, 255, 255, 0.95)',
   /** --elah-selection-border */
   selection: '#00c2ff',
+  /** --elah-selection-handle: the bar of a selected clip's trim handle. */
+  trimHandle: '#ffffff',
   /** --elah-bg-panel: the ruler strip (the web ruler uses `bg-ed-panel`). */
   rulerBackground: '#121722',
   /** --elah-tick-color: ruler tick marks. */

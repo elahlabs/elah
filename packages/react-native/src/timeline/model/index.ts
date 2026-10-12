@@ -32,7 +32,7 @@ export { deleteSelectionCommand } from './selection'
 export { DEFAULT_SNAP_TOLERANCE_PX, beginMove, updateMove, endMove } from './moveGesture'
 export type { MoveSession, MoveInput, MovePreview, MoveOptions } from './moveGesture'
 
-export { beginTrim, updateTrim, endTrim } from './trimGesture'
+export { beginTrim, updateTrim, endTrim, trimPreviewRect } from './trimGesture'
 export type { TrimEdge, TrimSession, TrimPreview, TrimOptions } from './trimGesture'
 
 export {

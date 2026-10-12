@@ -9,6 +9,7 @@ import {
   TRIM_HANDLE_WIDTH_PX,
 } from '@elah/core/engine'
 import type { EngineCommand } from './commands'
+import { MIN_CLIP_WIDTH_PX } from './layout'
 import { findClipInSnapshot, isTrackLockedInSnapshot } from './snapshot'
 import type { GestureSnapshot } from './types'
 
@@ -89,6 +90,17 @@ export function updateTrim(session: TrimSession, translationX: number): TrimPrev
   return {
     startFrame: session.clip.startFrame,
     durationFrames: clampRightTrim(session.clip, deltaFrames, session.limits),
+  }
+}
+
+/**
+ * How to draw the block during a trim, relative to its resting rect: `dx` shifts its left edge (left trim),
+ * `width` is its new width (same min-width rule as `clipRect`).
+ */
+export function trimPreviewRect(session: TrimSession, preview: TrimPreview): { dx: number; width: number } {
+  return {
+    dx: (preview.startFrame - session.clip.startFrame) * session.zoom,
+    width: Math.max(preview.durationFrames * session.zoom, MIN_CLIP_WIDTH_PX),
   }
 }
 

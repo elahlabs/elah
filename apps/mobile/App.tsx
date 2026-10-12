@@ -32,7 +32,7 @@ import {
 import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T6, RN-T8, RN-T9).
+ * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T6, RN-T7, RN-T8, RN-T9).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
  * model, running on Hermes, drawn by the library's <Timeline>. The buttons
@@ -111,6 +111,16 @@ function Harness() {
     run('Grow A end (max)', endTrim(session, updateTrim(session, 10_000)))
   }
 
+  // Harness code may call the engine directly: this stands in for a speed control, so the
+  // next trim of A shows the source-window clamp at 2x (the model stops at half the source).
+  const speedA2x = () => {
+    if (!ids) return
+    const found = engine.findClip(ids.a)
+    if (!found) return setLastCommand('A speed ×2: no-op (clip A is missing)')
+    engine.setClipSpeed(ids.a, found.trackId, 2)
+    setLastCommand('A speed ×2 (trim now stops at half the source)')
+  }
+
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const togglePlay = usePlaybackStore((s) => s.togglePlayPause)
   const canUndo = useTracksStore((s) => s.canUndo)
@@ -143,7 +153,7 @@ function Harness() {
             }}
           />
           <TimelineToolbar timelineRef={timelineRef} />
-          <Text style={styles.muted}>Tap a clip to select it. Long-press, then drag to move it.</Text>
+          <Text style={styles.muted}>Tap a clip to select it; drag its edge handles to trim. Long-press, then drag to move it.</Text>
           <ZoomReadout />
           <View style={styles.buttons}>
             <Button label="Zoom −" onPress={() => timelineRef.current?.zoomAtPlayhead(usePlaybackStore.getState().zoom * (1 / 1.5))} />
@@ -160,6 +170,7 @@ function Harness() {
             <Button label="Move A → V2" onPress={moveAToV2} />
             <Button label="Trim A end −15f" onPress={trimAEnd} />
             <Button label="Grow A end (max)" onPress={growAEnd} />
+            <Button label="A at 2× speed" onPress={speedA2x} />
             <Button label="Undo" disabled={!canUndo} onPress={() => run('Undo', { type: 'undo' })} />
             <Button label="Redo" disabled={!canRedo} onPress={() => run('Redo', { type: 'redo' })} />
             <Button label="Reset" onPress={() => { setIds(loadFixture(engine)); setLastCommand('(reset)') }} />
