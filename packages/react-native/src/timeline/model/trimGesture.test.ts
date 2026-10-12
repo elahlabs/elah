@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildFixture } from './__fixtures__/project'
-import { beginTrim, endTrim, updateTrim } from './trimGesture'
+import { MIN_CLIP_WIDTH_PX } from './layout'
+import { beginTrim, endTrim, trimPreviewRect, updateTrim } from './trimGesture'
 
 describe('beginTrim', () => {
   it('computes speed-aware limits from the clip, the zoom and the lane', () => {
@@ -136,5 +137,28 @@ describe('endTrim', () => {
       startFrame: 20,
       durationFrames: 70,
     })
+  })
+})
+
+describe('trimPreviewRect', () => {
+  it('leaves the left edge in place for a right trim and widens to the new duration', () => {
+    const f = buildFixture()
+    const session = beginTrim(f.a.id, 'right', f.snapshot(4))!
+    const preview = updateTrim(session, 40) // A [30, 90) -> [30, 100)
+    expect(trimPreviewRect(session, preview)).toEqual({ dx: 0, width: 70 * 4 })
+  })
+
+  it('shifts the left edge by the start change and sets the width to the new duration', () => {
+    const f = buildFixture()
+    const session = beginTrim(f.a.id, 'left', f.snapshot(4))!
+    const preview = updateTrim(session, -40) // A [30, 90) -> [20, 90)
+    expect(trimPreviewRect(session, preview)).toEqual({ dx: (20 - 30) * 4, width: 70 * 4 })
+  })
+
+  it('never draws narrower than the minimum clip width', () => {
+    const f = buildFixture()
+    const session = beginTrim(f.a.id, 'right', f.snapshot(4))!
+    const tiny = { startFrame: 30, durationFrames: 1 }
+    expect(trimPreviewRect(session, tiny).width).toBe(MIN_CLIP_WIDTH_PX)
   })
 })
