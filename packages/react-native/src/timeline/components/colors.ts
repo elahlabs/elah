@@ -30,6 +30,14 @@ export const timelineColors = {
   tickLabel: '#7a858b',
   /** --elah-playhead: the playhead needle (white by default on web). */
   playhead: '#ffffff',
+  /** The edit toolbar strip above the timeline. */
+  toolbarBackground: '#121722',
+  /** An enabled toolbar button. */
+  buttonBackground: '#1c2333',
+  /** An enabled toolbar button's label. */
+  buttonText: '#f3f4f6',
+  /** A disabled toolbar button's label. */
+  buttonTextDisabled: '#4b5563',
   /** --elah-clip-<type>-{mid|bottom} as body, --elah-clip-<type>-accent as the left stripe. */
   clip: {
     video: { body: '#2563eb', accent: '#60a5fa' },

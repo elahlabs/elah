@@ -27,6 +27,8 @@ export {
 export { applyEngineCommand, defaultCommandTargets } from './commands'
 export type { EngineCommand, CommandTargets } from './commands'
 
+export { deleteSelectionCommand } from './selection'
+
 export { DEFAULT_SNAP_TOLERANCE_PX, beginMove, updateMove, endMove } from './moveGesture'
 export type { MoveSession, MoveInput, MovePreview, MoveOptions } from './moveGesture'
 
