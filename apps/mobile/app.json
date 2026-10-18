@@ -7,9 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
+      "bundleIdentifier": "dev.elah.mobileharness",
       "supportsTablet": true
     },
     "android": {
+      "package": "dev.elah.mobileharness",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,6 +25,9 @@
     },
     "experiments": {
       "tsconfigPaths": false
-    }
+    },
+    "plugins": [
+      "react-native-webgpu"
+    ]
   }
 }

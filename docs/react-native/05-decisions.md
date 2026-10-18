@@ -13,7 +13,7 @@
 | D3 | The engine is consumed through a new `@elah/core/engine` entry, not a `react-native` export condition on `.` | decided | RN-P1 |
 | D4 | No FFmpeg. Platform codecs via a first-party native module | decided | RN-P6, RN-P10 |
 | D5 | Audio playback through `react-native-audio-api` as an optional peer | recommended | RN-P7 |
-| D6 | Native module tooling and the frame hand-off to Skia | open | RN-P3, RN-P6 |
+| D6 | Native module tooling (Nitro) and the frame hand-off to Skia (via `react-native-webgpu`) | decided | RN-P3, RN-P6 |
 | D7 | Core's `Renderer.mount(HTMLElement)` stays; mobile defines `SceneRenderer` locally | decided for v0.1 | RN-P4 |
 | D8 | One bundled default font for parity | open | RN-P5 |
 | D9 | Render on the JS thread first; worklets only if measured necessary | recommended | RN-P0, RN-P4 |
@@ -90,7 +90,7 @@ the same gain graph, if RN-P7 finds a gap that cannot be shimmed.
 
 ## D6 — Native module tooling and the Skia hand-off
 
-**Open.** Decide in RN-P3 (tooling) and RN-P6 (hand-off).
+**Decided (2026-10-18): Nitro Modules, with the frame handed to Skia through `react-native-webgpu`.** The original candidates and reasoning follow, then the spike findings and the measurements behind the choice.
 
 Tooling candidates: **Expo Modules API** (Swift/Kotlin, lowest friction with the Expo harness,
 supports synchronous functions) and **Nitro Modules** (`react-native-nitro-modules` 0.37,
@@ -103,6 +103,82 @@ Hand-off candidates for a decoded frame to become an `SkImage` without a CPU cop
 native-buffer image constructor (the path `react-native-vision-camera` Skia frame processors
 use), an `ImageReader` / `HardwareBuffer` on Android and `CVPixelBuffer` on iOS. Confirm the
 exact API on the installed Skia 3.x and record it here with the version.
+
+### D6 spike findings (RN-P6 step 1, 2026-10-18)
+
+**Hand-off: confirmed on device** (iPhone 13, iOS 27.0, 2026-10-18). Frames 0-3 drawn through
+the full path below show the expected index bars and colours. Red for frame 0 confirms the BGRA
+channel order survives the copy.
+
+- On `react-native-skia` **3.6.3**, `Skia.Image.MakeImageFromNativeBuffer` is **web only**. On
+  iOS and Android it throws (`cpp/api/JsiSkImageFactory.h`) and tells the caller to use the
+  WebGPU texture path. The candidate above is gone in v3.
+- That path is **`react-native-webgpu`** (0.16.1). It links the same Dawn as Skia
+  (`react-native-webgpu-dawn` 154.3.0 for both) and shares Skia's device:
+  1. `const device = importDevice(Skia.getNativeDevice())`, once.
+  2. `const frame = createVideoFrameFromNativeBuffer(pointer)`. `pointer` is a
+     `CVPixelBufferRef` (iOS) or `AHardwareBuffer*` (Android) as a `bigint`. The wrapper takes
+     its own reference.
+  3. `device.queue.copyExternalImageToTexture({ source: frame }, { texture }, [w, h])`, a GPU
+     copy that also converts YUV to RGB, then `frame.release()`.
+  4. `Skia.Image.MakeImageFromGPUTexture(texture)`, made once per texture in a small ring.
+- Skia's device already enables `SharedTextureMemoryIOSurface` on Apple, and
+  `SharedTextureMemoryAHardwareBuffer` plus `OpaqueYCbCrAndroidForExternalTexture` on Android.
+  So decoder output imports without a CPU copy: BGRA `IOSurface` buffers on iOS, YUV
+  `AHardwareBuffer`s on Android.
+- Consequence: the native module only hands JS a **pointer**, and `react-native-webgpu` becomes
+  a required peer of the video path. Text, image and shape previews don't need it.
+- Lifetime rule for the real ring: a frame `getCurrent` returned must not be recycled until JS
+  has wrapped it. The wrap retains the frame, so the danger is a decode thread evicting it in
+  between. Either `getCurrent` returns a +1 reference that the provider releases, or eviction
+  never touches the frame most recently handed out.
+- A zero-copy alternative exists on iOS for BGRA: `device.createNativeBufferTexture(frame)`,
+  bracketed by `beginAccess` / `endAccess`. Measure it against the copy in RN-P6 step 2 only
+  if the copy shows up in the frame budget.
+
+**Tooling: Nitro.** Both tools were prototyped behind one contract, `noop()`, `createPool`,
+`getFrame(i) → pointer | null` (synchronous) and `destroyPool`, and measured on the "RN-P6 · D6
+spike" screen in the harness. The Expo Modules variant has since been removed; the Nitro one
+stays in `apps/mobile/modules/elah-media-nitro` as the base of the decoder module.
+
+| | Expo Modules | Nitro |
+|---|---|---|
+| Synchronous call | yes (`Function`) | yes (JSI HybridObject) |
+| Pointer type | **no BigInt return**: a decimal string, `BigInt(s)` in JS. A `Long` → `number` is lossy on Android, whose heap pointers are tagged in the top byte | `UInt64` → `bigint` natively |
+| Android `AHardwareBuffer*` | Kotlin can't produce one; needs a JNI library anyway | C++ hybrid object, no JNI glue to write |
+| One implementation for both platforms | no (Swift + Kotlin/JNI) | yes (one C++ class; the decoders can be NDK `AMediaCodec` / `AImageReader` on Android and Obj-C++ over `AVAssetReader` on iOS) |
+| Codegen step | none | `nitrogen` (run on `npm install`, output not committed) |
+
+Measured on an **iPhone 13 (iOS 27.0)**, debug build, 1280x720 frames, median of 3 rounds of
+10,000 calls (300 for the hand-off). "B" is JS bytes allocated per call (Hermes
+`js_allocatedBytes`):
+
+| Per call | Expo Modules | Nitro |
+|---|---|---|
+| `noop()` | 3.19 µs | **1.77 µs** · 48 B |
+| `getFrame()` raw | 4.31 µs · 120 B | **1.29 µs** · 96 B |
+| `getFrame()` as `bigint` | 2.86 µs · 152 B | **0.98 µs** · 96 B |
+| `getFrame` + wrap + GPU copy (JS thread) | 301.56 µs | **264.03 µs** |
+
+Expo's negative byte counts (`noop`, hand-off) came from a GC during the window and are not
+shown. Reading the numbers:
+
+- Nitro is 2-3x cheaper per call and allocates less, but both are far inside the budget: a
+  33,000 µs frame at 30 fps, against ~1-4 µs.
+- The hand-off costs ~0.26-0.30 ms, under 1% of the frame. Nearly all of it is
+  `react-native-webgpu`'s wrap and copy, not the module call.
+- So speed alone does not decide it. The tiebreak is the shape of the code: a native 64-bit
+  pointer, and one C++ implementation for both platforms with no JNI glue.
+
+Not yet measured: a mid-range Android device. The maintainer is targeting iOS first; record
+the Android numbers here when RN-P6 runs there.
+
+**Known gap for RN-P10 (export):** `device.queue.onSubmittedWorkDone()` **never resolves** on
+the device imported from Skia: it was still pending after 2 s in every round. Nothing processes
+Dawn's callbacks for that device. Preview does not need it, because Skia submits on its own
+queue in order. Export does: it must know a frame has finished on the GPU before reading it
+back, and `mapAsync` probably shares the problem. Find a fix before RN-P10, for example a
+native call that waits on the queue, or reading pixels back through Skia instead of WebGPU.
 
 ## D7 — `Renderer.mount(HTMLElement)` stays in core for now
 

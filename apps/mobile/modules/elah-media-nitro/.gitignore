@@ -1,0 +1,12 @@
+# Android build output (created by the first `expo run:android`)
+android/build/
+android/.cxx/
+android/.gradle/
+android/local.properties
+
+# Xcode per-user state, if the podspec is ever opened directly
+*.xcuserstate
+xcuserdata/
+
+# Codegen output. `npm install` in apps/mobile regenerates it (postinstall).
+nitrogen/generated/
