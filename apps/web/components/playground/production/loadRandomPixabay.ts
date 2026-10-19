@@ -465,11 +465,30 @@ export async function loadPixabayTopic({
     }
 
     // --- TEXT LANES: topic captions spread across all elements tracks -------
-    const addText = (content: string, clip: [number, number], place: Place, trackId: string, fontSize: number) => {
+    // Captions outnumber the visuals or lanes whenever a search comes back
+    // thin, so two can target the same lane over the same visual; each one
+    // takes the first lane free for its span, and is dropped if none is.
+    const laneSpans = elementsTracks.map(() => [] as [number, number][])
+    const pickLane = (preferred: number, start: number, end: number): number => {
+      for (let k = 0; k < elementsTracks.length; k++) {
+        const lane = (preferred + k) % elementsTracks.length
+        if (laneSpans[lane].every(([s, e]) => end <= s || start >= e)) return lane
+      }
+      return -1
+    }
+
+    const addText = (content: string, clip: [number, number], place: Place, preferredLane: number, fontSize: number) => {
       const [clipStart, clipDuration] = clip
       const pad = Math.round(fps * 0.3)
-      const start = clipStart + pad
-      const duration = Math.max(fadeFrames * 2 + 1, clipDuration - pad * 2)
+      // Inset the caption inside its visual; a visual too short for the inset
+      // gets a caption spanning it exactly, so it never bleeds into the next.
+      const inset = clipDuration - pad * 2 >= fadeFrames * 2 + 1
+      const start = inset ? clipStart + pad : clipStart
+      const duration = inset ? clipDuration - pad * 2 : clipDuration
+      const lane = pickLane(preferredLane, start, start + duration)
+      if (lane < 0) return
+      laneSpans[lane].push([start, start + duration])
+      const trackId = elementsTracks[lane].id
       const { x, y, align } = PLACEMENT[place]
       const created = engine.addClip({
         trackId,
@@ -495,10 +514,9 @@ export async function loadPixabayTopic({
 
     topic.captions.forEach((caption, i) => {
       const clip = placedClips[i % placedClips.length]
-      const track = elementsTracks[i % elementsTracks.length]
       const place = PLACE_CYCLE[i % PLACE_CYCLE.length]
       const fontSize = i === 0 ? 76 : 44 + (i % 3) * 8
-      addText(caption, clip, place, track.id, fontSize)
+      addText(caption, clip, place, i % elementsTracks.length, fontSize)
     })
   }, `Random load from Pixabay — ${topicName}`)
 
