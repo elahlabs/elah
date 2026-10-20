@@ -18,7 +18,8 @@ npm run dev      # http://localhost:4001
 - `<EditorProvider>` wiring with video / audio / text tracks
 - `<Preview>` (WebGL2) driven by a mediabunny demuxer backend
 - `<Timeline>`, `<AssetPanel>`, `<ElementsPanel>`
-- A custom properties panel (`TextClipProperties`) using the editor's zustand stores
+- A custom properties panel (`TextClipProperties`) using the editor's zustand stores,
+  with the 14 built-in text templates (`applyTextTemplate`) and every entry/exit animation kind
 - MP4 export via `lazyExportVideo` with a progress / cancel modal
 
 ## Key integration points

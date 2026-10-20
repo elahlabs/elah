@@ -20,9 +20,11 @@ cd examples/next    && npm install && npm run dev
 
 They track the latest published SDK — currently **`@elah/editor@^0.6.0`**.
 
-> **Verified against `@elah/editor@0.4.1` on 2026-08-02** — clean `npm install` from the
-> registry, then `typecheck`, `dev`, and `build` for all three, plus a full MP4 export in
-> `react/` and `next/` under both the dev server and the production build.
+> **Verified against `@elah/editor@0.6.0` on 2026-10-02** — clean `npm install` from the
+> registry (resolving `@elah/core`, `@elah/react` and `@elah/timeline` 0.6.0), then `typecheck`,
+> `dev`, and `build` for all three, plus a full MP4 export in `react/` and `next/` under both
+> the dev server and the production build (`vite preview` / `next start`). The `react/` and
+> `next/` inspector was also exercised against the 0.6.0 text templates and animation kinds.
 
 `react/` and `next/` render the same **production editor** composition (`ProductionEditor`):
 preview, timeline, asset/element panels, a text-properties inspector, and MP4 export.
