@@ -104,7 +104,7 @@ isReadableProjectDocument(stored)`}
         <section className="mb-10">
           <H2 id="versioning">Versioning</H2>
           <P>
-            <C>PROJECT_VERSION</C> is the schema version this build writes and reads, currently 1. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
+            <C>PROJECT_VERSION</C> is the newest schema version this build reads, currently 5. A saved project is stamped with the lowest version that can hold what it uses (adjustment clips need 2; generator clips and the newer transitions 3; compound clips 4; sequence clips 5), so a project without them stays readable by older builds. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
           </P>
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
             <li>

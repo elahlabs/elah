@@ -53,6 +53,16 @@ const FONTS = [
   'fantasy',
 ]
 
+/**
+ * The two weights this panel and the preset store know. A clip's weight can
+ * be 100..900 since the core accepts bundled fonts; a number reads as bold
+ * from 600 up, so the select and a saved preset show the nearest keyword.
+ */
+function keywordWeight(weight: Clip['fontWeight']): 'normal' | 'bold' {
+  if (typeof weight === 'number') return weight >= 600 ? 'bold' : 'normal'
+  return weight ?? 'normal'
+}
+
 type Tab = 'style' | 'transform' | 'animate'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
@@ -291,7 +301,7 @@ export function TextClipProperties() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="Weight">
                 <select
-                  value={effective.fontWeight ?? 'normal'}
+                  value={keywordWeight(effective.fontWeight)}
                   onChange={(e) => commit({ fontWeight: e.target.value as 'normal' | 'bold' })}
                   className={cn(inputCls, 'cursor-pointer')}
                 >
@@ -483,7 +493,7 @@ export function TextClipProperties() {
                     addPreset({
                       name: presetName.trim(),
                       fontFamily: effective.fontFamily ?? 'sans-serif',
-                      fontWeight: effective.fontWeight ?? 'normal',
+                      fontWeight: keywordWeight(effective.fontWeight),
                       fontSize: effective.fontSize ?? 48,
                       textAlign: effective.textAlign ?? 'center',
                       color: effective.color ?? '#ffffff',

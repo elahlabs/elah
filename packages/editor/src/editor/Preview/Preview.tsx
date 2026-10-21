@@ -25,7 +25,6 @@ import { TextOverlay } from './TextOverlay'
 import { ShapeOverlay } from './ShapeOverlay'
 import { MediaTransformOverlay } from './MediaTransformOverlay'
 import { PreviewLoadingOverlay } from './PreviewLoadingOverlay'
-import { TransitionOverlay, type TransitionOverlayHandle } from './TransitionOverlay'
 import { StageBorder } from './StageBorder'
 
 /**
@@ -101,7 +100,6 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<GpuRenderer | null>(null)
-  const transitionOverlayRef = useRef<TransitionOverlayHandle>(null)
   const engine = useTimelineEngine()
   const playback = usePlaybackEngine()
 
@@ -283,11 +281,9 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       const frame = Math.floor(playback.getFrameAt())
       const project = engine.getProject()
       const scene = perf.measure('resolve', () => resolveTimeline(frame, project))
-      // Capture snapshot before render — canvas still holds the previous frame.
-      const canvas = renderer.getCanvas()
-      if (canvas) transitionOverlayRef.current?.captureIfNewTransition(scene, canvas)
+      // Transitions are composited by the GPU renderer itself (both clips keep
+      // playing through every kind), so there is no snapshot layer to drive.
       perf.measure('render', () => renderer.render(scene))
-      transitionOverlayRef.current?.update(scene)
       // Warm decoders for clips that will become active within the horizon so
       // image→video (and any cold) boundaries paint instantly instead of freezing.
       lastPrewarmAt = now
@@ -338,10 +334,6 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
       {/* Project-frame outline, drawn at the same letterbox fit the renderer
           uses so the active aspect ratio is always visible against the bars. */}
       <StageBorder />
-
-      {/* Transition snapshot layer — sits above the WebGL canvas (zIndex 1),
-          below the interaction overlays. Driven imperatively from the RAF loop. */}
-      <TransitionOverlay ref={transitionOverlayRef} />
 
       {/* Interactive transform layer for video/image clips (zIndex 2). Below
           ShapeOverlay/TextOverlay so synthetic elements win when they overlap. */}

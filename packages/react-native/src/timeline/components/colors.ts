@@ -48,6 +48,13 @@ export const timelineColors = {
     image: { body: '#d97706', accent: '#fcd34d' },
     shape: { body: '#4f46e5', accent: '#a5b4fc' },
     freehand: { body: '#059669', accent: '#6ee7b7' },
+    // The converged core's clip types have no tokens of their own; they borrow
+    // the tones the web timeline gives them (packages/timeline ClipBlock).
+    // No mobile editor exists for them yet: they draw as ordinary blocks.
+    adjustment: { body: '#059669', accent: '#6ee7b7' },
+    generator: { body: '#4f46e5', accent: '#a5b4fc' },
+    compound: { body: '#059669', accent: '#6ee7b7' },
+    sequence: { body: '#d97706', accent: '#fcd34d' },
   } satisfies Record<ClipType, { body: string; accent: string }>,
 } as const
 

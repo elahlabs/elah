@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import type { Browser } from 'playwright-core'
-import type { Project } from '@elah/core'
+import type { Clip, Project } from '@elah/core'
 import { CliError } from './errors'
 import { resolveMediaSource, isRemoteUrl } from './project-io'
 import { startHarnessServer, type ProgressPayload } from './server'
@@ -160,26 +160,40 @@ export function prepareMedia(
   const media = new Map<string, string>()
   const routeBySource = new Map<string, string>()
 
-  for (const clips of Object.values(exportProject.clips)) {
-    for (const clip of clips) {
-      if (!clip.src) continue
-      if (clip.type !== 'video' && clip.type !== 'audio' && clip.type !== 'image') continue
+  // A compound clip holds a whole nested project whose media needs the same
+  // routes; an animated-image sequence clip reads its file from `src` too.
+  const visit = (p: Project): void => {
+    for (const clips of Object.values(p.clips)) {
+      for (const clip of clips) {
+        if (clip.type === 'compound' && clip.compound) visit(clip.compound.project)
+        if (!clip.src) continue
+        if (!MEDIA_CLIP_TYPES.has(clip.type)) continue
 
-      const resolved = resolveMediaSource(clip.src, projectDir)
-      let route = routeBySource.get(resolved)
-      if (!route) {
-        if (!isRemoteUrl(resolved) && !existsSync(resolved)) {
-          throw new CliError(`Media file not found: ${clip.src} (resolved to ${resolved})`)
+        const resolved = resolveMediaSource(clip.src, projectDir)
+        let route = routeBySource.get(resolved)
+        if (!route) {
+          if (!isRemoteUrl(resolved) && !existsSync(resolved)) {
+            throw new CliError(`Media file not found: ${clip.src} (resolved to ${resolved})`)
+          }
+          route = `/media/${token}/${routeBySource.size}`
+          routeBySource.set(resolved, route)
+          media.set(route, resolved)
         }
-        route = `/media/${token}/${routeBySource.size}`
-        routeBySource.set(resolved, route)
-        media.set(route, resolved)
+        clip.src = route
       }
-      clip.src = route
     }
   }
+  visit(exportProject)
   return { exportProject, media }
 }
+
+/** Clip types whose `src` is a media file the harness must serve. */
+const MEDIA_CLIP_TYPES: ReadonlySet<Clip['type']> = new Set([
+  'video',
+  'audio',
+  'image',
+  'sequence',
+])
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise<T>((res, rej) => {

@@ -55,7 +55,7 @@ SOFTWARE.
 
 ## Bundled font families
 
-`src/fonts/registry.ts` lists twelve font families that a host application can serve and register. All twelve are licensed under the SIL Open Font License, Version 1.1 (OFL-1.1, <https://openfontlicense.org>):
+`src/fonts/registry.ts` lists twelve font families, and the package ships their files in `fonts/<id>/` (latin subset, woff2, about 740 KB in all). A host can serve its own copies (the default base URL is `/fonts/`) or load the package's copies with `packageFontsBaseUrl()`. All twelve are licensed under the SIL Open Font License, Version 1.1 (OFL-1.1, <https://openfontlicense.org>):
 
 | Family | Category |
 | --- | --- |
@@ -72,4 +72,4 @@ SOFTWARE.
 | Roboto Mono | mono |
 | Caveat | handwriting |
 
-The font binaries are not part of this package yet. When they are added, each family's own copyright notice and licence text (OFL-1.1) must ship in the same folder as its files, as the OFL requires. The OFL does not permit selling the fonts on their own; embedding them in documents and exports is permitted.
+Each family's own copyright notice and licence text (OFL-1.1) ships as `fonts/<id>/OFL.txt`, in the same folder as its files, as the OFL requires. The OFL does not permit selling the fonts on their own; embedding them in documents and exports is permitted.

@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  isDirectoryIndex,
   resolveDistFile,
   resolveModuleFile,
   rewriteSpecifiers,
@@ -33,6 +34,19 @@ describe('resolveDistFile', () => {
 
   it('falls back to directory index.js', () => {
     expect(resolveDistFile(root, 'utils')).toBe(join(root, 'utils/index.js'))
+  })
+
+  it('adds .js to a dotted module name (./shaders/quad.frag)', () => {
+    mkdirSync(join(root, 'shaders'), { recursive: true })
+    writeFileSync(join(root, 'shaders', 'quad.frag.js'), '// f')
+    expect(resolveDistFile(root, 'shaders/quad.frag')).toBe(join(root, 'shaders/quad.frag.js'))
+  })
+
+  it('tells a directory index apart from a file', () => {
+    const index = resolveDistFile(root, 'utils')!
+    expect(isDirectoryIndex(root, 'utils', index)).toBe(true)
+    const file = resolveDistFile(root, 'export/exportVideo')!
+    expect(isDirectoryIndex(root, 'export/exportVideo', file)).toBe(false)
   })
 
   it('returns undefined for misses', () => {

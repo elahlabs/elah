@@ -168,8 +168,26 @@ export function resolveDistFile(distRoot: string, urlPath: string): string | und
     candidates.push(`${requested}.js`, join(requested, 'index.js'))
   } else if (requested.endsWith('.ts')) {
     candidates.push(requested.replace(/\.ts$/, '.js'))
+  } else if (!requested.endsWith('.js')) {
+    // A dotted module name compiled to `<name>.js` (`./shaders/quad.frag`).
+    candidates.push(`${requested}.js`)
   }
   return candidates.find((c) => existsSync(c) && statSync(c).isFile())
+}
+
+/**
+ * True when `resolveDistFile` answered `urlPath` with a directory's
+ * `index.js`. The browser must then be redirected to that file's own URL:
+ * a module's relative imports resolve against its response URL, so serving
+ * `effects/index.js` at `/core/x/effects` would send `./blur` to `/core/x/blur`.
+ */
+export function isDirectoryIndex(distRoot: string, urlPath: string, file: string): boolean {
+  return file === join(normalize(join(distRoot, urlPath)), 'index.js')
+}
+
+/** The URL of a directory request's `index.js`, keeping the query string. */
+function indexUrl(path: string, search: string): string {
+  return `${path.replace(/\/+$/, '')}/index.js${search}`
 }
 
 export async function startHarnessServer(args: HarnessServerArgs): Promise<HarnessServer> {
@@ -237,10 +255,16 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     }
 
     if (path.startsWith('/core/')) {
-      const file = resolveDistFile(coreDist, path.slice('/core/'.length))
+      const sub = path.slice('/core/'.length)
+      const file = resolveDistFile(coreDist, sub)
       if (!file) {
         log(`404 (core dist miss): ${path}`)
         res.writeHead(404)
+        res.end()
+        return
+      }
+      if (isDirectoryIndex(coreDist, sub, file)) {
+        res.writeHead(302, { location: indexUrl(path, url.search) })
         res.end()
         return
       }
@@ -265,6 +289,11 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
       if (!file) {
         log(`404 (vendor miss): ${path}`)
         res.writeHead(404)
+        res.end()
+        return
+      }
+      if (isDirectoryIndex(vendor.root, rel, file)) {
+        res.writeHead(302, { location: indexUrl(path, url.search) })
         res.end()
         return
       }

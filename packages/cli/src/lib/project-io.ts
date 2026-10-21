@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { resolve, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Project, Clip } from '@elah/core'
+import { PROJECT_VERSION, type Project, type Clip } from '@elah/core'
 import { CliError } from './errors'
 
 /** True for http(s) sources, which are proxied rather than read from disk. */
@@ -15,7 +15,6 @@ export interface LoadedProject {
   dir: string
 }
 
-const SUPPORTED_PROJECT_VERSION = 1
 
 /** Read + parse + structurally validate a Project JSON file. */
 export function readProject(path: string): LoadedProject {
@@ -32,9 +31,11 @@ export function readProject(path: string): LoadedProject {
   }
 
   const project = validateProject(parsed, path)
-  if (project.version !== SUPPORTED_PROJECT_VERSION) {
+  // Older documents are read as they are (each version only adds optional
+  // fields); a newer one may hold fields this build ignores.
+  if (project.version > PROJECT_VERSION) {
     process.stderr.write(
-      `warning: project version ${project.version} differs from the supported version ${SUPPORTED_PROJECT_VERSION}; proceeding anyway\n`
+      `warning: project version ${project.version} is newer than the supported version ${PROJECT_VERSION}; proceeding anyway\n`
     )
   }
   return { project, dir: dirname(abs) }

@@ -194,6 +194,7 @@ export {
 export type { FontDef, FontFile, FontCategory } from './fonts/registry'
 export { ensureFonts, fontsEpoch, onFontsChange, resolveFontBaseUrl, collectFontIds } from './fonts/loader'
 export type { EnsureFontsOptions } from './fonts/loader'
+export { packageFontsBaseUrl } from './fonts/packageFonts'
 
 // --- Effects (registry + per-frame resolution; rendering lands in EDX-P2) ---
 export {

@@ -8,6 +8,7 @@
  */
 
 import { analyzePcm, type AudioAnalysis } from './analysis'
+import { isCrossOriginModule, siblingWorkerUrl, startCrossOriginModuleWorker } from '../utils/workerUrl'
 
 /** The message posted to `analysisWorker.ts`. `pcm`'s buffer is transferred. */
 export interface AnalysisWorkerIn {
@@ -58,7 +59,10 @@ export function analyzePcmInWorker(
 
   let worker: Worker
   try {
-    worker = new Worker(new URL('./analysisWorker.ts', import.meta.url), { type: 'module' })
+    // CONV-5: from another origin (a CDN), start it through a `blob:` wrapper.
+    worker = isCrossOriginModule(import.meta.url)
+      ? startCrossOriginModuleWorker(siblingWorkerUrl(import.meta.url, 'analysisWorker'))
+      : new Worker(new URL('./analysisWorker.ts', import.meta.url), { type: 'module' })
   } catch {
     return Promise.resolve(runOnCallingThread(pcm, sampleRate, fps))
   }

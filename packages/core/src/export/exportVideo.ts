@@ -17,6 +17,7 @@ import { flattenAudioClips, isMixableAudioClip, type FlatAudioClip } from '../el
 import { resolveFontBaseUrl } from '../fonts/loader'
 import { DEFAULT_FONT_BASE_URL } from '../fonts/registry'
 import { preDecodeSvgImages } from './preDecode'
+import { isCrossOriginModule, siblingWorkerUrl, startCrossOriginModuleWorker } from '../utils/workerUrl'
 import type { ExportOptions, ExportProgress, RenderedAudio, WorkerOutMessage } from './types'
 import { resolveExportFormat, ensureTransparencyGate, ensureVideoCodecSupport } from './capabilities'
 import { computeExportDimensions } from './outputDimensions'
@@ -496,10 +497,11 @@ async function runExportVideo(project: Project, options: ExportOptions): Promise
       'EXPORT',
       `spawning ExportWorker (module worker) — container=${format.container} transparent=${!!options.transparent} range=[${range.startFrame}, ${range.endFrame})`,
     )
-    const worker = new Worker(
-      new URL('./ExportWorker.ts', import.meta.url),
-      { type: 'module' },
-    )
+    // CONV-5: loaded from another origin (a CDN), start the worker through a
+    // `blob:` wrapper; otherwise the literal below, which bundlers detect.
+    const worker = isCrossOriginModule(import.meta.url)
+      ? startCrossOriginModuleWorker(siblingWorkerUrl(import.meta.url, 'ExportWorker'))
+      : new Worker(new URL('./ExportWorker.ts', import.meta.url), { type: 'module' })
 
     const abort = () => {
       worker.terminate()
@@ -647,7 +649,10 @@ async function runPngSequenceExport(project: Project, options: ExportOptions): P
 
   return new Promise((resolve, reject) => {
     mlog('EXPORT', `spawning ExportWorker (module worker) — png-sequence range=[${range.startFrame}, ${range.endFrame}) sink=${usingDefaultZip ? 'zip (default)' : 'caller'}`)
-    const worker = new Worker(new URL('./ExportWorker.ts', import.meta.url), { type: 'module' })
+    // CONV-5: same cross-origin branch as the MP4/WebM path above.
+    const worker = isCrossOriginModule(import.meta.url)
+      ? startCrossOriginModuleWorker(siblingWorkerUrl(import.meta.url, 'ExportWorker'))
+      : new Worker(new URL('./ExportWorker.ts', import.meta.url), { type: 'module' })
 
     // Settle exactly once — a 'done' after an abort/error (or the reverse)
     // must never resolve AND reject, and sink.close()/sink.abort() must each

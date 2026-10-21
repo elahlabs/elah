@@ -45,6 +45,21 @@ versions independently, starting from its own 0.1.0.
 - **`@elah/react`:** value imports from core go through `@elah/core/engine`; the build no longer
   emits `*.test.tsx` files into `dist`.
 - The root `workspaces` list names `apps/web` and `apps/server` instead of `apps/*`.
+- **Consumers of the converged core (project version 5).** Projects that hold adjustment,
+  generator, compound or sequence clips and the newer transition kinds now open, play, save
+  and export without losing a clip; the open-source UI has no editor for them yet.
+  - `@elah/timeline`: those clips draw as ordinary labelled blocks in existing token colours;
+    trimming lets sourceless clips grow as `engine.trimClip()` does; paste copies shapes,
+    drawings and the new types with `cloneClip` instead of rebuilding them as empty media clips
+    (pasting a shape used to throw); the transition picker shows a loaded kind outside its three
+    (zoom, spin, …) as the active choice.
+  - `@elah/editor`: `Preview` no longer lays its CSS snapshot over transitions. The GPU renderer
+    composites every transition itself, so the old layer drew a frozen outgoing frame on top.
+  - `@elah/cli`: the harness server answers a module directory request with a redirect to its
+    `index.js` and resolves dotted module names (`./shaders/quad.frag`), so the export worker
+    loads again; media inside compound clips and animated-image sequence clips is served;
+    the version warning fires only for a project newer than `PROJECT_VERSION`.
+  - `@elah/react-native`: colours for the four new clip types.
 
 ## [0.6.0] — 2026-10-02
 

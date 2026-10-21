@@ -9,6 +9,7 @@
  */
 
 import { probeScope, type ScopeCapabilities } from './capabilities'
+import { isCrossOriginModule, siblingWorkerUrl, startCrossOriginModuleWorker } from '../utils/workerUrl'
 
 export interface CapabilityReport {
   userAgent: string
@@ -38,7 +39,10 @@ export async function runCapabilityProbe(timeoutMs = 20_000): Promise<Capability
 
     let w: Worker
     try {
-      w = new Worker(new URL('./capabilityProbe.worker.ts', import.meta.url), { type: 'module' })
+      // CONV-5: from another origin (a CDN), start it through a `blob:` wrapper.
+      w = isCrossOriginModule(import.meta.url)
+        ? startCrossOriginModuleWorker(siblingWorkerUrl(import.meta.url, 'capabilityProbe.worker'))
+        : new Worker(new URL('./capabilityProbe.worker.ts', import.meta.url), { type: 'module' })
     } catch (err) {
       clearTimeout(timer)
       resolve({ error: String(err) })
