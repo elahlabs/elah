@@ -40,3 +40,6 @@ yarn-error.*
 /ios
 /android
 dist-check/
+
+# EAS config is per-developer (created by `eas build:configure`)
+eas.json

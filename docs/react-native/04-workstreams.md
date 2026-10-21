@@ -368,7 +368,9 @@ tests, `README.md`; `apps/mobile` fixture screens.
 
 ## RN-P6 — Native decode: `NativeFrameProvider` and `VideoLayer`
 
-**Status:** proposed
+**Status:** in progress. Step 1 is done: D6 is decided (Nitro, with the hand-off through
+`react-native-webgpu`; iPhone numbers in `05-decisions.md`), and the test clip exists. Next is
+step 2, the native decoder, iOS first.
 **Depends on:** P3 (and P4 for drawing)
 **Goal:** Video clips scrub frame-accurately from local files, one active clip at a time.
 
@@ -386,7 +388,10 @@ tests, `README.md`; `apps/mobile` fixture screens.
 3. JS `NativeFrameProvider` over it; `VideoLayer` draws `getCurrent(sourceFrame)` or the last
    frame on miss; `prewarm(scene)` opens providers for upcoming clips.
 4. Test clip: a 10-second 30 fps video with the frame number burned in (generate it with the web
-   export from a text project; check it into `apps/mobile/assets`).
+   export from a text project; check it into `apps/mobile/assets`). Done:
+   `apps/mobile/assets/frame-counter-30fps-10s.mp4`, made by
+   `apps/mobile/scripts/make-frame-counter-clip.mjs` through `elah build --export`. 1280x720 H.264,
+   300 frames, keyframes at 0, 60, 120, 180 and 240, so frame 150 tests seeking.
 
 **Acceptance**
 
@@ -497,6 +502,9 @@ both barrels and READMEs, `CHANGELOG.md`.
 
 **Allowed files:** `packages/react-native/src/export/**`, native encoder + audio mix, tests,
 `README.md`; `apps/mobile` export screen.
+
+**Before starting:** `onSubmittedWorkDone()` never resolves on the GPU device shared with
+Skia (D6, known gap). Solve GPU completion and readback for the export loop first.
 
 **Steps**
 

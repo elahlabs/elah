@@ -1,0 +1,20 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["elahmedianitro"],
+  "ios": {
+    "iosModuleName": "ElahMediaNitro"
+  },
+  "android": {
+    "androidNamespace": ["elahmedianitro"],
+    "androidCxxLibName": "ElahMediaNitro"
+  },
+  "autolinking": {
+    "FrameSpike": {
+      "all": {
+        "language": "c++",
+        "implementationClassName": "HybridFrameSpike"
+      }
+    }
+  },
+  "ignorePaths": ["**/node_modules"]
+}

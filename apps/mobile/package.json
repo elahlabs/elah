@@ -4,6 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
+    "elah-media-nitro": "file:modules/elah-media-nitro",
     "expo": "~57.0.27",
     "expo-dev-client": "^57.0.19",
     "expo-status-bar": "~57.0.1",
@@ -12,20 +13,26 @@
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
+    "react-native-nitro-modules": "^0.37.1",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
+    "react-native-skia": "^3.6.3",
     "react-native-web": "^0.21.2",
+    "react-native-webgpu": "^0.16.1",
     "react-native-worklets": "0.10.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "nitrogen": "^0.37.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "npm run nitrogen",
+    "nitrogen": "cd modules/elah-media-nitro && nitrogen",
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "bundle:android": "expo export --platform android --output-dir dist-check",

@@ -105,11 +105,12 @@ Verified against the npm registry and vendor docs on 2026-10-06. These are floor
 | React | 19 | Skia v3 peer. RN 0.79+ ships React 19. |
 | JS engine | Hermes | Default on both platforms. Proxy (needed by Immer) has been supported since Hermes 0.7 / RN 0.64. |
 | Android | API 26+ | `react-native-skia` v3 floor. |
-| iOS | Whatever `react-native-skia` 3.x supports | Not stated on its installation page; confirm in RN-P0 and record it here. |
+| iOS | 15.1 | `react-native-skia` 3.6.3's podspec (`s.platforms`). `react-native-webgpu` follows React Native's own minimum. |
 | Expo | SDK 57 (bundles RN 0.86) | The dev harness is an Expo app. The library must also work in a bare RN app; the harness being Expo is a convenience, not a requirement. |
-| `react-native-skia` | 3.x (`react-native-skia` on npm; the `@shopify/react-native-skia` name is the 2.x line) | Graphite backend, Paragraph API, offscreen surfaces. Current: 3.0.5. |
+| `react-native-skia` | 3.x (`react-native-skia` on npm; the `@shopify/react-native-skia` name is the 2.x line) | Graphite backend, Paragraph API, offscreen surfaces. Current: 3.6.3 (the harness pins it). |
 | `react-native-reanimated` / `react-native-worklets` | 4.x / 0.7+ | Peers of Skia v3 and of `react-native-audio-api`. Current: 4.7.1. |
 | `react-native-gesture-handler` | 2.x (Expo SDK 57 pins ~2.32; 3.x is on npm) | Timeline gestures. The harness uses what `npx expo install` picks. |
+| `react-native-webgpu` | 0.16+ | Video only: wraps decoded frame pointers and copies them on the GPU into textures on Skia's device (D6). Must ship the same `react-native-webgpu-dawn` as Skia. Current: 0.16.1. |
 | `react-native-audio-api` | 0.13+ | Optional peer; see D5. Current: 0.13.6. |
 
 ## Success criteria for the whole effort

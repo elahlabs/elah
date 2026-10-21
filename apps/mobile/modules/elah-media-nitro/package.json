@@ -1,0 +1,23 @@
+{
+  "name": "elah-media-nitro",
+  "version": "0.0.0",
+  "private": true,
+  "description": "RN-P6 / D6 spike: a synchronous frame-pointer call through Nitro Modules. Harness only, not published.",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "source": "src/index.ts",
+  "license": "Apache-2.0",
+  "scripts": {
+    "specs": "nitrogen"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-nitro-modules": "*"
+  },
+  "peerDependenciesMeta": {
+    "react-native-nitro-modules": {
+      "optional": true
+    }
+  }
+}

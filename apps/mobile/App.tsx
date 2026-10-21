@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -32,7 +32,7 @@ import {
 import { FPS, INITIAL_TRACKS, loadFixture, loadStressFixture, type FixtureIds } from './src/fixture'
 
 /**
- * @elah/react-native dev harness (RN-T3, RN-T4, RN-T5, RN-T6, RN-T7, RN-T8, RN-T9).
+ * @elah/react-native dev harness (RN-T3 to RN-T9, and the RN-P6 D6 spike).
  *
  * The real engine, the real @elah/react EditorProvider and the real timeline
  * model, running on Hermes, drawn by the library's <Timeline>. The buttons
@@ -59,6 +59,7 @@ function Harness() {
   const [exportedJson, setExportedJson] = useState<string>('')
   const [importText, setImportText] = useState<string>('')
   const [importStatus, setImportStatus] = useState<string>('')
+  const [spikeOpen, setSpikeOpen] = useState(false)
 
   useEffect(() => {
     setIds(loadFixture(engine))
@@ -140,6 +141,9 @@ function Harness() {
       <ScrollView contentContainerStyle={styles.page}>
         <Text style={styles.title}>Elah · React Native harness</Text>
         <Text style={styles.muted}>Engine, provider and timeline model running on this device.</Text>
+
+        {spikeOpen ? <D6SpikeScreen onClose={() => setSpikeOpen(false)} /> : null}
+        <Button label="RN-P6 · D6 spike (native build only)" onPress={() => setSpikeOpen(true)} />
 
         <Transport isPlaying={isPlaying} onToggle={togglePlay} />
 
@@ -241,6 +245,30 @@ function Harness() {
       </ScrollView>
     </SafeAreaView>
   )
+}
+
+/**
+ * Loaded on demand: the spike's native modules exist only in a development build
+ * made after RN-P6 (`npx expo run:ios|android`), so an older build still opens the
+ * rest of the harness and shows why the spike cannot.
+ */
+function D6SpikeScreen({ onClose }: { onClose: () => void }) {
+  const [loaded] = useState<{ Screen: ComponentType<{ onClose: () => void }> } | { error: string }>(() => {
+    try {
+      return { Screen: require('./src/spike/D6Spike').default }
+    } catch (e) {
+      return { error: String(e instanceof Error ? e.message : e) }
+    }
+  })
+  if ('error' in loaded) {
+    return (
+      <Section title="RN-P6 · D6 spike">
+        <Text style={styles.code}>{`Cannot load the spike (rebuild with npx expo run:ios|android):\n${loaded.error}`}</Text>
+        <Button label="Close" onPress={onClose} />
+      </Section>
+    )
+  }
+  return <loaded.Screen onClose={onClose} />
 }
 
 function Transport({ isPlaying, onToggle }: { isPlaying: boolean; onToggle: () => void }) {
