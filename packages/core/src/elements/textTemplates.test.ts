@@ -204,6 +204,35 @@ describe('applyTextTemplate', () => {
     expect(patch.color).toBe(titleCard.style.color)
   })
 
+  it('clears a bundled font and italic, so the template family actually wins (PV-P4b)', () => {
+    // The failure this prevents is INVISIBLE: `fontId` keeps winning over
+    // `fontFamily` in resolveTextStyle, so a template applied over a bundled font
+    // changes every other field and leaves the typeface untouched. The keys must
+    // be PRESENT and undefined — `toEqual` ignores an undefined key, so `in` is
+    // the only assertion that sees them.
+    const patch = applyTextTemplate(
+      titleCard,
+      makeTextClip({ fontId: 'inter', fontStyle: 'italic' }),
+    )
+    expect('fontId' in patch).toBe(true)
+    expect('fontStyle' in patch).toBe(true)
+    expect(patch.fontId).toBeUndefined()
+    expect(patch.fontStyle).toBeUndefined()
+  })
+
+  it('clears a glyph gradient, so the template colour can win (PV-P4c-1)', () => {
+    // A gradient REPLACES `color` at paint time, so a template that sets a
+    // colour and leaves the gradient in place changes nothing visible — and
+    // nothing reports an error, because both fields are perfectly valid.
+    const patch = applyTextTemplate(
+      titleCard,
+      makeTextClip({ textFill: { type: 'linear', angle: 0, stops: [{ offset: 0, color: '#000' }, { offset: 1, color: '#fff' }] } }),
+    )
+    expect('textFill' in patch).toBe(true)
+    expect(patch.textFill).toBeUndefined()
+    expect(patch.color).toBe(titleCard.style.color)
+  })
+
   it('never rewrites the author’s text', () => {
     const patch = applyTextTemplate(titleCard, makeTextClip({ content: 'my words' }))
     expect('content' in patch).toBe(false)

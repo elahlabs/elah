@@ -106,10 +106,29 @@ seeds them via `enableChannels()`.
 
 ## 6. Audio mixing & mediabunny integration
 
-**Mix (main thread).** `renderAudioMix` builds an `OfflineAudioContext` sized to
-the timeline, decodes each active (non-muted, non-disabled) audio clip with
-`decodeAudioData`, schedules it with `start(when, offset, duration)` derived from
-the clip's frames, applies per-clip gain, and renders to planar Float32 PCM.
+**Mix (main thread; PV-P10a).** `renderAudioMix` walks `flattenAudioClips(project)`
+(PV-P1a) — audio at every compound depth, at its absolute position — and keeps an
+entry only when it is audible: `clip.disabled`/`!clip.src` excluded first, then
+solo/mute checked at EVERY ancestor level (`resolveAncestry`, following
+`entry.parentChain` from the root, resolving each compound only within its own
+containing project — never the root's tracks for a nested track) and on the leaf
+track itself (`isAudioTrackAudible`). Each surviving entry's `start(when, offset,
+duration)` and `playbackRate` come from `scheduleAudioClip` (`export/audioMix.ts`),
+which intersects the clip's absolute window with the export range (PV-P9a-1)
+before anything is scheduled. Gain is not a single number: `gainAutomation`
+samples the clip's volume keyframes (or its static `clip.volume` when there are
+none) at every timeline frame the clip is audible in, through the SAME sampler
+the preview uses (`resolver/keyframes.ts`'s `sampleKeyframes`, with the P5b-2
+expression hook when the channel is `{ kind: 'expression' }`), multiplied by
+whatever ancestor gain `flattenAudioClips` already folded in and this clip's own
+track volume — compressed to the fewest `setValueAtTime`/`linearRampToValueAtTime`
+calls that reproduce those samples (`applyGainEvents`). Every clip's gain node
+connects to ONE master `GainNode` (`project.masterVolume ?? 1`), which is what
+connects to `ctx.destination` — master volume is applied exactly once, never
+folded into a per-clip value. A project using none of this (no keys, no track/
+master volume, no solo, the whole timeline as the range) reproduces the exact
+`start()` arguments and the single `setValueAtTime(clip.volume ?? 1, when)` this
+mix always produced.
 
 **Encode (worker).** mediabunny does the muxing:
 
@@ -149,6 +168,23 @@ chunk backpressure. There is no predictive frame cache here — mediabunny's
 opened once up front: one `CanvasSink` per unique video `src`, one `ImageBitmap`
 per unique image `src`.
 
+SVG images are rasterised on the main thread (`preDecode.ts`) at the `<img>`
+natural size and transferred as `ImageBitmap`s in `options.preDecoded`;
+workers cannot decode SVG.
+
+Sequence clips (animated GIF/WebP/PNG/AVIF, or a numbered frame sequence) are
+decoded IN the worker, reusing `media/sequence/SequenceReader.ts`'s
+`openAnimatedImage`/`openFrameSequence` (DOM-free by design, PV-P8b) —
+unlike SVG, `ImageDecoder` and `createImageBitmap` are both available inside
+a worker. `export/sequenceFrames.ts`'s `SequenceFrameStore` opens one reader
+per source (shared across occurrences) and holds one decoded frame per
+occurrence, closing the previous frame the moment the index changes; a
+compound child's occurrence is keyed the same way its nested video decoder
+is, because two occurrences of one sequence can be on different frames at
+once. A browser with no `ImageDecoder`, or one that cannot read the type,
+exports the clip as its first frame and the caller gets one `onWarning`
+message per source, never a fatal error.
+
 ## 9. Known bottlenecks
 
 - **Audio mix is main-thread, whole-file.** Each clip is fully decoded into the
@@ -170,3 +206,9 @@ per unique image `src`.
 > Tracing: enable `EXPORT`, `EXPORT_ASSETS`, `EXPORT_AUDIO`, `EXPORT_MUX`,
 > `EXPORT_FRAMES` via `__trace.on(...)` in the console before exporting. The main
 > thread and worker both route through the same channels (`core/debug/trace.ts`).
+
+## Effects in export (EDX-P3)
+
+Clips that carry effects are drawn by the preview's own `EffectChain` on a WebGL2 `OffscreenCanvas` inside the worker (`gpuExport.ts`, `WorkerEffectRenderer`), then composited onto the 2D frame with one `drawImage`. Clips without effects never touch the GPU. A project that uses effects in a browser without worker WebGL2 fails at once with `ExportCapabilityError` (`exportErrors.ts`), carried across the worker boundary as `code: 'capability'`.
+
+`renderFrame` draws in the project's logical stage units under one `setTransform` scale onto the output canvas, the same units the preview uses for font sizes, transforms and effect params. Before EDX-P3 it drew in output pixels, which over-sized text and transformed clips on every export below native resolution.

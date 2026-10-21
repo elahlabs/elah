@@ -23,6 +23,7 @@ import { GpuDebugCounters } from '../../renderer/gpu/debug/GpuDebugCounters'
 import { StreamingFrameProducer } from './StreamingFrameProducer'
 import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
 import type { VideoDecoderFactory } from './VideoDecoderManager'
+import type { VideoRotation } from './rotation'
 
 /**
  * A frame handed to the renderer for upload. Either a raw decoded `VideoFrame`
@@ -61,8 +62,24 @@ export interface VideoFrameProvider {
    */
   readonly openPromise?: Promise<void> | null
 
+  /**
+   * Clockwise rotation the clip's frames must be turned by to be upright
+   * (iPhone portrait video: landscape pixels + 90). The frames this provider
+   * returns are UNROTATED; whoever draws them applies it and swaps w/h for
+   * 90/270. Absent / 0 means upright already. May change from 0 once the
+   * container has opened, so read it each draw.
+   */
+  readonly rotation?: VideoRotation
+
   /** The error the initial open failed with, if it did. */
   readonly openError?: Error | null
+
+  /**
+   * Size of the source picture (coded, unrotated) when the frames this provider
+   * returns may be DOWNSCALED copies of it. Content size, fit and crop must use
+   * this, not the returned bitmap's size. Absent / null = frames are full size.
+   */
+  readonly sourceSize?: { width: number; height: number } | null
 }
 
 export interface MetricsHook {
@@ -416,7 +433,12 @@ export interface VideoFrameProviderDeps {
    * Defaults to `createImageBitmap`. Injectable for tests (jsdom has no real
    * `createImageBitmap`). See StreamingFrameProducer.
    */
-  frameConverter?: (frame: VideoFrame) => Promise<ImageBitmap>
+  frameConverter?: import('./StreamingFrameProducer').FrameConverter
+  /**
+   * Longest edge of the bitmaps cached per frame (preview). Default 1920; 0 or
+   * Infinity = full resolution. See StreamingFrameProducer.
+   */
+  maxFrameLongEdge?: number
 }
 
 /**
@@ -439,6 +461,7 @@ export function createVideoFrameProvider(
       demuxerFactory: deps.demuxerFactory,
       decoderFactory: deps.decoderFactory,
       frameConverter: deps.frameConverter,
+      maxFrameLongEdge: deps.maxFrameLongEdge,
     })
   }
   if (canUseSyntheticFrames()) {

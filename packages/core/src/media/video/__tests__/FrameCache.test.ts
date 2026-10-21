@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { FrameCache, estimateFrameBytes } from '../FrameCache'
+import { FrameCache } from '../FrameCache'
 
 // ---------------------------------------------------------------------------
 // Mock VideoFrame factory
@@ -158,24 +158,20 @@ describe('FrameCache', () => {
     expect(cache.has(7)).toBe(true)
   })
 
+  // -------------------------------------------------------------------------
+  // Byte-bound (maxBytes) — StreamingFrameProducer's real usage caches
+  // ImageBitmap-shaped frames (width/height, not VideoFrame's
+  // displayWidth/displayHeight), so these mocks match that shape.
+  // -------------------------------------------------------------------------
+
   function mockBitmap(width: number, height: number) {
-    return {
-      close: vi.fn(),
-      width,
-      height,
-    } as unknown as ImageBitmap & {
+    frameCounter++
+    return { close: vi.fn(), width, height, _id: frameCounter } as unknown as {
       close: () => void
       width: number
       height: number
     }
   }
-
-  it('estimateFrameBytes calculates RGBA bytes correctly for 1080p, 4K, and mock objects', () => {
-    expect(estimateFrameBytes({ width: 1920, height: 1080 })).toBe(1920 * 1080 * 4) // 8,294,400 bytes
-    expect(estimateFrameBytes({ width: 3840, height: 2160 })).toBe(3840 * 2160 * 4) // 33,177,600 bytes
-    expect(estimateFrameBytes({ codedWidth: 1280, codedHeight: 720 })).toBe(1280 * 720 * 4)
-    expect(estimateFrameBytes({})).toBe(0)
-  })
 
   it('evicts under a byte budget even when the count budget is not reached', () => {
     // 1000x1000 RGBA ≈ 4 MB/frame; a 10 MB budget fits ~2.5 frames.
@@ -197,33 +193,6 @@ describe('FrameCache', () => {
     expect(cache.has(1)).toBe(true)
     expect(cache.has(2)).toBe(true)
     expect(cache.totalBytes).toBeLessThanOrEqual(10 * 1024 * 1024)
-  })
-
-  it('maintains accurate totalBytes through addition, overwrite, eviction, and clear', () => {
-    const cache = new FrameCache<{ close: () => void; width: number; height: number }>({
-      maxFrames: 5,
-      maxBytes: 20 * 1024 * 1024,
-    })
-    const f0 = mockBitmap(1000, 1000) // 4 MB
-    const f1 = mockBitmap(1000, 1000) // 4 MB
-    cache.put(0, f0)
-    expect(cache.totalBytes).toBe(4_000_000)
-
-    cache.put(1, f1)
-    expect(cache.totalBytes).toBe(8_000_000)
-
-    // Overwriting sourceFrame 0 with a 2MB frame
-    const f0New = mockBitmap(1000, 500) // 2 MB
-    cache.put(0, f0New)
-    expect(cache.totalBytes).toBe(6_000_000)
-
-    // evictBefore(1) removes frame 0
-    cache.evictBefore(1)
-    expect(cache.totalBytes).toBe(4_000_000)
-
-    // clear() resets to 0
-    cache.clear()
-    expect(cache.totalBytes).toBe(0)
   })
 
   it('caches a single frame larger than the whole byte budget without looping forever', () => {

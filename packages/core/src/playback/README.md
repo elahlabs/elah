@@ -15,7 +15,7 @@ Everything else — the playhead needle, the timeline ruler, renderers, audio, o
 | [`PlaybackEngine.ts`](./PlaybackEngine.ts) | The clock. Framework-agnostic. No React, no Zustand. |
 | [`PlaybackEngine.test.ts`](./PlaybackEngine.test.ts) | Unit tests, including clock-switching and anchor-and-integrate scenarios. |
 
-The engine is wired to React state by [`editor/EditorProvider.tsx`](../../editor/EditorProvider.tsx) and consumed by timeline components via the `usePlaybackStore` mirror (`@elah/react` hook over core's vanilla `playbackStore`).
+The engine is wired to React state by [`editor/EditorProvider.tsx`](../../editor/EditorProvider.tsx) and consumed by timeline components via the `usePlaybackStore` mirror.
 
 ---
 
@@ -138,7 +138,7 @@ When `document.hidden` becomes `true` while playing, `anchorFrame` is frozen at 
 ## Testing
 
 ```bash
-npm --workspace @elah/core run test
+npm run test
 ```
 
 Tests inject a deterministic `now` and stub `requestAnimationFrame`, so the suite runs in Node with no real timers. Covered scenarios:

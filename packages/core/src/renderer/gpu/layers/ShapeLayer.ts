@@ -1,22 +1,31 @@
 /**
  * ShapeLayer — GPU layer for ActiveShapeClip items.
  *
- * Each shape is painted onto a per-item full-stage 2D canvas and uploaded as a
- * WebGL texture through the same quad pipeline TextLayer uses. The shape is
- * drawn centered on the canvas using the clip's transform (x/y = normalized
- * center, scale = fraction of the stage's short side).
+ * Each shape is painted onto a full-stage 2D canvas and uploaded as a WebGL
+ * texture through the same quad pipeline TextLayer uses. The shape is drawn at
+ * its stage-pixel position inside that canvas, so the quad itself is an
+ * identity full-stage rect and no transform reaches the shader.
  *
  * Defaults when no transform is provided:
  *   center: (0.5, 0.5), scale: 0.5 → shape occupies half the short side.
+ *
+ * The rasterization itself lives in `shapePaint.ts`, shared verbatim with the
+ * export worker's 2D renderer — see that file for why.
  */
 
 import type { ActiveShapeClip } from '../../../resolver/scene'
 import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
+import { paintShape, shapePaintSignature } from './shapePaint'
 import type { Layer, LayerContext } from './types'
+import { drawFullStageEffects } from './fullStageEffects'
+import { shapeMaskFrame } from './elementFrame'
 
 const FULL_STAGE_MAT3 = new Float32Array([2, 0, 0, 0, 2, 0, -1, -1, 1])
+
+/** Factory for the offscreen paint canvas; injectable so tests can mock the DOM. */
+export type ShapeCanvasFactory = () => HTMLCanvasElement
 
 /**
  * Per-clip resources: the GL texture holding the last painted content.
@@ -31,59 +40,6 @@ interface ItemResources {
   lastSignature: string
 }
 
-function paintSignature(item: ActiveShapeClip, stage: { width: number; height: number }): string {
-  return JSON.stringify([
-    item.shapeKind,
-    item.shapeFill,
-    item.shapeStroke,
-    item.shapeStrokeWidth,
-    item.transform?.x,
-    item.transform?.y,
-    item.transform?.scale,
-    stage.width,
-    stage.height,
-  ])
-}
-
-function paintShape(
-  ctx2d: CanvasRenderingContext2D,
-  item: ActiveShapeClip,
-  stage: { width: number; height: number },
-): void {
-  ctx2d.clearRect(0, 0, stage.width, stage.height)
-
-  const cx = (item.transform?.x ?? 0.5) * stage.width
-  const cy = (item.transform?.y ?? 0.5) * stage.height
-  const shortSide = Math.min(stage.width, stage.height)
-  const baseHalf = (item.transform?.scale ?? 0.5) * shortSide * 0.5
-  const halfW = baseHalf * (item.transform?.scaleX ?? 1)
-  const halfH = baseHalf * (item.transform?.scaleY ?? 1)
-
-  ctx2d.fillStyle = item.shapeFill
-  ctx2d.strokeStyle = item.shapeStroke
-  ctx2d.lineWidth = item.shapeStrokeWidth
-
-  if (item.shapeKind === 'rect') {
-    ctx2d.beginPath()
-    ctx2d.rect(cx - halfW, cy - halfH, halfW * 2, halfH * 2)
-    ctx2d.fill()
-    if (item.shapeStrokeWidth > 0) ctx2d.stroke()
-  } else if (item.shapeKind === 'circle') {
-    ctx2d.beginPath()
-    ctx2d.ellipse(cx, cy, halfW, halfH, 0, 0, Math.PI * 2)
-    ctx2d.fill()
-    if (item.shapeStrokeWidth > 0) ctx2d.stroke()
-  } else if (item.shapeKind === 'triangle') {
-    ctx2d.beginPath()
-    ctx2d.moveTo(cx, cy - halfH)
-    ctx2d.lineTo(cx + halfW, cy + halfH)
-    ctx2d.lineTo(cx - halfW, cy + halfH)
-    ctx2d.closePath()
-    ctx2d.fill()
-    if (item.shapeStrokeWidth > 0) ctx2d.stroke()
-  }
-}
-
 export class ShapeLayer implements Layer<ActiveShapeClip> {
   private _program: ShaderProgram | null = null
   private _vao: WebGLVertexArrayObject | null = null
@@ -92,6 +48,11 @@ export class ShapeLayer implements Layer<ActiveShapeClip> {
   /** Shared rasterization canvas — see ItemResources doc. */
   private _scratchCanvas: HTMLCanvasElement | null = null
   private _scratchCtx: CanvasRenderingContext2D | null = null
+  private readonly _createCanvas: ShapeCanvasFactory
+
+  constructor(createCanvas?: ShapeCanvasFactory) {
+    this._createCanvas = createCanvas ?? (() => document.createElement('canvas'))
+  }
 
   acquire(item: ActiveShapeClip, ctx: LayerContext): void {
     const { gl } = ctx
@@ -136,10 +97,10 @@ export class ShapeLayer implements Layer<ActiveShapeClip> {
       res.lastSignature = ''
     }
 
-    const sig = paintSignature(item, ctx.stage)
+    const sig = shapePaintSignature(item, ctx.stage)
     if (res.lastSignature !== sig) {
       if (!this._scratchCanvas) {
-        this._scratchCanvas = document.createElement('canvas')
+        this._scratchCanvas = this._createCanvas()
         const ctx2d = this._scratchCanvas.getContext('2d')
         if (!ctx2d) throw new Error('ShapeLayer: 2D context unavailable')
         this._scratchCtx = ctx2d
@@ -149,6 +110,10 @@ export class ShapeLayer implements Layer<ActiveShapeClip> {
         canvas.width = ctx.stage.width
         canvas.height = ctx.stage.height
       }
+      // The shared painter never clears — it is also used to composite into an
+      // export frame. The scratch canvas is reused by every shape, so it must
+      // be wiped here or the previous clip's pixels bleed into this texture.
+      this._scratchCtx!.clearRect(0, 0, ctx.stage.width, ctx.stage.height)
       paintShape(this._scratchCtx!, item, ctx.stage)
       gl.bindTexture(gl.TEXTURE_2D, res.texture)
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
@@ -162,6 +127,13 @@ export class ShapeLayer implements Layer<ActiveShapeClip> {
     gl.bindVertexArray(this._vao)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, res.texture)
+    // Effect stack (EDX-P2): the chain draws the clip itself when it runs.
+    const maskFrame = item.mask ? shapeMaskFrame(item, ctx.stage) : undefined
+    if (drawFullStageEffects(ctx, item, this._program, this._vao, res.texture, maskFrame)) {
+      gl.bindTexture(gl.TEXTURE_2D, null)
+      gl.bindVertexArray(null)
+      return
+    }
     this._program.setUniform1i(gl, 'uTexture', 0)
     this._program.setUniform1f(gl, 'uOpacity', item.opacity ?? 1)
     this._program.setUniformMatrix3fv(gl, 'uTransform', false, FULL_STAGE_MAT3)

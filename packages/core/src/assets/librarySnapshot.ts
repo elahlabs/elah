@@ -15,7 +15,7 @@
  * library into something storable, and put a stored one back. Where it is
  * stored is deliberately not decided here — `packages/core` has no business
  * knowing about IndexedDB, tenants or projects, and the app that does owns the
- * adapter (`apps/web/lib/media-library-snapshot.ts`).
+ * adapter.
  *
  * The ids are kept. A restored clip's `assetId` names the asset it had when it
  * was saved, so hydrating under the same ids makes those references resolve
@@ -48,6 +48,15 @@ export interface HydrateMediaLibraryOptions {
    * of a composition that never used it would just be litter.
    */
   referencedSrcs: ReadonlySet<string>
+  /**
+   * Rewrites an entry before it is considered (LM-P3): a local file whose
+   * handle was re-opened this session is restored under its fresh object URL
+   * instead of the dead one it was saved with. Return the entry unchanged to
+   * leave it as stored. The result still goes through the same rules - never
+   * overwrites, a dead `blob:` is kept only when `referencedSrcs` has it - and
+   * `referencedSrcs` is matched against the REMAPPED `src`.
+   */
+  remap?: (entry: MediaLibrarySnapshotEntry) => MediaLibrarySnapshotEntry
 }
 
 export interface HydrateMediaLibraryResult {
@@ -116,7 +125,8 @@ export function hydrateMediaLibrary(
   const hydrated: string[] = []
   const needsThumbnail: string[] = []
 
-  for (const entry of entries) {
+  for (const stored of entries) {
+    const entry = opts.remap ? opts.remap(stored) : stored
     if (existing[entry.id] !== undefined) continue
     if (existingSrcs.has(entry.src)) continue
 

@@ -16,9 +16,9 @@ Clips on the timeline reference assets by `id` rather than duplicating URLs and 
 | [`store.ts`](./store.ts) | Zustand store — in-memory asset registry |
 | [`importFiles.ts`](./importFiles.ts) | File import, metadata probing, thumbnail generation |
 | [`importFiles.test.ts`](./importFiles.test.ts) | Unit tests for import, probe, and thumbnail helpers |
-| [`index.ts`](./index.ts) | Public exports (`mediaLibraryStore`, `importFiles`/`importUrl`/`importBlob`, types) — the `useMediaLibrary()` hook itself lives in `@elah/react` |
+| [`index.ts`](./index.ts) | Public exports and `useMediaLibrary()` hook |
 
-UI integration lives in the `@elah/editor` package's [`AssetPanel.tsx`](../../../../editor/src/editor/AssetPanel/AssetPanel.tsx). Timeline drop handling consumes `MEDIA_DRAG_MIME` via the `@elah/timeline` package's [`useTimelineDrop.ts`](../../../../timeline/src/useTimelineDrop.ts).
+UI integration lives in the editor package's [`AssetPanel.tsx`](../../../../editor/src/editor/AssetPanel/AssetPanel.tsx). Timeline drop handling consumes `MEDIA_DRAG_MIME` via the timeline package's [`useTimelineDrop.ts`](../../../../timeline/src/useTimelineDrop.ts).
 
 ---
 
@@ -113,7 +113,7 @@ Default max dimension: 240 px (`thumbnailMaxDim` option). Failures are logged an
 
 ## Public API
 
-### Hook (React, from @elah/react)
+### Hook (React)
 
 ```ts
 const { assets, getAsset } = useMediaLibrary()
@@ -184,14 +184,14 @@ Thumbnail generation is best-effort: the asset is usable immediately after metad
 - **Content hashing** — dedupe uses name + size + lastModified, not file bytes.
 - **Worker/off-thread thumbnails** — all probing and thumbnail work runs on the main thread.
 
-See the `@elah/editor` package's [`Architecture.md`](../../../../editor/src/core/Architecture.md) for how this module fits the wider editor layout.
+See the editor package's [`Architecture.md`](../../../../editor/src/core/Architecture.md) for how this module fits the wider editor layout.
 
 ---
 
 ## Testing
 
 ```bash
-npm --workspace @elah/core run test -- importFiles
+npm run test -- importFiles
 ```
 
 Tests stub `document.createElement`, `URL.createObjectURL`, and canvas APIs so the suite runs in Node. Coverage includes:

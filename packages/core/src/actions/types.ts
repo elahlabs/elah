@@ -16,3 +16,12 @@ export type ActionFailureReason =
   | 'playhead-outside-clip'
   | 'engine-rejected'
   | 'cannot-split-while-playing'
+  | 'track-locked'
+  // PV-T1
+  | 'not-adjacent'
+  | 'media-limit'
+  | 'not-slippable'
+  | 'no-main-track'
+  // AVM-P5
+  | 'no-audio-to-detach'
+  | 'no-audio-track'

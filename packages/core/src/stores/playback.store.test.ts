@@ -1,121 +1,149 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const KEY = 'myeditor-playback'
+/**
+ * The store used to be wrapped in zustand's `persist` middleware, which writes
+ * `localStorage` on *every* mutation regardless of whether a persisted field
+ * moved. `setCurrentFrame` fires ~30 times a second during playback and once
+ * per pointermove while scrubbing, so the editor was doing a synchronous
+ * stringify-and-write dozens of times a second to re-save six unchanged values.
+ * These pin the fix, and pin that the user's preferences still survive it.
+ */
 
-function makeStorage(initial: Record<string, string> = {}) {
-  const data = new Map(Object.entries(initial))
+interface FakeStorage {
+  getItem: ReturnType<typeof vi.fn>
+  setItem: ReturnType<typeof vi.fn>
+  removeItem: ReturnType<typeof vi.fn>
+}
+
+function fakeStorage(seed?: Record<string, string>): FakeStorage {
+  const data = new Map(Object.entries(seed ?? {}))
   return {
-    data,
     getItem: vi.fn((k: string) => data.get(k) ?? null),
     setItem: vi.fn((k: string, v: string) => void data.set(k, v)),
     removeItem: vi.fn((k: string) => void data.delete(k)),
   }
 }
 
-async function loadStore() {
+/** Import the store fresh so module-init persistence reads `storage`. */
+async function loadStore(storage: FakeStorage) {
   vi.resetModules()
-  return (await import('./playback.store')).playbackStore
+  vi.stubGlobal('localStorage', storage)
+  const mod = await import('./playback.store')
+  return mod.playbackStore
 }
 
+beforeEach(() => {
+  vi.resetModules()
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe('playbackStore persistence', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
+  it('never writes storage while the playhead moves', async () => {
+    const storage = fakeStorage()
+    const store = await loadStore(storage)
+
+    for (let frame = 0; frame < 100; frame++) {
+      store.getState().setCurrentFrame(frame)
+    }
+    // A scrub that lands repeatedly on the same frame still bumps the epoch.
+    store.getState().setCurrentFrame(99)
+    store.getState().setCurrentFrame(99)
+
+    expect(store.getState().currentFrame).toBe(99)
+    expect(storage.setItem).not.toHaveBeenCalled()
   })
 
-  describe('with localStorage', () => {
-    let storage: ReturnType<typeof makeStorage>
+  it('does not write for play/pause either', async () => {
+    const storage = fakeStorage()
+    const store = await loadStore(storage)
 
-    beforeEach(() => {
-      storage = makeStorage()
-      vi.stubGlobal('localStorage', storage)
-    })
+    store.getState().play()
+    store.getState().pause()
+    store.getState().togglePlayPause()
 
-    it('persists exactly the transport preferences', async () => {
-      const store = await loadStore()
-      const s = store.getState()
-      s.setZoom(8)
-      s.setVolume(0.4)
-      s.toggleMute()
-      s.setPlaybackRate(2)
-      s.toggleLoop()
-      s.toggleSnap()
+    expect(storage.setItem).not.toHaveBeenCalled()
+  })
 
-      const saved = JSON.parse(storage.data.get(KEY)!)
-      expect(saved.state).toEqual({
-        zoom: 8,
-        volume: 0.4,
-        muted: true,
-        playbackRate: 2,
-        loop: true,
-        snapEnabled: false,
-      })
-      expect(Object.keys(saved.state).sort()).toEqual(
-        ['loop', 'muted', 'playbackRate', 'snapEnabled', 'volume', 'zoom'],
-      )
-    })
+  it('writes once when a preference actually changes', async () => {
+    const storage = fakeStorage()
+    const store = await loadStore(storage)
 
-    it('never writes transient state, and does not write at all for frame/play churn', async () => {
-      const store = await loadStore()
-      const s = store.getState()
+    store.getState().setZoom(12)
+    expect(storage.setItem).toHaveBeenCalledTimes(1)
 
-      s.setCurrentFrame(120)
-      s.play()
-      s.pause()
-      s.togglePlayPause()
-      expect(storage.setItem).not.toHaveBeenCalled()
-
-      // A preference change afterwards still must not smuggle the transient keys in.
-      s.setZoom(10)
-      const saved = JSON.parse(storage.data.get(KEY)!)
-      expect(saved.state).not.toHaveProperty('currentFrame')
-      expect(saved.state).not.toHaveProperty('currentFrameEpoch')
-      expect(saved.state).not.toHaveProperty('isPlaying')
-      expect(storage.setItem).toHaveBeenCalledTimes(1)
-    })
-
-    it('restores saved preferences but starts transient state fresh', async () => {
-      storage.data.set(
-        KEY,
-        JSON.stringify({
-          state: { zoom: 12, muted: true, currentFrame: 999, isPlaying: true, volume: 'loud' },
-          version: 0,
-        }),
-      )
-      const store = await loadStore()
-      const s = store.getState()
-      expect(s.zoom).toBe(12)
-      expect(s.muted).toBe(true)
-      expect(s.volume).toBe(1) // wrong type is ignored
-      expect(s.currentFrame).toBe(0)
-      expect(s.isPlaying).toBe(false)
-    })
-
-    it('survives a corrupt stored document and a throwing setItem', async () => {
-      storage.data.set(KEY, '{nope')
-      const store = await loadStore()
-      expect(store.getState().zoom).toBe(4)
-
-      storage.setItem.mockImplementation(() => {
-        throw new Error('quota')
-      })
-      expect(() => store.getState().setZoom(6)).not.toThrow()
-      expect(store.getState().zoom).toBe(6)
+    const [key, value] = storage.setItem.mock.calls[0] as [string, string]
+    expect(key).toBe('myeditor-playback')
+    expect(JSON.parse(value)).toEqual({
+      state: {
+        zoom: 12,
+        volume: 1,
+        muted: false,
+        playbackRate: 1,
+        loop: false,
+        snapEnabled: true,
+      },
+      version: 0,
     })
   })
 
-  describe('without localStorage (Node)', () => {
-    it('loads with defaults and every action works', async () => {
-      vi.stubGlobal('localStorage', undefined)
-      const store = await loadStore()
-      const s = store.getState()
-      expect(s.zoom).toBe(4)
-      expect(() => {
-        s.setZoom(9)
-        s.toggleMute()
-        s.setCurrentFrame(5)
-      }).not.toThrow()
-      expect(store.getState().zoom).toBe(9)
-      expect(store.getState().muted).toBe(true)
+  it('writes for each preference and no more', async () => {
+    const storage = fakeStorage()
+    const store = await loadStore(storage)
+
+    store.getState().toggleMute()
+    store.getState().setVolume(0.5)
+    store.getState().toggleSnap()
+    store.getState().toggleLoop()
+    store.getState().setPlaybackRate(2)
+
+    expect(storage.setItem).toHaveBeenCalledTimes(5)
+
+    // A no-op set writes nothing: the clamped value is already current.
+    storage.setItem.mockClear()
+    store.getState().setVolume(0.5)
+    expect(storage.setItem).not.toHaveBeenCalled()
+  })
+
+  it('restores preferences written by the previous implementation', async () => {
+    // Same key and same `{ state, version }` envelope zustand's persist wrote,
+    // so nobody loses their zoom or their mute across this change.
+    const storage = fakeStorage({
+      'myeditor-playback': JSON.stringify({
+        state: { zoom: 9, volume: 0.25, muted: true, playbackRate: 2, loop: true, snapEnabled: false },
+        version: 0,
+      }),
     })
+    const store = await loadStore(storage)
+
+    expect(store.getState()).toMatchObject({
+      zoom: 9,
+      volume: 0.25,
+      muted: true,
+      playbackRate: 2,
+      loop: true,
+      snapEnabled: false,
+      // Never persisted: where the playhead was belongs to the composition.
+      currentFrame: 0,
+      isPlaying: false,
+    })
+  })
+
+  it('falls back to defaults on unreadable or partial stored state', async () => {
+    const store = await loadStore(
+      fakeStorage({ 'myeditor-playback': '{ not json' }),
+    )
+    expect(store.getState().zoom).toBe(4)
+
+    const partial = await loadStore(
+      fakeStorage({
+        'myeditor-playback': JSON.stringify({ state: { zoom: 7, muted: 'yes' }, version: 0 }),
+      }),
+    )
+    expect(partial.getState().zoom).toBe(7)
+    // Wrong type for the field — ignored rather than trusted.
+    expect(partial.getState().muted).toBe(false)
   })
 })

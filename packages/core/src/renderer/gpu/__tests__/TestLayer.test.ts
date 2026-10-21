@@ -70,6 +70,7 @@ function createMockGL(): WebGL2RenderingContext {
     getUniformLocation: vi.fn(() => ({})),
     uniform1i: vi.fn(),
     uniform1f: vi.fn(),
+    uniform2f: vi.fn(),
     uniformMatrix3fv: vi.fn(),
     activeTexture: vi.fn(),
     drawArrays: vi.fn(),

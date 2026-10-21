@@ -76,6 +76,11 @@ export class ShaderProgram {
     if (loc !== null) gl.uniform2f(loc, x, y)
   }
 
+  setUniform3f(gl: WebGL2RenderingContext, name: string, x: number, y: number, z: number): void {
+    const loc = this.getUniformLocation(gl, name)
+    if (loc !== null) gl.uniform3f(loc, x, y, z)
+  }
+
   setUniform4f(gl: WebGL2RenderingContext, name: string, x: number, y: number, z: number, w: number): void {
     const loc = this.getUniformLocation(gl, name)
     if (loc !== null) gl.uniform4f(loc, x, y, z, w)

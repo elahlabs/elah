@@ -32,9 +32,9 @@ function sampleAt(
 
 describe('easing library', () => {
   it('exposes every curve the type allows', () => {
-    // Ten curves are declared on TextAnimationEasing; the map is keyed by that
+    // 31 curves are declared (linear + ten families x in/out/in-out) on TextAnimationEasing; the map is keyed by that
     // union, so a missing one is a compile error and this pins the count.
-    expect(TEXT_ANIMATION_EASINGS.length).toBe(10)
+    expect(TEXT_ANIMATION_EASINGS.length).toBe(31)
   })
 
   it('starts at 0 and ends at 1 for every curve', () => {

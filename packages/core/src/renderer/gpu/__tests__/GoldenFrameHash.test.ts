@@ -14,7 +14,6 @@
  *  - I7: identical (scene, frame) pair → identical call log → identical hash
  *  - Context-loss recovery: re-render after notifyContextLost produces same hash
  *
- * @see EVOLUTION.md § 4 Phase 1 (Deterministic validation harness)
  * @see architecture.md § 9 (context-loss recovery)
  */
 

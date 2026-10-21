@@ -150,6 +150,32 @@ describe('RenderGraph', () => {
     expect(lastDrawn.label).toBe('updated')
   })
 
+  it('re-acquires an item whose source changed under the same id', () => {
+    // A reload re-points a local clip from the dead blob: URL of the previous
+    // page to the file it reopened. Layers load on acquire, so this must be a
+    // release + acquire, not a silent refresh.
+    items = [{ ...item('a', 0), src: 'blob:old' } as TestItem]
+    graph.execute(STUB_SCENE, STUB_CTX)
+
+    items = [{ ...item('a', 0), src: 'blob:new' } as TestItem]
+    graph.execute(STUB_SCENE, STUB_CTX)
+
+    expect(layer.release).toHaveBeenCalledTimes(1)
+    expect(layer.release).toHaveBeenCalledWith('a')
+    expect(layer.acquire).toHaveBeenCalledTimes(2)
+    expect((layer.acquire.mock.calls[1]?.[0] as { src?: string }).src).toBe('blob:new')
+  })
+
+  it('does not re-acquire when the source is unchanged', () => {
+    items = [{ ...item('a', 0), src: 'blob:same' } as TestItem]
+    graph.execute(STUB_SCENE, STUB_CTX)
+    items = [{ ...item('a', 0, 'moved'), src: 'blob:same' } as TestItem]
+    graph.execute(STUB_SCENE, STUB_CTX)
+
+    expect(layer.release).not.toHaveBeenCalled()
+    expect(layer.acquire).toHaveBeenCalledTimes(1)
+  })
+
   it('notifyContextLost() releases all active items', () => {
     items = [item('a', 0), item('b', 1)]
     graph.execute(STUB_SCENE, STUB_CTX)

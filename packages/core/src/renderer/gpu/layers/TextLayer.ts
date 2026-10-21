@@ -19,8 +19,11 @@ import type { ActiveTextClip } from '../../../resolver/scene'
 import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
-import { computeTextLayout } from './textLayout'
+import { paintText, textPaintSignature } from './textPaint'
+import { fontsEpoch } from '../../../fonts/loader'
 import type { Layer, LayerContext } from './types'
+import { drawFullStageEffects } from './fullStageEffects'
+import { textMaskFrame } from './elementFrame'
 
 /**
  * Full-stage column-major 3×3 — maps normalized stage coords (0..1) to clip
@@ -33,24 +36,6 @@ import type { Layer, LayerContext } from './types'
  */
 const FULL_STAGE_MAT3 = new Float32Array([2, 0, 0, 0, 2, 0, -1, -1, 1])
 
-/** Traces a rounded-rect path (radius clamped to half the shorter side) without relying on `ctx.roundRect`. */
-function roundRectPath(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-): void {
-  const radius = Math.max(0, Math.min(r, w / 2, h / 2))
-  ctx.beginPath()
-  ctx.moveTo(x + radius, y)
-  ctx.arcTo(x + w, y, x + w, y + h, radius)
-  ctx.arcTo(x + w, y + h, x, y + h, radius)
-  ctx.arcTo(x, y + h, x, y, radius)
-  ctx.arcTo(x, y, x + w, y, radius)
-  ctx.closePath()
-}
 
 /** Factory for the offscreen paint canvas; injectable so tests can mock the DOM. */
 export type TextCanvasFactory = () => HTMLCanvasElement
@@ -71,35 +56,6 @@ interface ItemResources {
   height: number
   /** Signature of the last painted content+style; skips re-upload when unchanged. */
   lastSignature: string
-}
-
-/** Stringified key of everything that affects the painted pixels (not opacity — that's a uniform). */
-function paintSignature(item: ActiveTextClip, stage: { width: number; height: number }): string {
-  return JSON.stringify([
-    item.content,
-    item.fontSize,
-    item.color,
-    item.fontFamily,
-    item.fontWeight,
-    item.textAlign,
-    item.backgroundColor,
-    item.backgroundOpacity,
-    item.padding,
-    item.borderRadius,
-    item.borderWidth,
-    item.borderColor,
-    item.transform?.x,
-    item.transform?.y,
-    // scale is baked into the painted fontSize, so it changes the pixels.
-    item.transform?.scale,
-    // rotation is applied at paint time (ctx.rotate, mirroring
-    // ExportWorker.drawText) — rotating in the shader instead would clip the
-    // glyph run at the UNROTATED stage bounds before the rotation ever ran,
-    // truncating text whose rotated placement is fully on-stage.
-    item.transform?.rotation,
-    stage.width,
-    stage.height,
-  ])
 }
 
 export class TextLayer implements Layer<ActiveTextClip> {
@@ -165,7 +121,12 @@ export class TextLayer implements Layer<ActiveTextClip> {
       res.lastSignature = ''
     }
 
-    const sig = paintSignature(item, ctx.stage)
+    // PV-P4a: the epoch is part of the key because a face landing CHANGES the
+    // painted pixels without changing the clip. A text clip paints once with the
+    // fallback metrics and once more when its real face arrives; without this the
+    // preview would keep the first rasterisation until something else changed.
+    // Cheap and intended: the epoch only moves when a new face actually loads.
+    const sig = `${textPaintSignature(item, ctx.stage)}|${fontsEpoch()}`
     if (res.lastSignature !== sig) {
       const canvas = this._paint(item, ctx.stage)
       gl.bindTexture(gl.TEXTURE_2D, res.texture)
@@ -194,6 +155,14 @@ export class TextLayer implements Layer<ActiveTextClip> {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, res.texture)
 
+    // Effect stack (EDX-P2): the chain draws the clip itself when it runs.
+    const maskFrame =
+      item.mask && this._scratchCtx ? textMaskFrame(this._scratchCtx, item, ctx.stage) : undefined
+    if (drawFullStageEffects(ctx, item, this._program, this._vao, res.texture, maskFrame)) {
+      gl.bindTexture(gl.TEXTURE_2D, null)
+      gl.bindVertexArray(null)
+      return
+    }
     this._program.setUniform1i(gl, 'uTexture', 0)
     this._program.setUniform1f(gl, 'uOpacity', opacity)
     this._program.setUniformMatrix3fv(gl, 'uTransform', false, FULL_STAGE_MAT3)
@@ -261,62 +230,8 @@ export class TextLayer implements Layer<ActiveTextClip> {
     }
 
     ctx2d.clearRect(0, 0, stage.width, stage.height)
-
-    // computeTextLayout sets ctx2d.font as a side effect, so the metrics it used
-    // to place the lines are exactly the ones we paint with. The same call backs
-    // the editor overlay's selection box, keeping handles glued to the glyphs.
-    const layout = computeTextLayout(ctx2d, item, stage)
-    const { backgroundColor, backgroundOpacity, borderWidth, borderColor, borderRadius } = layout.style
-
-    // Pixel-space rotation about the block centre, identical to
-    // ExportWorker.drawText — the painted canvas IS the rotated result, so the
-    // quad ships to the shader untransformed and glyphs clip only at the true
-    // stage bounds (never at the unrotated run's bounds).
-    const rotation = item.transform?.rotation ?? 0
-    ctx2d.save()
-    if (rotation !== 0) {
-      const cx = layout.center.x * stage.width
-      const cy = layout.center.y * stage.height
-      ctx2d.translate(cx, cy)
-      ctx2d.rotate(rotation)
-      ctx2d.translate(-cx, -cy)
-    }
-
-    if (backgroundColor) {
-      ctx2d.save()
-      ctx2d.globalAlpha = backgroundOpacity
-      ctx2d.fillStyle = backgroundColor
-      roundRectPath(ctx2d, layout.box.x, layout.box.y, layout.box.width, layout.box.height, borderRadius)
-      ctx2d.fill()
-      ctx2d.restore()
-    }
-
-    if (borderWidth > 0) {
-      ctx2d.save()
-      ctx2d.strokeStyle = borderColor
-      ctx2d.lineWidth = borderWidth
-      const inset = borderWidth / 2
-      roundRectPath(
-        ctx2d,
-        layout.box.x + inset,
-        layout.box.y + inset,
-        layout.box.width - borderWidth,
-        layout.box.height - borderWidth,
-        Math.max(0, borderRadius - inset),
-      )
-      ctx2d.stroke()
-      ctx2d.restore()
-    }
-
-    ctx2d.fillStyle = layout.style.color
-    ctx2d.textBaseline = 'middle'
-    ctx2d.textAlign = layout.style.textAlign
-
-    layout.lines.forEach((line, i) => {
-      ctx2d.fillText(line, layout.anchorX, layout.firstLineY + i * layout.lineAdvance)
-    })
-
-    ctx2d.restore()
+    // The shared painter (textPaint.ts) — the exporter calls the same one.
+    paintText(ctx2d, item, stage)
     return canvas
   }
 

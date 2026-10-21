@@ -5,9 +5,16 @@
  * Holds no GL objects.
  */
 
+import { normalizeRotation, type VideoRotation } from '../rotation'
+
 export interface DemuxerBackend {
   open(src: string): Promise<void>
   getConfig(): VideoDecoderConfig
+  /**
+   * Clockwise display rotation stored in the container (iPhone portrait video
+   * is landscape pixels + 90). Optional: absent means 0. Valid after open().
+   */
+  getRotation?(): VideoRotation
   packets(timeRange: [number, number]): AsyncIterable<EncodedVideoChunk>
   seekToKeyframe(time: number): Promise<void>
   dispose(): void
@@ -54,6 +61,12 @@ export class MediabunnyDemuxer {
   getConfig(): VideoDecoderConfig {
     this._assertOpen()
     return this._backend!.getConfig()
+  }
+
+  /** Source rotation of the opened track (0 when the backend has none). */
+  getRotation(): VideoRotation {
+    this._assertOpen()
+    return normalizeRotation(this._backend!.getRotation?.())
   }
 
   packets(timeRange: [number, number]): AsyncIterable<EncodedVideoChunk> {
@@ -104,7 +117,7 @@ async function createDefaultBackend(): Promise<DemuxerBackend> {
         '',
         '  // In your app (e.g. apps/playground/src/createPlaygroundDemuxerFactory.ts):',
         '  import * as mediabunny from "mediabunny"',
-        '  import { createMediabunnyBackend } from "@elah/editor"',
+        '  import { createMediabunnyBackend } from "@elah/core"',
         '',
         '  const renderer = new GpuRenderer({',
         '    demuxerFactory: () => createMediabunnyBackend(mediabunny),',

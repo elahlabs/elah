@@ -74,7 +74,7 @@ This folder may only import from:
 
 **Forbidden imports:** `Project`, `Track`, `Clip`, `TimelineEngine`, `PlaybackEngine`, any Zustand store, any React package, deep imports into `core/media/video/**` beyond the barrel/`VideoFrameProvider` module. Violations break the architecture's isolation guarantee.
 
-Import rules are enforced by [`core/media/__tests__/ImportBoundary.test.ts`](../../media/__tests__/ImportBoundary.test.ts).
+Import rules are kept by convention.
 
 ---
 
@@ -186,7 +186,7 @@ All optional, importable without affecting the production pipeline.
 | `playground.ts` | `loadDebugScenario(container, 'A'..'E')` mounts the debug renderer + overlay. |
 | `scenarios.ts` | Validation scenarios A–E: overlap, transform, opacity, full-stage. |
 
-The `@elah/editor` package's `Preview/Preview.tsx` is the production wiring example — RAF loop, `playback.getFrameAt()`, `resolveTimeline()`, and `renderer.render(scene)`.
+The editor package's `Preview/Preview.tsx` is the production wiring example — RAF loop, `playback.getFrameAt()`, `resolveTimeline()`, and `renderer.render(scene)`.
 
 ---
 

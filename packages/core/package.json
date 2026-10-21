@@ -21,7 +21,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -56,7 +57,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "immer": "^10.1.1",
-    "mediabunny": "^1.45.3",
+    "mediabunny": "^1.50.8",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

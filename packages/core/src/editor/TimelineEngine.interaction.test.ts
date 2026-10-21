@@ -90,6 +90,22 @@ describe('TimelineEngine — interactive gestures', () => {
     expect(countUndo(engine)).toBe(undoDepthBefore)
   })
 
+  it('a crop gesture (crop-resize/crop-pan) folds into one undo entry', () => {
+    const undoDepthBefore = countUndo(engine)
+
+    // Simulates MediaTransformOverlay's crop-resize: several intermediate
+    // previewClip calls as the pointer moves, then one commitInteraction.
+    engine.previewClip(clipId, trackId, { crop: { x: 0, y: 0, width: 0.8, height: 0.8 } })
+    engine.previewClip(clipId, trackId, { crop: { x: 0.1, y: 0.1, width: 0.6, height: 0.6 } })
+    engine.commitInteraction('Crop clip')
+
+    expect(engine.findClip(clipId)?.clip.crop).toEqual({ x: 0.1, y: 0.1, width: 0.6, height: 0.6 })
+    expect(countUndo(engine)).toBe(undoDepthBefore + 1)
+
+    engine.undo()
+    expect(engine.findClip(clipId)?.clip.crop).toBeUndefined()
+  })
+
   it('redo re-applies a committed gesture', () => {
     engine.previewClip(clipId, trackId, { fontSize: 120 })
     engine.commitInteraction('Resize text')

@@ -113,6 +113,66 @@ describe('Export frame-sampling — midpoint seek (half-frame offset)', () => {
   })
 })
 
+describe('Export frame-sampling — clip speed (fast-forward / slow-down)', () => {
+  const PROJECT_FPS = 30
+
+  /**
+   * The exact formula ExportWorker.ts uses to build sourceTimestamps:
+   *   (sourceStartFrame + i * speed + 0.5) / fps
+   * for export frame index i in [0, durationFrames).
+   */
+  function speededTimestamps(
+    sourceStartFrame: number,
+    durationFrames: number,
+    speed: number,
+    fps = PROJECT_FPS,
+  ): number[] {
+    return Array.from({ length: durationFrames }, (_, i) => (sourceStartFrame + i * speed + 0.5) / fps)
+  }
+
+  it('is monotonically increasing for every speed in the supported 0.25–4 range', () => {
+    for (const speed of [0.25, 0.5, 1, 1.5, 2, 4]) {
+      const ts = speededTimestamps(0, 40, speed)
+      for (let i = 1; i < ts.length; i++) {
+        expect(ts[i]).toBeGreaterThan(ts[i - 1])
+      }
+    }
+  })
+
+  it('at speed=1, matches the pre-speed midpoint formula exactly', () => {
+    const withSpeed = speededTimestamps(5, 20, 1)
+    const withoutSpeed = Array.from({ length: 20 }, (_, i) => (5 + i + 0.5) / PROJECT_FPS)
+    expect(withSpeed).toEqual(withoutSpeed)
+  })
+
+  it('at speed=2, each export frame advances the source by 2 frames — canvasSinkFrame lands on every other source frame', () => {
+    const pts = uniformCfrPts(80, 1 / PROJECT_FPS)
+    const ts = speededTimestamps(0, 20, 2)
+    for (let i = 0; i < ts.length; i++) {
+      expect(canvasSinkFrame(ts[i], pts)).toBe(i * 2)
+    }
+  })
+
+  it('at speed=0.5, each export frame advances the source by half a frame, following the same midpoint+floor convention as the 24fps parity case above', () => {
+    const pts = uniformCfrPts(20, 1 / PROJECT_FPS)
+    const ts = speededTimestamps(0, 20, 0.5)
+    for (let i = 0; i < ts.length; i++) {
+      // General model (matches the 24fps-in-30fps case above): the export
+      // frame's midpoint timestamp floors onto floor(sourceStart + i*speed + 0.5).
+      expect(canvasSinkFrame(ts[i], pts)).toBe(Math.floor(i * 0.5 + 0.5))
+    }
+  })
+
+  it('at speed=4 with a non-zero sourceStartFrame trim offset, stays inside the trim window and matches floor(sourceStart + i*speed)', () => {
+    const sourceStart = 50
+    const pts = uniformCfrPts(400, 1 / PROJECT_FPS)
+    const ts = speededTimestamps(sourceStart, 25, 4) // consumes source frames 50..146
+    for (let i = 0; i < ts.length; i++) {
+      expect(canvasSinkFrame(ts[i], pts)).toBe(sourceStart + i * 4)
+    }
+  })
+})
+
 describe('Export frame-sampling — documented limitations', () => {
   // These tests are NOT bugs to fix — they document known constraints.
 

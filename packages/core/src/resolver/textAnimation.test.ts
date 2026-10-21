@@ -80,13 +80,16 @@ describe('TEXT_ANIMATION_KINDS', () => {
     }
   })
 
-  it('marks spin text-only, because no shape painter reads transform.rotation', () => {
-    // ShapeLayer always uploads FULL_STAGE_MAT3 (ShapeLayer.ts:166) and
-    // ExportWorker.drawShape has no ctx.rotate, so a shape spin would render a
-    // control that silently does nothing. Every other kind resolves to opacity
-    // or x/y, which both shape painters honour.
+  it('offers every kind to shapes, now that shape rotation renders', () => {
+    // `spin` was text-only while neither shape painter read
+    // `transform.rotation`: ShapeLayer uploaded FULL_STAGE_MAT3 and
+    // ExportWorker.drawShape had no ctx.rotate, so offering it would have been
+    // a control that silently did nothing. Both now rasterize through
+    // `shapePaint.paintShape`, which rotates about the box centre, so nothing
+    // is text-only any more. The field stays for a future kind that genuinely
+    // depends on glyph layout.
     const textOnly = TEXT_ANIMATION_KINDS.filter((o) => o.appliesTo === 'text-only')
-    expect(textOnly.map((o) => o.kind)).toEqual(['spin'])
+    expect(textOnly.map((o) => o.kind)).toEqual([])
   })
 
   it('leads with fade, the kind that existed before the union widened', () => {

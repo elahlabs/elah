@@ -34,6 +34,7 @@ import {
 function makeDemuxer(count: number) {
   return createMockDemuxerBackend({
     chunks: Array.from({ length: count }, (_, i) => createMockChunk(i * 33333)),
+    honorRange: true,
   })
 }
 
@@ -181,8 +182,11 @@ describe('AC7(b): backward seek of 60 frames → exactly one seekToKeyframe', ()
     const seekCountAfterOpen = vi.mocked(demuxer.seekToKeyframe).mock.calls.length
 
     // Advance contiguously to frame 60
+    // One tick per ms (a real RAF cadence): lets decoded frames land between
+    // ticks so the stall watchdog sees progress, as it does in a browser.
     for (let i = 1; i <= 60; i++) {
       producer.setPlayhead(i)
+      await new Promise(r => setTimeout(r, 1))
     }
     await new Promise(r => setTimeout(r, 30))
 

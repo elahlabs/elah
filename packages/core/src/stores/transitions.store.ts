@@ -10,11 +10,11 @@ export interface TransitionsActions {
 }
 
 /**
- * Mirrors project.transitions for UI consumers via the engine 'change' event.
+ * Mirrors project.transitions (Ring 1) via the engine 'change' event.
  * Wire: EditorProvider listens to engine.on('change') and calls sync().
  *
- * React components look up transitions by trackId or clipId using selectors
- * (via `useTransitionsStore` from @elah/react):
+ * Vanilla; the React binding binds it into the `useTransitionsStore` hook,
+ * where components look up transitions by trackId or clipId using selectors:
  *   const transition = useTransitionsStore(s =>
  *     s.transitions.find(t => t.fromClipId === clipId || t.toClipId === clipId)
  *   )
