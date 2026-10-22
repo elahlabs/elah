@@ -611,8 +611,8 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
 
   // Holds a frozen bitmap of each outgoing clip for the duration of its
   // transition window. Drawn on top at globalAlpha=1-t to produce a crossfade
-  // while the GPU only decodes the incoming clip (same logic as TransitionOverlay
-  // in preview, mirroring it for export parity).
+  // while the GPU only decodes the incoming clip. This is the snapshot path for
+  // transitions the GPU transition pass does not draw.
   type SnapshotEntry = { source: CanvasImageSource & { width: number; height: number }; owned: boolean }
   const transitionSnapshots = new Map<string, SnapshotEntry>()
 

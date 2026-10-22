@@ -1347,8 +1347,8 @@ export type TransitionDirection = 'left' | 'right' | 'up' | 'down'
  * The cut is at startFrame + durationFrames / 2 (centered).
  * Both clips are rendered simultaneously during [startFrame, startFrame + durationFrames).
  *
- * Adding a new transition kind = handle it in resolveTimeline (opacity/scene) and
- * TransitionOverlay (CSS). Everything else is plug-and-play.
+ * Adding a new transition kind = one entry in `transitions/registry.ts` and one
+ * branch in the GPU transition shader (`renderer/gpu/transitions.ts`).
  */
 export interface Transition {
   id: string

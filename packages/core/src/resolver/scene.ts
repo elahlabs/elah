@@ -319,13 +319,13 @@ export interface ActiveRotoMask {
  *
  * `t` is the eased progress through the transition window (0 = start, 1 = end).
  *
- * The resolver sets fromClip.opacity=0 and toClip.opacity=1 so the GPU renders
- * only the incoming clip. TransitionOverlay holds a frozen snapshot of fromClip
- * and fades it away via CSS — giving a correct crossfade with zero decoder
- * contention. Export mirrors this: snapshot drawn at globalAlpha=1-t on top.
+ * The GPU renderer draws each side of the pair into its own target and
+ * composites them with the transition shader (`renderer/gpu/transitions.ts`,
+ * one `uKind` switch); see `RenderGraph`. The Canvas2D export fallback draws
+ * a frozen snapshot of fromClip at globalAlpha=1-t, so only kinds marked
+ * `canvas2d` in `transitions/registry.ts` have a fallback.
  *
- * Adding a new kind = one new CSS mapping in TransitionOverlay.update(). No
- * resolver change, no shader code.
+ * Adding a new kind = one registry entry plus one shader branch.
  */
 export interface ActiveTransition {
   id: string
@@ -415,7 +415,7 @@ export interface Scene {
   images: ActiveImageClip[]
   shapes: ActiveShapeClip[]
   freehand: ActiveFreehandClip[]
-  /** Transitions active at this frame. Consumed by TransitionOverlay (preview) and the export snapshot pass. */
+  /** Transitions active at this frame. Consumed by the GPU transition pass (`RenderGraph`) and the export snapshot fallback. */
   transitions: ActiveTransition[]
   /**
    * Roto review masks. Present only when at least one visible video clip has

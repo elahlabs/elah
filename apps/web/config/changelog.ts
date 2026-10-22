@@ -28,9 +28,93 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '1.0.0',
+    date: '2026-10-22',
+    latest: true,
+    summary:
+      'The motion and programmatic layer: keyframes with the full ease set, springs, stagger and motion paths; HTML/CSS scenes and VideoSpec that compile to editable clips; effects, transitions, generators, compound and sequence clips, audio enhancement, Lottie and SVG import, and fonts in the package. The exported API is now a semver promise.',
+    groups: [
+      {
+        kind: 'changed',
+        scope: 'Stability',
+        items: [
+          'From 1.0.0 the exported API of @elah/core (the root entry and the browser-free @elah/core/engine entry), @elah/react, @elah/timeline and @elah/editor follows semver: a breaking change needs 2.0. Three AI-facing layers are experimental and may change in a minor release: spec (VideoSpec / AuthoredSpec, compileVideoSpec, buildVideo, specVocabulary), vector/html (validateScene, sceneToClip) and the op vocabulary (EDITOR_OP_NAMES, applyOps, sanitizeOps, the describe* helpers). The documents they produce are ordinary projects and stay readable; the authoring vocabulary and op shapes are what can move.',
+        ],
+      },
+      {
+        kind: 'changed',
+        scope: 'Breaking',
+        items: [
+          'Project documents are version 5. PROJECT_VERSION went from 1 to 5. A project is stamped with the lowest version that can hold what it uses (adjustment clips 2; generator clips, shape draw-on and the newer transitions 3; compound clips 4; sequence clips 5), so a project that uses none of them is still version 1 and opens in 0.6.x. A project that does is refused by 0.6.x with ProjectDocumentError (code: unsupported-version). Every 0.6.x document opens unchanged in 1.0.0.',
+          'Widened unions can break an exhaustive switch. ClipType gained adjustment, generator, compound and sequence (10 members); TransitionKind gained zoom, spin, whip, glitchCut, warpDissolve and lumaWipe (9). Code that switches on either with no default, or keeps a Record<ClipType, ...>, stops compiling until it handles the new members.',
+          'Transitions are drawn by the WebGL2 renderer. <Preview> no longer lays a frozen CSS snapshot over a transition; both clips play through it, with their effects. A host that rendered its own transition overlay on top of <Preview> should remove it.',
+          'mediabunny ^1.50.8 (was ^1.45.3) in @elah/core, @elah/cli and apps/web: the export worker retries a failed decoder with options older releases do not have.',
+          'No exported name from 0.6.0 was removed, in any of the four packages.',
+        ],
+      },
+      {
+        kind: 'added',
+        scope: '@elah/core',
+        items: [
+          'The motion layer: keyframes on every transform channel with the full ease set (sine, quad, cubic, quart, quint, expo, circ, back, elastic and bounce, each in / out / in-out, plus steps(n), cubic-bezier curves and named bezier presets) and closed-form springs (the gentle, snappy, bouncy, stiff and wobbly presets); hold keys; stagger from the start, end, centre, edges or at random, and across a grid; motion paths (a clip travels an SVG path and can orient to it); per-character, word and line text animators with their own tweens; scramble text; repeat and yoyo; skew; 3D tilt (rotateX / rotateY, on video, image, sequence and compound clips); expressions; 36 motion presets.',
+          'HTML/CSS scene conversion (vector/html, experimental). validateScene({ html, css }) checks a scene against a whitelisted HTML/CSS subset and names the supported substitute for everything it refuses; sceneToClip(measuredScene, { fps }) turns a measured scene into one compound clip of native shape, text and image clips with keys, from a one-line data-motion grammar. Measuring the scene in a browser is the host step: this release ships no DOM measurer.',
+          'VideoSpec (spec, experimental). A seconds-based JSON document for models to write: compileVideoSpec compiles it to a Project and returns every problem as a path-addressed SpecIssue instead of throwing; buildVideo also expands 17 motion components and 6 motion systems and polishes the result; layProject lays a compiled project onto a live engine as one undo step; specVocabulary() renders the vocabulary block for a prompt.',
+          'Editor ops (ops, experimental). 57 typed ops (EDITOR_OP_NAMES) that add text, shapes, generators, captions, effects, transitions, keyframes and edits; applyOps runs a plan against an engine as one undo step, sanitizeOps repairs a model plan, and the describe* helpers summarise a project for a prompt. Ops that need a provider (generateMedia, removeBackground) come back as deferred for the host to run.',
+          'New clip types: adjustment (applies effects to everything beneath it), generator (8 built in: particles, energy lines, light leak, lens flare, gradient background, counter, bar chart, progress bar), compound (a nested project played as one clip; nestClips / unnestClip, component instances that re-expand) and sequence (an animated image or a numbered frame set, picked by frame index in preview and export).',
+          'Effects, transitions, blend modes and mattes: 23 GPU effects (EFFECT_REGISTRY), effect bundles and looks, masks and track mattes, blend modes, and nine transitions (fade, slide, wipe, zoom, spin, whip, glitchCut, warpDissolve, lumaWipe), all drawn by one WebGL2 pipeline shared by preview and export.',
+          'Clip audio: Clip.audio holds mute, boost (up to +12 dB), fades and Enhance (noise reduction and voice clarity). One gain envelope and one Web Audio chain serve the live preview and the export mix. Audio analysis (beats, silences, markers) and word-level captions are public too.',
+          'Lottie and SVG import: lottieToClip and svgToProject turn an animation or drawing into editable native clips and keys, each with a report of what it could not map.',
+          'Export containers: ExportOptions.container selects mp4 (default), webm (with transparency where the browser check passes), gif or a PNG sequence; codecs are avc, hevc, av1, vp9 and vp8 where the browser can encode them; range: inOut exports the marked range. A default MP4 export is unchanged.',
+          'Fonts that ship in the package: twelve OFL families (Inter, Montserrat, Poppins, Space Grotesk, Playfair Display, DM Serif Display, Bebas Neue, Anton, Oswald, Archivo Black, Roboto Mono, Caveat; Latin subset, woff2) in fonts/<id>/ with each OFL.txt. The default font base URL stays /fonts/; packageFontsBaseUrl() opts in to the package copies for unbundled use (a CDN, native ESM).',
+          'CDN-safe workers: the export, audio-analysis and capability-probe workers start from a cross-origin module URL through a blob module worker (jsDelivr /+esm included). Bundled hosts take the same new Worker(new URL(...)) path as before.',
+          '@elah/core/engine, a browser-free entry point, now covers the whole converged engine: engine, resolver, PlaybackEngine, stores, clip factories, project documents and the pure placement and timeline math, without the WebGL2 renderer, WebCodecs, importers or the export worker (whose import.meta Metro and Hermes reject). A test pins every file it can reach.',
+          'Timeline geometry: pure helpers shared by every timeline UI (timelineContentWidth, computeRulerTicks, formatRulerLabel, computeAnchoredScrollLeft, wheelZoomStep, pinchZoom, clampZoom, pxToFrames, xToFrame, seekFrameAtX, isClipAllowedOnTrack, and the trim limits maxTrimDuration, minTrimDuration, clampLeftTrim, clampRightTrim, among others).',
+        ],
+      },
+      {
+        kind: 'added',
+        scope: '@elah/react',
+        items: ['EditorProvider moved here from @elah/editor, which still re-exports it, so no import changes.'],
+      },
+      {
+        kind: 'added',
+        scope: '@elah/timeline and @elah/editor',
+        items: [
+          'Projects that use the new clip types open, play, save and export without losing a clip. The timeline draws adjustment, generator, compound and sequence clips as labelled blocks; trimming lets sourceless clips grow as engine.trimClip() does; paste copies shapes, drawings and the new types with cloneClip (pasting a shape used to throw); the transition picker shows a loaded kind outside fade / slide / wipe as the active choice. There is no editing UI for the new clip types in @elah/editor yet.',
+        ],
+      },
+      {
+        kind: 'changed',
+        scope: '@elah/core',
+        items: [
+          'Package size: about 1.2 MB as an npm tarball (1,158,481 bytes packed, 3.0 MB unpacked, 735 files); 0.6.0 was about 106 KB. Roughly half is the bundled fonts, which a host loads only if it opts in; the rest is the converged engine. Everything stays tree-shakeable (sideEffects: false), and @elah/core/engine leaves out the renderer and the codec.',
+          'textStylePresetsStore.addPreset ids come from generateId() instead of crypto.randomUUID(), which Hermes does not provide.',
+        ],
+      },
+      {
+        kind: 'changed',
+        scope: '@elah/timeline',
+        items: [
+          'The zoom-anchor, content-width and track-compatibility modules re-export from @elah/core, and the ruler computes its ticks with computeRulerTicks. No behaviour change.',
+        ],
+      },
+      {
+        kind: 'changed',
+        scope: '@elah/react',
+        items: ['Value imports from core go through @elah/core/engine; the build no longer emits *.test.tsx files into dist.'],
+      },
+      {
+        kind: 'changed',
+        scope: '@elah/cli',
+        items: [
+          'Unreleased, still 0.1.2: exports version 5 projects (shader and folder module imports, compound and sequence media, no hard-coded project version 1). Its @elah/core range is now ^1.0.0. It gets its own release.',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-10-02',
-    latest: true,
     summary:
       'The premium editor port lands in the open-source packages: multiple video tracks, clip speed, crop and corner radius, layered text animation with 14 templates, frame sequences, stored project documents with media re-linking - and the eight defects found while verifying it.',
     groups: [

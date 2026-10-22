@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/site/PageHeader'
 export const metadata: Metadata = {
   title: 'Editor',
   description:
-    'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, interactive transforms with resize handles and crop, text overlays, fade, slide and wipe transitions, and stage aspect ratio.',
+    'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, interactive transforms with resize handles and crop, text overlays, nine transitions, and stage aspect ratio.',
   alternates: { canonical: '/docs/editor' },
 }
 
@@ -276,19 +276,25 @@ engine.updateClip(clipId, textTrack.id, {
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions use a snapshot-overlay architecture. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TransitionOverlay</code> captures a frozen snapshot of the outgoing clip and animates it away over the incoming clip with CSS, while the GPU renders only the incoming clip. Export mirrors the same three modes in the 2D canvas API. There are three kinds, and all three are implemented in preview and export:
+            The resolver keeps both clips in the scene for the length of a transition and lists it in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">scene.transitions</code> with its eased progress. The WebGL2 renderer draws each clip, with its effects, transform and blend, into its own target and composites the pair with one transition shader, so both clips keep playing through it. Export runs the same shader. There are nine kinds; a project that uses only the first three still exports where the worker has no WebGL2 (a 2D snapshot path, with a left-or-right slide), while any of the six after <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code> needs WebGL2 and fails the export without it:
           </p>
           <div className="mb-4 overflow-hidden rounded-md border border-outline-variant">
             {[
-              ['fade', 'The outgoing snapshot fades out: opacity 1 to 0 (export: globalAlpha).'],
-              ['slide', 'The outgoing snapshot slides horizontally off the stage. direction: \'left\' slides it left; any other direction value slides it right. Up and down are not implemented.'],
-              ['wipe', 'The outgoing snapshot is clipped from the right edge, revealing the incoming clip. It is a horizontal wipe and ignores direction.'],
+              ['fade', 'Cross-fade: the outgoing clip fades out over the incoming one.'],
+              ['slide', 'The outgoing clip slides off the stage in the given direction (left, right, up or down; the default is right).'],
+              ['wipe', 'A hard edge sweeps across, revealing the incoming clip. It ignores direction.'],
+              ['zoom', 'Punch through into the next clip.'],
+              ['spin', 'Rotate out, rotate in.'],
+              ['whip', 'A fast blurred pan between clips; takes a direction.'],
+              ['glitchCut', 'A burst of digital glitch at the cut.'],
+              ['warpDissolve', 'A noisy, melting dissolve.'],
+              ['lumaWipe', 'Dark areas give way first.'],
             ].map(([kind, desc], i) => (
               <div
                 key={kind}
                 className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <code className="font-mono text-xs font-medium text-on-surface sm:w-16 sm:shrink-0">{kind}</code>
+                <code className="font-mono text-xs font-medium text-on-surface sm:w-28 sm:shrink-0">{kind}</code>
                 <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
               </div>
             ))}
@@ -302,10 +308,11 @@ engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
   trackId: track.id,
-  kind: 'fade',           // 'fade' | 'slide' | 'wipe'
+  kind: 'fade',           // 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
+                          // | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   durationFrames: 15,
   easing: 'ease-out',     // 'linear' | 'ease-in' | 'ease-out'
-  direction: 'left',      // optional: 'left' | 'right' | 'up' | 'down' (slide uses left vs. not-left)
+  direction: 'left',      // optional: 'left' | 'right' | 'up' | 'down' (slide and whip)
 })
 
 // Read transitions

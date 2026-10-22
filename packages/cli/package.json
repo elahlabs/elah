@@ -51,7 +51,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@elah/core": "^0.6.0",
+    "@elah/core": "^1.0.0",
     "mediabunny": "^1.50.8",
     "playwright-core": "^1.50.0"
   },

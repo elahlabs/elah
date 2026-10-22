@@ -192,7 +192,9 @@ describe('quad.vert mirrors displayToSourceUv', () => {
 describe('export agrees with preview', () => {
   it('ExportWorker builds its CanvasSink without overriding the container rotation', () => {
     const src = readFileSync(join(__dirname, '../../../export/ExportWorker.ts'), 'utf8')
-    expect(src).toContain('new mb.CanvasSink(track)')
-    expect(src).not.toMatch(/CanvasSink\(track,\s*\{[^}]*rotation/)
+    // The sink is built from the track; its only options are the decoder
+    // retries of the resilient sink (`decoderOptions`), never a rotation.
+    expect(src).toMatch(/new mb\.CanvasSink\(track[,)]/)
+    expect(src).not.toMatch(/CanvasSink\(track[^\n]*rotation/)
   })
 })

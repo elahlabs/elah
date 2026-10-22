@@ -52,22 +52,58 @@
 
 ## Compositing & effects
 
-- **Transitions are `fade`, `slide` and `wipe`, with no direction control to speak
-  of.** All three are wired end-to-end (preview via CSS snapshot overlay; export via a
-  matching canvas pass). `slide` moves left when `direction` is `'left'` and right for
-  any other value; `wipe` ignores `direction` entirely. `TransitionDirection` also types
-  `'up'` and `'down'`, but neither is implemented. There are no other kinds (push, zoom,
-  dissolve variants, custom).
-- **Rotation does nothing on shapes.** The shape renderers do not apply
-  `transform.rotation`, so a rotation channel in a `MotionSpec` and the `spin` entry/exit
-  kind are text-only; on a shape clip they have no visible effect.
+- **The six newer transitions need WebGL2.** `zoom`, `spin`, `whip`, `glitchCut`,
+  `warpDissolve` and `lumaWipe` are composited by the WebGL2 transition shader in preview
+  and export. A project that uses only `fade`, `wipe` and `slide` still exports in a
+  runtime whose worker has no WebGL2 (a 2D snapshot path, left/right slide only); a
+  project that uses any other kind fails to export there. A cold incoming video decoder
+  can show through the start of a transition (see `docs/known-limitations.md` KB-003).
+- **3D tilt is limited to four clip types.** `rotateX` / `rotateY` work on video, image,
+  sequence and compound clips. Text, shape and freehand clips refuse them.
 - **Text template `stagger` and `tracking` are inert.** `applyTextTemplate` ignores them
   and nothing in these packages executes them; they are metadata for a host that builds
-  staggered or letter-spaced text itself.
-- **No effects / filters / keyframe pipeline.** Layers apply `transform` and
-  `opacity` only. Text and shape clips get entry/exit animation (`TextAnimation`,
-  layered `MotionSpec`), but there is no per-clip shader-effect stack and no general
-  keyframe channels.
+  staggered or letter-spaced text itself. (Per-unit text animators, stagger and scramble
+  in the motion layer are separate and do run.)
+- **Effects, masks, mattes, adjustment clips and 3D tilt are GPU-only.** Export of a
+  project that uses any of them opens a WebGL2 context in the worker first and fails fast
+  if it cannot (a project without them exports without WebGL2).
+
+## 1.0.0: new layers and what is not built
+
+- **Export is Chromium-only in practice.** It needs WebCodecs `VideoEncoder`,
+  `OffscreenCanvas` and WebGL2 in a worker. Chrome and Edge are the tested browsers;
+  Safari and Firefox are untested and `detectExportSupport` says so. HEVC, AV1, WebM
+  transparency and GIF depend on what the browser can encode.
+- **Fonts are Latin-only.** The 12 bundled families ship a Latin subset, so Telugu,
+  Hindi, Arabic, CJK, Cyrillic, Greek and Latin Extended characters are not covered and
+  fall back to a generic family. The files load from `/fonts/` on your host unless you opt in with
+  `packageFontsBaseUrl()` (unbundled imports only).
+- **No editing UI for the newer clip types.** `@elah/editor` plays, saves and exports
+  adjustment, generator, compound and sequence clips, and `@elah/timeline` draws and
+  moves them, but there is no inspector, curve editor, effect stack or compound editor
+  in the packages: you drive them through the engine, ops or VideoSpec. In the timeline,
+  compound, generator, adjustment and sequence clips are placed on `elements` lanes and
+  will not drag onto a video lane.
+- **The HTML/CSS scene layer needs a host-side measurer.** `validateScene` and
+  `sceneToClip` are pure, but `sceneToClip` takes a *measured* scene (boxes, line breaks,
+  resolved styles) and this release ships no DOM measurer. You write one against a
+  hidden, stage-sized DOM, or build the `MeasuredScene` yourself.
+- **The AI-facing layers are experimental.** `spec` (VideoSpec), `vector/html` and the
+  op vocabulary (`ops`) may change in a minor release. Two ops, `generateMedia` and
+  `removeBackground`, only place a placeholder and return it as `deferred`: no provider
+  call ships.
+- **`@elah/editor` does not re-export the new layers.** Import effects, generators,
+  motion helpers, VideoSpec, `vector/html`, ops and `packageFontsBaseUrl` from
+  `@elah/core` and list it in your own dependencies.
+- **Loading from a CDN is only partly verified.** The cross-origin worker path, the font
+  base URL and a jsDelivr `/+esm` import were exercised against a local stand-in for a
+  CDN, not the published package. In a blob worker, relative or root-relative asset URLs
+  have no base, so use absolute URLs for media in an unbundled import.
+- **Package size grew.** `@elah/core` is about 1.2 MB packed (about half is the optional
+  fonts); 0.6.0 was about 106 KB. Bundled-size figures for 1.0.0 are not published yet.
+- **Dist is for bundlers.** `@elah/core`'s `dist` uses extensionless relative imports
+  (as 0.6.0 did), so import it through Vite, webpack, Next or a CDN, not bare Node ESM.
+  For Node without a bundler use `@elah/cli`, or bundle it yourself.
 
 ## Export
 

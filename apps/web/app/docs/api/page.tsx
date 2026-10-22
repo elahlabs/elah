@@ -93,11 +93,14 @@ export default function ApiPage() {
             description="Adds a new clip to a track. The clip is placed at startFrame and returns the created Clip object."
             params={[
               { name: 'trackId', type: 'string', desc: 'Target track ID' },
-              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'" },
+              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand' | 'adjustment' | 'generator' | 'compound' | 'sequence'" },
               { name: 'startFrame', type: 'number', desc: 'Position on the timeline (integer frames)' },
               { name: 'durationFrames', type: 'number', desc: 'Length of the clip (integer frames)' },
               { name: 'src', type: 'string?', desc: 'URL or blob ref for video/audio/image clips' },
               { name: 'text', type: 'TextClipMetadata?', desc: 'Content + style; required when type is \'text\'' },
+              { name: 'generator', type: 'ClipGenerator?', desc: 'Which generator and its params; required when type is \'generator\'' },
+              { name: 'compound', type: 'ClipCompound?', desc: 'The nested project; required when type is \'compound\'' },
+              { name: 'sequence', type: 'ClipSequence?', desc: 'An animated image or numbered frames; required when type is \'sequence\'' },
             ]}
           />
 
@@ -156,7 +159,7 @@ export default function ApiPage() {
               { name: 'fromClipId', type: 'string', desc: 'The outgoing clip' },
               { name: 'toClipId', type: 'string', desc: 'The incoming clip' },
               { name: 'trackId', type: 'string', desc: 'Track both clips live on (required)' },
-              { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe'" },
+              { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'" },
               { name: 'durationFrames', type: 'number', desc: 'How many frames the transition spans' },
               { name: 'easing', type: 'TransitionEasing?', desc: "'linear' | 'ease-in' | 'ease-out'" },
             ]}
@@ -380,7 +383,9 @@ renderer.dispose()               // cleanup on unmount`}
             code={`// Time
 type FrameCount = number // always integer
 
-type ClipType = 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+type ClipType =
+  | 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+  | 'adjustment' | 'generator' | 'compound' | 'sequence'
 type TrackKind = 'video' | 'audio' | 'elements'
 
 // Core data types
@@ -479,6 +484,7 @@ interface MotionSpec {
 interface Transition {
   id: string
   kind: 'fade' | 'slide' | 'wipe'
+      | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   fromClipId: string
   toClipId: string
   trackId: string
@@ -490,12 +496,17 @@ interface Transition {
 
 // Export — fps is read from project.fps; the export worker uses
 // mediabunny directly, so there is no demuxerFactory here.
-type ExportVideoCodec = 'avc' | 'vp9' | 'vp8'
+type ExportVideoCodec = 'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8' // where the browser can encode it
 type ExportAudioCodec = 'aac' | 'opus'
+type ExportContainer = 'mp4' | 'webm' | 'png-sequence' | 'gif'
 
 interface ExportOptions {
   videoCodec?: ExportVideoCodec   // default 'avc'
   audioCodec?: ExportAudioCodec
+  container?: ExportContainer     // default 'mp4'
+  transparent?: boolean           // webm only, where the browser's own check passes
+  range?: 'all' | 'inOut'         // default 'all'
+  gifFps?: number                 // gif only, default 15
   videoBitrate?: number           // bits/s, default 8 Mbps
   audioBitrate?: number           // bits/s, default 128 kbps
   outputHeight?: number           // target SHORT edge in px (1080 = 1080p in either

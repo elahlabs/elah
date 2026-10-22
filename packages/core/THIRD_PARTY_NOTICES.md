@@ -55,7 +55,7 @@ SOFTWARE.
 
 ## Bundled font families
 
-`src/fonts/registry.ts` lists twelve font families, and the package ships their files in `fonts/<id>/` (latin subset, woff2, about 740 KB in all). A host can serve its own copies (the default base URL is `/fonts/`) or load the package's copies with `packageFontsBaseUrl()`. All twelve are licensed under the SIL Open Font License, Version 1.1 (OFL-1.1, <https://openfontlicense.org>):
+`src/fonts/registry.ts` lists twelve font families, and the package ships their files in `fonts/<id>/` (latin subset, woff2, about 620 KB in all). A host can serve its own copies (the default base URL is `/fonts/`) or load the package's copies with `packageFontsBaseUrl()`. All twelve are licensed under the SIL Open Font License, Version 1.1 (OFL-1.1, <https://openfontlicense.org>):
 
 | Family | Category |
 | --- | --- |

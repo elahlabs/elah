@@ -9,6 +9,13 @@
 
 ## Measured size (0.6.0, 2026-10-02)
 
+> **These tables are the 0.6.0 measurement and do not describe 1.0.0.** In 1.0.0
+> `@elah/core` carries the motion layer, effects, generators, `spec`, `vector/html` and
+> `ops` and is several times larger than the 0.6.0 core measured here; the packed
+> tarball also grew about elevenfold (see "What `npm pack` ships in 1.0.0" below). The
+> 1.0.0 bundle figures are not published in this file yet. Reproduce them with the same
+> script; the method has not changed.
+
 Reproduce with `node scripts/measure-bundle.mjs` after `npm run build:packages`.
 Two measurements are printed because they answer different questions, and the
 numbers in earlier versions of this file mixed them up.
@@ -68,7 +75,24 @@ the runtime cost, and it overstates the latter by roughly 60 percent.
 
 The 0.2.1 figures that used to live here (~41 / ~12 / ~10 / ~63 KiB) were this
 tarball measurement, presented in the badges as if they were a bundle size.
-They are retired; the badges now quote the bundled SDK.
+They are retired. (The README badges that quoted the 0.6.0 bundle were removed for
+1.0.0 rather than left stating a number that no longer holds.)
+
+### What `npm pack` ships in 1.0.0
+
+`npm pack --dry-run --json --workspace=packages/<name>`, 2026-10-22. Packed size is the
+tarball a consumer downloads; the fonts are woff2 and do not compress further.
+
+| Package | files | packed | unpacked |
+|---|---|---|---|
+| `@elah/core` | 735 | 1,158,481 B (about 1.2 MB) | 3,028,695 B (3.0 MB) |
+| `@elah/react` | 21 | 9,331 B | 29,817 B |
+| `@elah/timeline` | 56 | 35,442 B | 151,711 B |
+| `@elah/editor` | 42 | 41,961 B | 177,555 B |
+
+About 623 KB of `@elah/core` is the twelve bundled font families (`fonts/<id>/`, with each
+`OFL.txt`). A host loads them only if it serves them or opts in with `packageFontsBaseUrl()`.
+`@elah/core` was about 106 KB packed in 0.6.0.
 
 ---
 
@@ -141,7 +165,8 @@ new GpuRenderer({ demuxerFactory })
 
 `core` has no React. `react` is the only package that imports it for the store
 bridge. `timeline` and `editor` are React components. A consumer who wants the
-engine alone installs `core` and pays the 11 KiB startup in the table above.
+engine alone installs `core` and imports `@elah/core/engine`, which leaves out the
+renderer, the codec and the export worker.
 `ARCHITECTURE.md` § 9 (A6) is the rule against splitting further into
 micro-packages; these five exist because each has a real, separately adopted
 consumer.
@@ -183,9 +208,16 @@ sits beside the web UI packages: `core ← react ← react-native`.
 
 ## Future
 
-- Make `createDefaultDemuxerFactory` lazy so the quick-start path starts at
-  68 KiB instead of 227 KiB.
+- Make `createDefaultDemuxerFactory` lazy so the quick-start path no longer pulls the
+  codec (about 159 KiB gzipped) into the startup graph.
+- Trim what a consumer pays at startup now that `@elah/core` is much larger: lazy
+  entries or sub-path exports for the model-facing layers (`spec`, `vector/html`, `ops`)
+  and for the effect and generator registries and the icon data, which a plain editor
+  may not need. Not designed or measured yet.
 - Optional sub-path exports (for example `@elah/editor/export`) if apps want the
   timeline without the export worker in their module graph.
-- A formal `@public` API marking so internal symbols can change without a major
-  version bump.
+- A formal `@public` / `@experimental` marking in the type declarations. For 1.0.0 the
+  policy is by layer: the exported surface of `@elah/core` (root and `/engine`),
+  `@elah/react`, `@elah/timeline` and `@elah/editor` is a semver promise, while `spec`,
+  `vector/html` and `ops` are experimental and may change in a minor release (see
+  `CHANGELOG.md`).

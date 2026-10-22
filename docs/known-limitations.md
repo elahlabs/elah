@@ -58,41 +58,31 @@ callback, then pass it as a separate field through `VideoDecoderManager` options
 
 ## KB-002 — Transitions freeze through-playing tracks in multi-track compositions
 
-**Status:** Known design constraint of snapshot overlay approach  
-**Files:** `TransitionOverlay.tsx` (preview) · export canvas draw loop
+**Status:** Resolved in 1.0.0 for the WebGL2 path; still true for export's 2D fallback  
+**Files:** `renderer/gpu/transitions.ts` · `export/ExportWorker.ts` (2D fallback)
 
-### What happens
+### What happened (0.6.0 and earlier)
 
-The WebGL canvas composites all active tracks into one flat image. The snapshot
-captured at transition start freezes the entire canvas — including text, image,
-and video tracks that are playing continuously through the cut point.
+Preview used a snapshot overlay (`TransitionOverlay`): a frozen copy of the whole
+canvas faded away over the live one, so every track that kept playing through the
+cut (text, images, a second video lane) double-imaged under its own frozen ghost.
 
-During the transition window:
-- Overlay: outgoing clip + all through-playing tracks, frozen, fading away
-- Canvas: incoming clip + all through-playing tracks, live, underneath
+### What happens now
 
-Through-playing tracks double-image: a frozen ghost on the overlay sits over the
-live version on the canvas. Visually broken for any composition with more than
-one active track at a transition point. Since 0.6.0 a project can hold several
-video tracks, so this is easier to hit than it was: a second video lane, a text
-clip or a shape that is on screen while a transition runs is frozen into the
-snapshot.
+The converged renderer composites the outgoing and incoming clips with one
+transition shader, each already drawn with its own effects, transform and blend
+into its own target. Nothing is snapshotted, both clips keep playing, and tracks
+that play straight through the cut are not touched. `<Preview>` no longer drives
+`TransitionOverlay`; the file `packages/editor/src/editor/Preview/TransitionOverlay.tsx`
+is unused and still in the tree.
 
-### Workaround
+### What is left
 
-Enforce transitions only on the primary video track, with no other tracks active
-at the cut point — or accept the artifact for simple single-track edits (the
-common consumer case).
-
-### Real fix (deferred — V2 / commercial)
-
-Per-track canvas rendering: each track renders to its own `<canvas>` element.
-Transitions only affect the relevant track's canvas via CSS. Through-playing
-tracks are unaffected. Requires architectural shift from single-compositor WebGL
-to per-track 2D canvases fed by the existing ImageBitmap decode pipeline.
-
-**Prerequisite:** Audit export path to confirm per-track canvas draw order can
-replicate current zIndex-sorted compositing before committing to the redesign.
+Export without WebGL2 in its worker falls back to the old 2D snapshot of the
+outgoing clip, which freezes the outgoing frame and draws only fade, wipe and a
+left-or-right slide. A project that uses any other transition kind (and any effect,
+mask, matte, adjustment clip or 3D tilt) is routed to the GPU path first, and its
+export fails fast when the worker cannot create a WebGL2 context.
 
 ---
 
@@ -111,8 +101,8 @@ in the scene — which is the same frame the transition starts.
 On that first frame, `setPlayhead()` is called for the incoming clip for the
 first time. The decoder begins from cold: no pre-decoded frames in FrameCache.
 The `_holdoverTexture` from VideoLayer patches the outgoing clip side, but the
-incoming clip may still show a black flash or delayed first frame if the snapshot
-overlay doesn't cover it in time.
+incoming clip may still show a black flash or delayed first frame while its decoder
+warms up.
 
 ### Workaround
 
@@ -120,21 +110,21 @@ Partly mitigated: `<Preview>` resolves a scene a short horizon ahead and calls
 `GpuRenderer.prewarm`, so upcoming video clips open and fill their lookahead before they
 become visible. That is a general look-ahead, not a transition-aware scheduler.
 
-The snapshot overlay masks the incoming clip's decode warmup window — the
-outgoing clip's frozen frame hides the canvas during the transition start. This
-makes the warmup invisible for the fade case. Slide/wipe transitions that reveal
-the incoming clip edge-first may still expose a partial black frame.
+Since 1.0.0 no frozen snapshot covers the warmup window: the outgoing clip plays
+live under the transition, so a cold incoming decoder can show through, most
+visibly on transitions that reveal the incoming clip edge-first (slide, wipe,
+whip). The look-ahead above is the only mitigation.
 
 ### Real fix (deferred)
 
 A `TransitionScheduler` that sits between `resolveTimeline()` output and the
-overlay renderer:
+renderer:
 - Reads `scene.transitions[]` and detects approaching transition windows
 - Calls `provider.markActive()` on the incoming clip's provider N frames early
   (N = decode lookahead budget, typically ~10 frames)
 - Pre-warms the FrameCache for the incoming clip before the transition starts
 - Outputs an enriched `ActiveTransitionDescriptor` with phase and properties
-  for the overlay to consume
+  for the renderer to consume
 
 **Prerequisite:** Expose a `warmup(frameHint: number)` method on
 `VideoFrameProvider` so the scheduler can signal intent without forcing a seek.

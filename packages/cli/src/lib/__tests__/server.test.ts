@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  defineNodeEnv,
   isDirectoryIndex,
   resolveDistFile,
   resolveModuleFile,
@@ -56,6 +57,15 @@ describe('resolveDistFile', () => {
   it('blocks path traversal', () => {
     expect(resolveDistFile(root, '../secret')).toBeUndefined()
     expect(resolveDistFile(root, 'export/../../secret')).toBeUndefined()
+  })
+})
+
+describe('defineNodeEnv', () => {
+  it('inlines process.env.NODE_ENV and nothing else', () => {
+    expect(defineNodeEnv('if (process.env.NODE_ENV !== "production") warn()')).toBe(
+      'if ("production" !== "production") warn()'
+    )
+    expect(defineNodeEnv('const p = process.env.OTHER')).toBe('const p = process.env.OTHER')
   })
 })
 
@@ -167,6 +177,21 @@ describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
 
     const missing = await fetch(`${server.origin}/media/${TOKEN}/9`)
     expect(missing.status).toBe(404)
+  })
+
+  it('redirects a core directory request to its index.js', async () => {
+    const res = await fetch(`${server.origin}/core/composition`, { redirect: 'manual' })
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('/core/composition/index.js')
+  })
+
+  it('serves vendor modules with process.env.NODE_ENV inlined (immer)', async () => {
+    const res = await fetch(`${server.origin}/vendor/immer/dist/immer.mjs`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('text/javascript')
+    const source = await res.text()
+    expect(source).not.toContain('process.env.NODE_ENV')
+    expect(source).toContain('"production" !== "production"')
   })
 
   it("stubs mediabunny's browser:false node-only module with an empty module", async () => {

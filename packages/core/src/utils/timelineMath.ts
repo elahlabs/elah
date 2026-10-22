@@ -220,8 +220,14 @@ export function isCompatibleTrackKind(trackKind: TrackKind, mediaKind: MediaKind
  * drag gesture.
  */
 export function isClipAllowedOnTrack(clipType: ClipType, trackKind: TrackKind): boolean {
-  if (clipType === 'video' || clipType === 'image') return trackKind === 'video'
+  // Same rule as the timeline package's `trackCompat.ts`.
+  // A compound is a picture clip; its nested audio rides with it.
+  if (clipType === 'compound') return trackKind === 'video' || trackKind === 'elements'
+  // A sequence clip is media like video/image: a video track only.
+  if (clipType === 'video' || clipType === 'image' || clipType === 'sequence') return trackKind === 'video'
   if (clipType === 'audio') return trackKind === 'audio'
+  // Adjustment and generator clips sit on any picture track.
+  if (clipType === 'adjustment' || clipType === 'generator') return trackKind === 'video' || trackKind === 'elements'
   return trackKind === 'elements' // text | shape | freehand
 }
 
@@ -239,7 +245,16 @@ type TrimClip = Pick<
 
 /** Generated clips have no source media and may grow freely in either direction. */
 export function isUnlimitedClipType(type: ClipType): boolean {
-  return type === 'text' || type === 'shape' || type === 'freehand'
+  // Must match `isUnlimited` in `TimelineEngine.trimClip`, or a drag preview
+  // stops short of what the engine would commit.
+  return (
+    type === 'text' ||
+    type === 'shape' ||
+    type === 'freehand' ||
+    type === 'adjustment' ||
+    type === 'generator' ||
+    type === 'sequence'
+  )
 }
 
 /**

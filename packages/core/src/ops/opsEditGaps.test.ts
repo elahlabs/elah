@@ -269,8 +269,8 @@ describe('removeEffect', () => {
       effects: [blur, glow],
       keyframes: {
         channels: {
-          [`fx.${blur.id}.radius`]: { source: { kind: 'keyframes' }, keys: [{ id: 'k1', frame: 0, value: 4 }] },
-          [`fx.${glow.id}.intensity`]: { source: { kind: 'keyframes' }, keys: [{ id: 'k2', frame: 0, value: 1 }] },
+          [`fx.${blur.id}.radius` as const]: { source: { kind: 'keyframes' }, keys: [{ id: 'k1', frame: 0, value: 4, easing: 'linear' }] },
+          [`fx.${glow.id}.intensity` as const]: { source: { kind: 'keyframes' }, keys: [{ id: 'k2', frame: 0, value: 1, easing: 'linear' }] },
         },
       },
     })

@@ -6,7 +6,7 @@ Written for AI coding tools that get one shot and no repo access — Lovable, Go
 Emergent, v0, bolt.new — as well as repo-aware agents (Claude Code, Codex, Cursor, Gemini CLI).
 Nothing here requires reading another file.
 
-- **Version:** `@elah/editor@0.6.0` · **License:** Apache-2.0
+- **Version:** `@elah/editor@1.0.0` (with `@elah/core@1.0.0`) · **License:** Apache-2.0
 - **Repo:** https://github.com/elahlabs/elah · **Docs:** https://www.elah.dev/docs
 
 **Working code, if you can fetch a URL.** Three runnable apps that install this exact version
@@ -23,7 +23,8 @@ from npm — every config and import in this guide is applied and verified there
 [5 Mental model](#5-mental-model) · [6 API reference](#6-api-reference) ·
 [7 Recipes](#7-recipes) · [8 Common mistakes](#8-common-mistakes) ·
 [9 Browser support](#9-browser-support-and-host-platforms) ·
-[10 Headless rendering with the CLI](#10-headless-rendering-with-elahcli)
+[10 Headless rendering with the CLI](#10-headless-rendering-with-elahcli) ·
+[11 Writing videos and scenes with a model](#11-writing-videos-and-scenes-with-a-model)
 
 ---
 
@@ -49,7 +50,9 @@ npm install @elah/editor lucide-react
 ```
 
 One package. `@elah/editor` pulls in `@elah/core`, `@elah/react`, and `@elah/timeline`, and
-re-exports their public API — you import everything from `@elah/editor`.
+re-exports their public API — you import the editor, timeline and engine API from `@elah/editor`.
+The 1.0.0 programmatic layer (effects, generators, motion helpers, VideoSpec, HTML scenes, ops,
+`packageFontsBaseUrl`) is **not** re-exported: import it from `@elah/core` ([§11](#11-writing-videos-and-scenes-with-a-model)).
 
 **`lucide-react` is a peer dependency** (the timeline uses it for clip icons) and you must
 install it explicitly. npm auto-installs peers so it may appear to work without it; **pnpm and
@@ -342,7 +345,19 @@ engine.addClip({
   type: 'freehand', trackId, startFrame: 0, durationFrames: 60,
   freehand: { pathData: 'M10 10 L100 100', strokeColor: '#fff', strokeWidth: 3 },
 })
+
+// 1.0.0 types (imports from '@elah/core'):
+engine.addClip({ type: 'adjustment', trackId, startFrame: 0, durationFrames: 60 })   // effects for everything beneath
+engine.addClip({ type: 'generator', trackId, startFrame: 0, durationFrames: 60,
+  generator: createGenerator('particles', { count: 80 }) })                          // 8 generators
+engine.addClip({ type: 'compound', trackId, startFrame: 0, durationFrames: 60, compound: { project: nested } })
+engine.addClip({ type: 'sequence', trackId, startFrame: 0, durationFrames: 60, src: gifUrl,
+  sequence: { kind: 'animated-image', frameCount: 24, fps: 12, loop: true } })        // GIF / animated WebP
 ```
+
+`ClipType` has ten members; code that switches on it needs a `default`. The four 1.0.0 types sit on
+`elements` tracks in the timeline UI, and `@elah/editor` has no inspector for them: drive them through the
+engine, ops or VideoSpec ([§11](#11-writing-videos-and-scenes-with-a-model)).
 
 All types also accept `name?`, `volume?`, `opacity?`, `transform?`.
 
@@ -370,24 +385,26 @@ interface Transform {
 Normalized so a project is resolution-independent. Setting `rotation` tilts a video, image or
 text clip, but only **text** clips get an interactive rotate knob in `<Preview>`. Video and image
 clips have 8 resize handles (non-uniform; Shift keeps the aspect ratio) and a Resize/Crop toggle,
-but **no rotate handle**: set `transform.rotation` through `engine.updateClip`. Shape renderers
-do not apply rotation at all.
+but **no rotate handle**: set `transform.rotation` through `engine.updateClip`.
 
 ### Transitions
 
 ```ts
 engine.addTransition({
   fromClipId, toClipId, trackId,        // two adjacent clips on the SAME track
-  kind: 'slide',                        // 'fade' | 'slide' | 'wipe'
+  kind: 'slide',                        // 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
+                                        // | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   durationFrames: 12,
-  direction: 'left',                    // optional
+  direction: 'left',                    // optional: 'left' | 'right' | 'up' | 'down' (slide and whip)
   easing: 'ease-out',                   // 'linear' | 'ease-in' | 'ease-out'
 })
 ```
 
-All three kinds work in preview and in export. `slide` moves left when `direction` is `'left'`
-and right for any other value; `wipe` ignores `direction`. `'up'` and `'down'` are accepted by the
-type but are **not implemented**: do not promise a vertical slide.
+Nine kinds, all drawn by the WebGL2 renderer in preview and in export; both clips keep playing through
+a transition. `slide` and `whip` take a direction (default right); the others ignore it. A project that uses
+only `fade`, `slide` and `wipe` still exports without WebGL2 (a 2D path with left/right slide only); any of
+the other six needs WebGL2 in the export worker and fails there without it. `TRANSITION_REGISTRY`
+(from `@elah/core`) lists the kinds with labels and hints.
 
 ### Text templates, animation and frame sequences
 
@@ -405,9 +422,13 @@ engine.updateClip(clip.id, clip.trackId, {
 
 14 built-in templates. Entry/exit can also be a layered `MotionSpec` (`inMotion` / `outMotion`:
 `opacity`, `offsetX`, `offsetY`, `scale`, `rotation`, `ease`, `opacityEase`), which replaces the
-plain `in` / `out` kind. Limits to respect: `applyTextTemplate` **ignores a template's `stagger`
-and `tracking`** (nothing in the packages runs them), and `spin` / a `rotation` channel are
-**text-only** because shape renderers do not apply rotation.
+plain `in` / `out` kind. Limit to respect: `applyTextTemplate` **ignores a template's `stagger`
+and `tracking`** (nothing in the packages runs them).
+
+Richer animation is data on the clip (`Clip.keyframes`, from `@elah/core`): keyframes on every transform
+channel with the full ease set, springs, hold, stagger, motion paths, per-unit text animators, scramble,
+repeat/yoyo, skew and 3D tilt (`rotateX` / `rotateY` on video, image, sequence and compound clips).
+Key frames are integers relative to the clip start.
 
 Frame sequences are ordered image sets (360 degree orbits, storyboards):
 `createFrameSequence({ frames: urls, fps: 12, loop: 'wrap' })`, drive one with
@@ -423,8 +444,13 @@ const blob = await lazyExportVideo(project, options)  // code-split; prefer this
 
 ```ts
 interface ExportOptions {
-  videoCodec?: 'avc' | 'vp9' | 'vp8'    // default 'avc'
+  videoCodec?: 'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8'  // default 'avc'; others where the browser can encode
   audioCodec?: 'aac' | 'opus'           // default 'aac'
+  container?: 'mp4' | 'webm' | 'png-sequence' | 'gif'   // default 'mp4'
+  transparent?: boolean                 // webm only, where the browser's own check passes
+  range?: 'all' | 'inOut'               // 'inOut' = the marked in/out range
+  gifFps?: number                       // gif only, default 15
+  fonts?: { baseUrl: string }           // where bundled fonts are served; default '/fonts/'
   videoBitrate?: number                 // bits/s, default 8_000_000
   audioBitrate?: number                 // bits/s, default 128_000
   outputHeight?: number                 // target SHORT edge, e.g. 720 (portrait or landscape); the
@@ -902,8 +928,12 @@ Each of these has been observed in real generated code.
 | Time in seconds | Integer frames. Convert with `secondsToFrames(s, fps)` |
 | Assuming `<EditorProvider>` defaults to landscape | Default stage is portrait 1080x1920. Pass `stage={{ width: 1920, height: 1080 }}` |
 | Telling users they can rotate a video or image clip by dragging | There is no rotate handle for video/image (text has a knob). Set `transform.rotation` via `engine.updateClip` |
-| Rotating or `spin`-animating a shape clip | Shape renderers ignore rotation; `spin` is text-only |
-| `addTransition({ kind: 'slide', direction: 'up' })`, or expecting `wipe` to honour `direction` | Kinds are `fade`, `slide`, `wipe`; `slide` is left/right only, `wipe` ignores direction |
+| `import { compileVideoSpec, applyOps, validateScene } from '@elah/editor'` | The 1.0.0 programmatic layer is **not** re-exported by the editor: import it from `@elah/core` |
+| `switch (clip.type)` or `switch (transition.kind)` with no `default` | `ClipType` has 10 members and `TransitionKind` has 9; handle the rest or add a `default` |
+| Expecting `wipe` to honour `direction`, or a vertical `slide` from the 2D fallback | `slide` and `whip` take a direction; `wipe` and the rest ignore it. Without WebGL2 only fade, wipe and a left/right slide export |
+| Promising users an editing panel for compound, generator, sequence or adjustment clips | They play, save and export, but `@elah/editor` has no UI to edit them yet |
+| Handing `sceneToClip` raw HTML | It takes a **measured** scene (`MeasuredScene`); measuring needs a browser DOM and is your host's step |
+| Text in Telugu, Hindi, Arabic, CJK, Cyrillic or Greek with a bundled font | The 12 bundled fonts are a Latin subset; other scripts fall back to a generic family |
 | Expecting `applyTextTemplate` to stagger lines or add letter-spacing | It ignores `stagger` and `tracking`; build that yourself |
 | Two overlapping video clips in an `elah build` spec | The spec puts every video clip on one track, so overlap is a build error. Sequence them, or build the project with the engine and use `elah export` |
 | A custom demuxer with `{ probe, demux, destroy }` | `DemuxerBackend` is `{ open(src), getConfig(), packets(range), seekToKeyframe(t), dispose() }` |
@@ -941,7 +971,8 @@ so a large export is bounded by their machine, not by a server.
 ## 10. Headless rendering with `@elah/cli`
 
 For server-side or no-UI rendering (an AI backend that emits a video), `@elah/cli` runs the same
-engine and export pipeline in headless Chrome. Version **0.1.2** depends on `@elah/core@^0.6.0`.
+engine and export pipeline in headless Chrome. The published version **0.1.2** depends on `@elah/core@^0.6.0`
+and exports 0.6.x projects; the next CLI release depends on `@elah/core@^1.0.0` and exports version 5 projects.
 Node >= 18.17 and a system Chrome (or `--browser <path>` / `ELAH_BROWSER`) are required for
 export.
 
@@ -980,15 +1011,200 @@ Errors are path-addressed (`clips[2].duration must be ...`) so a model can corre
 
 ---
 
+## 11. Writing videos and scenes with a model
+
+Since 1.0.0 a model can also *author* a video: it writes a small document, the engine compiles it to
+ordinary, editable clips and keyframes, and a person can open the result on the timeline. There are
+two document formats. **Both are experimental** (they may change in a minor release); the project
+they produce is an ordinary `Project` and stays readable.
+
+Import all of this from **`@elah/core`**, not from `@elah/editor`: the editor barrel does not
+re-export these layers. `@elah/editor` already depends on `@elah/core`; still list it in your own
+`package.json` (pnpm and yarn will not resolve it otherwise).
+
+| Use | When |
+| --- | --- |
+| **VideoSpec** (`compileVideoSpec`, `buildVideo`) | The default. A seconds-based JSON document of text, shapes, icons, images, audio and generators with presets for entrance, exit and reveal. Never throws; every problem is a path-addressed issue the model can repair. |
+| **HTML/CSS scene** (`validateScene`, `sceneToClip`) | When the model is better at CSS layout (flex, grid, gradients, shadows) than at coordinates **and** your host can measure a DOM. The scene becomes one compound clip. |
+
+### 11.1 VideoSpec, worked example
+
+```ts
+import { compileVideoSpec, layProject, TimelineEngine, specVocabulary } from '@elah/core'
+import type { VideoSpec } from '@elah/core'
+
+const spec: VideoSpec = {
+  version: 1,
+  title: 'Launch card',
+  format: { width: 1080, height: 1920, fps: 30 },
+  duration: 4,                                  // seconds
+  background: '$bg',
+  design: {
+    colors: [
+      { name: 'bg', value: '#0b1020' },
+      { name: 'ink', value: '#ffffff' },
+      { name: 'accent', value: '#ffd166' },
+    ],
+    fonts: [
+      { role: 'sans', font: 'inter' },
+      { role: 'display', font: 'bebas-neue' },
+    ],
+  },
+  elements: [
+    { id: 'ring', kind: 'shape', shape: 'arc', at: 0.2, duration: 3.6, w: 420, h: 420,
+      stroke: '$accent', strokeWidth: 18, cap: 'round', x: 0.5, y: 0.4,
+      draw: { duration: 1.2, curve: 'cubic-out' } },
+    { id: 'big', kind: 'text', at: 0.4, duration: 3.4, text: '72%', font: '$display', size: 220,
+      color: '$ink', x: 0.5, y: 0.4, enter: 'pop-in', exit: 'fade-out' },
+    { id: 'label', kind: 'text', at: 0.8, duration: 3, text: 'of attacks start on free Wi-Fi',
+      font: '$sans', size: 48, color: '$ink', maxWidth: 800, x: 0.5, y: 0.62,
+      reveal: { preset: 'word-rise', stagger: 0.08, duration: 0.4 } },
+  ],
+}
+
+const { project, issues, fontIds } = compileVideoSpec(spec, { seed: 1 })
+// issues: [] here. A mistake comes back as data, e.g. font: '$nope' gives
+// { severity: 'error', path: 'elements[0].font', code: 'unknown-token', message: 'unknown font role "$nope"' }
+// The element is kept and the bad field dropped, so feed the issues back to the model and recompile.
+
+const engine = new TimelineEngine({ fps: 30, stage: { width: 1080, height: 1920 } })
+layProject(engine, project, { description: 'Add launch card' }) // one undo step
+// fontIds lists the bundled fonts to load before previewing (see "Fonts" below).
+```
+
+Rules for the model (the full list, with every preset, icon and generator, is what
+`specVocabulary()` returns: paste it into the system prompt rather than retyping it):
+
+- Times are **seconds**; positions are fractions of the stage (`x: 0.5, y: 0.5` is the centre); sizes are stage px.
+- `kind` is one of `text | shape | icon | image | audio | generator | group`. `shape` is one of
+  `rect | circle | ellipse | triangle | polygon | line | path | arc`.
+- Fonts and colours are tokens from `design` (`"$ink"`, `"$sans"`) or a raw hex / bundled font id.
+  Only the 12 bundled fonts exist. Icons come only from the listed Lucide names.
+- `layer` orders elements; a `group` holds children whose `at` is relative to the group.
+- `buildVideo(authoredSpec)` takes the same document plus `kind: 'component'` elements (17 motion
+  components such as `kinetic-title`, `stat-ring`, `quote-card`, `checklist`) and `system` behaviours
+  (`swarm`, `radialPush`, `freeze`, `arrange`, `crossMorph`, `camera`), expands them, polishes the timing and compiles:
+  `buildVideo(authored, { seed: 1 })` returns the same `{ project, issues }` plus the expanded spec.
+- `compileVideoSpec` and `buildVideo` are deterministic for a given `seed`.
+
+### 11.2 HTML/CSS scene, worked example
+
+The model writes an HTML fragment and one stylesheet in a **whitelisted subset**. Validate it first;
+every refusal names the supported substitute so the model can retry.
+
+```ts
+import { validateScene } from '@elah/core'
+
+const html = '<section id="card"><h1 id="big" data-motion="in: slide-in-up 0.4s overshoot @0.2">72%</h1>' +
+             '<p id="label" data-motion="in: fade-in 0.3s @0.5">of attacks start on free Wi-Fi</p></section>'
+const css = '#card { width: 1080px; height: 1920px; background: #0b1020 }' +
+            '#big { position: absolute; left: 80px; top: 800px; width: 900px; font-family: bebas-neue; font-size: 220px; color: #ffffff }' +
+            '#label { position: absolute; left: 80px; top: 1040px; width: 900px; font-family: inter; font-size: 48px; color: #9aa4b2 }'
+
+const { ok, violations } = validateScene({ html, css })
+// ok: true, violations: []. Had the css said "animation: spin 1s; text-transform: uppercase":
+// [{ element: '#a', property: 'animation', message: 'CSS animation is not supported', substitute: 'data-motion on the element' },
+//  { element: '#a', property: 'text-transform', message: 'text-transform is not supported', substitute: 'write the text in the case you want' }]
+```
+
+The subset, in short. **Tags:** `div section header footer p h1-h6 span ul ol li svg img` (no `script`,
+`canvas`, `iframe`, `video`, `button`, `a`, `table`, `br`; use spans and divs). **Layout:** `position`
+static/relative/absolute, `display` block/flex/grid/inline-block/none, flex and grid properties, px sizes. **Look:**
+colours, linear/radial/conic gradients, one outer `box-shadow`, per-corner `border-radius`, `opacity`,
+`mix-blend-mode` (the engine's blend modes), `clip-path` (inset, circle, ellipse, path), `overflow: hidden`,
+`filter: blur() | drop-shadow()`, `text-shadow`, `-webkit-text-stroke`, gradient text, underline and line-through.
+**Refused, with a substitute:** `transform` (use `translate`, `rotate`, `scale`), `animation` and `transition` (use
+`data-motion`), `@keyframes`, `@font-face`, `@import`, `url()`, external URLs, pseudo-classes, `backdrop-filter`,
+`text-transform`, `perspective`, inset or multiple shadows. **Selectors:** `:root`, `#id` and `.class` only.
+**Fonts:** one bundled family per element (an unknown font is refused and the nearest bundled one named).
+
+`data-motion` is a one-line language in the engine's own vocabulary, clauses separated by `;`:
+`in: pop-overshoot 0.4s @0.2; x: 0.30 → 0.50 0.6s overshoot @1.0; opacity: hold 0.5s @2; out: blur-out 0.3s @-0.3; stagger: children 4f`.
+It also takes `repeat` / `yoyo`, `spring:<preset>` eases, relative positions (`@<`, `@>0.2`, `@label+0.3`), `path:`,
+`split:` / `each:` text animators, `scramble:` and the `skewX`, `skewY`, `rotateX`, `rotateY` channels. A bad clause is
+reported in the conversion report's `violations` and skipped; the scene still converts.
+
+Converting needs the **measured** scene: the box, line breaks and resolved style of every node, as a
+browser lays them out. Producing that is the host's step (mount the fragment in a hidden, stage-sized
+element, wait for fonts, read the boxes); **no measurer ships in the packages**. A `MeasuredScene` is plain data, so
+the conversion itself runs anywhere:
+
+```ts
+import { sceneToClip, TimelineEngine } from '@elah/core'
+import type { MeasuredScene } from '@elah/core'
+
+const scene: MeasuredScene = {
+  name: 'stat', at: 0, duration: 4,            // seconds
+  stage: { width: 1080, height: 1920 },
+  root: {
+    tag: 'section', id: 'card', box: { x: 0, y: 0, width: 1080, height: 1920 },
+    style: { backgroundColor: 'rgb(11, 16, 32)' },
+    children: [
+      { tag: 'h1', id: 'big', box: { x: 80, y: 800, width: 900, height: 198 },
+        style: { color: '#ffffff', fontFamily: 'bebas-neue', fontSize: 220, fontWeight: 400, lineHeight: 198, textAlign: 'left' },
+        text: { lines: [{ text: '72%', box: { x: 80, y: 800, width: 900, height: 198 } }] },
+        motion: 'in: slide-in-up 0.4s overshoot @0.2', children: [] },
+      { tag: 'p', id: 'label', box: { x: 80, y: 1040, width: 900, height: 58 },
+        style: { color: '#9aa4b2', fontFamily: 'inter', fontSize: 48, fontWeight: 400, lineHeight: 58, textAlign: 'left' },
+        text: { lines: [{ text: 'of attacks start on free Wi-Fi', box: { x: 80, y: 1040, width: 900, height: 58 } }] },
+        motion: 'in: fade-in 0.3s @0.5', children: [] },
+    ],
+  },
+}
+
+const { clip, report } = sceneToClip(scene, { fps: 30 })
+// clip.type === 'compound'; report.native === 3 (a background rect and two text clips);
+// report.skipped, report.substitutions and report.violations say what could not be mapped.
+
+const engine = new TimelineEngine({ fps: 30, stage: { width: 1080, height: 1920 } })
+const trackId = engine.addTrack('elements').id
+const added = engine.addClip({
+  trackId, type: 'compound', name: clip.name,
+  startFrame: clip.startFrame, durationFrames: clip.durationFrames, compound: clip.compound!,
+})
+engine.updateClip(added.id, trackId, { transform: clip.transform })
+// The project now holds a compound clip, so it is saved as document version 4.
+```
+
+### 11.3 Editing with ops
+
+A model edits an existing project with typed ops instead of rewriting it. `sanitizeOps` repairs or drops
+what it cannot trust (invented ops and stale ids, with a reason); `applyOps` applies the rest in one undo step.
+
+```ts
+import { sanitizeOps, applyOps, describeProject } from '@elah/core'
+
+const prompt = describeProject(engine.getProject())            // a compact summary for the model
+const { ops, dropped } = sanitizeOps(
+  [{ op: 'addText', text: 'Hello world', at: 0.5, duration: 3, region: 'lower-third', motion: 'pop-in' }, { op: 'teleport' }],
+  engine.getProject(),
+)
+// dropped: [{ index: 1, reason: ... }]   (the invented op)
+const result = applyOps(engine, ops, { description: 'Add title' }) // result.applied, result.skipped, result.refs
+```
+
+There are 57 ops (`EDITOR_OP_NAMES`): text, shapes, generators, captions, lower thirds, keyframes and
+expressions, motion presets, effects and looks, transitions, speed, cuts and ranges, markers, nesting and
+more. `generateMedia` and `removeBackground` only place a placeholder and return it in `result.deferred`
+for your host to run: no provider call ships.
+
+### 11.4 Fonts
+
+Text clips name one of the 12 bundled OFL families (Latin subset only). They load from `/fonts/` on your
+host by default: copy `node_modules/@elah/core/fonts/` to your public `fonts/` folder, or, for an unbundled
+import (a CDN), pass `{ fonts: { baseUrl: packageFontsBaseUrl() } }` to `exportVideo`. See the limitations in the
+changelog and `CURRENT_LIMITATIONS.md`.
+
+---
+
 ## Appendix: complete package layout
 
 | Package | Purpose | Import it directly? |
 | --- | --- | --- |
 | `@elah/editor` | Full SDK: components + everything below re-exported | **Yes — this is the one you install** |
-| `@elah/core` | Engine, resolver, renderer, export. Zero React. | Only for custom renderers or non-React hosts |
+| `@elah/core` | Engine, resolver, renderer, export. Zero React. Also the 1.0.0 programmatic layer: effects, generators, motion, VideoSpec, HTML scenes, ops | For custom renderers, non-React hosts, and anything in [§11](#11-writing-videos-and-scenes-with-a-model) |
 | `@elah/react` | React bindings (context + store hooks) | Rarely — `@elah/editor` re-exports these |
 | `@elah/timeline` | The `<Timeline>` UI | Rarely — same |
 | `@elah/cli` | Headless server-side rendering (`elah build / export / serve`), see [section 10](#10-headless-rendering-with-elahcli) | Separate Node tool, versioned independently (0.1.2) |
 
-Bundle cost: ~64 KiB gzipped at startup for the full SDK graph, plus ~159 KiB for `mediabunny` (the demuxer), which loads lazily on first decode unless the app calls `createDefaultDemuxerFactory()`, whose static import puts it in the startup graph. mediabunny is injected at
-runtime, never bundled.
+Bundle cost: `@elah/core` grew a lot in 1.0.0 (about 1.2 MB as a tarball, half of it optional fonts), and the 1.0.0 bundle figures are not published yet, so do not quote a number from an older version of this guide. `mediabunny` (the demuxer) loads lazily on first decode unless the app calls `createDefaultDemuxerFactory()`, whose static import puts it in the startup graph. Import `@elah/core/engine` for the engine without the renderer or the codec.

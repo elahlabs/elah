@@ -11,8 +11,138 @@ versions independently, starting from its own 0.1.0.
 
 ## [Unreleased]
 
+Not part of the 1.0.0 packages. `@elah/cli` keeps its own version (0.1.2) and is
+released separately.
+
 ### Added
 
+- **`@elah/react-native` 0.1.0 (pre-release, not published).** The platform-free timeline model:
+  lane layout, move / trim / pinch gesture reducers and a single engine-command applier, tested
+  against the real `TimelineEngine`. Re-exports `EditorProvider`, the store hooks and the engine
+  from `@elah/core/engine`. No timeline component yet. Its colour map now covers the four new
+  clip types.
+- **`apps/mobile`:** an Expo dev harness for the React Native binding (own install, not a root
+  workspace member).
+
+### Changed
+
+- **`@elah/cli` (unreleased, still 0.1.2): exports version 5 projects.** The harness server
+  answers a module directory request with a redirect to its `index.js` and resolves dotted
+  module names (`./shaders/quad.frag`), so the export worker loads against the converged core;
+  served modules get `process.env.NODE_ENV` inlined; media inside compound clips and
+  animated-image sequence clips is served; the hard-coded project version 1 is gone, and the
+  version warning fires only for a project newer than `PROJECT_VERSION`. A `frames` sequence
+  whose template is a relative URL is not routed yet. Its `@elah/core` range is now `^1.0.0`.
+- The root `workspaces` list names `apps/web` and `apps/server` instead of `apps/*`.
+
+## [1.0.0] — 2026-10-22
+
+The motion and programmatic layer. `@elah/core` is now the same engine our own
+editor runs on: keyframe animation with the full ease set, springs, stagger and
+motion paths; HTML/CSS scenes and a VideoSpec document that compile to native,
+editable clips; effects, transitions, generators, compound and sequence clips,
+audio enhancement and Lottie / SVG import. 1.0.0 also makes the exported surface
+a semver promise (see Stability). `@elah/core`, `@elah/react`, `@elah/timeline`
+and `@elah/editor` ship together at 1.0.0; `@elah/cli` is not part of this
+release.
+
+### Stability
+
+From 1.0.0 the exported API of `@elah/core` (the root entry and the browser-free
+`@elah/core/engine` entry), `@elah/react`, `@elah/timeline` and `@elah/editor`
+follows semver: a breaking change needs 2.0. Three AI-facing layers are the
+exception and are **experimental**; they may change in a minor release as the
+models that write them change: `spec` (the `VideoSpec` / `AuthoredSpec` documents,
+`compileVideoSpec`, `buildVideo` and `specVocabulary`), `vector/html` (HTML/CSS
+scene conversion: `validateScene`, `sceneToClip`) and the op vocabulary (`ops`:
+`EDITOR_OP_NAMES`, `applyOps`, `sanitizeOps`, the `describe*` helpers). The
+documents they produce are ordinary projects and stay readable; it is the
+authoring vocabulary and op shapes that can move.
+
+### Breaking
+
+- **Project documents are version 5.** `PROJECT_VERSION` went from 1 to 5. A project is
+  stamped with the lowest version that can hold what it uses (adjustment clips 2;
+  generator clips, shape draw-on and the newer transitions 3; compound clips 4; sequence
+  clips 5), so a project that uses none of them is still version 1 and opens in 0.6.x.
+  A project that does is refused by 0.6.x with `ProjectDocumentError`
+  (`code: 'unsupported-version'`). Every 0.6.x document opens unchanged in 1.0.0.
+- **Widened unions can break an exhaustive `switch`.** `ClipType` gained `adjustment`,
+  `generator`, `compound` and `sequence` (now 10 members), and `TransitionKind` gained
+  `zoom`, `spin`, `whip`, `glitchCut`, `warpDissolve` and `lumaWipe` (now 9). Code that
+  switches on either with no `default`, or keeps a `Record<ClipType, …>`, stops
+  compiling until it handles the new members. `@elah/react-native` hit exactly this.
+- **Transitions are drawn by the WebGL2 renderer.** `<Preview>` no longer lays a frozen CSS
+  snapshot over a transition; both clips play through it, with their effects. A host that
+  rendered its own transition overlay on top of `<Preview>` should remove it.
+- **`mediabunny` `^1.50.8`** (was `^1.45.3`) in `@elah/core`, `@elah/cli` and `apps/web`:
+  the export worker retries a failed decoder with options older releases do not have.
+- No exported name from 0.6.0 was removed, in any of the four packages.
+
+### Added
+
+- **`@elah/core`: the motion layer.** Keyframes on every transform channel with the full
+  ease set (sine, quad, cubic, quart, quint, expo, circ, back, elastic and bounce, each
+  in / out / in-out, plus `steps(n)`, cubic-bezier curves and named bezier presets) and
+  closed-form springs (the gentle, snappy, bouncy, stiff and wobbly presets); hold keys;
+  stagger from the start, end, centre, edges or at random, and across a grid; motion paths
+  (a clip travels an SVG path and can orient to it); per-character, word and line text
+  animators with their own tweens; scramble text; repeat and yoyo; skew; 3D tilt
+  (`rotateX` / `rotateY`, on video, image, sequence and compound clips); expressions;
+  36 motion presets.
+- **`@elah/core`: HTML/CSS scene conversion (`vector/html`, experimental).**
+  `validateScene({ html, css })` checks a scene against a whitelisted HTML/CSS subset and
+  names the supported substitute for everything it refuses; `sceneToClip(measuredScene,
+  { fps })` turns a measured scene into one compound clip of native shape, text and image
+  clips with keys, from a one-line `data-motion` grammar. Measuring the scene in a browser
+  is the host's step: this release ships no DOM measurer.
+- **`@elah/core`: VideoSpec (`spec`, experimental).** A seconds-based JSON document for
+  models to write: `compileVideoSpec` compiles it to a `Project` and returns every problem as
+  a path-addressed `SpecIssue` instead of throwing; `buildVideo` also expands 17 motion
+  components and 6 motion systems and polishes the result; `layProject` lays a compiled
+  project onto a live engine as one undo step; `specVocabulary()` renders the vocabulary
+  block for a prompt.
+- **`@elah/core`: editor ops (`ops`, experimental).** 57 typed ops (`EDITOR_OP_NAMES`)
+  that add text, shapes, generators, captions, effects, transitions, keyframes and edits;
+  `applyOps` runs a plan against an engine as one undo step, `sanitizeOps` repairs a model's
+  plan, and the `describe*` helpers summarise a project for a prompt. Ops that need a
+  provider (`generateMedia`, `removeBackground`) come back as `deferred` for the host to run.
+- **`@elah/core`: new clip types.** `adjustment` (applies effects to everything beneath it),
+  `generator` (8 built in: particles, energy lines, light leak, lens flare, gradient
+  background, counter, bar chart, progress bar), `compound` (a nested project played as one
+  clip; `nestClips` / `unnestClip`, component instances that re-expand) and `sequence`
+  (an animated image or a numbered frame set, picked by frame index in preview and export).
+- **`@elah/core`: effects, transitions, blend modes and mattes.** 23 GPU effects
+  (`EFFECT_REGISTRY`: colour grade, blurs, bloom, glow, grain, VHS, CRT, glitch, pixelate and
+  more), effect bundles and looks, masks and track mattes, blend modes, and nine transitions
+  (`fade`, `slide`, `wipe`, `zoom`, `spin`, `whip`, `glitchCut`, `warpDissolve`, `lumaWipe`),
+  all drawn by one WebGL2 pipeline shared by preview and export.
+- **`@elah/core`: clip audio.** `Clip.audio`: mute, boost (up to +12 dB), fades and Enhance
+  (noise reduction and voice clarity). One gain envelope and one Web Audio chain serve the
+  live preview and the export mix, so what you hear is what you export. Audio analysis
+  (beats, silences, markers) and word-level captions are public too.
+- **`@elah/core`: Lottie and SVG import.** `lottieToClip` and `svgToProject` turn an
+  animation or drawing into editable native clips and keys; each returns a report of what it
+  could not map.
+- **`@elah/core`: export containers.** `ExportOptions.container` selects `mp4` (default),
+  `webm` (with transparency where the browser's own check passes), `gif` or a PNG sequence;
+  codecs are `avc`, `hevc`, `av1`, `vp9` and `vp8` where the browser can encode them;
+  `range: 'inOut'` exports the marked range. A default MP4 export is unchanged.
+- **`@elah/core`: fonts that ship in the package.** Twelve OFL families (Inter, Montserrat,
+  Poppins, Space Grotesk, Playfair Display, DM Serif Display, Bebas Neue, Anton, Oswald,
+  Archivo Black, Roboto Mono, Caveat; Latin subset, woff2) in `fonts/<id>/` with each
+  `OFL.txt`. The default font base URL stays `/fonts/`; `packageFontsBaseUrl()` opts in to
+  the package's own copies for unbundled use (a CDN, native ESM). Lucide (ISC) icon paths
+  and the fonts are listed in `NOTICE` and `THIRD_PARTY_NOTICES.md`.
+- **`@elah/core`: CDN-safe workers.** The export, audio-analysis and capability-probe
+  workers start from a cross-origin module URL through a blob module worker (jsDelivr's
+  `/+esm` build included). Bundled hosts (webpack, Turbopack, Vite) take the same
+  `new Worker(new URL(…))` path as before.
+- **`@elah/core/engine`: a browser-free entry point.** The engine, resolver,
+  `PlaybackEngine`, stores, clip factories, project documents and the pure placement and
+  timeline math, now for the whole converged engine, without the WebGL2 renderer, WebCodecs,
+  the media importers or the export worker (whose `import.meta` Metro and Hermes reject).
+  Shares module instances with `@elah/core`. A test pins every file it can reach.
 - **`@elah/core`: timeline geometry.** Pure helpers shared by every timeline UI, in
   `utils/timelineMath.ts`: `timelineContentWidth`, `computeRulerTicks`, `formatRulerLabel`,
   `computeAnchoredScrollLeft`, `resolveZoomAnchorX`, `wheelZoomStep`, `pinchZoom`, `clampZoom`
@@ -20,23 +150,25 @@ versions independently, starting from its own 0.1.0.
   `isCompatibleTrackKind`, `isClipAllowedOnTrack`, and the trim limits `maxTrimDuration`,
   `minTrimDuration`, `minLeftTrimStart`, `neighbourBounds`, `clampLeftTrim`, `clampRightTrim`.
   Re-exported by `@elah/editor`.
-- **`@elah/react-native` 0.1.0 (pre-release, not published).** The platform-free timeline model:
-  lane layout, move / trim / pinch gesture reducers and a single engine-command applier, tested
-  against the real `TimelineEngine`. Re-exports `EditorProvider`, the store hooks and the engine
-  from `@elah/core/engine`. No timeline component yet.
-- **`@elah/core/engine`: a browser-free entry point.** The engine, resolver, `PlaybackEngine`,
-  stores, clip factories, project documents and the pure placement / timeline math, without the
-  WebGL2 renderer, WebCodecs, the media importers or the export worker (whose `import.meta`
-  Metro and Hermes reject). Shares module instances with `@elah/core`. A test pins every file
-  it can reach.
 - **`@elah/react`: `EditorProvider`.** Moved from `@elah/editor`, which still re-exports it, so
   no import changes. On React Native, Metro picks a `useMediaLibrary.native` variant whose
   browser importers throw.
-- **`apps/mobile`:** an Expo dev harness for the React Native binding (own install, not a root
-  workspace member).
+- **`@elah/timeline`, `@elah/editor`: projects that use the new clip types open, play, save and
+  export without losing a clip.** The timeline draws adjustment, generator, compound and
+  sequence clips as labelled blocks in existing token colours; trimming lets sourceless clips
+  grow as `engine.trimClip()` does; paste copies shapes, drawings and the new types with
+  `cloneClip` (pasting a shape used to throw); the transition picker shows a loaded kind
+  outside fade / slide / wipe as the active choice; selecting a clip with no inspector panel
+  shows a neutral message. There is no editing UI for the new clip types in `@elah/editor`
+  yet (see `CURRENT_LIMITATIONS.md`).
 
 ### Changed
 
+- **Package size.** `@elah/core` is about 1.2 MB as an npm tarball (`npm pack --dry-run`:
+  1,158,481 bytes packed, 3.0 MB unpacked, 735 files); 0.6.0 was about 106 KB. Roughly half is
+  the bundled fonts, which a host loads only if it opts in; the rest is the converged engine.
+  Everything stays tree-shakeable (`sideEffects: false`), and the engine-only entry
+  `@elah/core/engine` leaves out the renderer and the codec.
 - **`@elah/timeline`:** the zoom-anchor, content-width and track-compatibility modules now
   re-export from `@elah/core`, and the ruler computes its ticks with `computeRulerTicks`. No
   behaviour change. `playbackStore.setZoom` clamps with the shared `clampZoom`.
@@ -44,22 +176,8 @@ versions independently, starting from its own 0.1.0.
   `crypto.randomUUID()`, which Hermes does not provide.
 - **`@elah/react`:** value imports from core go through `@elah/core/engine`; the build no longer
   emits `*.test.tsx` files into `dist`.
-- The root `workspaces` list names `apps/web` and `apps/server` instead of `apps/*`.
-- **Consumers of the converged core (project version 5).** Projects that hold adjustment,
-  generator, compound or sequence clips and the newer transition kinds now open, play, save
-  and export without losing a clip; the open-source UI has no editor for them yet.
-  - `@elah/timeline`: those clips draw as ordinary labelled blocks in existing token colours;
-    trimming lets sourceless clips grow as `engine.trimClip()` does; paste copies shapes,
-    drawings and the new types with `cloneClip` instead of rebuilding them as empty media clips
-    (pasting a shape used to throw); the transition picker shows a loaded kind outside its three
-    (zoom, spin, …) as the active choice.
-  - `@elah/editor`: `Preview` no longer lays its CSS snapshot over transitions. The GPU renderer
-    composites every transition itself, so the old layer drew a frozen outgoing frame on top.
-  - `@elah/cli`: the harness server answers a module directory request with a redirect to its
-    `index.js` and resolves dotted module names (`./shaders/quad.frag`), so the export worker
-    loads again; media inside compound clips and animated-image sequence clips is served;
-    the version warning fires only for a project newer than `PROJECT_VERSION`.
-  - `@elah/react-native`: colours for the four new clip types.
+- **`@elah/editor`:** `Preview` no longer drives the CSS `TransitionOverlay` (see Breaking).
+  The unused `TransitionOverlay.tsx` file is still in the tree and is not exported.
 
 ## [0.6.0] — 2026-10-02
 
@@ -421,6 +539,7 @@ timeline**. Additive — no breaking changes to the 0.2.x public API.
 - First public release of the three-package split: `@elah/core`,
   `@elah/timeline`, `@elah/editor`.
 
+[1.0.0]: https://github.com/elahlabs/elah/releases/tag/v1.0.0
 [0.6.0]: https://github.com/elahlabs/elah/releases/tag/v0.6.0
 [@elah/cli 0.1.2]: https://github.com/elahlabs/elah/releases/tag/cli-v0.1.2
 [0.4.1]: https://github.com/elahlabs/elah/releases/tag/v0.4.1

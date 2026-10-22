@@ -465,7 +465,7 @@ references** — `scene === lastScene` is a no-op. The renderer reads only the
 | `Renderer` interface | ✅ shipped (`core/renderer/types.ts`) |
 | `useResolvedScene()` hook | ✅ shipped — memoized `resolveTimeline(frame, project)` |
 | `GpuRenderer` (WebGL2) | ✅ shipped — `core/renderer/gpu/`; video / image / text / shape / freehand layers, context-loss recovery |
-| `<Preview>` component | ✅ shipped — `editor/Preview/`; mounts the renderer, drives RAF, hosts the interaction overlays (text, shape, media transform) and `TransitionOverlay` |
+| `<Preview>` component | ✅ shipped — `editor/Preview/`; mounts the renderer, drives RAF, hosts the interaction overlays (text, shape, media transform) |
 | Export path | ✅ shipped — `core/export/`; worker + `OffscreenCanvas`, not a `Renderer` instance (see below) |
 
 `<Preview>` is the production wiring. The in-browser playgrounds on elah.dev
@@ -492,19 +492,13 @@ The full GPU + decode pipeline is documented in
 
 ### Transitions
 
-Transitions are `fade`, `slide` and `wipe`, all implemented, and all built on one idea: the
-GPU never decodes two clips for a cut. During a transition window the resolver zeroes the
-outgoing clip's opacity and emits an `ActiveTransition`. In the preview, `TransitionOverlay`
-takes a frozen snapshot of the WebGL canvas just before the transition starts (the outgoing
-clip fully visible) and fades, translates or clips it with CSS as `t` goes 0 → 1; the
-export worker draws the same kind of snapshot on top with the matching alpha, offset or
-clip. `slide` moves left only for `direction: 'left'` and right otherwise; `wipe` ignores
-`direction`. `up` and `down` exist in the `TransitionDirection` type but no renderer
-implements them.
-
-Because the snapshot is of the whole canvas, anything else composited at that moment (a
-second video lane, text, a shape) is frozen into it as well; see KB-002 in
-[`docs/known-limitations.md`](./docs/known-limitations.md).
+Transition kinds are listed once, in `core/transitions/registry.ts`: `fade`, `slide` and
+`wipe`, plus `zoom`, `spin`, `whip`, `glitchCut`, `warpDissolve` and `lumaWipe`. During a
+transition window the resolver emits an `ActiveTransition`. `RenderGraph` draws each side of
+the pair into its own target and composites the two with one transition shader
+(`core/renderer/gpu/transitions.ts`, a `uKind` switch), in the preview and in export alike.
+Without WebGL2, the export falls back to drawing a frozen snapshot of the outgoing clip on
+top; only `fade`, `slide` and `wipe` have that Canvas2D fallback.
 
 ### Export is a parallel path, not a `Renderer`
 

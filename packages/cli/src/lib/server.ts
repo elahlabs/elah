@@ -154,6 +154,22 @@ export function rewriteSpecifiers(source: string, vendors: Map<string, VendorEnt
 }
 
 /**
+ * Inline `process.env.NODE_ENV` as `"production"`, as a bundler's `define`
+ * does. Served raw to the browser, a module that reads it (immer's ESM build,
+ * which the converged core's export graph imports) throws "process is not
+ * defined" before the export starts.
+ */
+export function defineNodeEnv(source: string): string {
+  return source.replace(/\bprocess\.env\.NODE_ENV\b/g, '"production"')
+}
+
+/** Served modules (as opposed to media or other assets). */
+function isScriptFile(file: string): boolean {
+  const ext = extname(file).toLowerCase()
+  return ext === '.js' || ext === '.mjs'
+}
+
+/**
  * Resolve a /core/* request against core's dist, tolerating the module-URL
  * quirks of tsc's bundler-resolution output: extensionless relative imports
  * and the literal `./ExportWorker.ts` worker URL that ships in dist.
@@ -270,7 +286,7 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
       }
       const source = readFileSync(file, 'utf8')
       res.writeHead(200, { 'content-type': 'text/javascript' })
-      res.end(rewriteSpecifiers(source, vendors))
+      res.end(defineNodeEnv(rewriteSpecifiers(source, vendors)))
       return
     }
 
@@ -295,6 +311,11 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
       if (isDirectoryIndex(vendor.root, rel, file)) {
         res.writeHead(302, { location: indexUrl(path, url.search) })
         res.end()
+        return
+      }
+      if (isScriptFile(file)) {
+        res.writeHead(200, { 'content-type': 'text/javascript' })
+        res.end(defineNodeEnv(readFileSync(file, 'utf8')))
         return
       }
       serveLocalFile(req, res, file)

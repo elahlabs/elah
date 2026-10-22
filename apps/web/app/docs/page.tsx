@@ -89,7 +89,7 @@ export default function DocsPage() {
           {/* Architecture layers diagram */}
           <div className="overflow-hidden rounded-md border border-outline-variant">
             {[
-              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays', 'TransitionOverlay'], bg: 'bg-surface-low' },
+              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays'], bg: 'bg-surface-low' },
               { label: 'Zustand Stores', items: ['useTracksStore', 'usePlaybackStore', 'useSelectionStore', 'useTransitionsStore'], bg: 'bg-surface-lowest' },
               { label: 'Engine Layer', items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'], bg: 'bg-surface-low' },
               { label: 'Pure Resolver', items: ['resolveTimeline(frame, project) → Scene'], bg: 'bg-surface-lowest' },
