@@ -16,6 +16,26 @@
       "types": "./dist/engine.d.ts",
       "import": "./dist/engine.js",
       "default": "./dist/engine.js"
+    },
+    "./spec": {
+      "types": "./dist/spec/index.d.ts",
+      "import": "./dist/spec/index.js",
+      "default": "./dist/spec/index.js"
+    },
+    "./html": {
+      "types": "./dist/vector/html/index.d.ts",
+      "import": "./dist/vector/html/index.js",
+      "default": "./dist/vector/html/index.js"
+    },
+    "./ops": {
+      "types": "./dist/ops/index.d.ts",
+      "import": "./dist/ops/index.js",
+      "default": "./dist/ops/index.js"
+    },
+    "./icons": {
+      "types": "./dist/icons/index.d.ts",
+      "import": "./dist/icons/index.js",
+      "default": "./dist/icons/index.js"
     }
   },
   "files": [

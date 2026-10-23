@@ -116,7 +116,7 @@ export function rippleTrim(
 }
 
 /** Clip types with no source media: they grow and shrink freely. */
-const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'shape', 'freehand', 'adjustment', 'generator'])
+const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'image', 'shape', 'freehand', 'adjustment', 'generator'])
 
 interface EdgeMember {
   clip: Clip

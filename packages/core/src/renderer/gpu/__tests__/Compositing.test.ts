@@ -7,15 +7,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { BLEND_MODES, type ClipMask } from '../../../types'
 import { RecordingGl } from '../debug/RecordingGl'
 import { EffectChain } from '../EffectChain'
-import {
-  BLEND_FRAG_SRC,
-  BLEND_MODE_INDEX,
-  CANVAS_COMPOSITE_OP,
-  MASK_FRAG,
-  isDrawableMask,
-  maskUniforms,
-  needsChain,
-} from '../compositing'
+import { CANVAS_COMPOSITE_OP, isDrawableMask, needsChain } from '../compositing'
+import { BLEND_FRAG_SRC, BLEND_MODE_INDEX, MASK_FRAG, maskUniforms } from '../compositingGpu'
 import { ImageLayer, type ImageLoader } from '../layers/ImageLayer'
 import { __clearImageCacheForTests } from '../layers/imageCache'
 import type { LayerContext } from '../layers/types'

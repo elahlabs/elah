@@ -3,10 +3,8 @@ import { AdjustmentLayer } from './AdjustmentLayer'
 import { CompoundLayer } from './CompoundLayer'
 import { FreehandLayer } from './FreehandLayer'
 import { FrameProbeLayer } from './FrameProbeLayer'
-import { GeneratorLayer } from './GeneratorLayer'
+import { LazyLayer } from './LazyLayer'
 import { ImageLayer } from './ImageLayer'
-import { RotoMaskLayer } from './RotoMaskLayer'
-import { SequenceLayer } from './SequenceLayer'
 import { ShapeLayer } from './ShapeLayer'
 import { TextLayer } from './TextLayer'
 import { VideoLayer, type VideoClipLoadState, type VideoFrameProviderFactory } from './VideoLayer'
@@ -15,7 +13,7 @@ import { SCENE_LAYER_ORDER, type SceneLayerKey } from '../../../export/sceneLaye
 import type { TexturePool } from '../TexturePool'
 import type { VideoFrameProviderDeps } from '../../../media/video/VideoFrameProvider'
 import type { RotoMaskLoader } from '../../../media/masks/RotoMaskFrameProvider'
-import type { Scene } from '../../../resolver/scene'
+import type { ActiveGeneratorClip, ActiveRotoMask, ActiveSequenceClip, Scene } from '../../../resolver/scene'
 
 /**
  * Every layer for one Scene level, on one RenderGraph (PV-P1).
@@ -38,6 +36,11 @@ export interface LayerSetOptions {
   /** SequenceLayer's frame loader for `frames` sequences (PV-P8b). */
   sequenceFrameLoader?: (url: string, signal?: AbortSignal) => Promise<Blob>
   onSequenceFrame?: () => void
+  /**
+   * An optional feature (generators, sequences, roto masks, effects) finished
+   * loading: the last frame can now be drawn more fully (CONV-8).
+   */
+  onFeatureReady?: () => void
   /** Nesting level of the scenes this set draws. Default 0. */
   depth?: number
   /** Key prefix of this set's scenes (see LayerContext.keyPrefix). Default ''. */
@@ -52,10 +55,10 @@ export interface LayerSet {
   readonly textLayer: TextLayer
   readonly shapeLayer: ShapeLayer
   readonly freehandLayer: FreehandLayer
-  readonly generatorLayer: GeneratorLayer
+  readonly generatorLayer: LazyLayer<ActiveGeneratorClip, 'generators'>
   readonly adjustmentLayer: AdjustmentLayer
-  readonly rotoMaskLayer: RotoMaskLayer
-  readonly sequenceLayer: SequenceLayer
+  readonly rotoMaskLayer: LazyLayer<ActiveRotoMask, 'rotoMasks'>
+  readonly sequenceLayer: LazyLayer<ActiveSequenceClip, 'sequences'>
   readonly compoundLayer: CompoundLayer
   readonly depth: number
   /** Every layer's notifyContextLost, then the graph's. Does not touch GL. */
@@ -94,19 +97,31 @@ export function createLayerSet(opts: LayerSetOptions): LayerSet {
   }
 
   const imageLayer = new ImageLayer()
-  const sequenceLayer = new SequenceLayer({
-    ...(opts.sequenceFrameLoader ? { frameLoader: opts.sequenceFrameLoader } : {}),
-    onFrameReady: () => opts.onSequenceFrame?.(),
-  })
+  // Generators, sequences and roto masks load on first use (CONV-8).
+  const featureReady = () => opts.onFeatureReady?.()
+  const sequenceLayer = new LazyLayer<ActiveSequenceClip, 'sequences'>(
+    'sequences',
+    (m) =>
+      new m.SequenceLayer({
+        ...(opts.sequenceFrameLoader ? { frameLoader: opts.sequenceFrameLoader } : {}),
+        onFrameReady: () => opts.onSequenceFrame?.(),
+      }),
+    featureReady,
+  )
   const textLayer = new TextLayer()
   const shapeLayer = new ShapeLayer()
   const freehandLayer = new FreehandLayer()
-  const generatorLayer = new GeneratorLayer()
+  const generatorLayer = new LazyLayer<ActiveGeneratorClip, 'generators'>('generators', (m) => new m.GeneratorLayer(), featureReady)
   const adjustmentLayer = new AdjustmentLayer()
-  const rotoMaskLayer = new RotoMaskLayer({
-    ...(opts.rotoMaskLoader ? { loader: opts.rotoMaskLoader } : {}),
-    onFrameReady: () => opts.onRotoMaskFrame?.(),
-  })
+  const rotoMaskLayer = new LazyLayer<ActiveRotoMask, 'rotoMasks'>(
+    'rotoMasks',
+    (m) =>
+      new m.RotoMaskLayer({
+        ...(opts.rotoMaskLoader ? { loader: opts.rotoMaskLoader } : {}),
+        onFrameReady: () => opts.onRotoMaskFrame?.(),
+      }),
+    featureReady,
+  )
 
   const compoundLayer = new CompoundLayer((compoundId) =>
     createLayerSet({

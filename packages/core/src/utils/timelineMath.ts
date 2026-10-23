@@ -243,12 +243,13 @@ type TrimClip = Pick<
   'type' | 'startFrame' | 'durationFrames' | 'sourceStartFrame' | 'sourceDurationFrames' | 'speed'
 >
 
-/** Generated clips have no source media and may grow freely in either direction. */
+/** Generated clips and still images have no source length and may grow freely in either direction. */
 export function isUnlimitedClipType(type: ClipType): boolean {
   // Must match `isUnlimited` in `TimelineEngine.trimClip`, or a drag preview
   // stops short of what the engine would commit.
   return (
     type === 'text' ||
+    type === 'image' ||
     type === 'shape' ||
     type === 'freehand' ||
     type === 'adjustment' ||

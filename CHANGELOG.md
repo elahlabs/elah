@@ -52,12 +52,19 @@ From 1.0.0 the exported API of `@elah/core` (the root entry and the browser-free
 `@elah/core/engine` entry), `@elah/react`, `@elah/timeline` and `@elah/editor`
 follows semver: a breaking change needs 2.0. Three AI-facing layers are the
 exception and are **experimental**; they may change in a minor release as the
-models that write them change: `spec` (the `VideoSpec` / `AuthoredSpec` documents,
-`compileVideoSpec`, `buildVideo` and `specVocabulary`), `vector/html` (HTML/CSS
-scene conversion: `validateScene`, `sceneToClip`) and the op vocabulary (`ops`:
-`EDITOR_OP_NAMES`, `applyOps`, `sanitizeOps`, the `describe*` helpers). The
-documents they produce are ordinary projects and stay readable; it is the
-authoring vocabulary and op shapes that can move.
+models that write them change. They are not exported from the `@elah/core` root:
+each has its own subpath entry, so the stable root stays small.
+
+| Subpath | What it holds |
+| --- | --- |
+| `@elah/core/spec` | the `VideoSpec` / `AuthoredSpec` documents, `compileVideoSpec`, `buildVideo`, `layProject`, `specVocabulary`, component instances |
+| `@elah/core/html` | HTML/CSS scene conversion: `validateScene`, `sceneToClip` |
+| `@elah/core/ops` | the op vocabulary: `EDITOR_OP_NAMES`, `applyOps`, `sanitizeOps`, the `describe*` helpers |
+| `@elah/core/icons` | the vendored Lucide icon set (`ICON_NAMES`) the spec compiler draws from |
+
+The documents they produce are ordinary projects and stay readable; it is the
+authoring vocabulary and op shapes that can move. `@elah/editor` does not
+re-export these layers: import them from the subpaths above.
 
 ### Breaking
 
@@ -90,19 +97,19 @@ authoring vocabulary and op shapes that can move.
   animators with their own tweens; scramble text; repeat and yoyo; skew; 3D tilt
   (`rotateX` / `rotateY`, on video, image, sequence and compound clips); expressions;
   36 motion presets.
-- **`@elah/core`: HTML/CSS scene conversion (`vector/html`, experimental).**
+- **`@elah/core/html`: HTML/CSS scene conversion (experimental).**
   `validateScene({ html, css })` checks a scene against a whitelisted HTML/CSS subset and
   names the supported substitute for everything it refuses; `sceneToClip(measuredScene,
   { fps })` turns a measured scene into one compound clip of native shape, text and image
   clips with keys, from a one-line `data-motion` grammar. Measuring the scene in a browser
   is the host's step: this release ships no DOM measurer.
-- **`@elah/core`: VideoSpec (`spec`, experimental).** A seconds-based JSON document for
+- **`@elah/core/spec`: VideoSpec (experimental).** A seconds-based JSON document for
   models to write: `compileVideoSpec` compiles it to a `Project` and returns every problem as
   a path-addressed `SpecIssue` instead of throwing; `buildVideo` also expands 17 motion
   components and 6 motion systems and polishes the result; `layProject` lays a compiled
   project onto a live engine as one undo step; `specVocabulary()` renders the vocabulary
   block for a prompt.
-- **`@elah/core`: editor ops (`ops`, experimental).** 57 typed ops (`EDITOR_OP_NAMES`)
+- **`@elah/core/ops`: editor ops (experimental).** 57 typed ops (`EDITOR_OP_NAMES`)
   that add text, shapes, generators, captions, effects, transitions, keyframes and edits;
   `applyOps` runs a plan against an engine as one undo step, `sanitizeOps` repairs a model's
   plan, and the `describe*` helpers summarise a project for a prompt. Ops that need a
@@ -169,6 +176,29 @@ authoring vocabulary and op shapes that can move.
   the bundled fonts, which a host loads only if it opts in; the rest is the converged engine.
   Everything stays tree-shakeable (`sideEffects: false`), and the engine-only entry
   `@elah/core/engine` leaves out the renderer and the codec.
+- **Startup cost grew from 0.6.0, and the experimental layers are not why.** Measured with
+  `node scripts/measure-bundle.mjs` (esbuild, minified, gzipped; react, lucide-react and
+  mediabunny external): an editor app (`EditorProvider`, `Preview`, `Timeline` from
+  `@elah/editor`) was **133 KiB gz**, against 68 KiB gz in 0.6.0, and is **112 KiB gz** once
+  effects, generators, sequence clips, roto masks and audio Enhance load on first use (the
+  script now counts a relative dynamic `import()` as a chunk, not as startup; the same method
+  read 130.5 KiB before). The engine alone (`TimelineEngine`, `resolveTimeline`) is 45 KiB gz;
+  engine plus `GpuRenderer` and `exportVideo` is 75 KiB gz. The growth is the renderer (effects, GPU transitions, masks and
+  mattes, compound and sequence clips, generators), the resolver (keyframes, expressions,
+  compounds) and media (audio enhancement, sequence decoding), all of which the editor app
+  needs on first paint. `spec`, `html`, `ops` and `icons` cost a real app 0 bytes because
+  the bundler drops what is not imported; imported on their own, `@elah/core/spec` is
+  71 KiB gz and `@elah/core/html` is 44 KiB gz. Moving them to subpaths keeps them off the
+  semver-stable root and stops the "everything exported" worst case (about 165 KiB gz for
+  the editor barrel) from being mistaken for a startup number.
+- **Optional renderer features load on first use.** Effects (the effect chain, all GPU
+  effects, masks, blends, mattes and GPU transitions), generators, sequence clips, roto masks
+  and the audio Enhance denoiser are separate chunks behind literal dynamic imports in
+  `renderer/gpu/features.ts`. A project that uses none of them downloads none of their code.
+  A frame that needs a feature still loading draws without it and the renderer redraws its
+  last scene when the load finishes; exports are unchanged (the export worker keeps static
+  imports, and the audio mix awaits the Enhance chunk first). New `prepareFeatures(project)`
+  and `featuresForProject(project)` let a host load a project's features before frame 0.
 - **`@elah/timeline`:** the zoom-anchor, content-width and track-compatibility modules now
   re-export from `@elah/core`, and the ruler computes its ticks with `computeRulerTicks`. No
   behaviour change. `playbackStore.setZoom` clamps with the shared `clampZoom`.

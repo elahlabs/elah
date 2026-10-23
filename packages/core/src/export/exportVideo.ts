@@ -11,7 +11,7 @@ import {
 } from '../media/audio/streamDecode'
 import { sourceAwareAudioResolver } from './sources'
 import { activeEnhance } from '../audio/clipAudio'
-import { ensureDenoiseWorklet } from '../media/audio/denoiseWorklet'
+import { loadFeature } from '../renderer/gpu/features'
 import { buildEnhanceChain, latencyLead } from '../media/audio/enhanceChain'
 import { flattenAudioClips, isMixableAudioClip, type FlatAudioClip } from '../elements/compound'
 import { resolveFontBaseUrl } from '../fonts/loader'
@@ -248,6 +248,16 @@ export async function renderAudioMix(
     return buffer
   }
 
+  // CONV-8: the denoise worklet loads with the Enhance feature. Await it HERE,
+  // before any clip is mixed and outside the per-clip try below, so a failed
+  // chunk fails the export instead of silently mixing the clip without Enhance.
+  const denoiseLoader = mixEntries.some(({ entry }) => {
+    const e = activeEnhance(entry.automation?.originalClip ?? entry.clip)
+    return !!e && e.noise > 0
+  })
+    ? (await loadFeature('enhance')).ensureDenoiseWorklet
+    : null
+
   for (let i = 0; i < mixEntries.length; i++) {
     const { entry, owningProject, schedule } = mixEntries[i]!
     const clip = entry.clip
@@ -274,7 +284,7 @@ export async function renderAudioMix(
       // Enhance (audio/clipAudio.ts): the same chain the preview player builds,
       // read from the authored clip (a nested entry is a cropped copy).
       const enhance = activeEnhance(entry.automation?.originalClip ?? clip)
-      const denoiseReady = enhance && enhance.noise > 0 ? await ensureDenoiseWorklet(ctx) : false
+      const denoiseReady = enhance && enhance.noise > 0 && denoiseLoader ? await denoiseLoader(ctx) : false
       if (enhance && enhance.noise > 0 && !denoiseReady) {
         onAudioIssue?.('noise reduction is unavailable in this browser; the rest of Enhance was applied', clip.src)
       }

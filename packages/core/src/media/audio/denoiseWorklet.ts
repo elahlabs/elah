@@ -17,11 +17,9 @@
  * to be loaded by URL; the test evaluates the same string with stubs.
  */
 
-export const DENOISE_PROCESSOR_NAME = 'elah-denoise'
-export const DENOISE_FRAME = 512
-export const DENOISE_HOP = 128
-/** Samples by which the denoiser's output trails its input. */
-export const DENOISE_LATENCY_SAMPLES = DENOISE_FRAME - DENOISE_HOP
+import { DENOISE_FRAME, DENOISE_HOP, DENOISE_LATENCY_SAMPLES, DENOISE_PROCESSOR_NAME } from './denoiseConstants'
+
+export { DENOISE_FRAME, DENOISE_HOP, DENOISE_LATENCY_SAMPLES, DENOISE_PROCESSOR_NAME }
 
 export const DENOISE_WORKLET_SOURCE = `
 const N = ${DENOISE_FRAME}

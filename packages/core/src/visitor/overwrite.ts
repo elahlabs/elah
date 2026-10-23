@@ -11,7 +11,7 @@ import { splitClip } from './split'
  */
 
 /** Clips with no source media: they have no trim window to keep aligned. */
-const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'shape', 'freehand', 'adjustment', 'generator', 'sequence'])
+const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'image', 'shape', 'freehand', 'adjustment', 'generator', 'sequence'])
 
 function plainKeyframes(kf: ClipKeyframes | Draft<ClipKeyframes>): ClipKeyframes {
   return (isDraft(kf) ? current(kf) : kf) as ClipKeyframes

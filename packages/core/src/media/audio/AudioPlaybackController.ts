@@ -28,7 +28,7 @@ import {
 } from './streamDecode'
 import type { ClipAudioEnhance } from '../../types'
 import { enhanceSignature } from '../../audio/clipAudio'
-import { ensureDenoiseWorklet } from './denoiseWorklet'
+import { loadFeature } from '../../renderer/gpu/features'
 import { buildEnhanceChain, disconnectEnhanceChain, type EnhanceChain } from './enhanceChain'
 
 export interface AudioPlaybackControllerOptions {
@@ -385,7 +385,15 @@ export class AudioPlaybackController {
 
   private async _loadDenoiser(ctx: AudioContext): Promise<void> {
     if (this._denoiseReady.has(ctx)) return
-    this._denoiseReady.set(ctx, await ensureDenoiseWorklet(ctx))
+    // The worklet source loads with the Enhance feature (CONV-8), not with the editor.
+    try {
+      const { ensureDenoiseWorklet } = await loadFeature('enhance')
+      this._denoiseReady.set(ctx, await ensureDenoiseWorklet(ctx))
+    } catch (err) {
+      // Same as a browser without AudioWorklet: the clip plays without noise reduction.
+      console.warn('[AudioPlaybackController] the Enhance denoiser failed to load:', err)
+      this._denoiseReady.set(ctx, false)
+    }
   }
 
   private _chainFor(ctx: AudioContext, enhance: ClipAudioEnhance | undefined): EnhanceChain | null {

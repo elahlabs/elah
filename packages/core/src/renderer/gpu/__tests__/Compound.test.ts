@@ -396,7 +396,9 @@ describe('createLayerSet', () => {
     const spy = vi
       .spyOn(RenderGraph.prototype, 'registerLayer')
       .mockImplementation(function (this: RenderGraph, layer: unknown) {
-        order.push((layer as object).constructor.name)
+        // CONV-8: sequences, generators and roto masks are lazy wrappers; name them by feature.
+        const l = layer as { constructor: { name: string }; _feature?: string }
+        order.push(l.constructor.name === 'LazyLayer' ? `lazy:${l._feature}` : l.constructor.name)
       })
     try {
       createLayerSet({ texturePool: new TexturePool() })
@@ -406,13 +408,13 @@ describe('createLayerSet', () => {
     expect(order).toEqual([
       'VideoLayer',
       'ImageLayer',
-      'SequenceLayer',
+      'lazy:sequences',
       'TextLayer',
       'ShapeLayer',
       'FreehandLayer',
-      'GeneratorLayer',
+      'lazy:generators',
       'AdjustmentLayer',
-      'RotoMaskLayer',
+      'lazy:rotoMasks',
       'CompoundLayer',
     ])
   })

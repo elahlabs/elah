@@ -796,11 +796,14 @@ export class TimelineEngine {
     const existing = trackClips?.find((c) => c.id === clipId)
     if (!existing) return
 
-    // Clips without source media (text, shapes, drawings, adjustment and
-    // generator clips) may grow freely; the timeline's drag preview already
-    // treated adjustment clips this way, so the commit now agrees with it.
+    // Clips without source media (text, still images, shapes, drawings,
+    // adjustment and generator clips) may grow freely; the timeline's drag
+    // preview already treated adjustment clips this way, so the commit now
+    // agrees with it. A still image has no length of its own, so the window it
+    // was inserted with is not a limit.
     const isUnlimited =
       existing.type === 'text' ||
+      existing.type === 'image' ||
       existing.type === 'shape' ||
       existing.type === 'freehand' ||
       existing.type === 'adjustment' ||

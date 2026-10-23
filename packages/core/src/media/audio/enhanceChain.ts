@@ -11,7 +11,7 @@
 
 import type { ClipAudioEnhance } from '../../types'
 import { enhancePlan } from '../../audio/clipAudio'
-import { DENOISE_LATENCY_SAMPLES, DENOISE_PROCESSOR_NAME } from './denoiseWorklet'
+import { DENOISE_LATENCY_SAMPLES, DENOISE_PROCESSOR_NAME } from './denoiseConstants'
 
 export interface EnhanceChain {
   input: AudioNode

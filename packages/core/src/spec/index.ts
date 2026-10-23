@@ -129,3 +129,6 @@ export { insertComponentInstance } from './insertInstance'
 export type { InsertInstanceOptions, InsertInstanceResult } from './insertInstance'
 export { COMPONENT_SAMPLES, componentSample } from './components/componentSamples'
 export type { ComponentSampleBody } from './components/componentSamples'
+
+// The model-facing prompt vocabulary (AV-3).
+export { specVocabulary } from './vocabulary'

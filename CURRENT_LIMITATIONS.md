@@ -93,8 +93,9 @@
   `removeBackground`, only place a placeholder and return it as `deferred`: no provider
   call ships.
 - **`@elah/editor` does not re-export the new layers.** Import effects, generators,
-  motion helpers, VideoSpec, `vector/html`, ops and `packageFontsBaseUrl` from
-  `@elah/core` and list it in your own dependencies.
+  motion helpers and `packageFontsBaseUrl` from `@elah/core`, and VideoSpec, HTML scenes
+  and ops from `@elah/core/spec`, `/html` and `/ops`; list `@elah/core` in your own
+  dependencies.
 - **Loading from a CDN is only partly verified.** The cross-origin worker path, the font
   base URL and a jsDelivr `/+esm` import were exercised against a local stand-in for a
   CDN, not the published package. In a blob worker, relative or root-relative asset URLs

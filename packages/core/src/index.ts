@@ -254,35 +254,6 @@ export { buildPathTable, samplePathPosition, applyMotionPath, motionPathIssue } 
 export type { PathTable, PathSample } from './resolver/motionPath'
 export type { CubicSubpath, Reconciled } from './resolver/pathMorph'
 
-// --- Agent-facing project summary and op layer (EDX-P11) ---
-export { describeProject, MAX_DESCRIBED_PATH_LENGTH, MAX_DESCRIBED_PATH_TOTAL, MAX_DESCRIBED_PARTS, MAX_DESCRIBED_PARTS_TOTAL, MAX_DESCRIBED_ITEMS } from './ops/describe'
-export { planInstanceUpdate, validateInstanceOverrides, COMPONENT_FIELDS } from './ops/componentEdit'
-export type { InstanceUpdate, InstanceUpdatePlan, ComponentFieldName } from './ops/componentEdit'
-export { sanitizeOps } from './ops/sanitize'
-export type { SanitizeResult } from './ops/sanitize'
-export { applyOps, ASSISTANT_GRAPHICS_TRACK, ASSISTANT_MEDIA_TRACK } from './ops/apply'
-export type { ApplyContext } from './ops/apply'
-export { opDescriber, formatSeconds } from './ops/describeOp'
-export { describeLibrary, MAX_DESCRIBED_ASSETS } from './ops/describeLibrary'
-export type { DescribedAsset, LibraryAssetLike } from './ops/describeLibrary'
-export { describeClipDetail, describeTransitions, MAX_DETAIL_CLIPS, MAX_DETAIL_KEYS_PER_CHANNEL, MAX_DETAIL_CAPTION_WORDS, MAX_DETAIL_BYTES, MAX_DETAIL_CHILDREN } from './ops/describeDetail'
-export type { ClipDetail, ClipDetailResult, DescribeDetailOptions, DescribedTransition, DescribedTransitions, DetailKey, DetailPaint, DetailEffect, DetailText, DetailShape, DetailAnimation, DetailRef } from './ops/describeDetail'
-export { EDITOR_OP_NAMES, REGIONS, SHAPE_OP_KINDS } from './ops/types'
-export type { EditorOp, EditorOpName, EditPlan, ApplyResult, DeferredGeneration, DeferredBackgroundRemoval, KeyOp, Region, ShapeOpKind, OpParams } from './ops/types'
-export type {
-  DescribedProject,
-  DescribedTrack,
-  DescribedClip,
-  DescribedEffect,
-  DescribeOptions,
-  DescribedComposition,
-  DescribedPart,
-  DescribedInstance,
-  DescribedPath,
-} from './ops/describe'
-export { locateClip, patchClipAtPath } from './ops/nested'
-export { ICON_NAMES } from './icons'
-export type { LocatedClip } from './ops/nested'
 
 // --- Programmatic compositions (PV-P7) ---
 // `MAX_COMPOUND_DEPTH` is already exported above (from './types'); the
@@ -631,6 +602,11 @@ export type {
 } from './media/masks/RotoMaskFrameProvider'
 
 // --- Sequence clips: decode and draw (PV-P8b) ---
+// Optional renderer features load on first use (CONV-8). A host that wants a
+// project's effects, generators, sequences, roto masks and Enhance ready before
+// the first frame awaits `prepareFeatures(project)`.
+export { prepareFeatures, featuresForProject } from './renderer/gpu/features'
+export type { FeatureId } from './renderer/gpu/features'
 export { SequenceLayer, fetchSequenceFrame } from './renderer/gpu/layers/SequenceLayer'
 export type { SequenceLayerOptions } from './renderer/gpu/layers/SequenceLayer'
 export { SequenceFrameProvider } from './media/sequence/SequenceFrameProvider'
@@ -1119,146 +1095,7 @@ export type { LottieImportOptions, LottieImportReport, LottieImportResult, Lotti
 export { LOTTIE_FIXTURES } from './vector/lottie/fixtures'
 export type { LottieFixture } from './vector/lottie/fixtures'
 export type { LottieJson } from './vector/lottie/types'
-// --- HTML/CSS scene subset (MC-1a): validate, then convert a measured scene to one compound clip. ---
-export { validateScene, sceneToClip, cssGradientToPaint, bundledFonts } from './vector/html'
-export type {
-  SceneSource,
-  SceneViolation,
-  SceneReport,
-  MeasuredScene,
-  MeasuredNode,
-  MeasuredStyle,
-  MeasuredBox,
-  MeasuredLine,
-  FontLookup,
-  CssGradientResult,
-} from './vector/html'
 
-// --- Agentic video (AV-1 + AV-3): the VideoSpec document, its compiler, and laying a
-// compiled Project onto a live TimelineEngine as one undo step. ---
-export {
-  SPEC_VERSION,
-  SPEC_KINDS,
-  SPEC_SHAPES,
-  SPEC_CHANNELS,
-  SPEC_NON_EXPRESSION_CHANNELS,
-  FONT_ROLES,
-  SPEC_ALIGNS,
-  SPEC_EDGES,
-  SPEC_ANCHOR_ALIGNS,
-  SPEC_CAPS,
-  SPEC_JOINS,
-  SPEC_ANIMATOR_UNITS,
-  toFrames,
-  toDurationFrames,
-  toRadians,
-  pixelBox,
-  resolveToken,
-  isHexColor,
-  designColorMap,
-  designFontMap,
-  clampIssue,
-  OPACITY_RANGE,
-  SCALE_RANGE,
-  ROTATION_DEG_RANGE,
-  DURATION_SEC_RANGE,
-  AT_SEC_RANGE,
-  resolveCurve,
-  packLayers,
-  compileVideoSpec,
-  layProject,
-  expandComponents,
-  resolveMotionStyle,
-  seededRandom,
-  COMPONENT_REGISTRY,
-  COMPONENT_NAMES,
-  ENERGY_TIME_SCALE,
-  MOTION_ENERGIES,
-  AMBIENT_KINDS,
-  BEAT_TRANSITIONS,
-  DEFAULT_MOTION_STYLE,
-  polishSpec,
-  lintSpec,
-  buildVideo,
-  AUTHORED_KINDS,
-  SYSTEM_NAMES,
-  SYSTEM_REGISTRY,
-  expandSystem,
-  lowerAuthoredFields,
-  lowerVectors,
-  vectorPlaceholder,
-  MAX_VECTOR_PARTS,
-  VECTOR_STAGE_SIZE,
-  VECTOR_DEFAULT_FRACTION,
-  lowerSfx,
-  SFX_EVENTS,
-  SFX_CUE_WORDS,
-  SFX_CUE_SYNONYMS,
-} from './spec'
-export type {
-  SpecKind,
-  SpecShape,
-  SpecChannel,
-  FontRole,
-  SpecFormat,
-  SpecDesign,
-  SpecKey,
-  SpecExpression,
-  SpecEffect,
-  SpecLayout,
-  SpecPill,
-  SpecReveal,
-  SpecSpan,
-  SpecDraw,
-  SpecElement,
-  SpecPaint,
-  SpecSfx,
-  VideoSpec,
-  SpecIssue,
-  CompileResult,
-  CompileOptions,
-  PixelBox,
-  PixelSize,
-  StageSize,
-  ResolvedCurve,
-  LayerInput,
-  LayerLane,
-  LayerPackResult,
-  LayProjectOptions,
-  MotionEnergy,
-  AmbientKind,
-  BeatTransition,
-  MotionStyle,
-  ComponentName,
-  ComponentItem,
-  SpecComponent,
-  AuthoredElement,
-  AuthoredSpec,
-  ComponentContext,
-  ComponentDef,
-  ExpandResult,
-  ExpandOptions,
-  PolishOptions,
-  PolishResult,
-  BuildOptions,
-  BuildResult,
-  CompileStampOptions,
-  SystemName,
-  SpecSystem,
-  SpecMatte,
-  SpecFxKey,
-  AuthoredFields,
-  SystemDef,
-  SystemParamDef,
-  SystemInput,
-  SystemOutput,
-  AuthoredSfx,
-  AuthoredEventSfx,
-  SfxEvent,
-  LoweredSfx,
-  SpecVector,
-  VectorFields,
-} from './spec'
 
 // --- Media capability probes (PV-P8a): whether this scope can decode
 // animated images and round-trip a transparent WebM, measured before any
@@ -1268,17 +1105,9 @@ export type { ProbedImageType, ImageDecodeSupport, WebmAlphaSupport, ScopeCapabi
 export { runCapabilityProbe } from './media/runCapabilityProbe'
 export type { CapabilityReport } from './media/runCapabilityProbe'
 
-// --- VideoSpec prompt vocabulary (AV-3). The spec types and compiler are
-// re-exported above, from `./spec`. Both are reachable only through this
-// package boundary; the editor package re-exports this for host
-// applications. The browser-free subset is also a subpath export,
-// `@elah/core/engine` (see `engine.ts`). ---
-export { specVocabulary } from './spec/vocabulary'
+// --- Subpath entries (CONV-7) ---
+// The experimental layers are NOT exported from this root. Import them from their
+// own entries: `/spec` (VideoSpec compiler, components, systems, vocabulary,
+// component instances), `/html` (HTML/CSS scene subset), `/ops` (project
+// describe and edit ops) and `/icons` (the vendored icon set).
 
-// --- Component instances (EG-P2). ---
-export { expandInstance, reconcileCompound, componentFields } from './spec'
-export type { InstanceContext, InstanceExpansion, ReconcileReport, ReconcileResult, ComponentFieldSpec } from './spec'
-
-// --- Insert a component instance and sample content (EG-P5). ---
-export { insertComponentInstance, COMPONENT_SAMPLES, componentSample } from './spec'
-export type { InsertInstanceOptions, InsertInstanceResult, ComponentSampleBody } from './spec'

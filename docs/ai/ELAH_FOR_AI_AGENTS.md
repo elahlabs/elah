@@ -928,7 +928,7 @@ Each of these has been observed in real generated code.
 | Time in seconds | Integer frames. Convert with `secondsToFrames(s, fps)` |
 | Assuming `<EditorProvider>` defaults to landscape | Default stage is portrait 1080x1920. Pass `stage={{ width: 1920, height: 1080 }}` |
 | Telling users they can rotate a video or image clip by dragging | There is no rotate handle for video/image (text has a knob). Set `transform.rotation` via `engine.updateClip` |
-| `import { compileVideoSpec, applyOps, validateScene } from '@elah/editor'` | The 1.0.0 programmatic layer is **not** re-exported by the editor: import it from `@elah/core` |
+| `import { compileVideoSpec, applyOps, validateScene } from '@elah/editor'` | The 1.0.0 programmatic layer is **not** re-exported by the editor, and it is not on the `@elah/core` root either: import it from `@elah/core/spec` (`compileVideoSpec`), `@elah/core/ops` (`applyOps`) and `@elah/core/html` (`validateScene`) |
 | `switch (clip.type)` or `switch (transition.kind)` with no `default` | `ClipType` has 10 members and `TransitionKind` has 9; handle the rest or add a `default` |
 | Expecting `wipe` to honour `direction`, or a vertical `slide` from the 2D fallback | `slide` and `whip` take a direction; `wipe` and the rest ignore it. Without WebGL2 only fade, wipe and a left/right slide export |
 | Promising users an editing panel for compound, generator, sequence or adjustment clips | They play, save and export, but `@elah/editor` has no UI to edit them yet |
@@ -1030,8 +1030,9 @@ re-export these layers. `@elah/editor` already depends on `@elah/core`; still li
 ### 11.1 VideoSpec, worked example
 
 ```ts
-import { compileVideoSpec, layProject, TimelineEngine, specVocabulary } from '@elah/core'
-import type { VideoSpec } from '@elah/core'
+import { TimelineEngine } from '@elah/core'
+import { compileVideoSpec, layProject, specVocabulary } from '@elah/core/spec'
+import type { VideoSpec } from '@elah/core/spec'
 
 const spec: VideoSpec = {
   version: 1,
@@ -1093,7 +1094,7 @@ The model writes an HTML fragment and one stylesheet in a **whitelisted subset**
 every refusal names the supported substitute so the model can retry.
 
 ```ts
-import { validateScene } from '@elah/core'
+import { validateScene } from '@elah/core/html'
 
 const html = '<section id="card"><h1 id="big" data-motion="in: slide-in-up 0.4s overshoot @0.2">72%</h1>' +
              '<p id="label" data-motion="in: fade-in 0.3s @0.5">of attacks start on free Wi-Fi</p></section>'
@@ -1130,8 +1131,9 @@ element, wait for fonts, read the boxes); **no measurer ships in the packages**.
 the conversion itself runs anywhere:
 
 ```ts
-import { sceneToClip, TimelineEngine } from '@elah/core'
-import type { MeasuredScene } from '@elah/core'
+import { TimelineEngine } from '@elah/core'
+import { sceneToClip } from '@elah/core/html'
+import type { MeasuredScene } from '@elah/core/html'
 
 const scene: MeasuredScene = {
   name: 'stat', at: 0, duration: 4,            // seconds
@@ -1172,7 +1174,7 @@ A model edits an existing project with typed ops instead of rewriting it. `sanit
 what it cannot trust (invented ops and stale ids, with a reason); `applyOps` applies the rest in one undo step.
 
 ```ts
-import { sanitizeOps, applyOps, describeProject } from '@elah/core'
+import { sanitizeOps, applyOps, describeProject } from '@elah/core/ops'
 
 const prompt = describeProject(engine.getProject())            // a compact summary for the model
 const { ops, dropped } = sanitizeOps(
@@ -1207,4 +1209,4 @@ changelog and `CURRENT_LIMITATIONS.md`.
 | `@elah/timeline` | The `<Timeline>` UI | Rarely — same |
 | `@elah/cli` | Headless server-side rendering (`elah build / export / serve`), see [section 10](#10-headless-rendering-with-elahcli) | Separate Node tool, versioned independently (0.1.2) |
 
-Bundle cost: `@elah/core` grew a lot in 1.0.0 (about 1.2 MB as a tarball, half of it optional fonts), and the 1.0.0 bundle figures are not published yet, so do not quote a number from an older version of this guide. `mediabunny` (the demuxer) loads lazily on first decode unless the app calls `createDefaultDemuxerFactory()`, whose static import puts it in the startup graph. Import `@elah/core/engine` for the engine without the renderer or the codec.
+Bundle cost: `@elah/core` grew a lot in 1.0.0 (about 1.2 MB as a tarball, half of it optional fonts). What an app downloads (minified, gzipped, `node scripts/measure-bundle.mjs`): an editor app (`EditorProvider`, `Preview`, `Timeline`) is about 112 KiB gz, up from 68 KiB in 0.6.0; the engine alone about 45 KiB gz; engine plus `GpuRenderer` and `exportVideo` about 75 KiB gz. Effects, generators, sequence clips, roto masks and audio Enhance are separate chunks that load on first use (`prepareFeatures(project)` loads a project's up front); a frame that needs one still loading draws without it and the renderer redraws by itself. The `spec`, `html`, `ops` and `icons` subpaths cost nothing unless imported (`@elah/core/spec` alone is about 71 KiB gz). Do not quote a number from an older version of this guide. `mediabunny` (the demuxer) loads lazily on first decode unless the app calls `createDefaultDemuxerFactory()`, whose static import puts it in the startup graph. Import `@elah/core/engine` for the engine without the renderer or the codec.

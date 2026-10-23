@@ -35,16 +35,15 @@ import type { LayerContext, TransitionSpec } from './layers/types'
 import { ShaderProgram } from './ShaderProgram'
 import { EFFECT_VERT_SRC } from './shaders/effect.vert'
 import { QUAD_VERT_SRC } from './shaders/quad.vert'
+import { MATTE_MODE_INDEX, isDrawableMask } from './compositing'
 import {
   BLEND_FRAG_SRC,
   BLEND_MODE_INDEX,
   MASK_FRAG,
-  MATTE_MODE_INDEX,
-  isDrawableMask,
   maskUniforms,
   rasterisePathMask,
   type MaskFrame,
-} from './compositing'
+} from './compositingGpu'
 import type { BlendMode, ClipMask } from '../../types'
 import type { ResolvedMatte } from '../../effects/resolveEffects'
 import { TRANSITION_FRAG_SRC, TRANSITION_KIND_INDEX, transitionDirection } from './transitions'

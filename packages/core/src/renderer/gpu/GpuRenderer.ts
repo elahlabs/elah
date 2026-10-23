@@ -11,8 +11,7 @@
  *   - Imports only from scene.ts, renderer/types, and browser APIs.
  */
 
-import type { ActiveVideoClip, Scene } from '../../resolver/scene'
-import { GeneratorLayer } from './layers/GeneratorLayer'
+import type { ActiveGeneratorClip, ActiveRotoMask, ActiveSequenceClip, ActiveVideoClip, Scene } from '../../resolver/scene'
 import type { Renderer } from '../types'
 import {
   GpuRendererDebugPanel,
@@ -25,10 +24,9 @@ import { TextLayer } from './layers/TextLayer'
 import { ImageLayer } from './layers/ImageLayer'
 import { ShapeLayer } from './layers/ShapeLayer'
 import { FreehandLayer } from './layers/FreehandLayer'
-import { RotoMaskLayer } from './layers/RotoMaskLayer'
-import { SequenceLayer } from './layers/SequenceLayer'
 import { AdjustmentLayer } from './layers/AdjustmentLayer'
-import { EffectChain } from './EffectChain'
+import { LazyEffectChain } from './LazyEffectChain'
+import type { LazyLayer } from './layers/LazyLayer'
 import type { Layer, LayerContext } from './layers/types'
 import type { RenderGraph } from './RenderGraph'
 import { createLayerSet, type LayerSet } from './layers/createLayerSet'
@@ -49,11 +47,11 @@ export class GpuRenderer implements Renderer {
   private _imageLayer: ImageLayer | null = null
   private _shapeLayer: ShapeLayer | null = null
   private _freehandLayer: FreehandLayer | null = null
-  private _rotoMaskLayer: RotoMaskLayer | null = null
-  private _sequenceLayer: SequenceLayer | null = null
+  private _rotoMaskLayer: LazyLayer<ActiveRotoMask, 'rotoMasks'> | null = null
+  private _sequenceLayer: LazyLayer<ActiveSequenceClip, 'sequences'> | null = null
   private _adjustmentLayer: AdjustmentLayer | null = null
-  private _generatorLayer: GeneratorLayer | null = null
-  private _effectChain: EffectChain | null = null
+  private _generatorLayer: LazyLayer<ActiveGeneratorClip, 'generators'> | null = null
+  private _effectChain: LazyEffectChain | null = null
   private _debugPanel: GpuRendererDebugPanel | null = null
 
   private _container: HTMLElement | null = null
@@ -115,7 +113,8 @@ export class GpuRenderer implements Renderer {
     // One chain shared by every graph, nested compound graphs included (PV-P1):
     // it is the single owner of the framebuffer pool, which is what lets a
     // compound namespace its targets by key prefix rather than by pool.
-    this._effectChain = new EffectChain()
+    // It loads the real EffectChain on first use (CONV-8) and asks for a redraw when it has.
+    this._effectChain = new LazyEffectChain(() => this._redrawLast())
 
     // Every layer, on one graph (PV-P1). The construction lives in
     // createLayerSet so a compound can build an independent second set for its
@@ -130,6 +129,7 @@ export class GpuRenderer implements Renderer {
       ...(this._options.onRotoMaskFrame ? { onRotoMaskFrame: this._options.onRotoMaskFrame } : {}),
       ...(this._options.sequenceFrameLoader ? { sequenceFrameLoader: this._options.sequenceFrameLoader } : {}),
       ...(this._options.onSequenceFrame ? { onSequenceFrame: this._options.onSequenceFrame } : {}),
+      onFeatureReady: () => this._redrawLast(),
     })
     this._layerSet = set
     this._renderGraph = set.graph
@@ -181,7 +181,30 @@ export class GpuRenderer implements Renderer {
     }
     this._lastRenderTime = now
 
-    const renderStart = now
+    this._drawScene(scene, gl, now)
+  }
+
+  /**
+   * An optional feature finished loading (CONV-8): draw the last scene again,
+   * now with it. The host is not involved, so a paused frame fills in on its
+   * own. Coalesced to one redraw per task, and a no-op once unmounted or lost.
+   */
+  private _redrawQueued = false
+  private _redrawLast(): void {
+    if (this._redrawQueued) return
+    this._redrawQueued = true
+    queueMicrotask(() => {
+      this._redrawQueued = false
+      const scene = this._lastScene
+      if (!scene || !this._mounted || !this._glCtx || this._glCtx.isLost) return
+      const gl = this._glCtx.gl
+      if (!gl) return
+      this._drawScene(scene, gl, performance.now())
+    })
+  }
+
+  private _drawScene(scene: Scene, gl: WebGL2RenderingContext, renderStart: number): void {
+    if (!this._glCtx || !this._renderGraph) return
 
     // Clear the WHOLE framebuffer first (gl.clear ignores the viewport), so the
     // letterbox/pillarbox margins are painted with the clear colour.
@@ -316,7 +339,7 @@ export class GpuRenderer implements Renderer {
    * /dev/compound.
    */
   get framebufferLiveCount(): number {
-    return this._effectChain?.pool.liveCount ?? 0
+    return this._effectChain?.liveCount ?? 0
   }
 
   // ---------------------------------------------------------------------------

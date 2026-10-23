@@ -20,7 +20,7 @@ class Rejected extends Error {
 }
 
 /** Clips with no source media: nothing to slip. */
-const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'shape', 'freehand', 'adjustment', 'generator', 'sequence'])
+const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'image', 'shape', 'freehand', 'adjustment', 'generator', 'sequence'])
 
 /** Runs the batch; returns the failure, or null when it went through. */
 function runBatch(

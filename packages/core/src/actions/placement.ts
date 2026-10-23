@@ -26,7 +26,7 @@ class Rejected extends Error {
 }
 
 /** Clips with no source media: they have no trim window to keep aligned. */
-const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'shape', 'freehand', 'adjustment', 'generator', 'sequence'])
+const SOURCELESS: ReadonlySet<Clip['type']> = new Set(['text', 'image', 'shape', 'freehand', 'adjustment', 'generator', 'sequence'])
 
 /**
  * The magnetic main track: the video track with `role: 'main'`, else the
