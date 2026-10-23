@@ -20,7 +20,6 @@ import {
   Minimize2,
   MoreVertical,
   SlidersHorizontal,
-  Sparkles,
   X,
   GripVertical,
   GripHorizontal,
@@ -36,7 +35,6 @@ import { ExportModal } from './ExportModal'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
 import { BackButton } from '../shared/BackButton'
 import { MediaPanel, type PanelMode } from './MediaPanel'
-import { AgenticPanel } from './AgenticPanel'
 import { TracePanel } from './TracePanel'
 import { LocalProjectBridge } from './LocalProjectBridge'
 import { ProjectMediaNotice } from './ProjectSaveChrome'
@@ -119,7 +117,7 @@ function MobileSheet({
   )
 }
 
-type RailItemId = 'stock' | 'photos' | 'audio' | 'elements' | 'agentic'
+type RailItemId = 'stock' | 'photos' | 'audio' | 'elements'
 type MobileSheetKind = RailItemId | 'properties' | null
 
 /** Floating fullscreen toggle on the preview (Figma's mobile design puts it
@@ -392,7 +390,6 @@ const RAIL_ITEMS: {
 }[] = [
   { id: 'stock', label: 'Videos', Icon: Film },
   { id: 'photos', label: 'Photos', Icon: ImageIcon },
-  { id: 'agentic', label: 'Agentic AI', Icon: Sparkles },
   { id: 'audio', label: 'Audio', Icon: Music },
   { id: 'elements', label: 'Elements', Icon: TypeIcon },
 ]
@@ -701,8 +698,7 @@ export default function ProductionEditor() {
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  const [activePanel, setActivePanel] = useState('agentic')
-  const [loadingPixabay, setLoadingPixabay] = useState(false)
+  const [activePanel, setActivePanel] = useState('stock')
   const isMobile = useIsMobile()
   const [mobileSheet, setMobileSheet] = useState<MobileSheetKind>(null)
   const previewBoxRef = useRef<HTMLDivElement>(null)
@@ -940,13 +936,6 @@ export default function ProductionEditor() {
                   >
                     {activePanel === 'elements' ? (
                       <ElementsPanel style={{ flex: 1, minHeight: 0 }} />
-                    ) : activePanel === 'agentic' ? (
-                      <AgenticPanel
-                        style={{ flex: 1, minHeight: 0 }}
-                        timelineRef={timelineRef}
-                        busy={loadingPixabay}
-                        setBusy={setLoadingPixabay}
-                      />
                     ) : (
                       <MediaPanel mode={activePanel as PanelMode} style={{ flex: 1, minHeight: 0 }} />
                     )}
@@ -1146,20 +1135,6 @@ export default function ProductionEditor() {
               }}
             />
 
-            {loadingPixabay && (
-              <div
-                className="absolute inset-0 z-50 flex items-center justify-center gap-2 backdrop-blur-[1px]"
-                style={{ background: 'rgba(0, 0, 0, 0.55)' }}
-              >
-                <span
-                  className="h-4 w-4 rounded-full border-2 border-white/30 animate-spin"
-                  style={{ borderTopColor: '#fff' }}
-                />
-                <span className="text-xs font-medium text-white">
-                  Composing stock media project…
-                </span>
-              </div>
-            )}
           </div>
 
           {isMobile && <MobileToolbar onOpenSheet={setMobileSheet} />}
@@ -1176,13 +1151,6 @@ export default function ProductionEditor() {
           >
             {mobileSheet === 'elements' ? (
               <ElementsPanel activateOnTap style={{ flex: 1, minHeight: 0 }} />
-            ) : mobileSheet === 'agentic' ? (
-              <AgenticPanel
-                style={{ flex: 1, minHeight: 0 }}
-                timelineRef={timelineRef}
-                busy={loadingPixabay}
-                setBusy={setLoadingPixabay}
-              />
             ) : mobileSheet === 'properties' ? (
               <div className="min-h-0 overflow-y-auto [&>div]:w-full [&>div]:border-l-0">
                 <ClipProperties />

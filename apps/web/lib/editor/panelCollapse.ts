@@ -1,5 +1,5 @@
 /**
- * Whether the editor's collapsible regions — the AI workspace on the left and
+ * Whether the editor's collapsible regions — the media panel on the left and
  * the Properties column on the right — are collapsed, kept across a reload.
  *
  * Follows the `myeditor-*` key convention, takes an injectable store so the
@@ -18,7 +18,7 @@ export const EDITOR_PANEL_COLLAPSED_KEYS: Record<EditorPanelId, string> = {
 
 /** What each region is called in the toggle's label and tooltip. */
 const EDITOR_PANEL_NAMES: Record<EditorPanelId, string> = {
-  left: 'AI workspace',
+  left: 'media panel',
   right: 'properties',
 }
 
