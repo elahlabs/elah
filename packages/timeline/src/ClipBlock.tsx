@@ -16,6 +16,7 @@ import { useTracksStore } from '@elah/react'
 import { useMediaLibraryStore, useClipLoadStore } from '@elah/react'
 import { cn } from './cn'
 import { normBg } from './clipSlot'
+import { KeyframeLane } from './KeyframeLane'
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
@@ -849,6 +850,8 @@ export const ClipBlock = memo(function ClipBlock({
           }}
         />
       </div>
+
+      {isSelected && <KeyframeLane clip={clip} zoom={zoom} locked={trackLocked} />}
 
       {ctxMenu && createPortal(
         <>

@@ -26,6 +26,12 @@ export type {
   InsertedKind,
 } from './insertAsset'
 
+// --- Keyframe lane (diamonds along a selected clip) and its key selection ---
+export { KeyframeLane, KEYFRAME_LANE_HEIGHT } from './KeyframeLane'
+export type { KeyframeLaneProps } from './KeyframeLane'
+export { useKeySelectionStore, keysOf } from './keySelection.store'
+export type { KeySelectionState } from './keySelection.store'
+
 // --- Element drag infrastructure (public API) ---
 export { ELEMENT_DRAG_MIME } from './elementDrag'
 export type { DragElementPayload, ElementKind, ShapeVariant } from './elementDrag'

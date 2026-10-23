@@ -331,6 +331,7 @@ export { useTimelineDrop } from '@elah/timeline'
 export type { TimelineDropState } from '@elah/timeline'
 export { insertMediaAsset, insertElement, growClipToAssetDuration } from '@elah/timeline'
 export { ELEMENT_DRAG_MIME } from '@elah/timeline'
+export { useKeySelectionStore } from '@elah/timeline'
 export type {
   DragElementPayload,
   ElementKind,

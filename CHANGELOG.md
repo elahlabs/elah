@@ -16,6 +16,8 @@ released separately.
 
 ### Added
 
+- `@elah/timeline`: `<KeyframeLane>` and `useKeySelectionStore`. A selected clip shows its keyframes as diamonds on its bottom edge: click to seek and select, drag to retime with snapping (one undo step), Shift+click for multi-select.
+
 - **`@elah/react-native` 0.1.0 (pre-release, not published).** The platform-free timeline model:
   lane layout, move / trim / pinch gesture reducers and a single engine-command applier, tested
   against the real `TimelineEngine`. Re-exports `EditorProvider`, the store hooks and the engine

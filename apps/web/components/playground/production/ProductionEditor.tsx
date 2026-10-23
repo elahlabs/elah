@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { ClipProperties } from './properties/ClipProperties'
 import { TimelineControls } from '../shared/TimelineControls'
+import { CurveEditor } from './curves/CurveEditor'
 import { ProductionCodePanel } from './ProductionCodePanel'
 import { ExportModal } from './ExportModal'
 import { PlaygroundTabs } from '../shared/PlaygroundTabs'
@@ -1135,6 +1136,8 @@ export default function ProductionEditor() {
               }}
             />
 
+            {/* Curve editor drawer: same time axis as the timeline above it. */}
+            {!isMobile && <CurveEditor />}
           </div>
 
           {isMobile && <MobileToolbar onOpenSheet={setMobileSheet} />}

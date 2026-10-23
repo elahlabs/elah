@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { usePlaybackStore, useTimelineEngine } from '@elah/editor'
+import { usePlaybackStore, useTimelineEngine, useKeySelectionStore } from '@elah/editor'
 import {
   applyMotionPreset,
   clearAllKeyframes,
@@ -41,7 +41,8 @@ import {
   type BeatPresetName,
   type TextAnimationEasing,
 } from '@elah/core'
-import { ChevronLeft, ChevronRight, Diamond, Square, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Diamond, Spline, Square, Trash2 } from 'lucide-react'
+import { useCurveDrawer } from '@/lib/editor/curveDrawer'
 import { cn } from '@/lib/utils'
 import { clampLocalFrame } from '@/lib/editor/keyframeEdit'
 import { Field, inputCls } from './propertiesShared'
@@ -153,6 +154,14 @@ export function AnimatePanel({ clip, ctx, channels, legacy }: AnimatePanelProps)
   }
   /** Keys are clip-relative; the playhead is absolute. */
   const seekLocal = (frame: number) => setCurrentFrame(clip.startFrame + frame)
+  // Shared with the timeline's keyframe lane: a diamond selected there is the
+  // highlighted row here, and a row clicked here lights its diamond.
+  const keyClipId = useKeySelectionStore((s) => s.clipId)
+  const keyFramesSelected = useKeySelectionStore((s) => s.frames)
+  const selectKeys = useKeySelectionStore((s) => s.select)
+  const isKeySelected = (frame: number) => keyClipId === clip.id && keyFramesSelected.has(frame)
+  const curvesOpen = useCurveDrawer((s) => s.open)
+  const toggleCurves = useCurveDrawer((s) => s.toggle)
 
   // Strength of the camera / shake / impact presets. Enter/exit presets ignore it.
   const [amount, setAmount] = useState(1)
@@ -310,6 +319,24 @@ export function AnimatePanel({ clip, ctx, channels, legacy }: AnimatePanelProps)
           <div className="flex items-center gap-0.5">
             <button
               type="button"
+              disabled={frames.length === 0}
+              onClick={toggleCurves}
+              aria-pressed={curvesOpen}
+              data-curves-button=""
+              title={curvesOpen ? 'Close the curve editor' : 'Open the curve editor'}
+              className={cn(
+                'h-5 -my-1 mr-1 flex items-center gap-1 rounded px-1.5 text-[11px] transition-colors',
+                frames.length === 0
+                  ? 'text-ed-text-muted/30 cursor-not-allowed'
+                  : curvesOpen
+                    ? 'bg-ed-elevated text-ed-accent'
+                    : 'text-ed-text-muted hover:text-ed-text hover:bg-ed-elevated',
+              )}
+            >
+              <Spline size={12} /> Curves
+            </button>
+            <button
+              type="button"
               disabled={prev === undefined}
               onClick={() => prev !== undefined && seekLocal(prev)}
               title="Previous keyframe"
@@ -352,17 +379,24 @@ export function AnimatePanel({ clip, ctx, channels, legacy }: AnimatePanelProps)
               const onPlayhead = frame === localFrame
               const key = keyAt(frame)
               const keySteps = key?.steps
+              const keySelected = isKeySelected(frame)
               return (
                 <div
                   key={frame}
+                  data-key-row={frame}
+                  data-key-selected={keySelected ? 'true' : undefined}
                   className={cn(
                     'flex items-center gap-2 px-2 py-1.5 transition-colors',
-                    onPlayhead ? 'bg-ed-elevated' : 'hover:bg-ed-elevated/50',
+                    onPlayhead || keySelected ? 'bg-ed-elevated' : 'hover:bg-ed-elevated/50',
+                    keySelected && 'ring-1 ring-inset ring-ed-accent',
                   )}
                 >
                   <button
                     type="button"
-                    onClick={() => seekLocal(frame)}
+                    onClick={() => {
+                      selectKeys(clip.id, [frame])
+                      seekLocal(frame)
+                    }}
                     title={`Go to frame ${frame}`}
                     className="flex items-center gap-1.5 shrink-0 text-ed-accent"
                   >
