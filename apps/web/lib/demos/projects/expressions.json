@@ -1,5 +1,5 @@
 {
-  "id": "av-tiu6noyo",
+  "id": "av-s2gv5tao",
   "fps": 30,
   "stage": {
     "width": 640,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "knlyvmm1",
+      "id": "1xzbul91",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "855bthg3",
+      "id": "dlsg936z",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -33,7 +33,7 @@
       "protected": false
     },
     {
-      "id": "jhr8hjnh",
+      "id": "02zlvcqk",
       "name": "Layer 2",
       "kind": "elements",
       "order": 2,
@@ -47,10 +47,10 @@
     }
   ],
   "clips": {
-    "knlyvmm1": [
+    "1xzbul91": [
       {
-        "id": "av-8yxdhgvg",
-        "trackId": "knlyvmm1",
+        "id": "av-vs5d2dw1",
+        "trackId": "1xzbul91",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -78,10 +78,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "855bthg3": [
+    "dlsg936z": [
       {
-        "id": "av-wl9bpq2f",
-        "trackId": "855bthg3",
+        "id": "av-0bs9trzc",
+        "trackId": "dlsg936z",
         "type": "shape",
         "name": "circle",
         "startFrame": 0,
@@ -105,10 +105,10 @@
           "scaleY": 0.25
         },
         "shapeKind": "circle",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -124,10 +124,10 @@
         "partId": "wob"
       }
     ],
-    "jhr8hjnh": [
+    "02zlvcqk": [
       {
-        "id": "av-wv81j0vu",
-        "trackId": "jhr8hjnh",
+        "id": "av-s5bil1dr",
+        "trackId": "02zlvcqk",
         "type": "shape",
         "name": "circle",
         "startFrame": 0,

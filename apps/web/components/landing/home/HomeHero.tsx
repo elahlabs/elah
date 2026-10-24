@@ -38,7 +38,7 @@ export function HomeHero() {
           className={`m-0 max-w-[820px] text-[34px] leading-[38px] font-semibold tracking-[-1.4px] text-balance sm:text-[48px] sm:leading-[52px] sm:tracking-[-2px] ${headingSans}`}
         >
           <span className="block text-[#1B1416]">Write motion as code.</span>
-          <span className="block text-[#F0625A]">It stays editable.</span>
+          <span className="block text-[#FF003C]">It stays editable.</span>
         </h1>
         <p className={`${lead} max-w-[560px]`}>Open source. Renders in the browser.</p>
 
@@ -57,7 +57,7 @@ export function HomeHero() {
             title={`Copy ${INSTALL}`}
             className={`${btnSecondary} ${btnLarge} ${mono} !font-medium`}
           >
-            <span className="text-[#F0625A]">$</span>
+            <span className="text-[#FF003C]">$</span>
             {INSTALL}
             {copied ? <Check size={16} strokeWidth={2} aria-hidden /> : <Copy size={16} strokeWidth={2} aria-hidden />}
           </button>

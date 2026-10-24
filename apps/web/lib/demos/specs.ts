@@ -12,7 +12,7 @@ const design = {
     { name: 'bg', value: '#170F10' },
     { name: 'ink', value: '#FBF3F1' },
     { name: 'muted', value: '#A8999B' },
-    { name: 'accent', value: '#F0625A' },
+    { name: 'accent', value: '#FF003C' },
     { name: 'accentSoft', value: '#3D3032' },
     { name: 'surface', value: '#261A1C' },
     { name: 'warm', value: '#E0A33A' },

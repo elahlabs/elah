@@ -1,5 +1,5 @@
 {
-  "id": "av-xa6y4bc9",
+  "id": "av-5k32nxvq",
   "fps": 30,
   "stage": {
     "width": 640,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "x5rao7et",
+      "id": "ctras7pb",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "3iwko2pb",
+      "id": "akr1ip4t",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -33,7 +33,7 @@
       "protected": false
     },
     {
-      "id": "kvjah178",
+      "id": "pm23uk6v",
       "name": "Layer 2",
       "kind": "elements",
       "order": 2,
@@ -47,10 +47,10 @@
     }
   ],
   "clips": {
-    "x5rao7et": [
+    "ctras7pb": [
       {
-        "id": "av-5ahicyri",
-        "trackId": "x5rao7et",
+        "id": "av-rdkk05os",
+        "trackId": "ctras7pb",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -78,10 +78,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "3iwko2pb": [
+    "akr1ip4t": [
       {
-        "id": "av-4zpkyic3",
-        "trackId": "3iwko2pb",
+        "id": "av-0g1fidli",
+        "trackId": "akr1ip4t",
         "type": "shape",
         "name": "path",
         "startFrame": 0,
@@ -105,10 +105,10 @@
           "scaleY": 0.6666666666666666
         },
         "shapeKind": "path",
-        "shapeStroke": "#F0625A",
+        "shapeStroke": "#FF003C",
         "shapeStrokePaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "shapeStrokeWidth": 6,
         "shapeStrokeCap": "round",
@@ -127,13 +127,13 @@
               },
               "keys": [
                 {
-                  "id": "67uij3i3",
+                  "id": "zcna9onm",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "ombuzoku",
+                  "id": "5bvxro7j",
                   "frame": 48,
                   "value": 1,
                   "easing": "cubic-out"
@@ -149,10 +149,10 @@
         "partId": "curve"
       }
     ],
-    "kvjah178": [
+    "pm23uk6v": [
       {
-        "id": "av-by03jxji",
-        "trackId": "kvjah178",
+        "id": "av-b7kttyqb",
+        "trackId": "pm23uk6v",
         "type": "shape",
         "name": "circle",
         "startFrame": 0,

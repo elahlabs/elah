@@ -40,7 +40,7 @@ export function HomeWhy() {
               <th scope="col" className={th}>
                 <span className="sr-only">Capability</span>
               </th>
-              <th scope="col" className={`${th} !text-[#F0625A]`}>elah</th>
+              <th scope="col" className={`${th} !text-[#FF003C]`}>elah</th>
               <th scope="col" className={th}>Remotion</th>
               <th scope="col" className={th}>HyperFrames</th>
             </tr>

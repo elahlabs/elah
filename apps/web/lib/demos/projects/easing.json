@@ -1,5 +1,5 @@
 {
-  "id": "av-gfcrpdwg",
+  "id": "av-idgbxi5i",
   "fps": 30,
   "stage": {
     "width": 640,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "l0vg11pi",
+      "id": "jkn3rwkv",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "jdnv3oi6",
+      "id": "4xfuk35x",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -33,7 +33,7 @@
       "protected": false
     },
     {
-      "id": "kydgliyw",
+      "id": "y2l2fv9j",
       "name": "Layer 2",
       "kind": "elements",
       "order": 2,
@@ -46,7 +46,7 @@
       "protected": false
     },
     {
-      "id": "7spqk9vm",
+      "id": "dz6q9f9v",
       "name": "Layer 3",
       "kind": "elements",
       "order": 3,
@@ -60,10 +60,10 @@
     }
   ],
   "clips": {
-    "l0vg11pi": [
+    "jkn3rwkv": [
       {
-        "id": "av-l6var47p",
-        "trackId": "l0vg11pi",
+        "id": "av-ckjjh0ua",
+        "trackId": "jkn3rwkv",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -91,10 +91,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "jdnv3oi6": [
+    "4xfuk35x": [
       {
-        "id": "av-81b1l67q",
-        "trackId": "jdnv3oi6",
+        "id": "av-7mxhe5n6",
+        "trackId": "4xfuk35x",
         "type": "shape",
         "name": "circle",
         "startFrame": 0,
@@ -131,13 +131,13 @@
               },
               "keys": [
                 {
-                  "id": "y0bxae6e",
+                  "id": "wn2ukvkt",
                   "frame": 6,
                   "value": 0.15,
                   "easing": "linear"
                 },
                 {
-                  "id": "nmi7crkg",
+                  "id": "ah2nh1e9",
                   "frame": 48,
                   "value": 0.85,
                   "easing": "linear",
@@ -148,7 +148,7 @@
                   }
                 },
                 {
-                  "id": "cpp3tyjv",
+                  "id": "lva014vs",
                   "frame": 87,
                   "value": 0.85,
                   "easing": "linear",
@@ -161,75 +161,10 @@
         "partId": "e2"
       }
     ],
-    "kydgliyw": [
+    "y2l2fv9j": [
       {
-        "id": "av-gw5nmgve",
-        "trackId": "kydgliyw",
-        "type": "shape",
-        "name": "circle",
-        "startFrame": 0,
-        "durationFrames": 90,
-        "sourceStartFrame": 0,
-        "sourceDurationFrames": 90,
-        "volume": 1,
-        "opacity": 1,
-        "locked": false,
-        "disabled": false,
-        "transform": {
-          "x": 0.15,
-          "y": 0.25,
-          "scale": 1,
-          "rotation": 0,
-          "anchor": {
-            "x": 0.5,
-            "y": 0.5
-          },
-          "scaleX": 0.12222222222222222,
-          "scaleY": 0.12222222222222222
-        },
-        "shapeKind": "circle",
-        "shapeFill": "#F0625A",
-        "shapeFillPaint": {
-          "type": "solid",
-          "color": "#F0625A"
-        },
-        "keyframes": {
-          "channels": {
-            "x": {
-              "source": {
-                "kind": "keyframes"
-              },
-              "keys": [
-                {
-                  "id": "26tpk1uy",
-                  "frame": 6,
-                  "value": 0.15,
-                  "easing": "linear"
-                },
-                {
-                  "id": "l40y36rp",
-                  "frame": 48,
-                  "value": 0.85,
-                  "easing": "back-out"
-                },
-                {
-                  "id": "rrooca1k",
-                  "frame": 87,
-                  "value": 0.85,
-                  "easing": "linear",
-                  "hold": true
-                }
-              ]
-            }
-          }
-        },
-        "partId": "e0"
-      }
-    ],
-    "7spqk9vm": [
-      {
-        "id": "av-r67moj8k",
-        "trackId": "7spqk9vm",
+        "id": "av-cwvpod9a",
+        "trackId": "y2l2fv9j",
         "type": "shape",
         "name": "circle",
         "startFrame": 0,
@@ -266,19 +201,19 @@
               },
               "keys": [
                 {
-                  "id": "fhfc1x0o",
+                  "id": "vqwsf38b",
                   "frame": 6,
                   "value": 0.15,
                   "easing": "linear"
                 },
                 {
-                  "id": "6gohtjo1",
+                  "id": "lglyut6g",
                   "frame": 48,
                   "value": 0.85,
                   "easing": "elastic-out"
                 },
                 {
-                  "id": "vuzxixhl",
+                  "id": "uon3m3gk",
                   "frame": 87,
                   "value": 0.85,
                   "easing": "linear",
@@ -289,6 +224,71 @@
           }
         },
         "partId": "e1"
+      }
+    ],
+    "dz6q9f9v": [
+      {
+        "id": "av-yd0o5b16",
+        "trackId": "dz6q9f9v",
+        "type": "shape",
+        "name": "circle",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.15,
+          "y": 0.25,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 0.12222222222222222,
+          "scaleY": 0.12222222222222222
+        },
+        "shapeKind": "circle",
+        "shapeFill": "#FF003C",
+        "shapeFillPaint": {
+          "type": "solid",
+          "color": "#FF003C"
+        },
+        "keyframes": {
+          "channels": {
+            "x": {
+              "source": {
+                "kind": "keyframes"
+              },
+              "keys": [
+                {
+                  "id": "k0tl9qfo",
+                  "frame": 6,
+                  "value": 0.15,
+                  "easing": "linear"
+                },
+                {
+                  "id": "xbglhk3k",
+                  "frame": 48,
+                  "value": 0.85,
+                  "easing": "back-out"
+                },
+                {
+                  "id": "yievl7vu",
+                  "frame": 87,
+                  "value": 0.85,
+                  "easing": "linear",
+                  "hold": true
+                }
+              ]
+            }
+          }
+        },
+        "partId": "e0"
       }
     ]
   },

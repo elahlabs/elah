@@ -6,7 +6,7 @@
 export const sans = 'font-[family-name:var(--font-geist-sans),system-ui,sans-serif]'
 export const mono = 'font-[family-name:var(--font-geist-mono),ui-monospace,monospace]'
 /** Beats the global `:is(h1, h2, h3, h4)` display-font rule. */
-export const headingSans = '!font-[family-name:var(--font-geist-sans),system-ui,sans-serif]'
+export const headingSans = '!font-[family-name:var(--font-geist-sans),system-ui,sans-serif] uppercase'
 
 export const MARK = '/landing/elah-mark.png'
 
@@ -29,7 +29,7 @@ export const monoLabel = `text-[12px] text-[#77696B] ${mono}`
 const btnBase = `inline-flex items-center justify-center gap-2 font-semibold no-underline transition-colors ${sans}`
 export const btnLarge = 'px-[26px] py-[14px] text-[15px]'
 export const btnSmall = 'px-4 py-[7px] text-[14px]'
-export const btnPrimary = `${btnBase} bg-[#F0625A] text-white hover:bg-[#E0544C]`
+export const btnPrimary = `${btnBase} bg-[#FF003C] text-[#1B1416] hover:bg-[#D10030]`
 export const btnSecondary = `${btnBase} bg-white text-[#1B1416] hover:bg-[#FFF5F3] ${outline}`
 export const btnDark = `${btnBase} bg-[#1B1416] text-white hover:bg-[#2E2224]`
 

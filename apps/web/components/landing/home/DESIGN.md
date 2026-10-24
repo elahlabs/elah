@@ -3,7 +3,7 @@
 The design language of the homepage (`app/page.tsx` → `components/landing/home/*`). Use it when
 adding a section, card, popup or button so new work looks like it was always there.
 
-The landing is styled with Tailwind **arbitrary values** (`text-[15px]`, `bg-[#F0625A]`), not the
+The landing is styled with Tailwind **arbitrary values** (`text-[15px]`, `bg-[#FF003C]`), not the
 `--elah-*` editor tokens. The values below are the vocabulary; reuse them exactly rather than
 inventing near-misses.
 
@@ -27,8 +27,8 @@ inventing near-misses.
 
 | Role | Hex | Used for |
 | --- | --- | --- |
-| **Coral** (accent) | `#F0625A` | Primary buttons, accent headline line, hero clips, curves, stars, final pipeline chip |
-| Coral hover | `#E0544C` | Hover on every coral fill |
+| **Coral** (accent) | `#FF003C` | Primary buttons, accent headline line, hero clips, curves, stars, final pipeline chip |
+| Coral hover | `#D10030` | Hover on every coral fill |
 | **Ink** (text) | `#1B1416` | Headings, body emphasis, dark pill buttons, playheads on light |
 | Ink hover | `#2E2224` | Hover on dark pill buttons |
 | **Muted** text | `#77696B` | Body copy, nav links, captions, ease labels |
@@ -53,7 +53,7 @@ inventing near-misses.
 | `#FFFBFA` | Sidebar of the Claude mock (plugin section) |
 | `#FFE7E3` | Prompt bubble in the Claude mock |
 | `#B59C97` | Dashed threads in the footer |
-| `#F0625A59` | Coral at 35%: motion-path lines between keyframes |
+| `#FF003C59` | Coral at 35%: motion-path lines between keyframes |
 
 ### Track colours (timeline language)
 
@@ -61,7 +61,7 @@ Clips are always solid colour blocks with ink labels:
 
 | Track | Hex |
 | --- | --- |
-| Video / motion (top lane) | `#F0625A` coral |
+| Video / motion (top lane) | `#FF003C` coral |
 | Audio / voice / text | `#3DDC97` mint |
 | Music / secondary | `#E0A33A` amber |
 
@@ -218,7 +218,7 @@ Cards sitting in the page flow have **no shadow**, only the outline.
 
 | Variant | Classes (core) | Where |
 | --- | --- | --- |
-| **Primary** | `rounded-full bg-[#F0625A] text-white font-semibold hover:bg-[#E0544C]` | "Start free", "Start building free", "Add elah to Claude", "Install app" |
+| **Primary** | `rounded-full bg-[#FF003C] text-white font-semibold hover:bg-[#D10030]` | "Start free", "Start building free", "Add elah to Claude", "Install app" |
 | **Secondary** | `rounded-full bg-white text-[#1B1416] font-semibold hover:bg-[#FFF5F3]` + outline | "Book a demo", "Request a demo", left carousel arrow |
 | **Dark** | `rounded-full bg-[#1B1416] text-white font-semibold hover:bg-[#2E2224]` | "Star us on GitHub", right carousel arrow (`hover:opacity-85`) |
 | **Ghost** | `rounded-full bg-transparent text-[#77696B] hover:bg-[#FFF5F3] hover:text-[#1B1416]` | "Not now" |

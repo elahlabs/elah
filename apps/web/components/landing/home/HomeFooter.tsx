@@ -109,7 +109,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
             <GitHubLogo />
             Star us on GitHub
             <span className="inline-flex items-center gap-[5px] bg-white/10 px-[10px] py-[3px] text-[13px] font-medium">
-              <svg viewBox="0 0 24 24" className="h-[13px] w-[13px] fill-[#F0625A] transition-transform duration-300 group-hover:rotate-[72deg] group-hover:scale-125" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-[13px] w-[13px] fill-[#FF003C] transition-transform duration-300 group-hover:rotate-[72deg] group-hover:scale-125" aria-hidden="true">
                 <path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z" />
               </svg>
               {stars ?? 'Star'}

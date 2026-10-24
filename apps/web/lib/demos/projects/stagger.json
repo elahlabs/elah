@@ -1,5 +1,5 @@
 {
-  "id": "av-lurby3vs",
+  "id": "av-r4ozbled",
   "fps": 30,
   "stage": {
     "width": 640,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "dtkuebbp",
+      "id": "lsedonjn",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "td6wigtg",
+      "id": "pcv8dibc",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -33,7 +33,7 @@
       "protected": false
     },
     {
-      "id": "v7qjv348",
+      "id": "9x9f6lp6",
       "name": "Layer 2",
       "kind": "elements",
       "order": 2,
@@ -46,7 +46,7 @@
       "protected": false
     },
     {
-      "id": "8ihr8y95",
+      "id": "s8u9l94b",
       "name": "Layer 3",
       "kind": "elements",
       "order": 3,
@@ -59,7 +59,7 @@
       "protected": false
     },
     {
-      "id": "wcn5sqdg",
+      "id": "5asymzs7",
       "name": "Layer 4",
       "kind": "elements",
       "order": 4,
@@ -72,7 +72,7 @@
       "protected": false
     },
     {
-      "id": "dwprgctr",
+      "id": "05ozphqn",
       "name": "Layer 5",
       "kind": "elements",
       "order": 5,
@@ -86,10 +86,10 @@
     }
   ],
   "clips": {
-    "dtkuebbp": [
+    "lsedonjn": [
       {
-        "id": "av-delh19kh",
-        "trackId": "dtkuebbp",
+        "id": "av-4ze0qr8t",
+        "trackId": "lsedonjn",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -117,10 +117,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "td6wigtg": [
+    "pcv8dibc": [
       {
-        "id": "av-r7e7soj1",
-        "trackId": "td6wigtg",
+        "id": "av-2ytzkj6k",
+        "trackId": "pcv8dibc",
         "type": "shape",
         "name": "rect",
         "startFrame": 3,
@@ -144,10 +144,10 @@
           "scaleY": 0.4444444444444444
         },
         "shapeKind": "rect",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -157,13 +157,13 @@
               },
               "keys": [
                 {
-                  "id": "q34st0da",
+                  "id": "mp7c18kx",
                   "frame": 0,
                   "value": 0.6,
                   "easing": "linear"
                 },
                 {
-                  "id": "vc1g59bi",
+                  "id": "tev6er0x",
                   "frame": 21,
                   "value": 1,
                   "easing": "back-out"
@@ -176,25 +176,25 @@
               },
               "keys": [
                 {
-                  "id": "h0mmcn2e",
+                  "id": "ud7095zu",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "arijmizd",
+                  "id": "inhj8et0",
                   "frame": 21,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "krbw4gd4",
+                  "id": "uvadwpvl",
                   "frame": 62,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "gdljytdu",
+                  "id": "ay1mlo23",
                   "frame": 83,
                   "value": 0,
                   "easing": "linear"
@@ -206,10 +206,10 @@
         "partId": "s0"
       }
     ],
-    "v7qjv348": [
+    "9x9f6lp6": [
       {
-        "id": "av-4jaj7fr5",
-        "trackId": "v7qjv348",
+        "id": "av-2cte31df",
+        "trackId": "9x9f6lp6",
         "type": "shape",
         "name": "rect",
         "startFrame": 8,
@@ -233,10 +233,10 @@
           "scaleY": 0.4444444444444444
         },
         "shapeKind": "rect",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -246,13 +246,13 @@
               },
               "keys": [
                 {
-                  "id": "dr7ak1ab",
+                  "id": "1tylxsvx",
                   "frame": 0,
                   "value": 0.6,
                   "easing": "linear"
                 },
                 {
-                  "id": "ic069lfi",
+                  "id": "rdwvn0mb",
                   "frame": 20,
                   "value": 1,
                   "easing": "back-out"
@@ -265,25 +265,25 @@
               },
               "keys": [
                 {
-                  "id": "toood65a",
+                  "id": "b2pmwrc9",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "gix2mz7z",
+                  "id": "7qkfc3vx",
                   "frame": 20,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "prw5532n",
+                  "id": "kh7761ae",
                   "frame": 59,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "wpdv1t5w",
+                  "id": "yh9gnk8x",
                   "frame": 79,
                   "value": 0,
                   "easing": "linear"
@@ -295,10 +295,10 @@
         "partId": "s1"
       }
     ],
-    "8ihr8y95": [
+    "s8u9l94b": [
       {
-        "id": "av-icuj23ie",
-        "trackId": "8ihr8y95",
+        "id": "av-v1zwz857",
+        "trackId": "s8u9l94b",
         "type": "shape",
         "name": "rect",
         "startFrame": 12,
@@ -322,10 +322,10 @@
           "scaleY": 0.4444444444444444
         },
         "shapeKind": "rect",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -335,13 +335,13 @@
               },
               "keys": [
                 {
-                  "id": "zvmhj33s",
+                  "id": "ofdd5q5i",
                   "frame": 0,
                   "value": 0.6,
                   "easing": "linear"
                 },
                 {
-                  "id": "7hd5rl2m",
+                  "id": "mlij4qgq",
                   "frame": 19,
                   "value": 1,
                   "easing": "back-out"
@@ -354,25 +354,25 @@
               },
               "keys": [
                 {
-                  "id": "o2kts0te",
+                  "id": "od6y55iv",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "op6psddv",
+                  "id": "f3qla0qn",
                   "frame": 19,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "x8sfd2x7",
+                  "id": "byqljdin",
                   "frame": 55,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "5id48ev7",
+                  "id": "sjgjnoo6",
                   "frame": 74,
                   "value": 0,
                   "easing": "linear"
@@ -384,10 +384,10 @@
         "partId": "s2"
       }
     ],
-    "wcn5sqdg": [
+    "5asymzs7": [
       {
-        "id": "av-1znx37dh",
-        "trackId": "wcn5sqdg",
+        "id": "av-8dkumbtb",
+        "trackId": "5asymzs7",
         "type": "shape",
         "name": "rect",
         "startFrame": 16,
@@ -411,10 +411,10 @@
           "scaleY": 0.4444444444444444
         },
         "shapeKind": "rect",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -424,13 +424,13 @@
               },
               "keys": [
                 {
-                  "id": "0cj2vex9",
+                  "id": "dlid4owe",
                   "frame": 0,
                   "value": 0.6,
                   "easing": "linear"
                 },
                 {
-                  "id": "u7iuuro5",
+                  "id": "j9huj2d4",
                   "frame": 18,
                   "value": 1,
                   "easing": "back-out"
@@ -443,25 +443,25 @@
               },
               "keys": [
                 {
-                  "id": "dipjdlvt",
+                  "id": "3kn3tsv3",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "w4gj3dij",
+                  "id": "k9sc5gwg",
                   "frame": 18,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "gwafy9wz",
+                  "id": "1t8yvppm",
                   "frame": 51,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "d1q4rfnd",
+                  "id": "q0dok7ub",
                   "frame": 69,
                   "value": 0,
                   "easing": "linear"
@@ -473,10 +473,10 @@
         "partId": "s3"
       }
     ],
-    "dwprgctr": [
+    "05ozphqn": [
       {
-        "id": "av-6re046dp",
-        "trackId": "dwprgctr",
+        "id": "av-5h08irrc",
+        "trackId": "05ozphqn",
         "type": "shape",
         "name": "rect",
         "startFrame": 21,
@@ -500,10 +500,10 @@
           "scaleY": 0.4444444444444444
         },
         "shapeKind": "rect",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -513,13 +513,13 @@
               },
               "keys": [
                 {
-                  "id": "n4uoaxtp",
+                  "id": "7pdmydcn",
                   "frame": 0,
                   "value": 0.6,
                   "easing": "linear"
                 },
                 {
-                  "id": "mikuprl7",
+                  "id": "p477jj6y",
                   "frame": 17,
                   "value": 1,
                   "easing": "back-out"
@@ -532,25 +532,25 @@
               },
               "keys": [
                 {
-                  "id": "7jsfiril",
+                  "id": "69rrcive",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "xdvbauz2",
+                  "id": "kmy5ss5g",
                   "frame": 17,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "z58bg7as",
+                  "id": "hqbrt70c",
                   "frame": 48,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "z5rxen4k",
+                  "id": "y6yrk8ze",
                   "frame": 65,
                   "value": 0,
                   "easing": "linear"

@@ -41,7 +41,7 @@ export function HomeNav({ stars = null }: { stars?: string | null }) {
             aria-label={stars ? `elah on GitHub, ${stars} stars` : 'elah on GitHub'}
             className={`${btnSecondary} ${btnSmall} hidden sm:inline-flex`}
           >
-            <Star size={13} strokeWidth={2} className="fill-[#F0625A] text-[#F0625A]" aria-hidden />
+            <Star size={13} strokeWidth={2} className="fill-[#FF003C] text-[#FF003C]" aria-hidden />
             {stars ?? 'GitHub'}
           </a>
           <Link href={GET_STARTED_URL} className={`${btnPrimary} ${btnSmall}`}>

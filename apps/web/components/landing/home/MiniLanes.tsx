@@ -9,7 +9,7 @@ export interface MiniClip {
   keys?: number[]
 }
 
-export const TRACK = { motion: '#F0625A', mint: '#3DDC97', amber: '#E0A33A' } as const
+export const TRACK = { motion: '#FF003C', mint: '#3DDC97', amber: '#E0A33A' } as const
 
 /**
  * A miniature timeline: solid track-colour clips, ink labels, 7px ink

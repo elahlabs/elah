@@ -21,7 +21,7 @@ export function HomeArchitecture() {
             </span>
             <div className="flex flex-wrap gap-2">
               {layer.items.map((it, j) => (
-                <span key={it} className={`${chip} ${i === flow.length - 1 && j === layer.items.length - 1 ? 'bg-[#F0625A] text-white' : `bg-white text-[#1B1416] ${outline}`}`}>
+                <span key={it} className={`${chip} ${i === flow.length - 1 && j === layer.items.length - 1 ? 'bg-[#FF003C] text-white' : `bg-white text-[#1B1416] ${outline}`}`}>
                   {it}
                 </span>
               ))}

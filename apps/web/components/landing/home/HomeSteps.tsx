@@ -61,7 +61,7 @@ export function HomeSteps() {
           </div>
           <div className="flex flex-1 flex-col justify-end gap-4">
             <div className={`${panel} flex items-center gap-3 p-4`}>
-              <span className="grid h-10 w-10 shrink-0 place-items-center bg-[#F0625A] text-white">
+              <span className="grid h-10 w-10 shrink-0 place-items-center bg-[#FF003C] text-white">
                 <Download size={18} strokeWidth={2} aria-hidden />
               </span>
               <div className="min-w-0">
@@ -69,7 +69,7 @@ export function HomeSteps() {
                 <div className={`text-[12px] text-[#77696B] ${sans}`}>Exported in your browser</div>
               </div>
             </div>
-            <Link href="/playground/motion" className={`inline-flex items-center gap-2 text-[14px] font-semibold text-[#1B1416] no-underline transition-colors hover:text-[#F0625A] ${sans}`}>
+            <Link href="/playground/motion" className={`inline-flex items-center gap-2 text-[14px] font-semibold text-[#1B1416] no-underline transition-colors hover:text-[#FF003C] ${sans}`}>
               Try it in the playground
               <ArrowRight size={16} strokeWidth={2} aria-hidden />
             </Link>

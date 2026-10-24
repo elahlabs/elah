@@ -77,7 +77,7 @@ export default function BindingExplainer() {
           <div className="min-w-0 border-b border-[#F3E2DF] lg:border-b-0 lg:border-r">
             <div className={colHead}>Keys</div>
             <div className="h-64">
-              {error ? <p className={`m-0 p-4 text-[13px] text-[#E0544C] ${sans}`}>{error}</p> : <KeysTable readOnly tone="landing" />}
+              {error ? <p className={`m-0 p-4 text-[13px] text-[#D10030] ${sans}`}>{error}</p> : <KeysTable readOnly tone="landing" />}
             </div>
           </div>
           <div className="min-w-0">

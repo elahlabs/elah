@@ -17,7 +17,7 @@ export function HomeLibraries() {
             </div>
             <div className="mt-auto flex flex-col gap-4">
               <div className={`${panel} overflow-x-auto whitespace-nowrap px-4 py-3 text-[12px] text-[#1B1416] ${mono}`}>
-                <span className="text-[#F0625A]">$ </span>
+                <span className="text-[#FF003C]">$ </span>
                 {lib.extraCmd ?? `npm install ${lib.pkg}`}
               </div>
               <Link href={lib.href} className={`${btnSecondary} ${btnSmall} self-start`}>

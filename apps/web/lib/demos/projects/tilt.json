@@ -1,5 +1,5 @@
 {
-  "id": "av-2r75vv3n",
+  "id": "av-7x1kf7pb",
   "fps": 30,
   "stage": {
     "width": 640,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "brmthltz",
+      "id": "7gm5nhty",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "dm4l3pvz",
+      "id": "wproqwcg",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -34,10 +34,10 @@
     }
   ],
   "clips": {
-    "brmthltz": [
+    "7gm5nhty": [
       {
-        "id": "av-ezzzq8ha",
-        "trackId": "brmthltz",
+        "id": "av-1gyb5joz",
+        "trackId": "7gm5nhty",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -65,10 +65,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "dm4l3pvz": [
+    "wproqwcg": [
       {
-        "id": "av-ri0p9bpl",
-        "trackId": "dm4l3pvz",
+        "id": "av-zq6y3xtn",
+        "trackId": "wproqwcg",
         "type": "compound",
         "name": "group",
         "startFrame": 0,
@@ -91,7 +91,7 @@
         },
         "compound": {
           "project": {
-            "id": "av-jbxctv2f",
+            "id": "av-9uo229o2",
             "fps": 30,
             "stage": {
               "width": 640,
@@ -99,7 +99,7 @@
             },
             "tracks": [
               {
-                "id": "njia3c00",
+                "id": "s0q84y8q",
                 "name": "Layer 0",
                 "kind": "elements",
                 "order": 0,
@@ -112,7 +112,7 @@
                 "protected": false
               },
               {
-                "id": "xtnhvx2b",
+                "id": "o09bdurs",
                 "name": "Layer 1",
                 "kind": "elements",
                 "order": 1,
@@ -126,10 +126,10 @@
               }
             ],
             "clips": {
-              "njia3c00": [
+              "s0q84y8q": [
                 {
-                  "id": "av-cz5udntp",
-                  "trackId": "njia3c00",
+                  "id": "av-6s1keuia",
+                  "trackId": "s0q84y8q",
                   "type": "text",
                   "name": "Tilt",
                   "startFrame": 0,
@@ -158,10 +158,10 @@
                   "partId": "card-t"
                 }
               ],
-              "xtnhvx2b": [
+              "o09bdurs": [
                 {
-                  "id": "av-oq4cueli",
-                  "trackId": "xtnhvx2b",
+                  "id": "av-puzcwqx6",
+                  "trackId": "o09bdurs",
                   "type": "shape",
                   "name": "rect",
                   "startFrame": 0,

@@ -1,5 +1,5 @@
 {
-  "id": "av-pyyzyyza",
+  "id": "av-2t38n41d",
   "fps": 30,
   "stage": {
     "width": 1280,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "0sueq6yi",
+      "id": "to5yjwy6",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "4wemzr7b",
+      "id": "cb42wzqv",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -33,7 +33,7 @@
       "protected": false
     },
     {
-      "id": "iaj385u4",
+      "id": "96kc420y",
       "name": "Layer 2",
       "kind": "elements",
       "order": 2,
@@ -46,7 +46,7 @@
       "protected": false
     },
     {
-      "id": "w4j86xei",
+      "id": "qle4dqom",
       "name": "Layer 3",
       "kind": "elements",
       "order": 3,
@@ -59,7 +59,7 @@
       "protected": false
     },
     {
-      "id": "wrph4gyf",
+      "id": "y6evjidi",
       "name": "Layer 4",
       "kind": "elements",
       "order": 4,
@@ -72,7 +72,7 @@
       "protected": false
     },
     {
-      "id": "i3l8k3i4",
+      "id": "q9rx23d2",
       "name": "Layer 5",
       "kind": "elements",
       "order": 5,
@@ -85,7 +85,7 @@
       "protected": false
     },
     {
-      "id": "edacqv27",
+      "id": "optjutnz",
       "name": "Layer 6",
       "kind": "elements",
       "order": 6,
@@ -99,10 +99,10 @@
     }
   ],
   "clips": {
-    "0sueq6yi": [
+    "to5yjwy6": [
       {
-        "id": "av-jkx576cu",
-        "trackId": "0sueq6yi",
+        "id": "av-ik5f2v4j",
+        "trackId": "to5yjwy6",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -130,10 +130,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "4wemzr7b": [
+    "cb42wzqv": [
       {
-        "id": "av-vug5lmr1",
-        "trackId": "4wemzr7b",
+        "id": "av-95uzubto",
+        "trackId": "cb42wzqv",
         "type": "shape",
         "name": "rect",
         "startFrame": 0,
@@ -157,10 +157,10 @@
           "scaleY": 0.3194444444444444
         },
         "shapeKind": "rect",
-        "shapeFill": "#F0625A",
+        "shapeFill": "#FF003C",
         "shapeFillPaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "keyframes": {
           "channels": {
@@ -170,13 +170,13 @@
               },
               "keys": [
                 {
-                  "id": "rgpt9jue",
+                  "id": "k62c1394",
                   "frame": 0,
                   "value": -0.04999999999999999,
                   "easing": "linear"
                 },
                 {
-                  "id": "juowx0nv",
+                  "id": "foemvdd5",
                   "frame": 30,
                   "value": 0.1,
                   "easing": "quad-out"
@@ -188,10 +188,10 @@
         "partId": "bar"
       }
     ],
-    "iaj385u4": [
+    "96kc420y": [
       {
-        "id": "av-fq5knqbt",
-        "trackId": "iaj385u4",
+        "id": "av-7xwisdsu",
+        "trackId": "96kc420y",
         "type": "text",
         "name": "Motion as code",
         "startFrame": 6,
@@ -230,10 +230,10 @@
         "partId": "title"
       }
     ],
-    "w4j86xei": [
+    "qle4dqom": [
       {
-        "id": "av-mu7n42aw",
-        "trackId": "w4j86xei",
+        "id": "av-fwvg88jw",
+        "trackId": "qle4dqom",
         "type": "shape",
         "name": "circle",
         "startFrame": 12,
@@ -270,25 +270,25 @@
               },
               "keys": [
                 {
-                  "id": "05ptff67",
+                  "id": "rsj0lnfn",
                   "frame": 0,
                   "value": 0.3,
                   "easing": "linear"
                 },
                 {
-                  "id": "3w5movp7",
+                  "id": "5fw0z5jt",
                   "frame": 54,
                   "value": 0.78,
                   "easing": "back-out"
                 },
                 {
-                  "id": "gpqggh3w",
+                  "id": "bftawdp8",
                   "frame": 108,
                   "value": 0.3,
                   "easing": "cubic-in-out"
                 },
                 {
-                  "id": "vq334niu",
+                  "id": "87fcozcs",
                   "frame": 162,
                   "value": 0.78,
                   "easing": "linear",
@@ -299,7 +299,7 @@
                   }
                 },
                 {
-                  "id": "vpzbrc3c",
+                  "id": "6xevg0hf",
                   "frame": 216,
                   "value": 0.3,
                   "easing": "cubic-in-out"
@@ -312,31 +312,31 @@
               },
               "keys": [
                 {
-                  "id": "of6fgexc",
+                  "id": "s6k2k63g",
                   "frame": 0,
                   "value": 1,
                   "easing": "linear"
                 },
                 {
-                  "id": "rhnoitm9",
+                  "id": "6zzcvwu8",
                   "frame": 54,
                   "value": 1.3,
                   "easing": "elastic-out"
                 },
                 {
-                  "id": "lrk959qg",
+                  "id": "d4w9z3q9",
                   "frame": 108,
                   "value": 1,
                   "easing": "cubic-out"
                 },
                 {
-                  "id": "1ndtv8dk",
+                  "id": "rgpxs0m5",
                   "frame": 162,
                   "value": 1.3,
                   "easing": "elastic-out"
                 },
                 {
-                  "id": "oki0y6s0",
+                  "id": "wtxwkk75",
                   "frame": 216,
                   "value": 1,
                   "easing": "cubic-out"
@@ -348,10 +348,10 @@
         "partId": "dot"
       }
     ],
-    "wrph4gyf": [
+    "y6evjidi": [
       {
-        "id": "av-cimtt1gf",
-        "trackId": "wrph4gyf",
+        "id": "av-tyu52cwt",
+        "trackId": "y6evjidi",
         "type": "shape",
         "name": "arc",
         "startFrame": 18,
@@ -376,10 +376,10 @@
         },
         "shapeKind": "circle",
         "shapeFill": "transparent",
-        "shapeStroke": "#F0625A",
+        "shapeStroke": "#FF003C",
         "shapeStrokePaint": {
           "type": "solid",
-          "color": "#F0625A"
+          "color": "#FF003C"
         },
         "shapeStrokeWidth": 12,
         "shapeStrokeCap": "round",
@@ -391,13 +391,13 @@
               },
               "keys": [
                 {
-                  "id": "cqhgiksu",
+                  "id": "l510qct0",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "03w0lknq",
+                  "id": "tnv106e5",
                   "frame": 42,
                   "value": 1,
                   "easing": "cubic-out"
@@ -413,10 +413,10 @@
         "partId": "ring"
       }
     ],
-    "i3l8k3i4": [
+    "q9rx23d2": [
       {
-        "id": "av-pcn22sru",
-        "trackId": "i3l8k3i4",
+        "id": "av-kqhaxnmd",
+        "trackId": "q9rx23d2",
         "type": "text",
         "name": "that stays editable",
         "startFrame": 36,
@@ -450,13 +450,13 @@
               },
               "keys": [
                 {
-                  "id": "8wg3w8n3",
+                  "id": "5ghck3v7",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "s6e224aq",
+                  "id": "4y9qnzmr",
                   "frame": 30,
                   "value": 1,
                   "easing": "linear"
@@ -468,10 +468,10 @@
         "partId": "sub"
       }
     ],
-    "edacqv27": [
+    "optjutnz": [
       {
-        "id": "av-ghydb7tc",
-        "trackId": "edacqv27",
+        "id": "av-b3vvwogz",
+        "trackId": "optjutnz",
         "type": "text",
         "name": "Open source. Renders in the browser.",
         "startFrame": 72,
@@ -496,7 +496,7 @@
         "transformModel": "v2",
         "fontId": "roboto-mono",
         "fontSize": 30,
-        "color": "#F0625A",
+        "color": "#FF003C",
         "keyframes": {
           "channels": {
             "opacity": {
@@ -505,13 +505,13 @@
               },
               "keys": [
                 {
-                  "id": "brd116k4",
+                  "id": "csg65143",
                   "frame": 0,
                   "value": 0,
                   "easing": "linear"
                 },
                 {
-                  "id": "kindl8h5",
+                  "id": "5n7sd9us",
                   "frame": 30,
                   "value": 1,
                   "easing": "linear"

@@ -1,5 +1,5 @@
 {
-  "id": "av-hyg3n6xg",
+  "id": "av-r2dna00x",
   "fps": 30,
   "stage": {
     "width": 640,
@@ -7,7 +7,7 @@
   },
   "tracks": [
     {
-      "id": "yoa8d53o",
+      "id": "d6dwaykp",
       "name": "Background",
       "kind": "elements",
       "order": 0,
@@ -20,7 +20,7 @@
       "protected": false
     },
     {
-      "id": "wpk02sh7",
+      "id": "bhrz9d0a",
       "name": "Layer 1",
       "kind": "elements",
       "order": 1,
@@ -33,7 +33,7 @@
       "protected": false
     },
     {
-      "id": "0zb30bxg",
+      "id": "kguxgysq",
       "name": "Layer 2",
       "kind": "elements",
       "order": 2,
@@ -47,10 +47,10 @@
     }
   ],
   "clips": {
-    "yoa8d53o": [
+    "d6dwaykp": [
       {
-        "id": "av-29w578gc",
-        "trackId": "yoa8d53o",
+        "id": "av-5zoih4pb",
+        "trackId": "d6dwaykp",
         "type": "shape",
         "name": "Background",
         "startFrame": 0,
@@ -78,10 +78,10 @@
         "shapeStrokeWidth": 0
       }
     ],
-    "wpk02sh7": [
+    "bhrz9d0a": [
       {
-        "id": "av-z9ca5jab",
-        "trackId": "wpk02sh7",
+        "id": "av-9wc8d3mh",
+        "trackId": "bhrz9d0a",
         "type": "text",
         "name": "Letters rise",
         "startFrame": 3,
@@ -116,10 +116,10 @@
         "partId": "line1"
       }
     ],
-    "0zb30bxg": [
+    "kguxgysq": [
       {
-        "id": "av-lyhsaant",
-        "trackId": "0zb30bxg",
+        "id": "av-hh4n0euu",
+        "trackId": "kguxgysq",
         "type": "text",
         "name": "then words pop",
         "startFrame": 24,
@@ -144,7 +144,7 @@
         "transformModel": "v2",
         "fontId": "inter",
         "fontSize": 40,
-        "color": "#F0625A",
+        "color": "#FF003C",
         "textAnimator": {
           "unit": "word",
           "preset": "pop",
