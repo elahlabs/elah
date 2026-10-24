@@ -2,6 +2,15 @@ import { generateId } from '../utils/id'
 import { mediaLibraryStore } from './store'
 import { determineAssetHasAudio, hasAudioDetermined } from './hasAudio'
 import { defaultAudioResolver, type AudioResolver } from '../media/audio/audioResolver'
+import { sourceBlobCache } from '../media/video/demuxer/sourceBlobCache'
+import {
+  NoAudioTrackError,
+  STREAM_AUDIO_ABOVE_BYTES,
+  streamPeaks,
+  type StreamPeaksOptions,
+} from '../media/audio/streamDecode'
+import { probeAnimatedImageSrc } from '../media/sequence/probeAnimatedImage'
+import { probeHasAlpha } from '../media/video/alphaProbe'
 import type { MediaAsset, MediaAssetAnalysis, MediaKind } from './types'
 
 export interface ImportFilesOptions {
@@ -18,7 +27,7 @@ export interface ImportUrlOptions extends ImportFilesOptions {
   kind?: MediaKind
   /**
    * AI content analysis to carry over onto the created asset, when importing
-   * from a gallery item whose analysis has already completed. See
+   * from a source whose analysis has already completed. See
    * `MediaAsset.analysis`.
    */
   analysis?: MediaAssetAnalysis
@@ -50,6 +59,11 @@ interface ProbedMetadata {
 }
 
 const DEFAULT_THUMBNAIL_MAX_DIM = 240
+/** Provisional duration (seconds) for a pending URL import, before the real
+ * duration is probed. Matches the fallback `insertMediaAsset` already uses
+ * for zero-duration assets, so the placeholder clip's width doesn't jump
+ * twice (once at insert, once when probing finishes). */
+const PENDING_FALLBACK_DURATION_SEC = 5
 
 /** Number of frames sampled across a video to fake a filmstrip in the timeline. */
 const THUMBNAIL_STRIP_COUNT = 4
@@ -57,8 +71,6 @@ const THUMBNAIL_STRIP_COUNT = 4
 const THUMBNAIL_STRIP_MAX_DIM = 160
 /** Number of normalized peaks stored per audio source. */
 const WAVEFORM_PEAK_COUNT = 256
-
-const PENDING_FALLBACK_DURATION_SEC = 5
 
 /**
  * Best-effort, synchronous-at-metadata check for an audio track on a video
@@ -208,7 +220,7 @@ function loadMediaElement<T extends HTMLMediaElement>(
  * with a live src; letting these wait for GC starves the WebCodecs playback
  * pipeline of decoders on import-heavy sessions.
  */
-export function releaseMediaElement(el: HTMLMediaElement): void {
+function releaseMediaElement(el: HTMLMediaElement): void {
   try {
     el.pause()
     el.removeAttribute('src')
@@ -227,7 +239,7 @@ export function releaseMediaElement(el: HTMLMediaElement): void {
  * value. Falls back to `0` (this file's existing "unknown duration"
  * convention, see `makeVideoThumbnailStrip`) if even that doesn't resolve.
  */
-export function resolveDuration(el: HTMLMediaElement): Promise<number> {
+function resolveDuration(el: HTMLMediaElement): Promise<number> {
   if (Number.isFinite(el.duration)) return Promise.resolve(el.duration)
 
   return new Promise((resolve) => {
@@ -477,6 +489,48 @@ function getAudioContext(): AudioContext {
 }
 
 /**
+ * Largest source the WHOLE-FILE decode (`decodeAudioData`) is still asked to
+ * handle (LM-P1). Since LM-P5 a larger source is not skipped: it streams (see
+ * `computeStreamedWaveform`). This bound now only matters for a source that
+ * cannot be streamed, e.g. a codec WebCodecs has no decoder for.
+ */
+export const LARGE_LOCAL_SOURCE_BYTES = 2 * 1024 ** 3
+
+/**
+ * Whether the whole-file decode may be used for this asset. False above
+ * `LARGE_LOCAL_SOURCE_BYTES`, where only streaming works.
+ */
+export function shouldDecodeWaveform(asset: { byteSize: number }): boolean {
+  return !(asset.byteSize > LARGE_LOCAL_SOURCE_BYTES)
+}
+
+/** Whether this asset's audio should be read by range rather than decoded whole (LM-P5). */
+export function shouldStreamAudio(asset: { byteSize: number }): boolean {
+  return asset.byteSize > STREAM_AUDIO_ABOVE_BYTES
+}
+
+/**
+ * `computeWaveform` for a large source: the audio is walked in windows with a
+ * running max per bucket, so memory does not grow with the file. A pinned local
+ * file is read from its Blob; an http(s) source is read by range requests; any
+ * other source is materialised through the shared blob cache. `null` when the
+ * file has no audio track.
+ */
+export async function computeStreamedWaveform(
+  src: string,
+  opts: StreamPeaksOptions & { blobFor?: (src: string) => Blob | undefined } = {},
+): Promise<Float32Array | null> {
+  const pinned = (opts.blobFor ?? ((u: string) => sourceBlobCache.pinnedBlob(u)))(src)
+  const source: Blob | string = pinned ?? (/^https?:/i.test(src) ? src : await sourceBlobCache.resolve(src))
+  try {
+    return await streamPeaks(source, WAVEFORM_PEAK_COUNT, opts)
+  } catch (err) {
+    if (err instanceof NoAudioTrackError) return null
+    throw err
+  }
+}
+
+/**
  * Decode a source's audio into a small array of normalized (0..1) peaks.
  *
  * `decodeAudioData` pulls the audio track straight out of mp4/webm/ogg
@@ -548,7 +602,7 @@ function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
 
 /**
  * Decode audio for video/audio sources. Sets `waveform` for rendering and
- * refines `hasAudio` (the import-time probe is best-effort; this is authoritative).
+ * refines `hasAudio` where it can.
  *
  * A successful decode proves there is audio, so it may promote `hasAudio` to
  * `true`. A failed one proves nothing — CORS and unsupported codecs fail the
@@ -557,13 +611,22 @@ function scheduleThumbnail(asset: MediaAsset, maxDim: number): void {
  */
 function scheduleAudioAnalysis(asset: MediaAsset): void {
   if (asset.kind !== 'audio' && asset.kind !== 'video') return
-
   const markSilent = () => {
     if (asset.kind !== 'video' || hasAudioDetermined(asset.id)) return
     mediaLibraryStore.getState().updateAsset(asset.id, { hasAudio: false })
   }
 
-  void computeWaveform(asset.src)
+  // LM-P5: a large source streams; the whole-file decode stays for small ones and
+  // is the fallback for a mid-size file that cannot be streamed. A file too big
+  // for either simply has no waveform.
+  const compute: Promise<Float32Array | null> = shouldStreamAudio(asset)
+    ? computeStreamedWaveform(asset.src).catch((err) => {
+        if (!shouldDecodeWaveform(asset)) throw err
+        return computeWaveform(asset.src)
+      })
+    : computeWaveform(asset.src)
+
+  void compute
     .then((waveform) => {
       if (!waveform) {
         markSilent()
@@ -610,6 +673,11 @@ interface RegisterAssetInput {
  */
 async function registerAsset(input: RegisterAssetInput): Promise<MediaAsset> {
   const metadata = await probeMetadata(input.kind, input.src)
+  // Animated-image probe (PV-P8d): only images are candidates, and
+  // `probeAnimatedImageSrc` itself returns null before fetching anything
+  // when `ImageDecoder` is unavailable (node tests) or the extension isn't
+  // animatable — so this never delays a still-image import.
+  const anim = input.kind === 'image' ? await probeAnimatedImageSrc(input.src, input.name) : null
 
   const asset: MediaAsset = {
     id: generateId(),
@@ -623,6 +691,17 @@ async function registerAsset(input: RegisterAssetInput): Promise<MediaAsset> {
     byteSize: input.byteSize,
     lastModified: input.lastModified,
     addedAt: Date.now(),
+    // Only set when the probe found real animation — a still image's asset
+    // is the exact object it always was.
+    ...(anim
+      ? {
+          animated: true as const,
+          sourceFps: anim.fps,
+          durationSec: anim.frameCount / anim.fps,
+          width: anim.width,
+          height: anim.height,
+        }
+      : {}),
   }
 
   mediaLibraryStore.getState().addAsset(asset)
@@ -631,7 +710,16 @@ async function registerAsset(input: RegisterAssetInput): Promise<MediaAsset> {
   // The `hasAudio` seeded above is only the element probe's guess; start the
   // authoritative container read now so it has settled by the time the asset is
   // dropped on the timeline and the video/audio split prompt has to decide.
-  if (asset.kind === 'video') void determineAssetHasAudio(asset.id)
+  if (asset.kind === 'video') {
+    void determineAssetHasAudio(asset.id)
+    // Container alpha probe (PV-P8d): fire-and-forget, like the audio probe
+    // above — in node (tests) it fails silently with no network.
+    void probeHasAlpha(asset.src)
+      .then((hasAlpha) => {
+        if (hasAlpha) mediaLibraryStore.getState().updateAsset(asset.id, { hasAlpha: true })
+      })
+      .catch(() => {})
+  }
 
   return asset
 }
@@ -751,9 +839,9 @@ export async function importUrl(url: string, opts?: ImportUrlOptions): Promise<M
 /**
  * Like {@link importUrl}, but returns a `status: 'pending'` asset immediately
  * instead of awaiting metadata — for callers (e.g. "add to timeline" from a
- * remote gallery) that want to place a clip right away and let it resize
+ * remote media list) that want to place a clip right away and let it resize
  * itself once the real duration/dimensions arrive, rather than blocking on
- * CDN latency. `opts.dimensions`, if known upfront (e.g. from a backend
+ * CDN latency. `opts.dimensions`, if known upfront (e.g. from the host application's
  * response), seeds `width`/`height` so the placeholder's aspect ratio is
  * already correct.
  *
@@ -794,7 +882,7 @@ export async function beginImportUrl(
   mediaLibraryStore.getState().addAsset(asset)
 
   // Runs in parallel with the metadata probe below, not after it: callers that
-  // import and insert in the same click (gallery "add to editor") would
+  // import and insert in the same click (a remote list's "add to editor") would
   // otherwise decide the video/audio split against the `hasAudio: false` seed
   // above and drop a video with sound as video-only.
   if (kind === 'video') void determineAssetHasAudio(asset.id)

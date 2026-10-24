@@ -21,8 +21,11 @@ import {
   type VideoFrameProvider,
   type VideoFrameProviderDeps,
 } from '../../../media/video'
-import { buildDrawTransformMatrix, type CropRect, type DrawRect } from './drawRect'
+import { buildDrawTransformMatrix, resolveDrawRect, type CropRect, type DrawRect } from './drawRect'
 import type { Layer, LayerContext } from './types'
+import { needsChain } from '../compositing'
+import * as videoUploadProbe from './videoUploadProbe'
+import { displaySizeFor, normalizeRotation, type VideoRotation } from '../../../media/video/rotation'
 
 // Placement math now lives in ./drawRect (shared with ImageLayer). Re-exported
 // here for back-compat with existing importers (e.g. FrameProbeLayer, tests).
@@ -32,7 +35,7 @@ export {
   resolveDrawRect,
   buildDrawTransformMatrix,
 } from './drawRect'
-export type { DrawRect, CropRect } from './drawRect'
+export type { DrawRect } from './drawRect'
 /** @deprecated use DrawRect from ./drawRect */
 export type VideoDrawRect = DrawRect
 
@@ -40,6 +43,8 @@ export type VideoDrawRect = DrawRect
 interface ProviderEntry {
   provider: VideoFrameProvider
   refCount: number
+  /** The source this provider was opened on. A clip re-pointed at another file needs a new one. */
+  src: string
 }
 
 /**
@@ -64,6 +69,12 @@ export function buildVideoTransformMatrix(
     contentHeight,
     crop,
   )
+}
+
+interface ContentSize {
+  width: number
+  height: number
+  rotation: VideoRotation
 }
 
 export type VideoFrameProviderFactory = (src: string) => VideoFrameProvider
@@ -135,9 +146,8 @@ const DEFAULT_MAX_IDLE_PROVIDERS = 4
 const IDLE_REARM_AFTER_FRACTION = 0.5
 
 /**
- * What a clip's media is doing while it has nothing drawable on screen.
- * Mirrors `ClipLoadState` in the clip-load store without importing it — this
- * layer has no business knowing a store exists.
+ * What a clip's media is doing. Mirrors `ClipLoadState` in the clip-load store
+ * without importing it — this layer has no business knowing a store exists.
  */
 export type VideoClipLoadState = 'loading' | 'error'
 
@@ -188,7 +198,6 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   private readonly _providers = new Map<string, ProviderEntry>()
   private readonly _textures = new Map<string, VideoTexture>()
   private readonly _srcByItemId = new Map<string, string>()
-  private readonly _providerSrcByItemId = new Map<string, string>()
   /**
    * Item IDs whose provider was created by prewarm() ahead of the clip becoming
    * active — the decoder is opening/decoding but the clip is NOT yet drawn.
@@ -226,7 +235,8 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
    * only VideoLayer can drop the Map entries that keep the provider reachable.
    */
   private readonly _idleEvictionTimers = new Map<string, IdleEviction>()
-  private readonly _contentSizeByItemId = new Map<string, { width: number; height: number }>()
+  /** DISPLAY-space size (post-rotation) plus the source rotation the texture needs. */
+  private readonly _contentSizeByItemId = new Map<string, ContentSize>()
   /** Last sourceFrame logged per clip — prevents flooding at 60 fps on a frozen playhead. */
   private readonly _lastLoggedSourceFrameByItemId = new Map<string, number>()
   /**
@@ -245,7 +255,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
    * clip drawn from the holdover (its own contentSize entry is gone — release()
    * deleted it) would fall back to fill-the-stage and stretch the frame.
    */
-  private _holdoverContentSize: { width: number; height: number } | null = null
+  private _holdoverContentSize: ContentSize | null = null
   /** Timeline frame at which each active clip last drew — stamps the holdover on release. */
   private readonly _lastDrawFrameByItemId = new Map<string, number>()
 
@@ -272,13 +282,26 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._gl = gl
     this._ensurePipeline(gl)
 
+    // A provider kept idle for this clip but opened on another source (the
+    // clip was re-pointed, e.g. a reload reconnecting a local file) is stale:
+    // drop it so the clip opens the file it now names instead of the dead one.
+    const stale = this._providers.get(item.id)
+    if (stale && stale.src !== item.src && stale.refCount <= 0) this._disposeProvider(item.id)
+
     this._textures.set(item.id, new VideoTexture(this._pool))
     this._srcByItemId.set(item.id, item.src)
 
     // Keyed by clip ID, not src: each clip owns an independent
     // StreamingFrameProducer so that copy-pasted clips (same src, different
     // startFrame) never share a playhead and cause backwards-seek stalls.
-    const entry = this._ensureProvider(item, ctx)
+    let entry = this._providers.get(item.id)
+    if (!entry) {
+      const provider = this._deps
+        ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
+        : this._providerFactory(item.src)
+      entry = { provider, refCount: 0, src: item.src }
+      this._providers.set(item.id, entry)
+    }
 
     // Promote a prewarmed provider to a drawn clip: it's no longer prewarm's to
     // idle/dispose — the draw lifecycle (refCount + release) now owns it. Its
@@ -330,43 +353,6 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._onClipLoad?.(itemId, state)
   }
 
-  private _ensureProvider(item: ActiveVideoClip, ctx: LayerContext): ProviderEntry {
-    let entry = this._providers.get(item.id)
-    const currentSrc = this._providerSrcByItemId.get(item.id)
-    let carriedRefCount = 0
-    if (entry && currentSrc !== item.src) {
-      carriedRefCount = entry.refCount
-      this._cancelIdleEviction(item.id)
-      entry.provider.dispose()
-      this._providers.delete(item.id)
-      this._providerSrcByItemId.delete(item.id)
-      this._openWatchedItemIds.delete(item.id)
-      this._contentSizeByItemId.delete(item.id)
-      this._textures.get(item.id)?.dispose()
-      this._textures.delete(item.id)
-      entry = undefined
-    }
-
-    if (!entry) {
-      const provider = this._deps
-        ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
-        : this._providerFactory(item.src)
-      // A replaced provider inherits the ref count of the one it replaces: the
-      // clip is still being drawn, so a refCount of 0 here would expose a live
-      // provider to the idle-eviction pass and to prewarm's seek.
-      entry = { provider, refCount: carriedRefCount }
-      this._providers.set(item.id, entry)
-      this._providerSrcByItemId.set(item.id, item.src)
-      if (carriedRefCount > 0) {
-        provider.markActive()
-        this._reportLoad(item.id, 'loading')
-        this._watchOpenFailure(item.id, entry)
-      }
-    }
-
-    return entry
-  }
-
   release(itemId: string): void {
     const src = this._srcByItemId.get(itemId)
     if (!src) return
@@ -394,6 +380,7 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     this._contentSizeByItemId.delete(itemId)
     this._lastLoggedSourceFrameByItemId.delete(itemId)
     this._lastDrawFrameByItemId.delete(itemId)
+    videoUploadProbe.forget(itemId)
 
     const entry = this._providers.get(itemId)
     if (!entry) return
@@ -434,20 +421,50 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     const horizonIds = new Set(upcoming.map((item) => item.id))
 
     for (const item of upcoming) {
-      const isNewOrChanged =
-        !this._providers.has(item.id) ||
-        this._providerSrcByItemId.get(item.id) !== item.src
-
-      const entry = this._ensureProvider(item, ctx)
-
-      if (isNewOrChanged) {
+      let entry = this._providers.get(item.id)
+      // Same stale-source rule as acquire(): an idle provider on another file
+      // would prewarm the wrong source.
+      if (entry && entry.src !== item.src && entry.refCount <= 0) {
+        this._disposeProvider(item.id)
+        entry = undefined
+      }
+      if (!entry) {
+        // Never seen this clip — create its provider cold and mark it prewarmed.
+        const provider = this._deps
+          ? createVideoFrameProvider(item.src, { ...this._deps, fps: ctx.fps })
+          : this._providerFactory(item.src)
+        entry = { provider, refCount: 0, src: item.src }
+        this._providers.set(item.id, entry)
         this._prewarmedItemIds.add(item.id)
-        entry.provider.markActive()
+        provider.markActive()
+        // Arm a deadline on this path too. Without it, the scrub-away sweep at
+        // the bottom of this method is the provider's ONLY reclaim path — and
+        // that sweep only runs while prewarm() keeps being called. Editor
+        // paused, tab hidden, GpuRenderer.prewarm early-returning on !_mounted
+        // or a lost context: the loop stops, the sweep never fires again, and
+        // every provider prewarm ever created sits on a live decoder and a full
+        // frame cache for the rest of the session. This is also what puts these
+        // providers under `maxIdleProviders` at all — before, neither knob
+        // applied to them.
         this._scheduleIdleEviction(item.id, horizonIds)
       } else if (entry.refCount > 0) {
+        // Already an active, drawn clip — draw() is driving its playhead. Leave
+        // it alone; pushing a future playhead here would seek it off the frame
+        // being drawn this tick.
         continue
       } else {
+        // A refCount-0 provider still inside the horizon: either released by a
+        // clip the user scrubbed back over, or prewarmed on an earlier tick and
+        // not yet drawn. Either way it is being actively re-warmed below, so its
+        // producer must not be left reporting 'idle' — markIdle()/markActive()
+        // only juggle a timer into an unset callback today, but that is a
+        // property of the current provider, not a contract.
         entry.provider.markActive()
+        // Push the deadline out so the timer armed at release (or at prewarm
+        // creation) does not dispose the very provider we are re-warming.
+        // Guarded: prewarm runs per RAF and re-arming is not free. Re-scheduling
+        // re-inserts rather than grows the map, so it cannot push another idle
+        // provider over the cap.
         if (this._shouldRearmIdleEviction(item.id)) {
           this._scheduleIdleEviction(item.id, horizonIds)
         }
@@ -470,26 +487,12 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   draw(item: ActiveVideoClip, ctx: LayerContext): void {
     this._gl = ctx.gl
 
-    // Ensure the provider BEFORE reading the texture: a src change disposes and
-    // unmaps the old texture inside _ensureProvider, and a local read taken
-    // earlier would still be truthy and keep uploading into the disposed one.
-    let entry = this._providers.get(item.id)
-    const currentSrc = this._providerSrcByItemId.get(item.id)
-    const providerReplaced = !entry || currentSrc !== item.src
-    if (providerReplaced) entry = this._ensureProvider(item, ctx)
-    // Normally acquire() has already made the texture and only a src change
-    // (which unmaps it just above) leaves us without one. Re-creating whenever
-    // it is missing rather than only on that path costs nothing and keeps a
-    // future code path that drops a texture from turning into a clip that
-    // silently stops painting.
-    let texture = this._textures.get(item.id)
-    if (!texture) {
-      texture = new VideoTexture(this._pool)
-      this._textures.set(item.id, texture)
-    }
-    if (!entry) return
+    const texture = this._textures.get(item.id)
+    const entry = this._providers.get(item.id)
+    if (!texture || !entry) return
 
     this._lastDrawFrameByItemId.set(item.id, ctx.frame)
+    videoUploadProbe.noteDrawn(item.id, ctx.frame)
 
     const { provider } = entry
 
@@ -505,12 +508,20 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       // copy on the real decode path; a VideoFrame on the synthetic dev path.)
       const uploaded = texture.upload(ctx.gl, frame)
       if (uploaded) {
-        const width = 'displayWidth' in frame ? frame.displayWidth : frame.width
-        const height = 'displayHeight' in frame ? frame.displayHeight : frame.height
+        videoUploadProbe.noteUploaded(item.id, ctx.frame)
+        // The cached bitmap may be a downscaled copy; the clip's content size is
+        // the SOURCE size when the provider knows it.
+        const src = provider.sourceSize
+        const rawWidth = src?.width ?? ('displayWidth' in frame ? frame.displayWidth : frame.width)
+        const rawHeight = src?.height ?? ('displayHeight' in frame ? frame.displayHeight : frame.height)
+        // The frame is the coded (unrotated) picture. Fit/crop/transform all
+        // work in what the viewer sees, so the content size is the rotated one.
+        const rotation = normalizeRotation(provider.rotation)
+        const { width, height } = displaySizeFor(rawWidth, rawHeight, rotation)
         // A content size appearing for the first time IS the first drawable
         // frame for this clip — the moment the wait the user is watching ends.
         if (!this._contentSizeByItemId.has(item.id)) this._reportLoad(item.id, null)
-        this._contentSizeByItemId.set(item.id, { width, height })
+        this._contentSizeByItemId.set(item.id, { width, height, rotation })
         // First real frame for this clip — holdover is no longer needed.
         this._holdoverTexture?.dispose()
         this._holdoverTexture = null
@@ -538,8 +549,8 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     if (unit < 0 && this._holdoverTexture !== null) {
       if (Math.abs(ctx.frame - this._holdoverFrame) <= HOLDOVER_MAX_FRAME_GAP) {
         unit = this._holdoverTexture.bind(ctx.gl, 0)
-        // Fit the borrowed frame by ITS dimensions, not the incoming clip's
-        // (still unknown) ones — otherwise it stretches to the stage.
+        // The borrowed frame must be fitted by ITS dimensions, not the (absent)
+        // dimensions of the incoming clip — otherwise it stretches to the stage.
         contentSize ??= this._holdoverContentSize ?? undefined
       } else {
         this._holdoverTexture.dispose()
@@ -548,6 +559,42 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
       }
     }
     if (unit < 0) return
+
+    // Effect stack: the chain draws the clip itself, or returns false and the
+    // plain draw below runs. Clips without effects never get here.
+    if (needsChain(item) && ctx.effectChain) {
+      const rect = resolveDrawRect(
+        item.transform,
+        ctx.stage.width,
+        ctx.stage.height,
+        contentSize?.width,
+        contentSize?.height,
+        item.crop,
+      )
+      const drawn = ctx.effectChain.draw(ctx, {
+        program: this._program,
+        vao: this._vao,
+        unit,
+        contentWidth: contentSize?.width ?? rect.width,
+        contentHeight: contentSize?.height ?? rect.height,
+        ...(item.crop ? { crop: item.crop } : {}),
+        rotation: contentSize?.rotation ?? 0,
+        cornerRadius: item.cornerRadius ?? 0,
+        rect,
+        opacity,
+        effects: item.effects ?? [],
+        ...(item.mask ? { mask: item.mask } : {}),
+        ...(item.blend ? { blend: item.blend } : {}),
+        ...(item.matte ? { matte: item.matte } : {}),
+      })
+      if (drawn) {
+        ctx.gl.bindTexture(ctx.gl.TEXTURE_2D, null)
+        ctx.gl.bindVertexArray(null)
+        return
+      }
+      this._program.use(ctx.gl)
+      ctx.gl.bindVertexArray(this._vao)
+    }
 
     this._program.setUniform1i(ctx.gl, 'uTexture', unit)
     this._program.setUniform1f(ctx.gl, 'uOpacity', opacity)
@@ -560,6 +607,8 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     // the uniform persists between draws within this program.
     const crop = item.crop
     this._program.setUniform4f(ctx.gl, 'uCrop', crop?.x ?? 0, crop?.y ?? 0, crop?.width ?? 0, crop?.height ?? 0)
+    // Always set (0 when upright) — persists in the program between draws.
+    this._program.setUniform1i(ctx.gl, 'uRotation', contentSize?.rotation ?? 0)
     this._program.setUniformMatrix3fv(
       ctx.gl,
       'uTransform',
@@ -581,12 +630,12 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
   }
 
   dispose(): void {
+    for (const itemId of this._srcByItemId.keys()) videoUploadProbe.forget(itemId)
     for (const texture of this._textures.values()) {
       texture.dispose()
     }
     this._textures.clear()
     this._srcByItemId.clear()
-    this._providerSrcByItemId.clear()
     this._contentSizeByItemId.clear()
     this._lastDrawFrameByItemId.clear()
     this._holdoverTexture?.dispose()
@@ -816,7 +865,6 @@ export class VideoLayer implements Layer<ActiveVideoClip> {
     entry.provider.dispose()
     this._providers.delete(itemId)
     this._srcByItemId.delete(itemId)
-    this._providerSrcByItemId.delete(itemId)
     this._prewarmedItemIds.delete(itemId)
     this._openWatchedItemIds.delete(itemId)
     // Defensive: release() normally clears this first, but a provider disposed

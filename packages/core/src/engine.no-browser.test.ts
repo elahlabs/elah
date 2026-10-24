@@ -23,32 +23,78 @@ const ENTRY = join(SRC_ROOT, 'engine.ts')
 const ALLOWED_PACKAGES = new Set(['immer', 'zustand/vanilla'])
 
 const ALLOWED_FILES = [
+  'actions/placement.ts',
+  'actions/retimeCaptions.ts',
   'actions/splitClipAtPlayhead.ts',
   'assets/store.ts',
   'assets/types.ts',
+  'audio/clipAudio.ts',
+  'audio/markers.ts',
+  'composition/commit.ts',
+  'composition/derive.ts',
+  'composition/index.ts',
+  'composition/instantiate.ts',
+  'composition/paths.ts',
+  'composition/propReader.ts',
+  'composition/regenerateIds.ts',
+  'composition/types.ts',
+  'composition/validate.ts',
   'debug/PerfSummary.ts',
   'debug/trace.ts',
   'editor/TimelineEngine.ts',
   'editor/projectDocument.ts',
+  'effects/registry.ts',
+  'effects/resolveEffects.ts',
   'elements/audio.ts',
   'elements/base.ts',
+  'elements/compound.ts',
+  'elements/easingPresets.ts',
   'elements/freehand.ts',
   'elements/image.ts',
+  'elements/noise.ts',
+  'elements/scramble.ts',
   'elements/shape.ts',
+  'elements/springPresets.ts',
   'elements/text.ts',
+  'elements/textSpans.ts',
   'elements/textTemplates.ts',
   'elements/video.ts',
   'engine.ts',
+  'export/audioMix.ts',
+  'fonts/registry.ts',
   'frames/FrameSequenceController.ts',
   'frames/frameSequence.ts',
   'frames/frameSequenceProject.ts',
+  'generators/registry.ts',
   'playback/PlaybackEngine.ts',
   'project/serialization.ts',
   'renderer/gpu/layers/drawRect.ts',
+  'renderer/gpu/layers/elementFrame.ts',
+  'renderer/gpu/layers/freehandPaint.ts',
   'renderer/gpu/layers/objectFit.ts',
+  'renderer/gpu/layers/paint.ts',
+  'renderer/gpu/layers/pathBounds.ts',
+  'renderer/gpu/layers/pathLength.ts',
+  'renderer/gpu/layers/shapePaint.ts',
   'renderer/gpu/layers/textLayout.ts',
+  'renderer/gpu/layers/textMeasure.ts',
   'renderer/gpu/viewport.ts',
+  'resolver/bezier.ts',
+  'resolver/expr/channels.ts',
+  'resolver/expr/evaluate.ts',
+  'resolver/expr/parse.ts',
+  'resolver/expr/scope.ts',
+  'resolver/expr/tokenize.ts',
+  'resolver/keyframes.ts',
+  'resolver/layout.ts',
+  'resolver/motionPath.ts',
+  'resolver/pathMorph.ts',
   'resolver/resolveTimeline.ts',
+  'resolver/rotoMasks.ts',
+  'resolver/scene.ts',
+  'resolver/sequence.ts',
+  'resolver/sourceTime.ts',
+  'resolver/spring.ts',
   'resolver/textAnimation.ts',
   'stores/clipLoad.store.ts',
   'stores/playback.store.ts',
@@ -57,12 +103,18 @@ const ALLOWED_FILES = [
   'stores/tracks.store.ts',
   'stores/transitions.store.ts',
   'track/track.ts',
+  'transitions/registry.ts',
+  'types/index.ts',
+  'utils/color.ts',
   'utils/frames.ts',
   'utils/id.ts',
   'utils/snap.ts',
   'utils/timelineMath.ts',
+  'vector/pathOps.ts',
   'visitor/add.ts',
   'visitor/clone.ts',
+  'visitor/overwrite.ts',
+  'visitor/place.ts',
   'visitor/remove.ts',
   'visitor/split.ts',
   'visitor/update.ts',
@@ -82,6 +134,17 @@ const BANNED = [
   'indexedDB',
   'crypto.',
 ]
+
+/**
+ * A banned entry that ends in an identifier character must match the whole
+ * identifier: `OffscreenCanvas` must not match the type name
+ * `OffscreenCanvasRenderingContext2D`, which shared 2D painters name in type
+ * positions only. Entries ending in `.` or `(` match as plain substrings.
+ */
+function bannedPattern(banned: string): RegExp {
+  const escaped = banned.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(/\w$/.test(banned) ? `${escaped}(?!\\w)` : escaped)
+}
 
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1')
@@ -182,7 +245,7 @@ describe('@elah/core/engine stays browser-free', () => {
     for (const file of graph.files.keys()) {
       const source = stripComments(readFileSync(file, 'utf8'))
       for (const banned of BANNED) {
-        if (source.includes(banned)) offenders.push(`${banned} in ${pathTo(graph, file)}`)
+        if (bannedPattern(banned).test(source)) offenders.push(`${banned} in ${pathTo(graph, file)}`)
       }
     }
     expect(offenders).toEqual([])

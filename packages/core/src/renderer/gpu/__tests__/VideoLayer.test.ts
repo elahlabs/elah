@@ -2,11 +2,13 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ActiveVideoClip } from '../../../resolver/scene'
+import type { ActiveVideoClip, Scene } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
+import { RenderGraph } from '../RenderGraph'
 import { TexturePool } from '../TexturePool'
 import type { VideoFrameProvider } from '../../../media/video'
 import { VideoLayer, buildVideoTransformMatrix } from '../layers/VideoLayer'
+import { videoUploadProbe } from '../layers/videoUploadProbe'
 
 // ---------------------------------------------------------------------------
 // Minimal WebGL2 mock
@@ -151,6 +153,7 @@ describe('VideoLayer', () => {
   let layer: VideoLayer
 
   beforeEach(() => {
+    videoUploadProbe.forgetAll()
     gl = createMockGL()
     ctx = makeCtx(gl)
     pool = new TexturePool({ maxTextures: 8 })
@@ -180,6 +183,51 @@ describe('VideoLayer', () => {
     expect(providerB.markActive).toHaveBeenCalledTimes(1)
     expect(layer.getProviderForItemId('clip-a')).toBe(providerA)
     expect(layer.getProviderForItemId('clip-b')).toBe(providerB)
+  })
+
+  it('opens a new provider when a released clip comes back on another source', () => {
+    // The reload case: the clip first loads with the dead blob: URL of the old
+    // page, then is re-pointed at the reopened local file under the same id.
+    const dead = makeMockProvider()
+    const live = makeMockProvider()
+    const bySrc = new Map<string, VideoFrameProvider>([
+      ['blob:dead', dead],
+      ['blob:live', live],
+    ])
+    layer = new VideoLayer(pool, (src) => bySrc.get(src)!)
+
+    layer.acquire(makeClip({ id: 'clip-a', src: 'blob:dead' }), ctx)
+    layer.release('clip-a')
+    layer.acquire(makeClip({ id: 'clip-a', src: 'blob:live' }), ctx)
+
+    expect(layer.getProviderForItemId('clip-a')).toBe(live)
+    expect(dead.dispose).toHaveBeenCalledTimes(1)
+    expect(layer.getProviderCount()).toBe(1)
+  })
+
+  it('keeps the warm provider when a released clip comes back on the same source', () => {
+    layer.acquire(makeClip({ id: 'clip-a' }), ctx)
+    layer.release('clip-a')
+    layer.acquire(makeClip({ id: 'clip-a' }), ctx)
+
+    expect(layer.getProviderForItemId('clip-a')).toBe(provider)
+    expect(provider.dispose).not.toHaveBeenCalled()
+  })
+
+  it('prewarm replaces an idle provider opened on another source', () => {
+    const dead = makeMockProvider()
+    const live = makeMockProvider()
+    const bySrc = new Map<string, VideoFrameProvider>([
+      ['blob:dead', dead],
+      ['blob:live', live],
+    ])
+    layer = new VideoLayer(pool, (src) => bySrc.get(src)!)
+
+    layer.prewarm([makeClip({ id: 'clip-a', src: 'blob:dead' })], ctx)
+    layer.prewarm([makeClip({ id: 'clip-a', src: 'blob:live' })], ctx)
+
+    expect(layer.getProviderForItemId('clip-a')).toBe(live)
+    expect(dead.dispose).toHaveBeenCalledTimes(1)
   })
 
   it('allocates one texture handle per clip', () => {
@@ -217,6 +265,25 @@ describe('VideoLayer', () => {
     expect(provider.setPlayhead).toHaveBeenCalledWith(42)
     expect(provider.getCurrent).toHaveBeenCalledWith(42)
     expect(gl.drawArrays).not.toHaveBeenCalled()
+  })
+
+  it('reports a clip drawn without a picture as pending, then clears it on upload and on release', () => {
+    const clip = makeClip({ id: 'probe-clip', sourceFrame: 7 })
+    layer.acquire(clip, ctx)
+
+    provider.getCurrent.mockReturnValue(null)
+    layer.draw(clip, ctx)
+    expect(videoUploadProbe.pendingAt(0)).toEqual(['probe-clip'])
+
+    provider.getCurrent.mockReturnValue(mockFrame())
+    layer.draw(clip, ctx)
+    expect(videoUploadProbe.pendingAt(0)).toEqual([])
+
+    provider.getCurrent.mockReturnValue(null)
+    layer.draw(clip, { ...ctx, frame: 30 })
+    expect(videoUploadProbe.pendingAt(30)).toEqual(['probe-clip'])
+    layer.release('probe-clip')
+    expect(videoUploadProbe.pendingAt(30)).toEqual([])
   })
 
   it('available frame path uploads texture and draws quad', () => {
@@ -443,32 +510,6 @@ describe('VideoLayer', () => {
 
       expect(then).toHaveBeenCalledTimes(1)
     })
-
-    it('hot-swaps provider and disposes old one when clip src changes', () => {
-      const providersCreated: Array<{ src: string; provider: ReturnType<typeof makeMockProvider> }> = []
-      const factory = (src: string) => {
-        const provider = makeMockProvider()
-        providersCreated.push({ src, provider })
-        return provider
-      }
-
-      layer = new VideoLayer(pool, factory)
-      const clipV1 = makeClip({ id: 'clip-1', src: 'blob:http://localhost/old-blob' })
-      layer.acquire(clipV1, ctx)
-
-      expect(providersCreated).toHaveLength(1)
-      expect(providersCreated[0].src).toBe('blob:http://localhost/old-blob')
-      const firstProvider = providersCreated[0].provider
-
-      // Now clip's src is updated (e.g. from IndexedDB recovery)
-      const clipV2 = makeClip({ id: 'clip-1', src: 'blob:http://localhost/fresh-blob' })
-      layer.acquire(clipV2, ctx)
-
-      expect(firstProvider.dispose).toHaveBeenCalledTimes(1)
-      expect(providersCreated).toHaveLength(2)
-      expect(providersCreated[1].src).toBe('blob:http://localhost/fresh-blob')
-      expect(layer.getProviderForItemId('clip-1')).toBe(providersCreated[1].provider)
-    })
   })
 
   it('does not import decoder, PlaybackEngine, or React modules', () => {
@@ -496,6 +537,7 @@ describe('VideoLayer', () => {
 
 // ---------------------------------------------------------------------------
 // Provider replacement, watch-set hygiene and borrowed-frame sizing
+// (ported from the open-source VideoLayer.test.ts, commit e4d1c88)
 // ---------------------------------------------------------------------------
 
 type Internals = {
@@ -508,55 +550,80 @@ function frameOfSize(width: number, height: number): VideoFrame {
   return { close: vi.fn(), displayWidth: width, displayHeight: height } as unknown as VideoFrame
 }
 
+function sceneOf(videos: ActiveVideoClip[]): Scene {
+  return {
+    frame: 0,
+    fps: 30,
+    stage: { width: 1280, height: 720 },
+    videos,
+    audios: [],
+    texts: [],
+    images: [],
+    shapes: [],
+    freehand: [],
+    transitions: [],
+  }
+}
+
 describe('VideoLayer provider replacement and holdover', () => {
   let gl: WebGL2RenderingContext
   let ctx: LayerContext
   let pool: TexturePool
 
   beforeEach(() => {
+    videoUploadProbe.forgetAll()
     gl = createMockGL()
     ctx = makeCtx(gl)
     pool = new TexturePool({ maxTextures: 8 })
   })
 
-  it('keeps the ref count and rebinds a live texture when a drawn clip changes src', () => {
+  it('an active clip re-pointed between two renders ends on the new provider, old one disposed, refCount unchanged', () => {
+    // Premium routes a src change through RenderGraph (release + acquire, see
+    // RenderGraph._diff) rather than through VideoLayer.draw() as the
+    // open-source layer does. This drives the real graph so the test covers the
+    // path a render tick actually takes.
     const onClipLoad = vi.fn()
-    const providers: Array<ReturnType<typeof makeMockProvider>> = []
-    const layer = new VideoLayer(
-      pool,
-      () => {
-        const p = makeMockProvider()
-        p.getCurrent.mockReturnValue(frameOfSize(640, 360))
-        providers.push(p)
-        return p
-      },
-      { onClipLoad },
-    )
+    const one = makeMockProvider()
+    const two = makeMockProvider()
+    const frameOne = frameOfSize(640, 360)
+    const frameTwo = frameOfSize(640, 360)
+    one.getCurrent.mockReturnValue(frameOne)
+    two.getCurrent.mockReturnValue(frameTwo)
+    const bySrc = new Map<string, VideoFrameProvider>([
+      ['video://one', one],
+      ['video://two', two],
+    ])
+    const layer = new VideoLayer(pool, (src) => bySrc.get(src)!, { onClipLoad })
+    const graph = new RenderGraph()
+    graph.registerLayer(layer, (s) => s.videos, (v) => v.id, (v) => v.zIndex)
 
-    const v1 = makeClip({ src: 'video://one' })
-    layer.acquire(v1, ctx)
-    layer.draw(v1, ctx)
+    graph.execute(sceneOf([makeClip({ src: 'video://one' })]), ctx)
     const oldTexture = internals(layer)._textures.get('clip-a')
     expect(oldTexture?.hasContent).toBe(true)
     expect(layer.getProviderRefCount('clip-a')).toBe(1)
 
     onClipLoad.mockClear()
-    const v2 = makeClip({ src: 'video://two' })
-    layer.draw(v2, ctx)
+    const texImage = gl.texImage2D as unknown as { mock: { calls: unknown[][] } }
+    texImage.mock.calls.length = 0
+    graph.execute(sceneOf([makeClip({ src: 'video://two' })]), { ...ctx, frame: 1 })
 
-    expect(providers).toHaveLength(2)
-    expect(providers[0].dispose).toHaveBeenCalledTimes(1)
-    // The live clip is still drawn: its ref count must survive the swap.
+    expect(layer.getProviderForItemId('clip-a')).toBe(two)
+    expect(one.dispose).toHaveBeenCalledTimes(1)
+    expect(two.dispose).not.toHaveBeenCalled()
     expect(layer.getProviderRefCount('clip-a')).toBe(1)
-    expect(providers[1].markActive).toHaveBeenCalled()
+    expect(layer.getProviderCount()).toBe(1)
+    expect(two.markActive).toHaveBeenCalled()
     expect(onClipLoad).toHaveBeenCalledWith('clip-a', 'loading')
 
-    // Frames land in a fresh, tracked texture — not the disposed one.
+    // The new source's frame lands in a fresh, tracked texture.
     const newTexture = internals(layer)._textures.get('clip-a')
     expect(newTexture).toBeDefined()
     expect(newTexture).not.toBe(oldTexture)
     expect(newTexture?.hasContent).toBe(true)
     expect(layer.getTextureCount()).toBe(1)
+    // (The pool's storage allocation is a texImage2D too; only frame uploads count.)
+    const uploadedFrames = texImage.mock.calls.filter((c) => c.length === 6).map((c) => c[5])
+    expect(uploadedFrames).toEqual([frameTwo])
     expect(onClipLoad).toHaveBeenLastCalledWith('clip-a', null)
   })
 

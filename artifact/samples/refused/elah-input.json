@@ -1,0 +1,12 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Refused scene (issues panel demo)",
+  "source": {
+    "kind": "html",
+    "durationSeconds": 3,
+    "stage": { "width": 1920, "height": 1080 },
+    "html": "<section id=\"s\" data-scene=\"bad\" data-at=\"0\" data-duration=\"3\"><h1 id=\"t\" onclick=\"alert(1)\">Hello</h1><script>alert(1)</script></section>",
+    "css": "#s { position: relative; width: 1920px; height: 1080px; background-color: #000; animation: spin 2s infinite; } #t { filter: blur(4px); color: #fff; }"
+  }
+}

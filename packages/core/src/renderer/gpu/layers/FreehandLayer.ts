@@ -5,6 +5,11 @@
  * canvas using the browser's Path2D API, then uploads it as a WebGL texture
  * through the same quad pipeline as TextLayer and ShapeLayer.
  *
+ * The painting itself lives in `freehandPaint`, shared with the export worker
+ * (PV-P2b), so the preview and an exported video cannot drift. This layer keeps
+ * the `clearRect`, because it reuses one scratch canvas for every drawing; the
+ * exporter does not, because it composites onto a fresh one.
+ *
  * An empty or missing pathData produces a transparent frame (no-op paint).
  */
 
@@ -13,6 +18,9 @@ import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
 import type { Layer, LayerContext } from './types'
+import { drawFullStageEffects } from './fullStageEffects'
+import { freehandFrame } from './elementFrame'
+import { freehandPaintSignature, paintFreehand } from './freehandPaint'
 
 const FULL_STAGE_MAT3 = new Float32Array([2, 0, 0, 0, 2, 0, -1, -1, 1])
 
@@ -27,31 +35,6 @@ interface ItemResources {
   width: number
   height: number
   lastSignature: string
-}
-
-function paintSignature(item: ActiveFreehandClip, stage: { width: number; height: number }): string {
-  return JSON.stringify([item.pathData, item.strokeColor, item.strokeWidth, stage.width, stage.height])
-}
-
-function paintFreehand(
-  ctx2d: CanvasRenderingContext2D,
-  item: ActiveFreehandClip,
-  stage: { width: number; height: number },
-): void {
-  ctx2d.clearRect(0, 0, stage.width, stage.height)
-  if (!item.pathData) return
-
-  ctx2d.strokeStyle = item.strokeColor
-  ctx2d.lineWidth = item.strokeWidth
-  ctx2d.lineCap = 'round'
-  ctx2d.lineJoin = 'round'
-
-  try {
-    const path = new Path2D(item.pathData)
-    ctx2d.stroke(path)
-  } catch {
-    // Invalid pathData — render nothing.
-  }
 }
 
 export class FreehandLayer implements Layer<ActiveFreehandClip> {
@@ -106,7 +89,7 @@ export class FreehandLayer implements Layer<ActiveFreehandClip> {
       res.lastSignature = ''
     }
 
-    const sig = paintSignature(item, ctx.stage)
+    const sig = freehandPaintSignature(item, ctx.stage)
     if (res.lastSignature !== sig) {
       if (!this._scratchCanvas) {
         this._scratchCanvas = document.createElement('canvas')
@@ -119,6 +102,9 @@ export class FreehandLayer implements Layer<ActiveFreehandClip> {
         canvas.width = ctx.stage.width
         canvas.height = ctx.stage.height
       }
+      // The clear is HERE, not in the shared painter: this canvas is reused for
+      // every drawing, so a stale stroke would otherwise show through.
+      this._scratchCtx!.clearRect(0, 0, ctx.stage.width, ctx.stage.height)
       paintFreehand(this._scratchCtx!, item, ctx.stage)
       gl.bindTexture(gl.TEXTURE_2D, res.texture)
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
@@ -132,6 +118,15 @@ export class FreehandLayer implements Layer<ActiveFreehandClip> {
     gl.bindVertexArray(this._vao)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, res.texture)
+    // Effect stack (EDX-P2): the chain draws the clip itself when it runs. A
+    // mask on a v2 drawing is measured in the drawing's own box; a legacy one has
+    // no box to measure, so its mask stays full-stage (PV-P2b).
+    const maskFrame = item.mask && item.transformModel === 'v2' ? freehandFrame(item, ctx.stage) : undefined
+    if (drawFullStageEffects(ctx, item, this._program, this._vao, res.texture, maskFrame)) {
+      gl.bindTexture(gl.TEXTURE_2D, null)
+      gl.bindVertexArray(null)
+      return
+    }
     this._program.setUniform1i(gl, 'uTexture', 0)
     this._program.setUniform1f(gl, 'uOpacity', item.opacity ?? 1)
     this._program.setUniformMatrix3fv(gl, 'uTransform', false, FULL_STAGE_MAT3)

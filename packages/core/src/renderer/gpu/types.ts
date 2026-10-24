@@ -8,6 +8,7 @@
 import type { VideoFrameProviderFactory } from './layers/VideoLayer'
 import type { DemuxerFactory } from '../../media/video/demuxer/MediabunnyDemuxer'
 import type { VideoDecoderFactory } from '../../media/video/VideoDecoderManager'
+import type { RotoMaskLoader } from '../../media/masks/RotoMaskFrameProvider'
 
 /** Physical canvas backing-store dimensions in pixels (after DPR scaling). */
 export interface Viewport {
@@ -35,6 +36,12 @@ export interface RendererOptions {
    *   new GpuRenderer({ demuxerFactory: () => createMediabunnyBackend(mediabunny) })
    */
   demuxerFactory?: DemuxerFactory
+  /**
+   * Longest edge, in pixels, of the decoded-frame bitmaps cached for preview.
+   * Default 1920 (1080p). 0 or Infinity = full resolution. Export does not use
+   * this renderer's providers (mediabunny CanvasSink), so it is unaffected.
+   */
+  maxVideoLongEdge?: number
   /** Optional decoder factory override (tests). Forwarded to VideoDecoderManager. */
   decoderFactory?: VideoDecoderFactory
   /**
@@ -78,6 +85,26 @@ export interface RendererOptions {
    * it without re-rendering on the render loop.
    */
   onClipLoad?: (clipId: string, state: 'loading' | 'error' | null) => void
+  /**
+   * Fetches roto mask frames (`Scene.rotoMasks`). Hosts whose mask URLs need
+   * auth pass one that adds the token. Default: plain `fetch`.
+   */
+  rotoMaskLoader?: RotoMaskLoader
+  /**
+   * A roto mask frame arrived after the last draw. Hosts that skip redraws
+   * while paused must mark themselves dirty here or the mask never appears.
+   */
+  onRotoMaskFrame?: () => void
+  /**
+   * Fetches frames of `frames` sequences (`Scene.sequences`). Pass one that
+   * adds auth for private URLs. Default: plain `fetch`.
+   */
+  sequenceFrameLoader?: (url: string, signal?: AbortSignal) => Promise<Blob>
+  /**
+   * A sequence frame arrived after the last draw. Hosts that skip redraws
+   * while paused must mark themselves dirty here or the frame never appears.
+   */
+  onSequenceFrame?: () => void
 }
 
 /**

@@ -1,0 +1,12 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Refused page (issues panel demo)",
+  "source": {
+    "kind": "page",
+    "durationSeconds": 4,
+    "stage": { "width": 1920, "height": 1080 },
+    "html": "<section data-scene=\"bad\" id=\"s\"><h1 id=\"t\" onclick=\"alert(1)\">Hello</h1><img src=\"https://example.com/logo.png\" alt=\"\"><script>alert(1)</script></section>",
+    "css": "@import url(https://fonts.googleapis.com/css2?family=Lobster); #s { width: 1920px; height: 1080px; background: url(https://example.com/bg.jpg) center / cover; } #t { font-family: Helvetica, Arial, sans-serif; color: #fff; transition: opacity 0.4s; animation: spin 2s infinite; animation-play-state: paused; } @keyframes spin { to { transform: rotate(360deg); } }"
+  }
+}

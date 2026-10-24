@@ -10,6 +10,7 @@ import {
   type Clip,
   type CropRect,
 } from '@elah/editor'
+import type { BaselineContext } from '@elah/core'
 import { cn } from '@/lib/utils'
 import {
   PANEL,
@@ -18,18 +19,20 @@ import {
   NumberField,
   PresetButton,
   SliderRow,
-  mergeTransform,
   radiansToDegrees,
   degreesToRadians,
   rotateBy,
   clipTimecode,
 } from './propertiesShared'
+import { useKeyframeEditing } from './useKeyframeEditing'
+import { AnimatePanel, animatableChannels } from './AnimatePanel'
 
-type Tab = 'transform' | 'crop' | 'style'
+type Tab = 'transform' | 'crop' | 'style' | 'animate'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'transform', label: 'Transform' },
   { id: 'crop', label: 'Crop' },
   { id: 'style', label: 'Style' },
+  { id: 'animate', label: 'Animate' },
 ]
 
 const SPEED_PRESETS = [0.5, 1, 1.5, 2, 4]
@@ -101,14 +104,20 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
     [contentW, contentH, crop.width, crop.height, stage.width, stage.height],
   )
 
-  const tf = mergeTransform(effective, containBase)
-  const setTf = (patch: Partial<ReturnType<typeof mergeTransform>>) =>
-    setLocal((p) => ({ ...p, transform: { ...mergeTransform(effective, containBase), ...patch } }))
-  const commitTf = () => commit({ transform: mergeTransform(effective, containBase) })
-  /** Write a transform patch straight through — for buttons, which have no
-   *  type-then-blur phase to defer the commit to. */
-  const commitTfPatch = (patch: Partial<ReturnType<typeof mergeTransform>>) =>
-    commit({ transform: { ...mergeTransform(effective, containBase), ...patch } })
+  // Keyframe-aware display and commit. `containBase` doubles as the baseline the
+  // first transform key bakes onto the clip, so the panel, the preview handles
+  // and the keyframes agree on what "untouched" means.
+  const kfCtx: BaselineContext = {
+    stage,
+    content: asset?.width && asset?.height ? { width: contentW, height: contentH } : undefined,
+  }
+  const { tf, setTf, commitTf, commitTfPatch, scalar, commitScalar, diamond } = useKeyframeEditing(
+    clip,
+    local,
+    setLocal,
+    kfCtx,
+    containBase,
+  )
 
   const setWidthPct = (v: number) => {
     const scaleX = v / 100
@@ -155,7 +164,10 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
         {tab === 'transform' && (
           <>
             <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
-              <Field label="Width">
+              <Field
+                label="Width"
+                action={diamond('Size', ['scaleX', 'scaleY'], { scaleX: tf.scaleX, scaleY: tf.scaleY })}
+              >
                 <NumberField
                   value={Math.round(tf.scaleX * 100)}
                   step={1}
@@ -185,7 +197,7 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Position X">
+              <Field label="Position X" action={diamond('Position', ['x', 'y'], { x: tf.x, y: tf.y })}>
                 <NumberField
                   value={Math.round(tf.x * 100)}
                   step={1}
@@ -204,7 +216,7 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
                 />
               </Field>
             </div>
-            <Field label="Rotate">
+            <Field label="Rotate" action={diamond('Rotation', ['rotation'], { rotation: tf.rotation })}>
               {/* Quarter turns first — the reason anyone opens this row is a
                   clip that came in sideways, and that is one click, not a
                   typed angle. The number field below stays for the in-between
@@ -239,12 +251,13 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
             </Field>
             <SliderRow
               label="Corner radius"
-              value={effective.cornerRadius ?? 0}
-              display={(effective.cornerRadius ?? 0) >= 0.5 ? 'Circle' : `${Math.round((effective.cornerRadius ?? 0) * 200)}%`}
+              action={diamond('Corner radius', ['cornerRadius'], { cornerRadius: scalar('cornerRadius', 0) })}
+              value={scalar('cornerRadius', 0)}
+              display={scalar('cornerRadius', 0) >= 0.5 ? 'Circle' : `${Math.round(scalar('cornerRadius', 0) * 200)}%`}
               min={0}
               max={0.5}
               step={0.01}
-              onChange={(v) => commit({ cornerRadius: v })}
+              onChange={(v) => commitScalar('cornerRadius', v)}
             />
           </>
         )}
@@ -311,12 +324,13 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
           <>
             <SliderRow
               label="Opacity"
-              value={effective.opacity ?? 1}
-              display={`${Math.round((effective.opacity ?? 1) * 100)}%`}
+              action={diamond('Opacity', ['opacity'], { opacity: scalar('opacity', 1) })}
+              value={scalar('opacity', 1)}
+              display={`${Math.round(scalar('opacity', 1) * 100)}%`}
               min={0}
               max={1}
               step={0.01}
-              onChange={(v) => commit({ opacity: v })}
+              onChange={(v) => commitScalar('opacity', v)}
             />
             {/* Video only — audio clips (separate panel) and image clips (no
                 source timeline to speed through) don't get a speed control. */}
@@ -341,6 +355,10 @@ export function VideoClipProperties({ clip }: { clip: Clip }) {
               </Field>
             )}
           </>
+        )}
+
+        {tab === 'animate' && (
+          <AnimatePanel clip={clip} ctx={kfCtx} channels={animatableChannels(clip)} />
         )}
       </div>
     </div>

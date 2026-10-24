@@ -1,0 +1,157 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Elah: programmatic video",
+  "source": {
+    "kind": "spec",
+    "spec": {
+      "version": 1,
+      "title": "Elah: programmatic video",
+      "format": { "width": 1920, "height": 1080, "fps": 30 },
+      "duration": 18,
+      "background": "$bg",
+      "design": {
+        "colors": [
+          { "name": "bg", "value": "#0a0d14" },
+          { "name": "ink", "value": "#f5f7fb" },
+          { "name": "muted", "value": "#8a93a6" },
+          { "name": "accent", "value": "#7c5cff" },
+          { "name": "accentSoft", "value": "#2b2357" },
+          { "name": "surface", "value": "#151a26" }
+        ],
+        "fonts": [
+          { "role": "sans", "font": "inter" },
+          { "role": "serif", "font": "playfair-display" },
+          { "role": "display", "font": "space-grotesk" },
+          { "role": "mono", "font": "roboto-mono" }
+        ]
+      },
+      "motion": { "energy": "bold", "ambient": "grid", "transition": "wipe" },
+      "elements": [
+        {
+          "id": "hook",
+          "kind": "component",
+          "component": "kinetic-title",
+          "at": 0,
+          "duration": 3.2,
+          "text": "Video, written as data.",
+          "emphasis": ["data."],
+          "sub": "Introducing the Elah programmatic layer"
+        },
+        {
+          "id": "code",
+          "kind": "text",
+          "at": 3.2,
+          "duration": 3.4,
+          "text": "{ \"kind\": \"text\", \"enter\": \"pop-in\" }",
+          "font": "$mono",
+          "size": 56,
+          "color": "$ink",
+          "x": 0.5,
+          "y": 0.4,
+          "reveal": { "preset": "typewriter", "duration": 1.2 },
+          "exit": "blur-out"
+        },
+        {
+          "id": "code-caption",
+          "kind": "text",
+          "at": 4.4,
+          "duration": 2.2,
+          "text": "Describe the motion. Elah plays it.",
+          "font": "$sans",
+          "size": 48,
+          "color": "$muted",
+          "x": 0.5,
+          "y": 0.6,
+          "enter": "slide-in-up",
+          "exit": "fade-out"
+        },
+        {
+          "id": "key-dot",
+          "kind": "shape",
+          "shape": "circle",
+          "at": 3.4,
+          "duration": 3.2,
+          "w": 44,
+          "h": 44,
+          "fill": "$accent",
+          "x": 0.2,
+          "y": 0.75,
+          "keys": [
+            { "channel": "x", "at": 0, "value": 0.2 },
+            { "channel": "x", "at": 1.2, "value": 0.5, "curve": "overshoot" },
+            { "channel": "x", "at": 2.4, "value": 0.8, "curve": "spring:bouncy" },
+            { "channel": "scale", "at": 0, "value": 0.6 },
+            { "channel": "scale", "at": 1.2, "value": 1.4, "curve": "back-out" },
+            { "channel": "scale", "at": 2.4, "value": 1, "curve": "cubic-out" }
+          ],
+          "exit": "pop-out"
+        },
+        {
+          "id": "track",
+          "kind": "shape",
+          "shape": "line",
+          "at": 3.3,
+          "duration": 3.3,
+          "w": 1152,
+          "h": 2,
+          "stroke": "$muted",
+          "strokeWidth": 3,
+          "x": 0.5,
+          "y": 0.75,
+          "draw": { "duration": 0.8, "curve": "cubic-out" },
+          "exit": "fade-out"
+        },
+        {
+          "id": "vocab",
+          "kind": "component",
+          "component": "chip-cloud",
+          "at": 6.6,
+          "duration": 3.4,
+          "items": [
+            { "text": "Keyframes", "style": "filled" },
+            { "text": "Easing curves", "style": "outline" },
+            { "text": "Springs", "style": "filled" },
+            { "text": "Expressions", "style": "outline" },
+            { "text": "Motion presets", "style": "outline" },
+            { "text": "Effects", "style": "filled" }
+          ]
+        },
+        {
+          "id": "flow",
+          "kind": "component",
+          "component": "checklist",
+          "at": 10,
+          "duration": 3.6,
+          "x": 0.6,
+          "y": 0.5,
+          "w": 1200,
+          "h": 640,
+          "items": [
+            { "text": "Write a VideoSpec or an HTML/CSS scene" },
+            { "text": "Bind keyframes to any property" },
+            { "text": "Preview and edit in the browser" },
+            { "text": "Export MP4" }
+          ]
+        },
+        {
+          "id": "break",
+          "kind": "component",
+          "component": "section-break",
+          "at": 13.6,
+          "duration": 0.9,
+          "text": "Open source"
+        },
+        {
+          "id": "outro",
+          "kind": "component",
+          "component": "logo-outro",
+          "at": 14.5,
+          "duration": 3.5,
+          "text": "elah",
+          "sub": "Programmatic video. Open source."
+        }
+      ]
+    }
+  }
+}

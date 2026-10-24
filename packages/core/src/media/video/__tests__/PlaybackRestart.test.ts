@@ -5,7 +5,6 @@
  * mocked decoder. After each full cycle the TexturePool leased count must
  * return to its initial baseline (no leaked texture handles).
  *
- * @see EVOLUTION.md § 7 Extension Seams (playback lifecycle)
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'

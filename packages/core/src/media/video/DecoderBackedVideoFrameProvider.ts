@@ -14,14 +14,13 @@
  *  - All public methods are called on the main thread (render tick or VideoLayer).
  *  - VideoDecoderManager callbacks (onDecodeLatency, onDroppedFrame) fire from
  *    within await continuations, which are microtasks on the main thread.
- *  - No cross-thread access. Worker migration seam: S10 in EVOLUTION.md § 7.
+ *  - No cross-thread access. Worker migration seam: S10.
  *
  * Ownership flow:
  *   VideoDecoder.output → VideoDecoderManager.requestFrame() resolves →
  *   cache.put(n, frame) → FrameCache owns → getCurrent borrows →
  *   VideoTexture.upload closes in finally.
  *
- * @see EVOLUTION.md § 4 Phase 1
  * @see architecture.md § 6 (async frame pipeline)
  *
  * @deprecated Replaced by StreamingFrameProducer (PR-02). Kept for one release
@@ -33,6 +32,7 @@ import { GpuDebugCounters } from '../../renderer/gpu/debug/GpuDebugCounters'
 import type { VideoFrameProvider } from './VideoFrameProvider'
 import { VideoDecoderManager } from './VideoDecoderManager'
 import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
+import type { VideoRotation } from './rotation'
 import type { VideoDecoderFactory } from './VideoDecoderManager'
 
 const DEFAULT_MAX_OUTSTANDING = 4
@@ -239,6 +239,11 @@ export class DecoderBackedVideoFrameProvider implements VideoFrameProvider {
   /** Underlying decoder state (for diagnostics and debug panel). */
   get decoderState(): string {
     return this._manager.state
+  }
+
+  /** Source rotation of the clip (0 until the container has opened). */
+  get rotation(): VideoRotation {
+    return this._manager.rotation
   }
 
   /** Open error, if any. null if open succeeded or is still in progress. */

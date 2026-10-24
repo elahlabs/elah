@@ -17,6 +17,8 @@
  *  - clear (tag)
  *  - useProgram (tag)
  *  - bindVertexArray (tag)
+ *  - bindFramebuffer / viewport / enable / disable (effect chain, EDX-P2)
+ *  - uniform3f / uniform4f
  *
  * All other WebGL2 methods are stubs that return sensible defaults so the
  * renderer initialises without errors.
@@ -27,7 +29,6 @@
  *   const hash = await gl.digest()
  *
  * @see GoldenFrameHash.test.ts
- * @see EVOLUTION.md § 4 Phase 1 (Deterministic validation harness)
  *
  * NOT for production use. Import only in test files.
  */
@@ -44,6 +45,11 @@ const enum Tag {
   BindVertexArray = 0x08,
   BindTexture = 0x09,
   TexParameteri = 0x0a,
+  BindFramebuffer = 0x0b,
+  Viewport = 0x0c,
+  Capability = 0x0d,
+  Uniform3f = 0x0e,
+  Uniform4f = 0x0f,
 }
 
 export class RecordingGl {
@@ -56,6 +62,9 @@ export class RecordingGl {
   private _boundVao = 0
   private _activeTexture = 0
   private _boundTextures = new Map<number, number>()
+  private _boundFramebuffer: WebGLFramebuffer | null = null
+  private _viewport: [number, number, number, number] = [0, 0, 0, 0]
+  private _clearColor: [number, number, number, number] = [0, 0, 0, 0]
 
   // ---------------------------------------------------------------------------
   // Log accessors
@@ -77,6 +86,9 @@ export class RecordingGl {
     this._boundVao = 0
     this._activeTexture = 0
     this._boundTextures.clear()
+    this._boundFramebuffer = null
+    this._viewport = [0, 0, 0, 0]
+    this._clearColor = [0, 0, 0, 0]
     this._nameMap.clear()
     this._nameCounter = 1
   }
@@ -162,6 +174,49 @@ export class RecordingGl {
     this._writeUint32(this._locationId(location))
     this._writeFloat32(x)
     this._writeFloat32(y)
+  }
+
+  uniform3f(location: WebGLUniformLocation | null, x: number, y: number, z: number): void {
+    this._write([Tag.Uniform3f])
+    this._writeUint32(this._locationId(location))
+    this._writeFloat32(x)
+    this._writeFloat32(y)
+    this._writeFloat32(z)
+  }
+
+  uniform4f(location: WebGLUniformLocation | null, x: number, y: number, z: number, w: number): void {
+    this._write([Tag.Uniform4f])
+    this._writeUint32(this._locationId(location))
+    this._writeFloat32(x)
+    this._writeFloat32(y)
+    this._writeFloat32(z)
+    this._writeFloat32(w)
+  }
+
+  bindFramebuffer(_target: number, framebuffer: WebGLFramebuffer | null): void {
+    this._write([Tag.BindFramebuffer])
+    const id = framebuffer ? (framebuffer as unknown as { _id: number })._id ?? 0 : 0
+    this._writeUint32(id)
+    this._boundFramebuffer = framebuffer
+  }
+
+  viewport(x: number, y: number, width: number, height: number): void {
+    this._write([Tag.Viewport])
+    this._writeUint32(x)
+    this._writeUint32(y)
+    this._writeUint32(width)
+    this._writeUint32(height)
+    this._viewport = [x, y, width, height]
+  }
+
+  enable(cap: number): void {
+    this._write([Tag.Capability, 0x01])
+    this._writeUint32(cap)
+  }
+
+  disable(cap: number): void {
+    this._write([Tag.Capability, 0x00])
+    this._writeUint32(cap)
   }
 
   clear(_mask: number): void {
@@ -259,9 +314,36 @@ export class RecordingGl {
   bindBuffer(_target: number, _buffer: WebGLBuffer | null): void {}
   bufferData(_target: number, _data: unknown, _usage: number): void {}
 
-  viewport(_x: number, _y: number, _width: number, _height: number): void {}
-  clearColor(_r: number, _g: number, _b: number, _a: number): void {}
-  enable(_cap: number): void {}
+  clearColor(r: number, g: number, b: number, a: number): void {
+    this._clearColor = [r, g, b, a]
+  }
+
+  createFramebuffer(): WebGLFramebuffer {
+    return this._makeHandle()
+  }
+
+  deleteFramebuffer(_fb: WebGLFramebuffer | null): void {}
+  framebufferTexture2D(
+    _target: number, _attachment: number, _textarget: number,
+    _texture: WebGLTexture | null, _level: number,
+  ): void {}
+  checkFramebufferStatus(_target: number): number { return this.FRAMEBUFFER_COMPLETE }
+
+  /** The few parameters the effect chain saves and restores. */
+  getParameter(pname: number): unknown {
+    switch (pname) {
+      case this.VIEWPORT: return new Int32Array(this._viewport)
+      case this.COLOR_CLEAR_VALUE: return new Float32Array(this._clearColor)
+      case this.FRAMEBUFFER_BINDING: return this._boundFramebuffer
+      case this.TEXTURE_BINDING_2D: return null
+      default: return null
+    }
+  }
+  blendFunc(_src: number, _dst: number): void {}
+  copyTexSubImage2D(
+    _target: number, _level: number, _xoff: number, _yoff: number,
+    _x: number, _y: number, _w: number, _h: number,
+  ): void {}
   blendFuncSeparate(
     _srcRGB: number, _dstRGB: number,
     _srcAlpha: number, _dstAlpha: number,
@@ -282,6 +364,7 @@ export class RecordingGl {
   readonly FLOAT = 0x1406
   readonly UNSIGNED_BYTE = 0x1401
   readonly RGBA = 0x1908
+  readonly RGB = 0x1907
   readonly COLOR_BUFFER_BIT = 0x4000
   readonly VERTEX_SHADER = 0x8b31
   readonly FRAGMENT_SHADER = 0x8b30
@@ -291,6 +374,8 @@ export class RecordingGl {
   readonly TEXTURE_MIN_FILTER = 0x2801
   readonly TEXTURE_MAG_FILTER = 0x2800
   readonly LINEAR = 0x2601
+  readonly NEAREST = 0x2600
+  readonly TEXTURE1 = 0x84c1
   readonly TEXTURE_WRAP_S = 0x2802
   readonly TEXTURE_WRAP_T = 0x2803
   readonly CLAMP_TO_EDGE = 0x812f
@@ -299,6 +384,13 @@ export class RecordingGl {
   readonly ONE_MINUS_SRC_ALPHA = 0x0303
   readonly SRC_ALPHA = 0x0302
   readonly UNPACK_FLIP_Y_WEBGL = 0x9240
+  readonly FRAMEBUFFER = 0x8d40
+  readonly COLOR_ATTACHMENT0 = 0x8ce0
+  readonly FRAMEBUFFER_COMPLETE = 0x8cd5
+  readonly FRAMEBUFFER_BINDING = 0x8ca6
+  readonly TEXTURE_BINDING_2D = 0x8069
+  readonly VIEWPORT = 0x0ba2
+  readonly COLOR_CLEAR_VALUE = 0x0c22
 
   // ---------------------------------------------------------------------------
   // Private helpers

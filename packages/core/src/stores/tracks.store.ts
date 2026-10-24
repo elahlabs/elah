@@ -17,16 +17,19 @@ export interface TracksActions {
 }
 
 /**
- * Vanilla Zustand store that mirrors engine project state for UI consumers.
+ * Vanilla Zustand store mirroring engine project state (Ring 1).
  *
- * React components subscribe via `useTracksStore` from @elah/react with
- * granular selectors — only the slice they need. A trim on track 3 never
- * re-renders a component subscribed to track 7.
+ * Framework-agnostic on purpose: the React binding binds this into the
+ * `useTracksStore` hook, so components subscribe with granular selectors —
+ * only the slice they need. A trim on track 3 never re-renders a component
+ * subscribed to track 7. Non-React callers use `.getState()` directly.
  *
  * @example
  * ```ts
- * const tracks = useTracksStore(s => s.tracks)          // React (@elah/react)
- * const clips  = tracksStore.getState().clips[trackId]  // imperative
+ * // React (via the React binding)
+ * const tracks = useTracksStore(s => s.tracks)
+ * // Anywhere
+ * const tracks = tracksStore.getState().tracks
  * ```
  */
 export const tracksStore = createStore<TracksState & TracksActions>()((set) => ({

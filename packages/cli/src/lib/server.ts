@@ -154,6 +154,22 @@ export function rewriteSpecifiers(source: string, vendors: Map<string, VendorEnt
 }
 
 /**
+ * Inline `process.env.NODE_ENV` as `"production"`, as a bundler's `define`
+ * does. Served raw to the browser, a module that reads it (immer's ESM build,
+ * which the converged core's export graph imports) throws "process is not
+ * defined" before the export starts.
+ */
+export function defineNodeEnv(source: string): string {
+  return source.replace(/\bprocess\.env\.NODE_ENV\b/g, '"production"')
+}
+
+/** Served modules (as opposed to media or other assets). */
+function isScriptFile(file: string): boolean {
+  const ext = extname(file).toLowerCase()
+  return ext === '.js' || ext === '.mjs'
+}
+
+/**
  * Resolve a /core/* request against core's dist, tolerating the module-URL
  * quirks of tsc's bundler-resolution output: extensionless relative imports
  * and the literal `./ExportWorker.ts` worker URL that ships in dist.
@@ -168,8 +184,26 @@ export function resolveDistFile(distRoot: string, urlPath: string): string | und
     candidates.push(`${requested}.js`, join(requested, 'index.js'))
   } else if (requested.endsWith('.ts')) {
     candidates.push(requested.replace(/\.ts$/, '.js'))
+  } else if (!requested.endsWith('.js')) {
+    // A dotted module name compiled to `<name>.js` (`./shaders/quad.frag`).
+    candidates.push(`${requested}.js`)
   }
   return candidates.find((c) => existsSync(c) && statSync(c).isFile())
+}
+
+/**
+ * True when `resolveDistFile` answered `urlPath` with a directory's
+ * `index.js`. The browser must then be redirected to that file's own URL:
+ * a module's relative imports resolve against its response URL, so serving
+ * `effects/index.js` at `/core/x/effects` would send `./blur` to `/core/x/blur`.
+ */
+export function isDirectoryIndex(distRoot: string, urlPath: string, file: string): boolean {
+  return file === join(normalize(join(distRoot, urlPath)), 'index.js')
+}
+
+/** The URL of a directory request's `index.js`, keeping the query string. */
+function indexUrl(path: string, search: string): string {
+  return `${path.replace(/\/+$/, '')}/index.js${search}`
 }
 
 export async function startHarnessServer(args: HarnessServerArgs): Promise<HarnessServer> {
@@ -237,16 +271,22 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     }
 
     if (path.startsWith('/core/')) {
-      const file = resolveDistFile(coreDist, path.slice('/core/'.length))
+      const sub = path.slice('/core/'.length)
+      const file = resolveDistFile(coreDist, sub)
       if (!file) {
         log(`404 (core dist miss): ${path}`)
         res.writeHead(404)
         res.end()
         return
       }
+      if (isDirectoryIndex(coreDist, sub, file)) {
+        res.writeHead(302, { location: indexUrl(path, url.search) })
+        res.end()
+        return
+      }
       const source = readFileSync(file, 'utf8')
       res.writeHead(200, { 'content-type': 'text/javascript' })
-      res.end(rewriteSpecifiers(source, vendors))
+      res.end(defineNodeEnv(rewriteSpecifiers(source, vendors)))
       return
     }
 
@@ -266,6 +306,16 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
         log(`404 (vendor miss): ${path}`)
         res.writeHead(404)
         res.end()
+        return
+      }
+      if (isDirectoryIndex(vendor.root, rel, file)) {
+        res.writeHead(302, { location: indexUrl(path, url.search) })
+        res.end()
+        return
+      }
+      if (isScriptFile(file)) {
+        res.writeHead(200, { 'content-type': 'text/javascript' })
+        res.end(defineNodeEnv(readFileSync(file, 'utf8')))
         return
       }
       serveLocalFile(req, res, file)

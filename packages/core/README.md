@@ -7,7 +7,6 @@ Used internally by `@elah/react`, `@elah/timeline`, and `@elah/editor`, but can 
 React hooks are **not** in this package — they live in [`@elah/react`](https://www.npmjs.com/package/@elah/react), which wraps the stores below for component use.
 
 [![npm](https://img.shields.io/npm/v/@elah/core)](https://www.npmjs.com/package/@elah/core)
-[![gzip size](https://img.shields.io/badge/gzip-~41%20KiB-brightgreen)](../../BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
@@ -18,7 +17,9 @@ React hooks are **not** in this package — they live in [`@elah/react`](https:/
 npm install @elah/core
 ```
 
-**Bundle size:** ~41 KiB gzipped, minified and tree-shaken (an engine-only app starts at ~11 KiB). Runtime deps: `immer` (~5 KiB gz), `zustand` (~3 KiB gz), and `mediabunny` (~159 KiB gz), which the demuxer and export worker load lazily on first decode or export — except through `createDefaultDemuxerFactory`, which imports it statically. See [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) for the measured shapes.
+**Package size:** about 1.2 MB as an npm tarball (3.0 MB unpacked), of which roughly half is the bundled fonts, which load only if you opt in (see [Fonts](#fonts-and-loading-from-a-cdn)). The code is tree-shakeable (`sideEffects: false`); import `@elah/core/engine` if you do not need the renderer or the codec. Runtime deps: `immer`, `zustand` and `mediabunny` (`^1.50.8`), which the demuxer and export worker load lazily on first decode or export, except through `createDefaultDemuxerFactory`, which imports it statically. What a real app downloads (esbuild, minified, gzipped; React, lucide-react and mediabunny external): an editor app (`EditorProvider`, `Preview`, `Timeline` from `@elah/editor`) is about **112 KiB gz**, up from 68 KiB in 0.6.0 (it was 133 KiB before effects, generators, sequence clips, roto masks and audio Enhance became chunks that load on first use; `prepareFeatures(project)` loads a project's features up front). The engine alone (`TimelineEngine`, `resolveTimeline`) is about 45 KiB gz, and engine plus `GpuRenderer` and `exportVideo` about 75 KiB gz. The experimental layers below cost an app that does not import them nothing. [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) explains how bundle size is measured (`node scripts/measure-bundle.mjs`) and what is left in startup.
+
+**Stability (1.0.0):** the exports of the root entry and of `@elah/core/engine` follow semver. Three AI-facing layers are **experimental** and may change in a minor release. They are not exported from the root; import them from their own entries: `@elah/core/spec` (VideoSpec, components, systems, `specVocabulary`), `@elah/core/html` (HTML/CSS scene conversion), `@elah/core/ops` (the op vocabulary and `describe*` helpers) and `@elah/core/icons` (the vendored icon set). Each is marked where it appears below. A project is written as document version 1 to 5 (see [Save and restore](#save-and-restore)); 0.6.x cannot open a document that uses the newer clip types.
 
 ---
 
@@ -49,7 +50,18 @@ npm install @elah/core
 | `snapshotMediaLibrary` / `hydrateMediaLibrary` | Turn the media library into storable entries and put them back (ids kept) after a page load; storage is yours |
 | `sourceBlobCache` | Shared cache that de-duplicates video downloads between the demuxer and preview |
 | `PerfSummary` | Once-a-second render-loop cost summary; silent unless the `PERF` trace channel is on |
-| `exportVideo` | Export the timeline to MP4 via a web worker |
+| `exportVideo` | Export the timeline via a web worker: MP4 (default), WebM, GIF or a PNG sequence |
+| `Clip.keyframes`, `TEXT_ANIMATION_EASINGS`, `SPRING_PRESETS`, `MOTION_PRESETS` | The motion layer: keyframes on every transform channel, 31 named eases plus cubic-bezier, steps and springs, stagger, motion paths, text animators, scramble, repeat/yoyo, skew, 3D tilt (see [Motion](#motion-keyframes-springs-stagger-paths)) |
+| `createGenerator`, `GENERATOR_REGISTRY` | Generator clips: particles, energy lines, light leak, lens flare, gradient background, counter, bar chart, progress bar |
+| `EFFECT_REGISTRY`, `EFFECT_BUNDLES` | 23 GPU effects, bundles and looks; `adjustment` clips apply them to everything beneath |
+| `TRANSITION_REGISTRY` | The nine transitions, in picker order |
+| `createCompoundClip`, `nestClips`, `createSequenceClip` | Compound clips (a nested project as one clip) and sequence clips (animated image or numbered frames) |
+| `Clip.audio`, `clipAudioGain`, `enhancePlan` | Mute, boost, fades and Enhance; one envelope for preview and export |
+| `svgToProject`, `lottieToClip` | Import SVG and Lottie as editable clips and keys |
+| `validateScene`, `sceneToClip` (from `@elah/core/html`) | **Experimental.** HTML/CSS scene subset: validate, then convert a measured scene to one compound clip |
+| `compileVideoSpec`, `buildVideo`, `layProject`, `specVocabulary` (from `@elah/core/spec`) | **Experimental.** VideoSpec: a seconds-based JSON document a model writes, compiled to a `Project` |
+| `applyOps`, `sanitizeOps`, `EDITOR_OP_NAMES`, `describeProject` (from `@elah/core/ops`) | **Experimental.** 57 typed editor ops for a model to edit a project |
+| `packageFontsBaseUrl` | Where the package's own copies of the 12 bundled fonts live (opt-in) |
 
 These stores are **vanilla** (`zustand/vanilla`) — no React, subscribable from anywhere (`store.getState()`, `store.subscribe()`). They are also **module-level singletons**: one `tracksStore`, one `playbackStore`, etc. per JS realm. `@elah/editor`'s `<EditorProvider>` wires each `TimelineEngine`/`PlaybackEngine` instance it creates into these same shared stores, so only **one active project per page** is supported today — mounting two `<EditorProvider>` (or two manually-wired engines) at once will have them overwrite each other's state in the stores. Multiple independent editors on one page need separate tabs/iframes/windows until scoped stores land.
 
@@ -97,7 +109,10 @@ Both entries share module instances, so `tracksStore` from either is the same ob
 `readProjectDocument` is the total reader: it returns a `Project` or throws
 `ProjectDocumentError` (`code: 'unreadable' | 'unsupported-version'`), never half a
 project. A document with no `version` stamp reads as version 1; one from a newer
-build (`PROJECT_VERSION`) is refused.
+build (`PROJECT_VERSION`, now 5) is refused. A project is stamped with the *lowest* version that can
+hold what it uses: 2 for `adjustment` clips; 3 for generators, shape draw-on and the six newer
+transitions; 4 for compound clips; 5 for sequence clips. A project that uses none of them is still
+version 1 and opens in 0.6.x.
 
 ```ts
 import {
@@ -141,8 +156,7 @@ cleared. `TextAnimation` keeps the single-kind `in`/`out` enum and adds `inMotio
 Two things a template carries are **data only**: `stagger` (split a line into clips that
 enter one after another) and `tracking` (fake letterspacing). `applyTextTemplate` ignores
 them and nothing in these packages runs them; a host that wants either builds it from the
-template itself. Rotation is text-only: the shape renderers do not apply `transform.rotation`,
-so `spin` (and a `rotation` channel in a `MotionSpec`) has no visible effect on a shape clip.
+template itself.
 
 ---
 
@@ -152,9 +166,120 @@ so `spin` (and a `rotation` channel in a `MotionSpec`) has no visible effect on 
 engine.addTransition({ fromClipId, toClipId, trackId, kind: 'slide', durationFrames: 12, direction: 'left' })
 ```
 
-`kind` is `'fade' | 'slide' | 'wipe'`; all three are implemented in preview and in export.
-`slide` moves left when `direction` is `'left'` and right for anything else; `wipe` ignores
-`direction`. `TransitionDirection` also types `'up'` and `'down'`, but neither is implemented.
+`kind` is one of nine: `'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'`
+(`TRANSITION_REGISTRY` lists them with a label and hint). `slide` and `whip` take a `direction`
+(`'left' | 'right' | 'up' | 'down'`, default right); the others ignore it. The resolver keeps both
+clips in the scene and lists the transition in `scene.transitions` with its eased progress; the
+WebGL2 renderer composites the pair with one shader, so both clips keep playing with their effects, in
+preview and in export. A project that uses only `fade`, `wipe` and `slide` still exports in a runtime whose worker
+has no WebGL2 (a 2D snapshot path, left/right slide only); a project that uses any other kind needs WebGL2 in the
+worker, and its export fails fast without it. Using any kind beyond the first three stamps the project as
+document version 3.
+
+---
+
+## Motion: keyframes, springs, stagger, paths
+
+Animation is data on the clip. Keyframe frames are integers **relative to the clip's start**, so moving
+a clip moves its keys; trim, speed and split remap them for you.
+
+```ts
+engine.updateClip(title.id, trackId, {
+  keyframes: {
+    channels: {
+      x: {
+        source: { kind: 'keyframes' },
+        keys: [
+          { id: 'k0', frame: 0, value: 0.2, easing: 'linear' },
+          { id: 'k1', frame: 30, value: 0.8, easing: 'back-out' }, // the curve INTO this key
+        ],
+      },
+    },
+  },
+})
+```
+
+A key's `easing` is one of `TEXT_ANIMATION_EASINGS` (sine, quad, cubic, quart, quint, expo, circ,
+back, elastic and bounce, each in / out / in-out, and `linear`). A key can instead carry a raw
+`easingBezier`, `steps` (a staircase), `hold`, or a closed-form `spring` (`SPRING_PRESETS`: gentle,
+snappy, bouncy, stiff, wobbly). The pure helpers that write keys (`setKeysEasingAtFrame`,
+`moveKeysAtFrame`, `repeatKeysPatch` for repeat and yoyo, `staggerOffsets` for stagger from the start,
+end, centre, edges or at random and across a grid, `scrambleText`) and the 36 `MOTION_PRESETS` are public.
+Colour and path channels are keyable too, and `setChannelExpression` drives a channel from an
+expression (`wiggle`, `loop`, `sin`, and so on).
+
+Skew (`skewX`, `skewY`) is a keyable channel. 3D tilt (`rotateX`, `rotateY`) works on video, image,
+sequence and compound clips and is refused on text, shapes and freehand. A clip can also travel a path
+(the `motion.progress` channel). The one-line `data-motion` grammar that the HTML scene layer reads
+is built from the same keys.
+
+---
+
+## New clip types, effects and generators
+
+```ts
+import { createGenerator } from '@elah/core'
+
+const confetti = engine.addClip({
+  trackId, type: 'generator', name: 'Confetti', startFrame: 0, durationFrames: 90,
+  generator: createGenerator('particles', { count: 80 }),
+})
+const grade = engine.addClip({ trackId: overlayTrackId, type: 'adjustment', name: 'Grade', startFrame: 0, durationFrames: 90 })
+```
+
+- **`adjustment`**: no picture of its own; its effects, mask and blend apply to everything composited beneath it.
+- **`generator`**: eight built in (`GENERATOR_REGISTRY`).
+- **`compound`**: a nested project played as one clip (`createCompoundClip`; `engine.nestClips` / `unnestClip` turn a selection into one and back; nesting is capped at `MAX_COMPOUND_DEPTH`).
+- **`sequence`**: an animated image or a numbered frame set, picked by frame index so preview and export show the same frame.
+
+Effects are 23 GPU passes (`EFFECT_REGISTRY`: colour grade, gaussian blur, vignette, grain, RGB split,
+bloom, glow, lens and wave distortions, VHS, CRT, glitch, pixelate, motion blur and more), with
+`EFFECT_BUNDLES` as one-click looks, plus masks, track mattes and blend modes. Using these raises the
+document version (see [Save and restore](#save-and-restore)). `@elah/editor` plays, saves and exports
+these clips; it has no editing UI for them yet.
+
+---
+
+## Scenes and VideoSpec for models (experimental)
+
+Two ways for a model to write a video that lands as ordinary, editable clips. Both are
+**experimental**: the vocabulary may change in a minor release.
+
+- **HTML/CSS scenes** (`import { validateScene, sceneToClip } from '@elah/core/html'`): the model writes an HTML fragment and a stylesheet in a whitelisted subset.
+  `validateScene({ html, css })` returns violations that name the supported substitute.
+  `sceneToClip(measuredScene, { fps })` converts a browser-**measured** scene (boxes, line breaks
+  and resolved styles) into one compound clip of native clips and keys. Measuring is the host's job;
+  this package ships no DOM measurer.
+- **VideoSpec** (`from '@elah/core/spec'`): a seconds-based JSON document. `compileVideoSpec(spec)` returns `{ project, issues }`
+  and never throws; `buildVideo(authoredSpec)` also expands components and polishes;
+  `layProject(engine, project)` lays the result onto a live engine as one undo step;
+  `specVocabulary()` renders the vocabulary block for a prompt.
+
+Worked, tested examples of both are in
+[`docs/ai/ELAH_FOR_AI_AGENTS.md`](https://github.com/elahlabs/elah/blob/main/docs/ai/ELAH_FOR_AI_AGENTS.md#11-writing-videos-and-scenes-with-a-model).
+Edits go through typed ops (`from '@elah/core/ops'`): `sanitizeOps(raw, project)` repairs a model's op list and `applyOps(engine, ops)`
+applies it as one undo step.
+
+---
+
+## Fonts and loading from a CDN
+
+Text clips name one of 12 bundled families (`FONT_REGISTRY`: Inter, Montserrat, Poppins, Space Grotesk,
+Playfair Display, DM Serif Display, Bebas Neue, Anton, Oswald, Archivo Black, Roboto Mono, Caveat; Latin
+subset only, SIL OFL 1.1). The default is to load them from `/fonts/` on **your** host. The woff2 files ship
+in this package under `fonts/<id>/`, so either copy that folder to your public `fonts/` directory, or, for an
+unbundled import (a CDN, a native-ESM dev server), point the loader at the package itself:
+
+```ts
+import { exportVideo, packageFontsBaseUrl } from '@elah/core'
+
+await exportVideo(project, { fonts: { baseUrl: packageFontsBaseUrl() } })
+```
+
+The export, audio-analysis and capability-probe workers start from a cross-origin module URL through a
+blob module worker (jsDelivr's `/+esm` build included); bundled hosts take the ordinary
+`new Worker(new URL(...))` path. Use `packageFontsBaseUrl()` only for an unbundled import: a bundler rewrites
+`import.meta.url`.
 
 ---
 
@@ -261,6 +386,11 @@ const blob = await exportVideo(engine.getProject(), {
 
 `outputHeight` is the stage's *short* edge (`1080` = 1920×1080 or 1080×1920); the other
 edge follows the aspect ratio and is rounded to an even number, as codecs require.
+
+`container` picks the output: `'mp4'` (default), `'webm'` (add `transparent: true` for an alpha channel, accepted only where the
+browser's own encode-and-decode check passes), `'gif'` (`gifFps`, default 15, no audio) or `'png-sequence'` (a ZIP, or your own
+`frameSink`). `videoCodec` is `'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8'` where the browser can encode it, and
+`range: 'inOut'` exports only the marked in/out range. Export needs WebCodecs and `OffscreenCanvas`: in practice Chrome or Edge.
 
 ---
 

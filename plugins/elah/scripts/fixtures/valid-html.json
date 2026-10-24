@@ -1,0 +1,6 @@
+{
+  "format": "elah-input", "version": 1, "title": "Stat",
+  "source": { "kind": "html", "durationSeconds": 4, "stage": { "width": 1080, "height": 1920 }, "fps": 30,
+    "html": "<section id=\"card\"><h1 id=\"big\" data-motion=\"in: slide-in-up 0.4s overshoot @0.2\">72%</h1><p id=\"label\">of attacks start on free Wi-Fi</p></section>",
+    "css": "#card { width: 1080px; height: 1920px; background: #0b1020 } #big { position: absolute; left: 80px; top: 800px; width: 900px; font-family: bebas-neue; font-size: 220px; color: #ffffff } #label { position: absolute; left: 80px; top: 1040px; width: 900px; font-family: inter; font-size: 48px; color: #9aa4b2 }" }
+}

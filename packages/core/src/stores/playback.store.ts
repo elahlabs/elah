@@ -97,7 +97,7 @@ function readPersistedPrefs(): Partial<PersistedPrefs> {
 
 /**
  * Transport mirror (Ring 1). Vanilla so core stays React-free;
- * `@elah/react` binds it into the `usePlaybackStore` hook.
+ * the React binding binds it into the `usePlaybackStore` hook.
  *
  * Persistence is hand-rolled rather than zustand's `persist` middleware, and
  * that is a performance fix, not a style preference. The middleware wraps
@@ -142,8 +142,8 @@ export const playbackStore = createStore<PlaybackState & PlaybackActions>()((set
   toggleLoop: () => set((s) => ({ loop: !s.loop })),
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
   toggleMute: () => set((s) => ({ muted: !s.muted })),
-  // Range lives in utils/timelineMath (ZOOM_MIN / ZOOM_MAX) so gesture code
-  // can clamp before it asks the store, and anchor its scroll on the clamped value.
+  // Lower bound is deliberately tiny so long timelines (10+ min) can be
+  // zoomed out far enough to fit on screen (e.g. 30min@30fps ≈ 54k frames).
   setZoom: (zoom) => set({ zoom: clampZoom(zoom) }),
   toggleSnap: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
 }))

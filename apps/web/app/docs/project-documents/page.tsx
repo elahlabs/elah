@@ -104,7 +104,27 @@ isReadableProjectDocument(stored)`}
         <section className="mb-10">
           <H2 id="versioning">Versioning</H2>
           <P>
-            <C>PROJECT_VERSION</C> is the schema version this build writes and reads, currently 1. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
+            <C>PROJECT_VERSION</C> is the newest schema version this build reads, currently 5. A saved project is stamped with the <strong className="text-on-surface font-medium">lowest</strong> version that can hold what it uses, so a project without the newer features stays readable by older builds. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
+          </P>
+          <div className="mb-4 overflow-hidden rounded-md border border-outline-variant">
+            {[
+              ['1', 'The 0.6.x model: video, audio, text, image, shape and freehand clips, and the fade, slide and wipe transitions. A document with no version stamp reads as 1.'],
+              ['2', 'Adjustment clips (effects applied to everything beneath them).'],
+              ['3', 'Generator clips, shape draw-on, and the six newer transitions (zoom, spin, whip, glitchCut, warpDissolve, lumaWipe).'],
+              ['4', 'Compound clips (a nested project played as one clip).'],
+              ['5', 'Sequence clips (an animated image or a numbered frame set).'],
+            ].map(([v, desc], i) => (
+              <div
+                key={v}
+                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
+              >
+                <code className="font-mono text-xs font-medium text-on-surface sm:w-20 sm:shrink-0">version {v}</code>
+                <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
+              </div>
+            ))}
+          </div>
+          <P>
+            Everything else added since 0.6.x (keyframes, text animators, effects on a clip, audio settings, masks, motion paths) is an optional field that an older build ignores, so it does not raise the stamp. The stamp rises only when a document holds a clip type or transition kind an older build would refuse. A 0.6.x build opens version 1 only; a version 2 to 5 document throws <C>ProjectDocumentError</C> there. Every 0.6.x document opens unchanged in 1.0.0.
           </P>
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
             <li>

@@ -3,7 +3,6 @@
 **A browser-native, frame-accurate video editing engine for the web.** A framework-agnostic core — timeline, WebGL2 renderer, media pipeline, and MP4 export — with thin UI bindings on top. **React is the first UI layer** (shipping today); the engine knows nothing about it, so React Native and other frameworks can bind to the same core. The same engine also runs **headless**: [`@elah/cli`](./packages/cli) builds and renders projects from the command line, a Node API, or a long-lived HTTP render server (`elah serve`) — so AI backends can generate videos with no UI at all. Works for any aspect ratio (9:16 Reels, 16:9 YouTube, 1:1, or any custom stage).
 
 [![npm](https://img.shields.io/npm/v/@elah/editor?label=%40elah%2Feditor)](https://www.npmjs.com/package/@elah/editor)
-[![gzip size](https://img.shields.io/badge/gzip-~64%20KiB%20SDK-brightgreen)](./BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 
@@ -92,21 +91,34 @@ Three goals shape every decision:
 | **Headless CLI** (`@elah/cli` — `split` / `trim` / `build` / `export`) | ✅ Working — engine edits in plain Node; `export` runs core's real `exportVideo` in headless Chrome, so CLI output matches editor output by construction |
 | **AI build spec** (`elah build --spec spec.json --export out.mp4`) | ✅ Working — seconds-based JSON spec → validated project via `TimelineEngine`; path-addressed errors (`clips[2].duration must be …`) a generating model can self-correct from |
 | **HTTP render server** (`elah serve` + Docker) | ✅ Working — long-lived warm-browser session; `POST /render` takes a build spec, returns MP4 bytes; `/healthz`, `--concurrency` guard with `503 + Retry-After`; Dockerfile ships Chrome + fonts |
-| **Transitions** (`fade` / `slide` / `wipe`) | ✅ Working — snapshot-overlay architecture: resolver sets `fromClip.opacity=0`/`toClip.opacity=1`; `TransitionOverlay` fades, translates or clips a frozen canvas snapshot via CSS; export mirrors it (`globalAlpha=1-t` for fade). `slide` moves left for `direction: 'left'` and right for anything else; `wipe` ignores `direction`; there is no up/down |
+| **Transitions** (9 kinds, 1.0.0) | ✅ Working — `fade`, `slide`, `wipe`, `zoom`, `spin`, `whip`, `glitchCut`, `warpDissolve`, `lumaWipe`. The resolver keeps both clips in the scene and lists the transition in `scene.transitions`; the WebGL2 renderer composites the pair with one shader in preview and export, so both clips keep playing with their effects. `slide` and `whip` take a direction (left, right, up, down). A project that uses only fade, wipe or slide still exports without WebGL2 (a 2D snapshot path); any other kind needs WebGL2 and its export fails without it |
 | Rotation handle for video/image | ⚪ Not built — `transform.rotation` flows through both renderers but is set through the engine only; the box tilts, there is no handle. Text clips have a rotate knob |
 | **Multiple video tracks** (0.6.0) | ✅ Working — `addTrack('video')` adds a lane; video tracks composite in track order (topmost lane on top). Decode is still unscheduled, so one active video clip at a time is the tested path |
 | **Clip speed, crop & corner radius** (0.6.0) | ✅ Working — `Clip.speed` (0.25–4, `engine.setClipSpeed`, honoured by export), `Clip.crop` (normalized source window), `Clip.cornerRadius` (0–0.5) |
-| **Text templates & layered motion** (0.6.0) | ✅ Working — 14 `BUILT_IN_TEXT_TEMPLATES`; `applyTextTemplate` returns an undoable `Partial<Clip>` patch; entry/exit via `TextAnimation` `inMotion` / `outMotion` (`MotionSpec`). A template's `stagger` and `tracking` are data only — nothing in the packages runs them. `spin` and rotation channels are text-only: shape renderers do not apply rotation |
+| **Text templates & layered motion** (0.6.0) | ✅ Working — 14 `BUILT_IN_TEXT_TEMPLATES`; `applyTextTemplate` returns an undoable `Partial<Clip>` patch; entry/exit via `TextAnimation` `inMotion` / `outMotion` (`MotionSpec`). A template's `stagger` and `tracking` are data only — nothing in the packages runs them |
 | **Frame sequences** (0.6.0) | ✅ Working — `createFrameSequence`, `FrameSequenceController` (clock, drag-to-scrub, `wrap`/`pingpong`), `createFramePreloader`, `frameSequenceToProject` |
 | **Stored project documents** (0.6.0) | ✅ Working — `readProjectDocument` (total reader: a `Project` or a `ProjectDocumentError`), `relinkProjectMedia` (reports unrecoverable `blob:` clips as `missing`, never drops them), `engine.loadProject(project, { transport, history })`, `project:loaded` event |
 | **Media-library snapshot / hydrate** (0.6.0) | ✅ Working — `snapshotMediaLibrary` / `hydrateMediaLibrary` / `refreshMissingThumbnails` give a host the seam to carry asset metadata and thumbnails across a page load (storage is the host's; core ships no adapter). Bytes of locally imported files (`blob:` URLs) are not persisted |
 | **Protected / pinned tracks** (0.6.0) | ✅ Working — `Track.protected` (the user cannot remove it) and `Track.pinned: 'bottom'` (`addTrack` keeps the lane below every non-pinned track) |
+| **Motion layer** (1.0.0) | ✅ Working — keyframes on every transform channel with the full ease set (sine to bounce, `steps(n)`, cubic-bezier) and closed-form springs, hold keys, stagger (from start/end/centre/edges/random, grid), motion paths, per-unit text animators, scramble text, repeat/yoyo, skew, 3D tilt (`rotateX`/`rotateY` on video, image, sequence and compound clips), expressions, 36 motion presets |
+| **Effects, generators, blend modes & mattes** (1.0.0) | ✅ Working — 23 GPU effects (`EFFECT_REGISTRY`) plus bundles and looks, 8 generators (particles, light leak, lens flare, counter, bar chart, …), masks, track mattes, blend modes; one WebGL2 pipeline for preview and export |
+| **New clip types** (1.0.0) | ✅ Working in core — `adjustment`, `generator`, `compound` (a nested project as one clip), `sequence` (animated image or numbered frames). Project documents are version 5. `@elah/timeline` draws them and `@elah/editor` plays, saves and exports them |
+| Editing UI for the new clip types | ⚪ Not built in `@elah/editor` — no inspector, curve editor or compound editor yet; build with the engine API |
+| **Clip audio** (1.0.0) | ✅ Working — `Clip.audio`: mute, boost, fades and Enhance (noise reduction, voice clarity); one envelope and one Web Audio chain for preview and export |
+| **Lottie & SVG import** (1.0.0) | ✅ Working — `lottieToClip`, `svgToProject` produce editable clips and keys, with a report of what they could not map |
+| **Export containers** (1.0.0) | ✅ Working — MP4 (default), WebM (transparent where the browser's own check passes), GIF, PNG sequence; `avc`, `hevc`, `av1`, `vp9`, `vp8` where the browser can encode; `range: 'inOut'`. Chromium only |
+| **HTML/CSS scenes → clips** (1.0.0, experimental) | ✅ Working — import from `@elah/core/html`. `validateScene` checks a scene against a whitelisted HTML/CSS subset; `sceneToClip` converts a **measured** scene to one compound clip of native clips and keys (`data-motion` grammar). Measuring the scene in a browser is the host's step; no measurer ships |
+| **VideoSpec & editor ops** (1.0.0, experimental) | ✅ Working — import from `@elah/core/spec` and `@elah/core/ops`. `compileVideoSpec` / `buildVideo` turn a seconds-based JSON spec a model writes into a `Project` (17 components, 6 systems) with path-addressed issues; 57 typed ops (`applyOps`, `sanitizeOps`) edit one; `layProject` lays either onto a live engine as one undo step |
+| **Fonts in the package, CDN-safe workers** (1.0.0) | ✅ Working — 12 OFL families ship inside `@elah/core` (its `fonts/` folder; opt in with `packageFontsBaseUrl()`; default stays `/fonts/`); the export, analysis and probe workers start from a cross-origin URL via a blob module worker |
+| **Browser-free engine entry** (`@elah/core/engine`) | ✅ Working — engine, resolver, playback clock, stores, factories and project documents with no renderer, codec or export worker (React Native, Node) |
 | Scheduler / predictive frame caching | ⚪ Not started — next architectural layer |
 
 See [`ROADMAP.md`](./ROADMAP.md) for current state and the next layer,
 [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md) for known gaps, and
 [`packages/core/src/renderer/architecture.md`](./packages/core/src/renderer/architecture.md)
 for the GPU render + decode pipeline in depth.
+
+> **Stability.** From 1.0.0 the exported API of `@elah/core` (root and `@elah/core/engine`), `@elah/react`, `@elah/timeline` and `@elah/editor` follows semver. The AI-facing layers are **experimental** and may change in a minor release; they are not on the root but have their own entries: `@elah/core/spec` (VideoSpec), `@elah/core/html` (HTML/CSS scenes), `@elah/core/ops` (the op vocabulary) and `@elah/core/icons`. See [`CHANGELOG.md`](./CHANGELOG.md) for 1.0.0, including the breaking changes (project version 5, widened `ClipType` and `TransitionKind`).
 
 > **Multiple video tracks are allowed as of 0.6.0** (audio has been multi-track
 > since 0.3.0), but the decode pipeline has no scheduler yet, so several video
@@ -133,7 +145,7 @@ elah/
 ├── ROADMAP.md                    # current state + next architectural layer
 ├── CURRENT_LIMITATIONS.md        # known gaps and trade-offs
 ├── PERFORMANCE.md                # performance philosophy + techniques
-├── BUNDLE_STRATEGY.md            # dependency budget, tree-shaking, measured sizes (~64 KiB gz SDK at startup; the codec is +159 KiB, lazy unless you use createDefaultDemuxerFactory)
+├── BUNDLE_STRATEGY.md            # dependency budget, tree-shaking, how bundle size is measured
 ├── CONTRIBUTING.md               # branch/commit conventions, PR rules
 ├── AGENTS.md                     # brief for coding agents working in this repo
 ├── docs/
@@ -152,7 +164,14 @@ elah/
     │       ├── editor/           # TimelineEngine (Immer commits, history, events)
     │       ├── playback/         # PlaybackEngine (RAF clock)
     │       ├── resolver/         # resolveTimeline(frame, project) → Scene
-    │       ├── elements/         # clip factories (video/audio/text/image/shape/freehand)
+    │       ├── elements/         # clip factories (video/audio/text/image/shape/freehand/generator/compound/sequence), keyframes, motion presets
+    │       ├── effects/          # effect registry, bundles, per-clip effect resolution
+    │       ├── generators/       # generator registry (particles, light leak, counter, …)
+    │       ├── transitions/      # transition registry (9 kinds)
+    │       ├── vector/           # SVG + Lottie import, HTML/CSS scene conversion (vector/html)
+    │       ├── spec/             # VideoSpec compiler, components, systems (experimental)
+    │       ├── ops/              # typed editor ops: apply, sanitize, describe (experimental)
+    │       ├── fonts/            # font registry, loader, packageFontsBaseUrl
     │       ├── media/            # WebCodecs decode, FrameCache, mediabunny demux, audio mixer
     │       ├── renderer/         # Renderer interface + WebGL2 GpuRenderer, layers
     │       ├── export/           # exportVideo + ExportWorker (OffscreenCanvas → MP4)
@@ -301,6 +320,20 @@ import { resolveTimeline } from '@elah/editor'
 const scene = resolveTimeline(currentFrame, engine.getProject())
 // scene.videos, scene.audios, scene.texts, scene.images, scene.transitions
 ```
+
+---
+
+## Use Elah from Claude Code
+
+An unofficial Claude Code plugin lets Claude write a video as data, validate it with the engine, and open it in an artifact
+where you preview it, edit it and export an MP4 in your browser:
+
+```
+/plugin marketplace add elahlabs/elah
+/plugin install elah@elah
+```
+
+Then run `/elah:video <what to make>` or `/elah:promo <product launch brief>`. Details: [`plugins/elah/README.md`](plugins/elah/README.md).
 
 ---
 

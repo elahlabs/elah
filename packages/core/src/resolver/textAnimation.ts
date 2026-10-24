@@ -162,12 +162,11 @@ export interface TextAnimationKindOption {
   label: string
   /**
    * Which clip types may offer this kind. Text-only kinds are the ones no
-   * shape renderer can express: `spin` is text-only because neither shape
-   * painter reads `transform.rotation` — ShapeLayer always uploads
-   * FULL_STAGE_MAT3 (ShapeLayer.ts:166) and ExportWorker.drawShape has no
-   * `ctx.rotate` (ExportWorker.ts:638-674), so offering it on a shape would
-   * render a control that silently does nothing. Flip it back to 'both' if
-   * shape rotation ever lands in both renderers.
+   * shape renderer can express. `spin` WAS text-only, because neither shape
+   * painter read `transform.rotation`; both now rasterize through
+   * `shapePaint.paintShape`, which rotates about the box centre, so it applies
+   * to both. The field stays because the distinction is still real for any
+   * future kind that depends on glyph layout.
    */
   appliesTo: 'both' | 'text-only'
 }
@@ -179,7 +178,7 @@ export interface TextAnimationKindOption {
  */
 const KIND_CATALOGUE: Record<TextAnimationKind, Omit<TextAnimationKindOption, 'kind'>> = {
   fade: { label: 'Fade', appliesTo: 'both' },
-  spin: { label: 'Spin', appliesTo: 'text-only' },
+  spin: { label: 'Spin', appliesTo: 'both' },
   'slide-up': { label: 'Slide Up', appliesTo: 'both' },
   'slide-down': { label: 'Slide Down', appliesTo: 'both' },
   'slide-left': { label: 'Slide Left', appliesTo: 'both' },
@@ -317,16 +316,50 @@ const BACK_OVERSHOOT = 1.70158
  */
 const EASINGS: Record<TextAnimationEasing, (t: number) => number> = {
   linear: (t) => t,
+  'sine-in': (t) => 1 - Math.cos((t * Math.PI) / 2),
+  'sine-out': (t) => Math.sin((t * Math.PI) / 2),
+  'sine-in-out': (t) => -(Math.cos(Math.PI * t) - 1) / 2,
   'quad-in': (t) => t * t,
   'quad-out': (t) => t * (2 - t),
   'quad-in-out': (t) => (t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t)),
+  'cubic-in': (t) => t ** 3,
   'cubic-out': (t) => 1 - (1 - t) ** 3,
+  'cubic-in-out': (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2),
+  'quart-in': (t) => t ** 4,
+  'quart-out': (t) => 1 - (1 - t) ** 4,
+  'quart-in-out': (t) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2),
+  'quint-in': (t) => t ** 5,
+  'quint-out': (t) => 1 - (1 - t) ** 5,
+  'quint-in-out': (t) => (t < 0.5 ? 16 * t ** 5 : 1 - (-2 * t + 2) ** 5 / 2),
+  'expo-in': (t) => (t <= 0 ? 0 : 2 ** (10 * t - 10)),
   // 2^-10t decays to ~0.001 at t=1, so the endpoint is special-cased to land
   // exactly on 1 rather than 0.999 — otherwise an entry never quite arrives.
   'expo-out': (t) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t)),
+  'expo-in-out': (t) => {
+    if (t <= 0) return 0
+    if (t >= 1) return 1
+    return t < 0.5 ? 2 ** (20 * t - 10) / 2 : (2 - 2 ** (-20 * t + 10)) / 2
+  },
+  'circ-in': (t) => 1 - Math.sqrt(Math.max(0, 1 - t * t)),
+  'circ-out': (t) => Math.sqrt(Math.max(0, 1 - (t - 1) ** 2)),
+  'circ-in-out': (t) =>
+    t < 0.5
+      ? (1 - Math.sqrt(Math.max(0, 1 - (2 * t) ** 2))) / 2
+      : (Math.sqrt(Math.max(0, 1 - (-2 * t + 2) ** 2)) + 1) / 2,
   'back-in': (t) => (BACK_OVERSHOOT + 1) * t ** 3 - BACK_OVERSHOOT * t ** 2,
   'back-out': (t) =>
     1 + (BACK_OVERSHOOT + 1) * (t - 1) ** 3 + BACK_OVERSHOOT * (t - 1) ** 2,
+  'back-in-out': (t) => {
+    const c2 = BACK_OVERSHOOT * 1.525
+    return t < 0.5
+      ? ((2 * t) ** 2 * ((c2 + 1) * 2 * t - c2)) / 2
+      : ((2 * t - 2) ** 2 * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2
+  },
+  'elastic-in': (t) => {
+    if (t <= 0) return 0
+    if (t >= 1) return 1
+    return -(2 ** (10 * t - 10)) * Math.sin(((t * 10 - 10.75) * (2 * Math.PI)) / 3)
+  },
   'elastic-out': (t) => {
     if (t <= 0) return 0
     if (t >= 1) return 1
@@ -334,21 +367,33 @@ const EASINGS: Record<TextAnimationEasing, (t: number) => number> = {
     // the largest and the clip has visibly settled by the end of the ramp.
     return 2 ** (-10 * t) * Math.sin(((t * 10 - 0.75) * (2 * Math.PI)) / 3) + 1
   },
-  'bounce-out': (t) => {
-    const n = 7.5625
-    const d = 2.75
-    if (t < 1 / d) return n * t * t
-    if (t < 2 / d) {
-      const u = t - 1.5 / d
-      return n * u * u + 0.75
-    }
-    if (t < 2.5 / d) {
-      const u = t - 2.25 / d
-      return n * u * u + 0.9375
-    }
-    const u = t - 2.625 / d
-    return n * u * u + 0.984375
+  'elastic-in-out': (t) => {
+    if (t <= 0) return 0
+    if (t >= 1) return 1
+    const c5 = (2 * Math.PI) / 4.5
+    const s = Math.sin((20 * t - 11.125) * c5)
+    return t < 0.5 ? -(2 ** (20 * t - 10) * s) / 2 : (2 ** (-20 * t + 10) * s) / 2 + 1
   },
+  'bounce-in': (t) => 1 - bounceOut(1 - t),
+  'bounce-out': bounceOut,
+  'bounce-in-out': (t) => (t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 + bounceOut(2 * t - 1)) / 2),
+}
+
+/** Penner bounce-out (easings.net constants), shared by the three `bounce-*` curves. */
+function bounceOut(t: number): number {
+  const n = 7.5625
+  const d = 2.75
+  if (t < 1 / d) return n * t * t
+  if (t < 2 / d) {
+    const u = t - 1.5 / d
+    return n * u * u + 0.75
+  }
+  if (t < 2.5 / d) {
+    const u = t - 2.25 / d
+    return n * u * u + 0.9375
+  }
+  const u = t - 2.625 / d
+  return n * u * u + 0.984375
 }
 
 /**
@@ -366,6 +411,15 @@ function ease(name: TextAnimationEasing | undefined, fallback: TextAnimationEasi
 export const TEXT_ANIMATION_EASINGS: ReadonlyArray<TextAnimationEasing> = Object.keys(
   EASINGS,
 ) as TextAnimationEasing[]
+
+/**
+ * The one easing table, for other samplers (`resolver/keyframes.ts`). Same
+ * unknown-name tolerance as `ease()`: a corrupt name reads as `linear` rather
+ * than throwing inside the resolver.
+ */
+export function evaluateEasing(name: TextAnimationEasing | undefined, t: number): number {
+  return ease(name, 'linear', t)
+}
 
 // ---------------------------------------------------------------------------
 // Enum kind → MotionSpec

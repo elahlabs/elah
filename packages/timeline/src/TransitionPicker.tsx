@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getTransitionDefinition } from '@elah/core'
 import type { TransitionKind, Transition } from '@elah/core'
 
 interface TransitionOption {
@@ -25,6 +26,20 @@ const OPTIONS: TransitionOption[] = [
     icon: 'M4 4h16v16H4z M12 4v16',
   },
 ]
+
+/** Icon for a kind this picker does not offer (a plain cross-over). */
+const OTHER_KIND_ICON = 'M4 6l16 12M4 18L20 6'
+
+/**
+ * The picker's three kinds, plus the existing transition's own kind when it is
+ * one of the others the core renders (zoom, spin, …, loaded from a newer
+ * project), so it shows as the active choice instead of nothing being active.
+ */
+function optionsFor(existing: Transition | undefined): TransitionOption[] {
+  if (!existing || OPTIONS.some((o) => o.kind === existing.kind)) return OPTIONS
+  const label = getTransitionDefinition(existing.kind)?.label ?? existing.kind
+  return [...OPTIONS, { kind: existing.kind, label, icon: OTHER_KIND_ICON }]
+}
 
 const DEFAULT_DURATION = 15
 const MIN_DURATION = 2
@@ -135,7 +150,7 @@ export function TransitionPicker({
 
       {/* Kind selector */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-        {OPTIONS.map((opt) => {
+        {optionsFor(existing).map((opt) => {
           const isActive = existing?.kind === opt.kind
           return (
             <button

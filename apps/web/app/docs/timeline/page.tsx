@@ -108,6 +108,7 @@ interface Clip {
   id: string
   trackId: string
   type: 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+      | 'adjustment' | 'generator' | 'compound' | 'sequence'
   name: string
   src?: string                  // URL or blob ref for video/audio/image
   startFrame: number            // integer — position on the timeline
@@ -274,7 +275,7 @@ ref.current?.fitToWindow()`}
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions are defined on the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> level and stored in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTransitionsStore</code>. All three kinds (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">fade</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">slide</code> and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code>) are implemented in the preview and in export; see <Link href="/docs/editor#transitions" className="text-primary hover:underline">Editor: Transitions</Link>.
+            Transitions are defined on the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> level and stored in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTransitionsStore</code>. There are nine kinds (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">fade</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">slide</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">zoom</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">spin</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">whip</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">glitchCut</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">warpDissolve</code> and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lumaWipe</code>), all drawn by the WebGL2 renderer in the preview and in export; see <Link href="/docs/editor#transitions" className="text-primary hover:underline">Editor: Transitions</Link>.
           </p>
           <CodeBlock
             language="tsx"
@@ -286,18 +287,16 @@ engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
   trackId: track.id,
-  kind: 'fade',        // 'fade' | 'slide' | 'wipe'
+  kind: 'fade',        // 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
+                       // | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   durationFrames: 15, // 0.5 seconds at 30fps
   easing: 'ease-out',  // 'linear' | 'ease-in' | 'ease-out'
 })
 
-// The resolver handles opacity automatically:
-// resolveTimeline(frame, project) → Scene
-// During transition: fromClip.opacity interpolated 1→0
-//                   toClip.opacity interpolated 0→1
-//
-// Preview: TransitionOverlay fades a CSS snapshot
-// Export: globalAlpha mirrors the opacity values`}
+// resolveTimeline(frame, project) → Scene lists the active transition in
+// scene.transitions with its eased progress t (0 → 1). Both clips stay in
+// the scene; the WebGL2 renderer composites them through the transition,
+// in preview and in export, with their effects intact.`}
           />
         </section>
 

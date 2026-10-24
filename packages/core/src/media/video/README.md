@@ -81,8 +81,7 @@ otherwise (jsdom / tests)            → MockVideoFrameProvider
 - **WebCodecs** (`VideoDecoder`, `EncodedVideoChunk`) and `createImageBitmap` —
   browser-native; jsdom falls back to stubs in tests.
 - **mediabunny** — only via an injected `DemuxerFactory`; this folder never
-  statically imports it. The web app wires it via `createDefaultDemuxerFactory()`
-  (`apps/web/components/playground/ProductionEditor.tsx`).
+  statically imports it. The host application wires it via `createDefaultDemuxerFactory()`.
 
 ## Current limitations
 
@@ -108,5 +107,5 @@ demuxer adapter, and stress suites (`PlaybackStress`, `RapidSeekStress`,
 `BackwardSeekStability`, `StuckDecodeRecovery`, …). Run from `packages/core`:
 
 ```bash
-npm --workspace @elah/core run test -- --run media/video/__tests__/StreamingFrameProducer.test.ts
+npm run test -- --run media/video/__tests__/StreamingFrameProducer.test.ts
 ```

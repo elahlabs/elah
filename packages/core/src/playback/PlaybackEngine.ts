@@ -13,7 +13,6 @@
 
 import { trace } from '../debug/trace'
 
-/** Immutable transport state pushed to subscribers; `epoch` bumps on every command so a same-frame re-seek still notifies. */
 export interface PlaybackSnapshot {
   currentFrame: number
   isPlaying: boolean
@@ -150,7 +149,6 @@ export class PlaybackEngine {
 
   // ── Commands ─────────────────────────────────────────────────────────────
 
-  /** No-op if already playing; re-anchors the clock to now so resuming never replays skipped wall-clock time. */
   play(): void {
     if (this._playing) return
     this.anchorTime = this.now()
@@ -160,7 +158,6 @@ export class PlaybackEngine {
     this.startRAF()
   }
 
-  /** No-op if already paused; freezes the integrated frame so a later play() continues from exactly here. */
   pause(): void {
     if (!this._playing) return
     this.anchorFrame = this.getFrameAt()
@@ -170,7 +167,6 @@ export class PlaybackEngine {
     this.notify()
   }
 
-  /** Jumps to a frame and always bumps the epoch — even seeking to the current frame — so one-shot effects retrigger. */
   seek(frame: number): void {
     const next = Math.max(0, Math.floor(frame))
     trace('SET_PLAYHEAD', { target: next, fromAnchor: this.anchorFrame, playing: this._playing })
@@ -237,7 +233,6 @@ export class PlaybackEngine {
     }
   }
 
-  /** Must be called when the engine is discarded — cancels the RAF loop and drops listeners so the clock can't leak. */
   destroy(): void {
     this.detach()
     this.listeners.clear()

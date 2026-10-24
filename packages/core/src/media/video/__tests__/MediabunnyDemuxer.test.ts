@@ -149,7 +149,8 @@ describe('MediabunnyDemuxer adapter', () => {
     // not hold output back for B-frame reordering). See VideoDecoderManager.open.
     expect(decoder.lastDecoder.configure).toHaveBeenCalledWith({
       ...config,
-      optimizeForLatency: true,
+      hardwareAcceleration: 'prefer-hardware',
+      optimizeForLatency: false,
     })
     expect(manager.state).toBe('Ready')
   })

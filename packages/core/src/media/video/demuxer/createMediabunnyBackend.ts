@@ -2,11 +2,11 @@
  * createMediabunnyBackend — adapter from the real mediabunny npm package
  * to the DemuxerBackend interface consumed by VideoDecoderManager.
  *
- * mediabunny is NOT a required dependency of @elah/editor.
+ * mediabunny is NOT a required dependency of the editor package.
  * Consumers inject this backend via GpuRenderer options:
  *
  *   import * as mediabunny from 'mediabunny'
- *   import { createMediabunnyBackend } from '@elah/editor'
+ *   import { createMediabunnyBackend } from '@elah/core'
  *
  *   const renderer = new GpuRenderer({
  *     demuxerFactory: () => createMediabunnyBackend(mediabunny, { blobResolver }),
@@ -31,20 +31,21 @@
  *  - This file has zero imports from React, Zustand, or any store.
  *  - It imports only DemuxerBackend from the co-located interface file.
  *  - Worker-safe: no DOM access, no document/window references.
- *  - blobResolver defaults to fetch(src).blob() — works for blob:, http:, data:.
- *    Callers who retain the original File can pass it directly to avoid the
- *    fetch round-trip (see createPlaygroundDemuxerFactory).
+ *  - blobResolver defaults to the shared sourceBlobCache — a deduped
+ *    fetch(src).blob(), working for blob:, http: and data:. Callers who retain
+ *    the original File can pass it directly to avoid the fetch round-trip
+ *    entirely (see createPlaygroundDemuxerFactory).
  *
  * FUTURE (S10): Worker decode migration. DemuxerBackend is already worker-safe;
  *   move instantiation behind a MessagePort without changing this file's API.
  * FUTURE (S12): Hardware acceleration — pass hardwareAcceleration through opts.
  *
- * @see EVOLUTION.md § 7 Extension Seams S10, S12
  * @see IMPLEMENTATION_NOTES.md — why blobResolver exists
  */
 
 import type { DemuxerBackend } from './MediabunnyDemuxer'
 import { sourceBlobCache } from './sourceBlobCache'
+import { normalizeRotation, type VideoRotation } from '../rotation'
 
 /**
  * Toggle in DevTools: `window.__DEMUX_DEBUG__ = true` to trace which branch
@@ -79,6 +80,8 @@ interface MbEncodedPacket {
 
 interface MbVideoTrack {
   getDecoderConfig(): Promise<VideoDecoderConfig | null>
+  /** Clockwise display rotation from the container metadata. */
+  getRotation?(): Promise<0 | 90 | 180 | 270>
 }
 
 interface MbInput {
@@ -169,6 +172,7 @@ export function createMediabunnyBackend(
   let _input: MbInput | null = null
   let _sink: MbEncodedPacketSink | null = null
   let _config: VideoDecoderConfig | null = null
+  let _rotation: VideoRotation = 0
   // Cached packet from seekToKeyframe so the next packets() call starts there.
   let _seekPacket: MbEncodedPacket | null = null
   // Packet to continue from on the next contiguous packets() call.
@@ -208,12 +212,19 @@ export function createMediabunnyBackend(
       }
 
       _config = config
+      // Decoded VideoFrames are the CODED pixels; the container's display
+      // matrix is only reported here. Callers apply it when drawing.
+      _rotation = normalizeRotation(await track.getRotation?.())
       _sink = new mb.EncodedPacketSink(track)
     },
 
     getConfig(): VideoDecoderConfig {
       _assertOpen(_sink, _config)
       return _config!
+    },
+
+    getRotation(): VideoRotation {
+      return _rotation
     },
 
     /**
@@ -367,7 +378,7 @@ function _assertMediabunnyApi(m: MediabunnyModule): void {
         '',
         'Usage:',
         '  import * as mediabunny from "mediabunny"',
-        '  import { createMediabunnyBackend } from "@elah/editor"',
+        '  import { createMediabunnyBackend } from "@elah/core"',
         '  new GpuRenderer({ demuxerFactory: () => createMediabunnyBackend(mediabunny) })',
         '',
         'See: apps/playground/src/createPlaygroundDemuxerFactory.ts for a full example.',

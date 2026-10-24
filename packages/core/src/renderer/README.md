@@ -97,8 +97,7 @@ lazy path — the renderer never imports it directly; callers inject it through
 `demuxerFactory`. Omitting the `demuxerFactory` falls back to
 `SyntheticVideoFrameProvider` (visual development mode — no media files required).
 
-The web app wires it via `createDefaultDemuxerFactory()` in
-`apps/web/components/playground/ProductionEditor.tsx`.
+The host application wires it via `createDefaultDemuxerFactory()`.
 
 For tests or custom backends, inject any `DemuxerFactory`:
 
@@ -124,4 +123,4 @@ const renderer = new GpuRenderer({ demuxerFactory: () => myBackend })
 1. Create a sub-folder (e.g. `dom/`).
 2. Export a class that `implements Renderer` from `core/renderer/types.ts`.
 3. The class may import from `core/resolver/scene.ts` and `core/types` only — no engine, no React.
-4. Wire it up in a React shell (the only place that knows about both a renderer and a playback engine). The `@elah/editor` package's `Preview/Preview.tsx` is a working example: it owns the RAF loop, resolves the scene each tick, and calls `renderer.render(scene)`.
+4. Wire it up in a React shell (the only place that knows about both a renderer and a playback engine). The editor package's `Preview/Preview.tsx` is a working example: it owns the RAF loop, resolves the scene each tick, and calls `renderer.render(scene)`.

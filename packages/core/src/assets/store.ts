@@ -14,11 +14,11 @@ export interface MediaLibraryActions {
 }
 
 /**
- * Vanilla store. React consumers should prefer `useMediaLibrary()` from
- * @elah/react; imperative access via `mediaLibraryStore.getState()` is for
- * non-React code paths (workers, actions).
+ * Internal store. Prefer `useMediaLibrary()` from the React binding for
+ * React consumers. Imperative access via `mediaLibraryStore.getState()` is
+ * intended for non-React code paths (workers, actions) only.
  */
-export const mediaLibraryStore = createStore<MediaLibraryState & MediaLibraryActions>(
+export const mediaLibraryStore = createStore<MediaLibraryState & MediaLibraryActions>()(
   (set, get) => ({
     assets: {},
     order: [],

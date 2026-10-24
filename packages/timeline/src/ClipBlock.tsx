@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Type, Square, Circle, Triangle, Pencil } from 'lucide-react'
+import { Type, Square, Circle, Triangle, Pencil, SlidersHorizontal, Sparkles, Layers, Film } from 'lucide-react'
 import type { Clip, TrackKind } from '@elah/core'
 import { useTimeline } from './engine-context'
 import { isClipAllowedOnTrack } from './trackCompat'
@@ -16,6 +16,7 @@ import { useTracksStore } from '@elah/react'
 import { useMediaLibraryStore, useClipLoadStore } from '@elah/react'
 import { cn } from './cn'
 import { normBg } from './clipSlot'
+import { KeyframeLane } from './KeyframeLane'
 
 /** Static bar heights for decorative audio waveform (visual only). */
 const WAVE_BARS = [
@@ -36,6 +37,13 @@ const DEFAULT_CLIP_BG: Record<string, string> = {
   image: 'bg-clip-image-mid',
   shape: 'bg-clip-shape-bottom',
   freehand: 'bg-clip-freehand-bottom',
+  // The converged core's clip types reuse existing tokens (no new ones):
+  // adjustment and compound take the freehand tone, generator the shape tone,
+  // a sequence looks like an image. They have no editor here yet.
+  adjustment: 'bg-clip-freehand-bottom',
+  generator: 'bg-clip-shape-bottom',
+  compound: 'bg-clip-freehand-bottom',
+  sequence: 'bg-clip-image-mid',
 }
 
 // Default accent (left stripe + selected hairline) per type.
@@ -46,7 +54,36 @@ const DEFAULT_CLIP_ACCENT: Record<string, string> = {
   image: 'text-clip-image-accent',
   shape: 'text-clip-shape-accent',
   freehand: 'text-clip-freehand-accent',
+  adjustment: 'text-clip-freehand-accent',
+  generator: 'text-clip-shape-accent',
+  compound: 'text-clip-freehand-accent',
+  sequence: 'text-clip-image-accent',
 }
+
+/**
+ * Clips with no source media to run out of: `engine.trimClip()` lets these
+ * grow freely, so the drag preview must too.
+ */
+const SOURCELESS_TYPES: ReadonlySet<Clip['type']> = new Set([
+  'text',
+  'shape',
+  'freehand',
+  'adjustment',
+  'generator',
+  'sequence',
+])
+
+/** Clip types that show a name label (video/image show their filmstrip instead). */
+const LABELLED_TYPES: ReadonlySet<Clip['type']> = new Set([
+  'audio',
+  'text',
+  'shape',
+  'freehand',
+  'adjustment',
+  'generator',
+  'compound',
+  'sequence',
+])
 
 interface ClipBlockProps {
   clip: Clip
@@ -332,7 +369,7 @@ export const ClipBlock = memo(function ClipBlock({
       // Speed-aware so the live drag preview matches what engine.trimClip()
       // will actually commit — durationFrames * speed <= sourceDurationFrames.
       const maxDuration =
-        clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand'
+        SOURCELESS_TYPES.has(clip.type)
           ? Infinity
           : Math.floor(clip.sourceDurationFrames / (clip.speed ?? 1))
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
@@ -418,7 +455,7 @@ export const ClipBlock = memo(function ClipBlock({
       // Speed-aware so the live drag preview matches what engine.trimClip()
       // will actually commit — durationFrames * speed <= sourceDurationFrames.
       const maxDuration =
-        clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand'
+        SOURCELESS_TYPES.has(clip.type)
           ? Infinity
           : Math.floor(clip.sourceDurationFrames / (clip.speed ?? 1))
       const minDuration = Math.max(1, Math.ceil((TRIM_HANDLE_WIDTH * 2) / zoom))
@@ -724,9 +761,9 @@ export const ClipBlock = memo(function ClipBlock({
         />
       </div>
 
-      {/* Clip label — audio, text, shape, freehand show a name + glyph.
+      {/* Clip label — every type but video/image shows a name (+ glyph).
           Video/image clips show their thumbnail filmstrip instead. */}
-      {(clip.type === 'audio' || clip.type === 'text' || clip.type === 'shape' || clip.type === 'freehand') && (
+      {LABELLED_TYPES.has(clip.type) && (
         <span
           style={{
             position: 'relative',
@@ -759,6 +796,18 @@ export const ClipBlock = memo(function ClipBlock({
           )}
           {clip.type === 'freehand' && (
             <Pencil size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'adjustment' && (
+            <SlidersHorizontal size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'generator' && (
+            <Sparkles size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'compound' && (
+            <Layers size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
+          )}
+          {clip.type === 'sequence' && (
+            <Film size={11} strokeWidth={2.25} style={{ flexShrink: 0 }} aria-hidden />
           )}
           <span
             style={{
@@ -801,6 +850,8 @@ export const ClipBlock = memo(function ClipBlock({
           }}
         />
       </div>
+
+      {isSelected && <KeyframeLane clip={clip} zoom={zoom} locked={trackLocked} />}
 
       {ctxMenu && createPortal(
         <>

@@ -7,7 +7,7 @@ vi.mock('./hasAudio', async (importOriginal) => {
   return { ...actual, determineAssetHasAudio: vi.fn(async () => true) }
 })
 
-import { importUrl } from './importFiles'
+import { beginImportUrl, importUrl } from './importFiles'
 import { determineAssetHasAudio } from './hasAudio'
 import { mediaLibraryStore } from './store'
 
@@ -41,6 +41,22 @@ describe('import paths start the audio-track determination', () => {
     vi.unstubAllGlobals()
   })
 
+  it('beginImportUrl kicks off the determination for a video without waiting on metadata', async () => {
+    // The gallery inserts the returned placeholder in the same click, so the
+    // determination has to be in flight by the time this resolves — not queued
+    // behind the (slow, CDN-bound) metadata probe.
+    const asset = await beginImportUrl('https://cdn.example.com/lipsync.mp4', { kind: 'video' })
+
+    expect(determineMock).toHaveBeenCalledWith(asset.id)
+    expect(mediaLibraryStore.getState().getAsset(asset.id)?.status).toBe('pending')
+  })
+
+  it('beginImportUrl does not probe audio-only or image assets', async () => {
+    await beginImportUrl('https://cdn.example.com/voice.mp3', { kind: 'audio' })
+
+    expect(determineMock).not.toHaveBeenCalled()
+  })
+
   it('importUrl kicks off the determination once the asset is registered', async () => {
     let created: ReturnType<typeof stubMediaElement> | null = null
     vi.stubGlobal('document', {
@@ -62,27 +78,5 @@ describe('import paths start the audio-track determination', () => {
 
     const asset = await importPromise
     expect(determineMock).toHaveBeenCalledWith(asset.id)
-  })
-
-  it('does not probe audio-only or image assets', async () => {
-    let created: ReturnType<typeof stubMediaElement> | null = null
-    vi.stubGlobal('document', {
-      createElement: vi.fn((tag: string) => {
-        if (tag !== 'audio') throw new Error(`Unexpected createElement tag: ${tag}`)
-        created = stubMediaElement()
-        created.duration = 4
-        return created
-      }),
-    })
-
-    const importPromise = importUrl('https://cdn.example.com/voice.mp3', { kind: 'audio' })
-    await vi.waitFor(() => expect(created).not.toBeNull())
-    const onLoaded = created!.addEventListener.mock.calls.find(
-      (call) => call[0] === 'loadedmetadata',
-    )![1] as () => void
-    onLoaded()
-
-    await importPromise
-    expect(determineMock).not.toHaveBeenCalled()
   })
 })
