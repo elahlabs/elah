@@ -4,12 +4,11 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, Copy } from 'lucide-react'
 import posthog from 'posthog-js'
-import { trackPlaygroundLaunch } from '@/lib/analytics'
 import { LazyDemo } from '@/components/home/LazyDemo'
 import { btnLarge, btnPrimary, btnSecondary, container, headingSans, lead, mono, outline } from './ui'
 
 const INSTALL = 'npm install @elah/core'
-const PLAYGROUND = '/playground/motion'
+const CLAUDE = '/claude'
 
 /**
  * Hero (brief section 5, item 1; DESIGN.md "Hero + stage"). The stage is the
@@ -45,11 +44,10 @@ export function HomeHero() {
 
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
-            href={PLAYGROUND}
+            href={CLAUDE}
             className={`${btnPrimary} ${btnLarge}`}
-            onClick={() => trackPlaygroundLaunch({ source: 'hero_motion_playground', title: 'Motion playground', href: PLAYGROUND, variant: 'full' })}
           >
-            Try the motion playground
+            Try the Claude plugin
             <ArrowRight size={16} strokeWidth={2} aria-hidden />
           </Link>
           <button
