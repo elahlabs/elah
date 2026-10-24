@@ -95,9 +95,10 @@ publishing. Then give the user a short note: what you made, the warnings you kep
 ## Quick shape of a good 20 s launch (vertical)
 
 Programmatic: hook (word hits or kinetic title recipe, 2.5 s) -> problem (circled phrase recipe, 3.5 s) -> product (hero line +
-support, 3 s) -> three features (icon row or badge callouts recipe, 8 s) -> call to action (logo outro recipe, 3 s, tagline below the
-ring): 5 scenes, one accent, one hand-off family.
+support, 3 s) -> three features, one scene each (about 2.7 s, built differently from each other) -> call to action (logo outro recipe,
+3 s, tagline below the ring): 7 scenes, one accent, one hand-off family. At 15 s the features are one scene (icon row or badge
+callouts recipe, 4 s), 5 scenes in all.
 
 VideoSpec: hook `word-hits` or `kinetic-title` (2.5 s) -> problem `circled-phrase` (3.5 s) -> product raw hero + support (3 s) -> three
-features `icon-row` / `badge-callouts` (8 s) -> call to action `logo-outro` (3 s, `sub` empty, tagline as a raw line below the ring):
-5 beats, 5 components, one accent, one hand-off family.
+features, one beat each (`icon-row` / `badge-callouts` / a raw hero, about 2.7 s) -> call to action `logo-outro` (3 s, `sub` empty,
+tagline as a raw line below the ring): 7 beats, one accent, one hand-off family.

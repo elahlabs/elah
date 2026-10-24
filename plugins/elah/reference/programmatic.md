@@ -39,6 +39,8 @@ overflow: hidden`): no `<html>`, `<head>`, `<body>`, doctype. `css` is a separat
    even before its delay). A middle scene needs a fade-in and a fade-out, so give it one wrapper child:
    `<section class="s2" data-scene="b"><div class="in">...</div></section>` with `scene-out` on the section and `scene-in` on `.in`
    (`.in { position: absolute; inset: 0 }`); the same rule keeps a pop and a move on one element in separate wrappers.
+   An animation with `both` also overrides the element's resting style: a track styled `opacity: 0.35` that arrives with `fade-in`
+   (to 1) ends at 1. Give a dimmed element its own keyframes that end at its resting value (`@keyframes fade-dim { to { opacity: 0.35 } }`).
 4. The last scene never exits. It arrives, then holds to `durationSeconds` (the end state is the thumbnail of the finished video).
 5. Frame 0 is the thumbnail: give the hook a negative delay (`-0.15s`) so it is already part-way in at t = 0; the first frame is
    never empty.

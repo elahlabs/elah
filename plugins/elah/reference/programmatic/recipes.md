@@ -65,7 +65,8 @@ keyframes every recipe reuses. Put this first in the `css` string.
   font-family: var(--sans); font-weight: 400;
 }
 .scene { --at: 0s; position: absolute; inset: 0; }
-.scene > * { position: absolute; margin: 0; }
+.scene > *, .scene > .in > * { position: absolute; margin: 0; }
+.scene > .in { inset: 0; } /* a middle scene's fade-in wrapper (programmatic.md, rule 3); its children place like a scene's */
 .cap { left: 160px; width: 1000px; font-family: var(--display); font-size: 54px; letter-spacing: 6px; color: var(--muted); }
 .hero { left: 160px; width: 1500px; font-size: 200px; line-height: 1.05; letter-spacing: 3px; }
 .sub { left: 160px; width: 1300px; font-size: 86px; line-height: 1.1; }
@@ -233,8 +234,9 @@ the card never fights its own fade), a large serif quotation mark, the line, the
 ## Logo outro
 
 `logo-outro`: the closing beat, wordmark plus an accent ring plus a tagline; it holds, with no exit. There is no logo file: the
-wordmark is type. The ring draws first (something on screen at the start), the wordmark lands with an overshoot, the tagline rises
-0.75 s later in the caption band, under the ring (never inside it).
+wordmark is type. The ring draws first (something on screen at the start), the wordmark lands with an overshoot while the ring is
+still drawing, and the tagline rises 0.25 s after it in the caption band, under the ring (never inside it). Timed for a 3 s end card:
+the tagline has landed by +1.0 s and holds 2 s. A longer end card keeps these offsets and holds longer.
 
 ```html
 <section class="scene r-logo" data-scene="logo">
@@ -246,9 +248,9 @@ wordmark is type. The ring draws first (something on screen at the start), the w
 
 ```css
 .lo-ring { left: 660px; top: 240px; }
-.lo-ring circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-dasharray: 1; stroke-dashoffset: 1; transform: rotate(-90deg); transform-origin: 300px 300px; animation: draw-stroke 1s var(--draw) calc(var(--at) + 0.1s) both; }
-.lo-mark { left: 460px; top: 435px; width: 1000px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 200px; line-height: 1.05; letter-spacing: 4px; animation: pop 0.6s var(--pop) calc(var(--at) + 1.2s) both; }
-.lo-tag { left: 460px; top: 850px; width: 1000px; text-align: center; font-size: 64px; letter-spacing: 2px; animation: rise 0.5s var(--arrive) calc(var(--at) + 1.95s) both; }
+.lo-ring circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-dasharray: 1; stroke-dashoffset: 1; transform: rotate(-90deg); transform-origin: 300px 300px; animation: draw-stroke 1s var(--draw) var(--at) both; }
+.lo-mark { left: 460px; top: 435px; width: 1000px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 200px; line-height: 1.05; letter-spacing: 4px; animation: pop 0.6s var(--pop) calc(var(--at) + 0.25s) both; }
+.lo-tag { left: 460px; top: 850px; width: 1000px; text-align: center; font-size: 64px; letter-spacing: 2px; animation: rise 0.5s var(--arrive) calc(var(--at) + 0.5s) both; }
 ```
 
 ## Section break
