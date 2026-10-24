@@ -9,6 +9,54 @@ inventing near-misses.
 
 ---
 
+## 0. Edit bay (current, supersedes the sections below)
+
+The page is an edit bay: it reads like footage being cut. Where this section and the older
+sections disagree, this one wins. The older sections describe the blush/coral look and are
+kept for history.
+
+**Palette.** Neutral paper and ink. Cyber red is reserved for selection, record and the playhead,
+never for body text (it is 3.4:1 on paper).
+
+| Role | Hex |
+| --- | --- |
+| Paper (page) | `#F0EFEA` |
+| Paper 2 (hover) | `#E8E6E0` |
+| Card | `#F7F6F2` |
+| Ink (text, primary button, stage) | `#0E0E10` |
+| Muted text | `#5E5D58` (5.7:1 on paper) |
+| Hairline | `#D9D7D0` |
+| Cyber red | `#FF003C` |
+| On-ink muted | `#9A9993` |
+| On-ink hairline | `#2E2E33` |
+
+All of these live in `ui.ts` (`C`, plus the class strings).
+
+**Type.** Three voices:
+- *Display*: Big Shoulders 800, uppercase, tight leading (`display` in `ui.ts`). Headlines and card titles.
+- *Label*: Geist Mono 11px, uppercase, `tracking-[0.14em]` (`label`). Nav, buttons, slates, tags.
+- *Body*: Geist Sans, muted.
+
+**Signature moves.**
+- *Selected word* (`<Sel>` in `Sel.tsx`): one word per headline wears a red selection box with four
+  square handles, like a layer selected in the editor. One per headline, never more.
+- *Slates*: every section opens with an ink rule and `SC 03 · BIND` left, a short kicker right
+  (`Section` takes `n`, `scene`, `kicker`).
+- *Scrub bar* (`ScrubBar.tsx`): a transport bar fixed to the bottom. Every `[data-scene]` element is
+  a clip sized by its height, the red playhead tracks the reading line, timecode counts the page
+  as one minute at 30 fps, and clicking a clip jumps to it. New sections need `data-scene`.
+- *Viewfinder*: crop marks (`CropMarks`) and a centre cross frame the hero; a REC timecode runs
+  from page load (frozen under reduced motion).
+- *Program monitor*: the engine stage is ink with a header strip (`Program · hero.json`) and a caption strip.
+- *End card*: the footer closes on the wordmark, letters spread across the column.
+
+**Shape.** Square corners everywhere. Frames are 1px hairlines, not shadows.
+
+**Buttons.** Mono uppercase labels. Primary: ink fill, paper text, hover red fill with ink text.
+Secondary: 1px ink border, hover ink fill. On the ink CTA, primary is red with ink text.
+
+---
+
 ## 1. Personality
 
 - **Warm, light, editorial.** Blush and white surfaces, near-black warm text, one coral accent.

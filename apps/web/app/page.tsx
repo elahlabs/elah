@@ -18,6 +18,7 @@ import { HomeArchitecture } from '@/components/landing/home/HomeArchitecture'
 import { HomeFaq } from '@/components/landing/home/HomeFaq'
 import { HomeCta } from '@/components/landing/home/HomeCta'
 import { HomeFooter } from '@/components/landing/home/HomeFooter'
+import { ScrubBar } from '@/components/landing/home/ScrubBar'
 
 export const metadata: Metadata = {
   title: { absolute: 'elah — write motion as code, edit it on a timeline' },
@@ -40,11 +41,11 @@ const softwareJsonLd = {
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 }
 
-/** Brief section 5 order, in the DESIGN.md look (components/landing/home/DESIGN.md). */
+/** Brief section 5 order, in the "edit bay" look (components/landing/home/DESIGN.md). */
 export default async function HomePage() {
   const stats = toDisplay(await getSiteStats())
   return (
-    <div className={`${homeFontVars} min-h-screen bg-[#FFF5F3] leading-[normal]`}>
+    <div className={`${homeFontVars} min-h-screen bg-[#F0EFEA] leading-[normal] text-[#0E0E10]`}>
       <JsonLd data={softwareJsonLd} />
       <HomeNav stars={stats.stars} />
       <main id="main">
@@ -62,6 +63,7 @@ export default async function HomePage() {
         <HomeCta />
       </main>
       <HomeFooter stars={stats.stars} />
+      <ScrubBar />
     </div>
   )
 }

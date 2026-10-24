@@ -2,26 +2,27 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { flow } from '../landingData'
 import { Section } from './Section'
+import { Sel } from './Sel'
 import { btnSecondary, btnSmall, chip, mono, outline } from './ui'
 
 /** Architecture, condensed to one diagram (brief section 5, item 10). */
 export function HomeArchitecture() {
   return (
     <Section
-      bg="white"
+      n={8} scene="Engine" kicker="Frames in, frames out"
       id="architecture"
-      title="One mutation funnel. One pure resolver."
+      title={<>One mutation funnel. One pure <Sel>resolver.</Sel></>}
       intro="Time is integer frames, every edit goes through the engine, and renderers only read the resolved scene. Same input, same output."
     >
       <ol className="m-0 flex max-w-[860px] list-none flex-col gap-2 p-0">
         {flow.map((layer, i) => (
-          <li key={layer.name} className={`flex flex-col gap-3 bg-[#FFF5F3] p-4 sm:flex-row sm:items-center sm:gap-5 ${outline}`}>
-            <span className={`w-[140px] shrink-0 text-[12px] text-[#77696B] ${mono}`}>
+          <li key={layer.name} className={`flex flex-col gap-3 bg-[#F0EFEA] p-4 sm:flex-row sm:items-center sm:gap-5 ${outline}`}>
+            <span className={`w-[140px] shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono}`}>
               {String(i + 1).padStart(2, '0')} · {layer.name.toLowerCase()}
             </span>
             <div className="flex flex-wrap gap-2">
               {layer.items.map((it, j) => (
-                <span key={it} className={`${chip} ${i === flow.length - 1 && j === layer.items.length - 1 ? 'bg-[#FF003C] text-white' : `bg-white text-[#1B1416] ${outline}`}`}>
+                <span key={it} className={`${chip} ${i === flow.length - 1 && j === layer.items.length - 1 ? 'bg-[#FF003C] text-[#0E0E10]' : `bg-[#F7F6F2] text-[#0E0E10] ${outline}`}`}>
                   {it}
                 </span>
               ))}

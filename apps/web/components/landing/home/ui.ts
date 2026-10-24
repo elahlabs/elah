@@ -1,40 +1,57 @@
 /**
- * Shared class vocabulary for the landing, taken from DESIGN.md. Values are
- * reused exactly rather than approximated.
+ * Shared class vocabulary for the landing ("edit bay" look, DESIGN.md).
+ * Paper and ink, hairline frames, one cyber red for selection, record and
+ * playhead. Values are reused exactly rather than approximated.
  */
+
+export const C = {
+  paper: '#F0EFEA',
+  paper2: '#E8E6E0',
+  card: '#F7F6F2',
+  ink: '#0E0E10',
+  muted: '#5E5D58',
+  line: '#D9D7D0',
+  red: '#FF003C',
+} as const
 
 export const sans = 'font-[family-name:var(--font-geist-sans),system-ui,sans-serif]'
 export const mono = 'font-[family-name:var(--font-geist-mono),ui-monospace,monospace]'
-/** Beats the global `:is(h1, h2, h3, h4)` display-font rule. */
-export const headingSans = '!font-[family-name:var(--font-geist-sans),system-ui,sans-serif] uppercase'
+/** Condensed display face. The `!` beats the global `:is(h1, h2, h3, h4)` display-font rule. */
+export const display = '!font-[family-name:var(--font-lp-display),system-ui,sans-serif] uppercase'
+/** Kept for older call sites. */
+export const headingSans = display
 
 export const MARK = '/landing/elah-mark.png'
 
-/** Outline, not border: it takes no layout space. */
-export const outline = '[outline:1px_solid_#F3E2DF] [outline-offset:-0.5px]'
+/** Hairline as an outline: it takes no layout space. */
+export const outline = '[outline:1px_solid_#D9D7D0] [outline-offset:-0.5px]'
+export const hair = 'border-[#D9D7D0]'
 
 /** Page container and gutters. */
-export const container = 'mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-[88px]'
+export const container = 'mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-[72px]'
 
 /** Section rhythm. */
-export const sectionY = 'py-16 lg:py-[112px]'
+export const sectionY = 'pb-16 lg:pb-[104px]'
 
-export const h2 = `m-0 text-[30px] leading-9 font-semibold tracking-[-1.4px] text-[#1B1416] text-balance sm:text-[40px] sm:leading-[44px] ${headingSans}`
-export const lead = `m-0 text-[17px] leading-[27px] text-[#77696B] text-pretty ${sans}`
-export const cardTitle = `m-0 text-[22px] font-semibold tracking-[-0.5px] text-[#1B1416] ${headingSans}`
-export const cardBody = `m-0 text-[15px] leading-[23px] text-[#77696B] ${sans}`
-export const monoLabel = `text-[12px] text-[#77696B] ${mono}`
+/** Mono uppercase label, the voice of every strip, tag and button. */
+export const label = `text-[11px] uppercase tracking-[0.14em] ${mono}`
 
-/** Buttons. Large: hero CTAs. Small: nav, footer. */
-const btnBase = `inline-flex items-center justify-center gap-2 font-semibold no-underline transition-colors ${sans}`
-export const btnLarge = 'px-[26px] py-[14px] text-[15px]'
-export const btnSmall = 'px-4 py-[7px] text-[14px]'
-export const btnPrimary = `${btnBase} bg-[#FF003C] text-[#1B1416] hover:bg-[#D10030]`
-export const btnSecondary = `${btnBase} bg-white text-[#1B1416] hover:bg-[#FFF5F3] ${outline}`
-export const btnDark = `${btnBase} bg-[#1B1416] text-white hover:bg-[#2E2224]`
+export const h2 = `m-0 text-[44px] leading-[0.92] font-extrabold tracking-[-0.5px] text-[#0E0E10] text-balance sm:text-[64px] lg:text-[80px] ${display}`
+export const lead = `m-0 text-[17px] leading-[27px] text-[#5E5D58] text-pretty ${sans}`
+export const cardTitle = `m-0 text-[26px] leading-[1] font-extrabold text-[#0E0E10] ${display}`
+export const cardBody = `m-0 text-[15px] leading-[23px] text-[#5E5D58] ${sans}`
+export const monoLabel = `${label} text-[#5E5D58]`
 
-/** Cards. A light card on a white section; white on blush. */
-export const cardLight = `bg-[#FFF5F3] p-6 flex flex-col gap-5 ${outline}`
-export const cardWhite = `bg-white p-6 flex flex-col gap-5 ${outline}`
-export const panel = `bg-white ${outline}`
-export const chip = `px-[10px] py-[6px] text-[12px] ${mono}`
+/** Buttons: square, mono uppercase. Large: hero CTAs. Small: nav, cards. */
+const btnBase = `inline-flex items-center justify-center gap-2 font-medium no-underline transition-colors uppercase tracking-[0.12em] ${mono}`
+export const btnLarge = 'h-[52px] px-6 text-[12px]'
+export const btnSmall = 'h-[36px] px-4 text-[11px]'
+export const btnPrimary = `${btnBase} bg-[#0E0E10] text-[#F0EFEA] hover:bg-[#FF003C] hover:text-[#0E0E10]`
+export const btnSecondary = `${btnBase} bg-transparent text-[#0E0E10] border border-[#0E0E10] hover:bg-[#0E0E10] hover:text-[#F0EFEA]`
+export const btnDark = btnPrimary
+
+/** Cards are hairline cells. */
+export const cardLight = `bg-[#F7F6F2] p-6 flex flex-col gap-5 ${outline}`
+export const cardWhite = cardLight
+export const panel = `bg-[#F0EFEA] ${outline}`
+export const chip = `px-[10px] py-[6px] text-[11px] uppercase tracking-[0.08em] ${mono}`

@@ -1,6 +1,7 @@
 import type { DemoName } from '@/lib/demos/load'
 import { LazyDemo } from '@/components/home/LazyDemo'
 import { Section } from './Section'
+import { Sel } from './Sel'
 import { cardBody, cardTitle, cardWhite, mono, outline } from './ui'
 
 interface Tile {
@@ -24,7 +25,7 @@ const tiles: Tile[] = [
 /** Motion capabilities grid (brief section 5, item 5). Each tile is a 3 s loop rendered by the engine. */
 export function HomeCapabilities() {
   return (
-    <Section bg="blush" id="capabilities" title="Everything is a key you can read." intro="Each loop below is rendered by the engine, not recorded. Coming in 1.0.">
+    <Section n={3} scene="Keys" kicker="Seven loops, rendered live" id="capabilities" title={<>Everything is a <Sel>key</Sel> you can read.</>} intro="Each loop below is rendered by the engine, not recorded. Coming in 1.0.">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
           <article key={t.demo} className={`${cardWhite} min-w-0 !p-5`}>
@@ -35,7 +36,7 @@ export function HomeCapabilities() {
               <h3 className={cardTitle}>{t.title}</h3>
               <p className={cardBody}>{t.text}</p>
             </div>
-            <code className={`mt-auto block overflow-x-auto whitespace-nowrap bg-[#FFF5F3] px-3 py-2 text-[12px] text-[#1B1416] ${mono} ${outline}`}>{t.code}</code>
+            <code className={`mt-auto block overflow-x-auto whitespace-nowrap bg-[#F0EFEA] px-3 py-2 text-[12px] text-[#0E0E10] ${mono} ${outline}`}>{t.code}</code>
           </article>
         ))}
       </div>

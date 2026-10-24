@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { siteConfig } from '@/config/site'
 import { Section } from './Section'
+import { Sel } from './Sel'
 import { MiniLanes, TRACK } from './MiniLanes'
 import { btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline } from './ui'
 
@@ -28,8 +29,8 @@ export function HomeClaude() {
   ]
   return (
     <Section
-      bg="white"
-      title={plugin ? 'Make a video from Claude Code.' : 'elah for Claude is coming soon.'}
+      n={4} scene="Claude" kicker="Claude Code · claude.ai"
+      title={plugin ? <>Make a video from <Sel>Claude Code.</Sel></> : <>elah for Claude is coming <Sel>soon.</Sel></>}
       intro="Claude writes the video as data. elah turns it into a normal project on a timeline that you can open, edit and export as mp4 in your own browser."
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -38,7 +39,7 @@ export function HomeClaude() {
             <div className="flex flex-col gap-[10px]">
               <div className="flex items-center justify-between gap-3">
                 <h3 className={cardTitle}>{c.title}</h3>
-                <span className={`shrink-0 bg-white px-3 py-[3px] text-[12px] text-[#77696B] ${mono} ${outline}`}>{c.tag}</span>
+                <span className={`shrink-0 bg-[#F7F6F2] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono} ${outline}`}>{c.tag}</span>
               </div>
               <p className={cardBody}>{c.body}</p>
             </div>

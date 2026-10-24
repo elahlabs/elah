@@ -1,19 +1,43 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, Copy } from 'lucide-react'
 import posthog from 'posthog-js'
 import { LazyDemo } from '@/components/home/LazyDemo'
-import { btnLarge, btnPrimary, btnSecondary, container, headingSans, lead, mono, outline } from './ui'
+import { CropMarks, Sel } from './Sel'
+import { btnLarge, btnPrimary, btnSecondary, container, display, label, lead } from './ui'
 
 const INSTALL = 'npm install @elah/core'
 const CLAUDE = '/claude'
+const FPS = 30
 
 /**
- * Hero (brief section 5, item 1; DESIGN.md "Hero + stage"). The stage is the
- * engine itself: an 8 s loop with its timeline under it, keyframe diamonds on
- * the clips, the playhead moving. Not a screen recording.
+ * A record timecode that runs from mount; frozen at zero for reduced motion.
+ * Its own component so the ticking re-renders only this span, not the stage.
+ */
+function RecTimecode() {
+  const [frames, setFrames] = useState(0)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t0 = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      setFrames(Math.floor(((now - t0) / 1000) * FPS))
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const s = Math.floor(frames / FPS)
+  return <span className="tabular-nums">{`${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}:${pad(frames % FPS)}`}</span>
+}
+
+/**
+ * Hero: the headline sits in a viewfinder (crop marks, a centre cross, a
+ * running REC timecode), and under it the program monitor plays the engine
+ * itself: an 8 s loop with its timeline, keyframe diamonds and playhead.
  */
 export function HomeHero() {
   const [copied, setCopied] = useState(false)
@@ -32,48 +56,67 @@ export function HomeHero() {
   }
 
   return (
-    <header className="bg-[#FFF5F3] pt-12 sm:pt-16">
-      <div className={`${container} flex flex-col items-center gap-6 text-center`}>
-        <h1
-          className={`m-0 max-w-[820px] text-[34px] leading-[38px] font-semibold tracking-[-1.4px] text-balance sm:text-[48px] sm:leading-[52px] sm:tracking-[-2px] ${headingSans}`}
-        >
-          <span className="block text-[#1B1416]">Write motion as code.</span>
-          <span className="block text-[#FF003C]">It stays editable.</span>
-        </h1>
-        <p className={`${lead} max-w-[560px]`}>Open source. Renders in the browser.</p>
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href={CLAUDE}
-            className={`${btnPrimary} ${btnLarge}`}
-          >
-            Try the Claude plugin
-            <ArrowRight size={16} strokeWidth={2} aria-hidden />
-          </Link>
-          <button
-            type="button"
-            onClick={copy}
-            aria-label={`Copy ${INSTALL}`}
-            title={`Copy ${INSTALL}`}
-            className={`${btnSecondary} ${btnLarge} ${mono} !font-medium`}
-          >
-            <span className="text-[#FF003C]">$</span>
-            {INSTALL}
-            {copied ? <Check size={16} strokeWidth={2} aria-hidden /> : <Copy size={16} strokeWidth={2} aria-hidden />}
-          </button>
+    <header data-scene="Open" className="pt-6 sm:pt-8">
+      <div className={container}>
+        <div className={`flex items-center justify-between gap-4 py-3 text-[#0E0E10] ${label}`}>
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="h-[8px] w-[8px] animate-pulse bg-[#FF003C] motion-reduce:animate-none" />
+            REC <RecTimecode />
+          </span>
+          <span className="hidden text-[#5E5D58] sm:inline">Open source · Apache-2.0</span>
         </div>
-        <p className={`m-0 text-[12px] text-[#77696B] ${mono}`}>The motion layer is coming in 1.0.</p>
-        <Link href="/changelog" className={`text-[14px] text-[#77696B] no-underline transition-colors hover:text-[#1B1416] ${mono}`}>
-          Coming in 1.0: the motion and programmatic layer. Read the changelog →
-        </Link>
-      </div>
 
-      <div className={`${container} mt-10 sm:mt-12`}>
-        <figure className={`m-0 overflow-hidden border border-b-0 border-[#F3E2DF] bg-[#170F10]`}>
+        <div className="relative px-5 py-12 sm:px-10 sm:py-16 lg:py-20">
+          <CropMarks size={18} />
+          <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[22px] w-px -translate-y-1/2 bg-[#D9D7D0]" />
+          <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-px w-[22px] -translate-x-1/2 bg-[#D9D7D0]" />
+
+          <h1 className={`relative m-0 text-[64px] font-extrabold leading-[0.86] tracking-[-0.5px] text-[#0E0E10] sm:text-[112px] lg:text-[148px] ${display}`}>
+            <span className="block">Write motion</span>
+            <span className="block">
+              as <Sel>code.</Sel>
+            </span>
+            <span className="block">It stays editable.</span>
+          </h1>
+
+          <div className="relative mt-10 flex flex-col gap-6 lg:mt-12 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-3">
+              <p className={`${lead} max-w-[440px]`}>Open source. Renders in the browser.</p>
+              <p className={`m-0 text-[#5E5D58] ${label}`}>The motion layer is coming in 1.0.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href={CLAUDE} className={`${btnPrimary} ${btnLarge}`}>
+                Try the Claude plugin
+                <ArrowRight size={15} strokeWidth={2} aria-hidden />
+              </Link>
+              <button type="button" onClick={copy} aria-label={`Copy ${INSTALL}`} title={`Copy ${INSTALL}`} className={`${btnSecondary} ${btnLarge} !normal-case !tracking-normal`}>
+                <span aria-hidden>$</span>
+                {INSTALL}
+                {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Copy size={15} strokeWidth={2} aria-hidden />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <Link
+          href="/changelog"
+          className={`flex items-center justify-between gap-4 border-y border-[#D9D7D0] py-3 text-[#0E0E10] no-underline transition-colors hover:bg-[#E8E6E0] ${label}`}
+        >
+          <span>Coming in 1.0: the motion and programmatic layer.</span>
+          <span className="shrink-0">Read the changelog →</span>
+        </Link>
+
+        <figure className="m-0 mt-10 bg-[#0E0E10] sm:mt-12">
+          <div className={`flex items-center justify-between gap-4 border-b border-[#2E2E33] px-4 py-3 text-[#9A9993] ${label}`}>
+            <span>
+              <span className="text-[#F0EFEA]">Program</span> · hero.json
+            </span>
+            <span className="hidden sm:inline">{FPS} fps · 8.0 s loop</span>
+          </div>
           <div className="mx-auto w-full max-w-[880px]">
             <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={560} />
           </div>
-          <figcaption className={`border-t border-[#3D3032] px-4 py-3 text-[12px] text-[#A8999B] ${mono}`}>
+          <figcaption className={`border-t border-[#2E2E33] px-4 py-3 text-[#9A9993] ${label}`}>
             Rendered by the engine. The diamonds are the keyframes, and the playhead is the timeline playing.
           </figcaption>
         </figure>

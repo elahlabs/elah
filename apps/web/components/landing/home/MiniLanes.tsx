@@ -17,25 +17,25 @@ export const TRACK = { motion: '#FF003C', mint: '#3DDC97', amber: '#E0A33A' } as
  */
 export function MiniLanes({ lanes, playhead }: { lanes: MiniClip[][]; playhead: number }) {
   return (
-    <div aria-hidden="true" className="relative flex flex-col gap-[4px] bg-white p-3 [outline:1px_solid_#F3E2DF] [outline-offset:-0.5px]">
+    <div aria-hidden="true" className="relative flex flex-col gap-[4px] bg-[#F7F6F2] p-3 [outline:1px_solid_#D9D7D0] [outline-offset:-0.5px]">
       {lanes.map((lane, i) => (
-        <div key={i} className="relative h-[26px] bg-[#FFF5F3]">
+        <div key={i} className="relative h-[26px] bg-[#F0EFEA]">
           {lane.map((c) => (
             <div
               key={c.label + c.left}
-              className={`absolute top-[2px] bottom-[2px] overflow-hidden px-[6px] text-[10px] font-semibold leading-[22px] text-[#1B1416] ${mono}`}
+              className={`absolute top-[2px] bottom-[2px] overflow-hidden px-[6px] text-[10px] font-semibold leading-[22px] text-[#0E0E10] ${mono}`}
               style={{ left: `${c.left}%`, width: `${c.width}%`, background: c.color }}
             >
               {c.label}
               {c.keys?.map((k) => (
-                <span key={k} className="absolute bottom-[3px] h-[7px] w-[7px] rotate-45 bg-[#1B1416]" style={{ left: `${k}%` }} />
+                <span key={k} className="absolute bottom-[3px] h-[7px] w-[7px] rotate-45 bg-[#0E0E10]" style={{ left: `${k}%` }} />
               ))}
             </div>
           ))}
         </div>
       ))}
-      <div className="pointer-events-none absolute bottom-3 top-1 w-[2px] bg-[#1B1416]" style={{ left: `calc(12px + ${playhead}% * 0.9)` }}>
-        <svg viewBox="0 0 12 10" className="absolute -left-[5px] -top-[2px] h-[10px] w-[12px] fill-[#1B1416]">
+      <div className="pointer-events-none absolute bottom-3 top-1 w-[2px] bg-[#0E0E10]" style={{ left: `calc(12px + ${playhead}% * 0.9)` }}>
+        <svg viewBox="0 0 12 10" className="absolute -left-[5px] -top-[2px] h-[10px] w-[12px] fill-[#0E0E10]">
           <path d="M0 0 L12 0 L6 10 Z" />
         </svg>
       </div>

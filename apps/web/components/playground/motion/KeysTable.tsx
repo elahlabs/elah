@@ -17,13 +17,13 @@ const tones = {
     input: 'border border-outline-variant bg-surface px-1.5 py-0.5',
     id: 'text-on-surface-variant',
   },
-  // DESIGN.md: ink on white, muted labels, #F3E2DF outlines, blush hover.
+  // DESIGN.md: ink on white, muted labels, #D9D7D0 outlines, blush hover.
   landing: {
-    empty: 'p-4 text-[12px] text-[#77696B]',
-    head: 'sticky top-0 bg-[#FFF5F3] text-[#77696B]',
-    row: 'cursor-pointer border-t border-[#F3E2DF] text-[#1B1416] transition-colors hover:bg-[#FFF5F3]',
-    input: 'border border-[#F3E2DF] bg-white px-1.5 py-0.5',
-    id: 'text-[#77696B]',
+    empty: 'p-4 text-[12px] text-[#5E5D58]',
+    head: 'sticky top-0 bg-[#F0EFEA] text-[#5E5D58]',
+    row: 'cursor-pointer border-t border-[#D9D7D0] text-[#0E0E10] transition-colors hover:bg-[#F0EFEA]',
+    input: 'border border-[#D9D7D0] bg-[#F7F6F2] px-1.5 py-0.5',
+    id: 'text-[#5E5D58]',
   },
 } as const
 

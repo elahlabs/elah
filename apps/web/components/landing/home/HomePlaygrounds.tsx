@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react'
 import { trackPlaygroundLaunch } from '@/lib/analytics'
 import { playgrounds } from '../landingData'
 import { Section } from './Section'
+import { Sel } from './Sel'
 import { MiniLanes, TRACK, type MiniClip } from './MiniLanes'
 import { btnSecondary, btnSmall, cardBody, cardTitle, cardWhite, mono, outline } from './ui'
 
@@ -44,14 +45,14 @@ const LANES: Record<string, { lanes: MiniClip[][]; playhead: number }> = {
 /** Playgrounds (brief section 5, item 7): the motion playground first. */
 export function HomePlaygrounds() {
   return (
-    <Section bg="blush" id="playgrounds" title="Launch a playground." intro="Each playground is a live deployment of the elah engine, running in your browser.">
+    <Section n={5} scene="Play" kicker="Live deployments" id="playgrounds" title={<>Launch a <Sel>playground.</Sel></>} intro="Each playground is a live deployment of the elah engine, running in your browser.">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {playgrounds.map((p) => {
           const v = LANES[p.title] ?? LANES['Full Editor']
           return (
             <article key={p.title} className={`${cardWhite} min-w-0 !p-5`}>
               <div className="flex flex-col gap-[10px]">
-                <span className={`self-start bg-[#FFF5F3] px-3 py-[3px] text-[12px] text-[#77696B] ${mono} ${outline}`}>
+                <span className={`self-start bg-[#F0EFEA] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono} ${outline}`}>
                   {p.badge === 'live' ? 'Live' : 'Experimental'}
                 </span>
                 <h3 className={cardTitle}>{p.title}</h3>
