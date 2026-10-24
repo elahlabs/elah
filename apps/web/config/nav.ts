@@ -26,9 +26,11 @@ export const CONTACT_URL = 'mailto:paul@elah.dev'
 
 /** Primary header links, in display order. */
 export const navLinks: NavLink[] = [
+  { label: 'Motion', href: '/motion' },
+  { label: 'Claude', href: '/claude' },
   { label: 'Docs', href: '/docs' },
-  { label: 'Examples', href: '/examples' },
   { label: 'Playgrounds', href: '/playgrounds' },
+  { label: 'Examples', href: '/examples' },
   { label: 'Blog', href: '/blog' },
 ]
 
@@ -39,6 +41,8 @@ export const footerColumns: FooterColumn[] = [
       { label: 'Docs', href: '/docs' },
       { label: 'Examples', href: '/examples' },
       { label: 'Playgrounds', href: '/playgrounds' },
+      { label: 'Motion', href: '/motion' },
+      { label: 'Claude', href: '/claude' },
       { label: 'Blog', href: '/blog' },
       { label: 'Changelog', href: '/changelog' },
     ],
@@ -50,6 +54,8 @@ export const footerColumns: FooterColumn[] = [
       { label: 'API Reference', href: '/docs/api' },
       { label: 'Timeline API', href: '/docs/timeline' },
       { label: 'Editor API', href: '/docs/editor' },
+      { label: 'Motion', href: '/docs/motion' },
+      { label: 'HTML scenes & VideoSpec', href: '/docs/scenes' },
       { label: 'Export Pipeline', href: '/docs/export' },
       { label: 'Architecture', href: '/docs/architecture' },
       { label: 'For agents', href: '/docs/agents' },

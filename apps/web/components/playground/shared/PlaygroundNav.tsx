@@ -12,6 +12,7 @@ const MERGED_ROUTES = new Set(['/playground/production'])
 
 // Brand package label per tab — falls back to the editor package.
 const PKG_BY_ROUTE: Record<string, string> = {
+  '/playground/motion': '@elah/core',
   '/playground/timeline': '@elah/timeline',
 }
 

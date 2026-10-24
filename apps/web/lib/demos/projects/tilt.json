@@ -1,0 +1,238 @@
+{
+  "id": "av-2r75vv3n",
+  "fps": 30,
+  "stage": {
+    "width": 640,
+    "height": 360
+  },
+  "tracks": [
+    {
+      "id": "brmthltz",
+      "name": "Background",
+      "kind": "elements",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "dm4l3pvz",
+      "name": "Layer 1",
+      "kind": "elements",
+      "order": 1,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    }
+  ],
+  "clips": {
+    "brmthltz": [
+      {
+        "id": "av-ezzzq8ha",
+        "trackId": "brmthltz",
+        "type": "shape",
+        "name": "Background",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 1.7777777777777777,
+          "scaleY": 1
+        },
+        "shapeKind": "rect",
+        "shapeFill": "#170F10",
+        "shapeStrokeWidth": 0
+      }
+    ],
+    "dm4l3pvz": [
+      {
+        "id": "av-ri0p9bpl",
+        "trackId": "dm4l3pvz",
+        "type": "compound",
+        "name": "group",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "compound": {
+          "project": {
+            "id": "av-jbxctv2f",
+            "fps": 30,
+            "stage": {
+              "width": 640,
+              "height": 360
+            },
+            "tracks": [
+              {
+                "id": "njia3c00",
+                "name": "Layer 0",
+                "kind": "elements",
+                "order": 0,
+                "height": 64,
+                "locked": false,
+                "disabled": false,
+                "muted": false,
+                "solo": false,
+                "volume": 1,
+                "protected": false
+              },
+              {
+                "id": "xtnhvx2b",
+                "name": "Layer 1",
+                "kind": "elements",
+                "order": 1,
+                "height": 64,
+                "locked": false,
+                "disabled": false,
+                "muted": false,
+                "solo": false,
+                "volume": 1,
+                "protected": false
+              }
+            ],
+            "clips": {
+              "njia3c00": [
+                {
+                  "id": "av-cz5udntp",
+                  "trackId": "njia3c00",
+                  "type": "text",
+                  "name": "Tilt",
+                  "startFrame": 0,
+                  "durationFrames": 90,
+                  "sourceStartFrame": 0,
+                  "sourceDurationFrames": 90,
+                  "volume": 1,
+                  "opacity": 1,
+                  "locked": false,
+                  "disabled": false,
+                  "transform": {
+                    "x": 0.5,
+                    "y": 0.5,
+                    "scale": 1,
+                    "rotation": 0,
+                    "anchor": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "content": "Tilt",
+                  "transformModel": "v2",
+                  "fontId": "space-grotesk",
+                  "fontSize": 72,
+                  "color": "#FBF3F1",
+                  "partId": "card-t"
+                }
+              ],
+              "xtnhvx2b": [
+                {
+                  "id": "av-oq4cueli",
+                  "trackId": "xtnhvx2b",
+                  "type": "shape",
+                  "name": "rect",
+                  "startFrame": 0,
+                  "durationFrames": 90,
+                  "sourceStartFrame": 0,
+                  "sourceDurationFrames": 90,
+                  "volume": 1,
+                  "opacity": 1,
+                  "locked": false,
+                  "disabled": false,
+                  "transform": {
+                    "x": 0.5,
+                    "y": 0.5,
+                    "scale": 1,
+                    "rotation": 0,
+                    "anchor": {
+                      "x": 0.5,
+                      "y": 0.5
+                    },
+                    "scaleX": 1,
+                    "scaleY": 0.5555555555555556
+                  },
+                  "shapeKind": "rect",
+                  "shapeFill": "#261A1C",
+                  "shapeFillPaint": {
+                    "type": "solid",
+                    "color": "#261A1C"
+                  },
+                  "cornerRadius": 0.12,
+                  "partId": "card-bg"
+                }
+              ]
+            },
+            "transitions": [],
+            "version": 1
+          }
+        },
+        "assetFrames": 90,
+        "keyframes": {
+          "channels": {
+            "rotateY": {
+              "source": {
+                "kind": "keyframes"
+              },
+              "keys": [
+                {
+                  "id": "t0",
+                  "frame": 0,
+                  "value": -0.6,
+                  "easing": "linear"
+                },
+                {
+                  "id": "t1",
+                  "frame": 45,
+                  "value": 0.6,
+                  "easing": "cubic-in-out"
+                },
+                {
+                  "id": "t2",
+                  "frame": 89,
+                  "value": -0.6,
+                  "easing": "cubic-in-out"
+                }
+              ]
+            }
+          }
+        },
+        "partId": "card"
+      }
+    ]
+  },
+  "transitions": [],
+  "version": 4
+}

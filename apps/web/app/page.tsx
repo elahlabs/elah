@@ -2,18 +2,27 @@ import type { Metadata } from 'next'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { siteConfig } from '@/config/site'
 import { currentVersion } from '@/config/changelog'
-import { LandingNav } from '@/components/landing/LandingNav'
-import { LandingHero } from '@/components/landing/LandingHero'
-import { WhatsNew, Architecture, DataFlow, Integration, Faq, Cta } from '@/components/landing/LandingSections'
-import { StatsStrip } from '@/components/landing/StatsStrip'
 import { getSiteStats, toDisplay } from '@/lib/stats'
-import { LandingLibraries } from '@/components/landing/LandingLibraries'
-import { AgentsBand } from '@/components/landing/AgentsBand'
-import { LandingPlaygrounds } from '@/components/landing/LandingPlaygrounds'
-import { LandingFooter } from '@/components/landing/LandingFooter'
+import { homeFontVars } from '@/components/landing/home/fonts'
+import { HomeNav } from '@/components/landing/home/HomeNav'
+import { HomeHero } from '@/components/landing/home/HomeHero'
+import { HomeStats } from '@/components/landing/home/HomeStats'
+import { HomeSteps } from '@/components/landing/home/HomeSteps'
+import { HomeBinding } from '@/components/landing/home/HomeBinding'
+import { HomeCapabilities } from '@/components/landing/home/HomeCapabilities'
+import { HomeClaude } from '@/components/landing/home/HomeClaude'
+import { HomePlaygrounds } from '@/components/landing/home/HomePlaygrounds'
+import { HomeLibraries } from '@/components/landing/home/HomeLibraries'
+import { HomeWhy } from '@/components/landing/home/HomeWhy'
+import { HomeArchitecture } from '@/components/landing/home/HomeArchitecture'
+import { HomeFaq } from '@/components/landing/home/HomeFaq'
+import { HomeCta } from '@/components/landing/home/HomeCta'
+import { HomeFooter } from '@/components/landing/home/HomeFooter'
 
 export const metadata: Metadata = {
-  title: { absolute: 'elah — browser-native, frame-accurate video editing engine' },
+  title: { absolute: 'elah — write motion as code, edit it on a timeline' },
+  description:
+    'Open-source video engine for the browser. Write motion as code, keep it as editable clips and keyframes, and export mp4 without a server.',
   alternates: { canonical: '/' },
 }
 
@@ -31,26 +40,28 @@ const softwareJsonLd = {
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 }
 
+/** Brief section 5 order, in the DESIGN.md look (components/landing/home/DESIGN.md). */
 export default async function HomePage() {
   const stats = toDisplay(await getSiteStats())
   return (
-    <div className="landing-root" style={{ minHeight: '100vh' }}>
+    <div className={`${homeFontVars} min-h-screen bg-[#FFF5F3] leading-[normal]`}>
       <JsonLd data={softwareJsonLd} />
-      <LandingNav />
-      <main>
-        <LandingHero stats={stats} />
-        <StatsStrip stats={stats} />
-        <WhatsNew />
-        <LandingLibraries />
-        <Architecture />
-        <DataFlow />
-        <LandingPlaygrounds />
-        <Integration />
-        <AgentsBand />
-        <Faq />
-        <Cta />
+      <HomeNav stars={stats.stars} />
+      <main id="main">
+        <HomeHero />
+        <HomeStats stats={stats} />
+        <HomeSteps />
+        <HomeBinding />
+        <HomeCapabilities />
+        <HomeClaude />
+        <HomePlaygrounds />
+        <HomeLibraries />
+        <HomeWhy />
+        <HomeArchitecture />
+        <HomeFaq />
+        <HomeCta />
       </main>
-      <LandingFooter />
+      <HomeFooter stars={stats.stars} />
     </div>
   )
 }

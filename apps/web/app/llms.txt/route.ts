@@ -25,6 +25,8 @@ const DOCS: DocLink[] = [
   { title: 'Editor', path: '/docs/editor', description: 'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, transform overlays with crop, text overlays, transitions.' },
   { title: 'Clips & tracks', path: '/docs/clips', description: 'Multiple video tracks, Clip.speed, Clip.crop, Clip.cornerRadius, protected and pinned tracks, growClipToAssetDuration.' },
   { title: 'Text templates & motion', path: '/docs/text-templates-and-motion', description: 'Layered MotionSpec animation, easings, sampleTextAnimation, the 14 built-in text templates, applyTextTemplate, text style presets.' },
+  { title: 'Motion', path: '/docs/motion', description: 'Keyframes on every transform channel, easing and springs, expressions, text animators, stagger, motion paths, motion presets. Keys are plain data with ids.' },
+  { title: 'HTML scenes & VideoSpec', path: '/docs/scenes', description: 'Experimental: HTML + CSS scenes (@elah/core/html) and VideoSpec JSON (@elah/core/spec) that convert to native clips and keyframes.' },
   { title: 'Frame sequences', path: '/docs/frame-sequences', description: 'Ordered image sets (360 degree orbits, storyboards): createFrameSequence, FrameSequenceController, createFramePreloader, frameSequenceToProject.' },
   { title: 'Project documents', path: '/docs/project-documents', description: 'readProjectDocument, ProjectDocumentError, PROJECT_VERSION, relinkProjectMedia, loadProject options, media library snapshots.' },
   { title: 'Theming', path: '/docs/theming', description: 'The --elah-* design tokens, the elah-root scope, the three stylesheets, the classNames slot API.' },
@@ -38,6 +40,9 @@ const DOCS: DocLink[] = [
 ]
 
 const RESOURCES: DocLink[] = [
+  { title: 'Motion', path: '/motion', description: 'Programmatic motion graphics that land as editable clips and keyframes.' },
+  { title: 'Elah for Claude', path: '/claude', description: 'The Claude Code plugin and the planned claude.ai artifact.' },
+  { title: 'Motion playground', path: '/playground/motion', description: 'Write a scene as code, convert it to clips and keyframes, export MP4 in the browser.' },
   { title: 'Playgrounds', path: '/playgrounds', description: 'Live, editable examples running the SDK in the browser.' },
   { title: 'Examples', path: '/examples', description: 'Focused code samples for common tasks.' },
   { title: 'Blog', path: '/blog', description: 'Engineering notes and release posts.' },

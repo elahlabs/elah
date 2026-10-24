@@ -11,6 +11,15 @@ export const siteConfig = {
     docs: '/docs',
     playgrounds: '/playgrounds',
   },
+  /**
+   * Launch switches for /claude (brief section 10a). Launch day is a config
+   * change: turn `plugin` on and the plugin card shows its launch state. The
+   * artifact stays "coming soon" until it is verified inside claude.ai.
+   */
+  claude: {
+    plugin: false,
+    artifact: false,
+  },
   keywords: [
     'video editor',
     'browser-native',
