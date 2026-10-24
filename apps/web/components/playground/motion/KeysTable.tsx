@@ -14,7 +14,7 @@ const tones = {
     empty: 'p-4 text-xs text-on-surface-variant',
     head: 'sticky top-0 bg-surface-container text-on-surface-variant',
     row: 'cursor-pointer border-t border-outline-variant text-on-surface hover:bg-surface-container',
-    input: 'rounded border border-outline-variant bg-surface px-1.5 py-0.5',
+    input: 'border border-outline-variant bg-surface px-1.5 py-0.5',
     id: 'text-on-surface-variant',
   },
   // DESIGN.md: ink on white, muted labels, #F3E2DF outlines, blush hover.
@@ -22,7 +22,7 @@ const tones = {
     empty: 'p-4 text-[12px] text-[#77696B]',
     head: 'sticky top-0 bg-[#FFF5F3] text-[#77696B]',
     row: 'cursor-pointer border-t border-[#F3E2DF] text-[#1B1416] transition-colors hover:bg-[#FFF5F3]',
-    input: 'rounded-[6px] border border-[#F3E2DF] bg-white px-1.5 py-0.5',
+    input: 'border border-[#F3E2DF] bg-white px-1.5 py-0.5',
     id: 'text-[#77696B]',
   },
 } as const

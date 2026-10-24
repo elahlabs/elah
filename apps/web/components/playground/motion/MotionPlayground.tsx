@@ -88,7 +88,7 @@ export default function MotionPlayground() {
               id="starter"
               value={starter.id}
               onChange={(e) => pick(e.target.value)}
-              className="rounded border border-outline-variant bg-surface-container px-2 py-1 text-xs text-on-surface"
+              className="border border-outline-variant bg-surface-container px-2 py-1 text-xs text-on-surface"
             >
               {STARTERS.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -96,7 +96,7 @@ export default function MotionPlayground() {
                 </option>
               ))}
             </select>
-            <span className="rounded border border-outline-variant px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-on-surface-variant">
+            <span className="border border-outline-variant px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-on-surface-variant">
               Experimental
             </span>
             <div className="ml-auto flex gap-1" role="tablist" aria-label="Source">
@@ -106,7 +106,7 @@ export default function MotionPlayground() {
                   role="tab"
                   aria-selected={tab === t}
                   onClick={() => setTab(t)}
-                  className="rounded px-2 py-1 font-mono text-xs text-on-surface-variant aria-selected:bg-surface-container aria-selected:text-on-surface"
+                  className="px-2 py-1 font-mono text-xs text-on-surface-variant aria-selected:bg-surface-container aria-selected:text-on-surface"
                 >
                   {t.toUpperCase()}
                 </button>
@@ -115,7 +115,7 @@ export default function MotionPlayground() {
             <button
               onClick={() => void convert({ html, css }, starter)}
               disabled={result.status === 'working'}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-on-primary disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 bg-primary px-3 py-1.5 text-xs font-medium text-on-primary disabled:opacity-60"
             >
               <RefreshCw size={13} /> Convert
             </button>
@@ -213,7 +213,7 @@ function Stage({ converted, title }: { converted: Converted | null; title: strin
         <Preview demuxerFactory={demuxerFactory.current} style={{ width: '100%', height: '100%' }} />
       </div>
       <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant p-2">
-        <button onClick={toggle} aria-label={isPlaying ? 'Pause' : 'Play'} className="rounded p-2 text-on-surface hover:bg-surface-container">
+        <button onClick={toggle} aria-label={isPlaying ? 'Pause' : 'Play'} className="p-2 text-on-surface hover:bg-surface-container">
           {isPlaying ? <Pause size={15} /> : <Play size={15} />}
         </button>
         <button
@@ -222,7 +222,7 @@ function Stage({ converted, title }: { converted: Converted | null; title: strin
             usePlaybackStore.getState().setCurrentFrame(0)
           }}
           aria-label="Stop"
-          className="rounded p-2 text-on-surface hover:bg-surface-container"
+          className="p-2 text-on-surface hover:bg-surface-container"
         >
           <Square size={14} />
         </button>
@@ -230,14 +230,14 @@ function Stage({ converted, title }: { converted: Converted | null; title: strin
           <button
             onClick={onDownload}
             disabled={!converted}
-            className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant px-3 py-1.5 text-xs text-on-surface disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 text-xs text-on-surface disabled:opacity-50"
           >
             <FileJson size={13} /> Download project JSON
           </button>
           <button
             onClick={onExport}
             disabled={!converted || (support !== null && !support.ok)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-on-primary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 bg-primary px-3 py-1.5 text-xs font-medium text-on-primary disabled:opacity-50"
           >
             <Download size={13} /> Export MP4
           </button>
@@ -252,7 +252,7 @@ function Stage({ converted, title }: { converted: Converted | null; title: strin
         <div className="border-b border-outline-variant p-2 text-xs text-on-surface-variant" role="status">
           {status.text}
           {status.progress !== undefined && (
-            <span className="mt-1 block h-1 overflow-hidden rounded bg-surface-container">
+            <span className="mt-1 block h-1 overflow-hidden bg-surface-container">
               <i className="block h-full bg-primary" style={{ width: `${Math.round(status.progress * 100)}%` }} />
             </span>
           )}

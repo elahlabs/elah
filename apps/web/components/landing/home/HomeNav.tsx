@@ -12,12 +12,12 @@ export function HomeNav({ stars = null }: { stars?: string | null }) {
     <header className="w-full px-4 pt-3 sm:px-8 lg:px-[88px]">
       <nav
         aria-label="Primary"
-        className={`mx-auto flex h-[46px] w-full max-w-[1264px] items-center justify-between rounded-full bg-white pl-5 pr-[7px] ${outline}`}
+        className={`mx-auto flex h-[46px] w-full max-w-[1264px] items-center justify-between bg-white pl-5 pr-[7px] ${outline}`}
       >
         <Link href="/" className="flex items-center gap-[10px] no-underline">
           <span
             aria-hidden="true"
-            className="h-[26px] w-[26px] shrink-0 rounded-[7px]"
+            className="h-[26px] w-[26px] shrink-0 "
             style={{ backgroundImage: `url(${MARK})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           />
           <span className={`text-[17px] font-semibold tracking-[-0.6px] text-[#1B1416] ${sans}`}>elah</span>

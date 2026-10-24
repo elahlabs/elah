@@ -65,7 +65,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
         <span
           aria-hidden="true"
           style={{ transitionDelay: near ? '250ms' : '0ms', backgroundImage: `url(${MARK})` }}
-          className={`block h-[92px] w-[92px] origin-top rounded-[24px] bg-cover bg-center shadow-[0_14px_30px_-10px_rgba(27,20,22,0.45)] transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.3,1.5,0.5,1)] motion-reduce:transition-none ${
+          className={`block h-[92px] w-[92px] origin-top bg-cover bg-center shadow-[0_14px_30px_-10px_rgba(27,20,22,0.45)] transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.3,1.5,0.5,1)] motion-reduce:transition-none ${
             near ? 'translate-y-0 rotate-0 scale-100 opacity-100' : '-translate-y-6 -rotate-6 scale-50 opacity-0'
           }`}
         />
@@ -108,7 +108,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={`group ${btnDark} ${btnSmall} gap-[10px] !py-[7px] !pl-4 !pr-[7px]`}>
             <GitHubLogo />
             Star us on GitHub
-            <span className="inline-flex items-center gap-[5px] rounded-full bg-white/10 px-[10px] py-[3px] text-[13px] font-medium">
+            <span className="inline-flex items-center gap-[5px] bg-white/10 px-[10px] py-[3px] text-[13px] font-medium">
               <svg viewBox="0 0 24 24" className="h-[13px] w-[13px] fill-[#F0625A] transition-transform duration-300 group-hover:rotate-[72deg] group-hover:scale-125" aria-hidden="true">
                 <path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z" />
               </svg>

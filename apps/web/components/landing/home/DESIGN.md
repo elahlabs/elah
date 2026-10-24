@@ -166,6 +166,10 @@ There are no divider lines between them.
 
 ## 5. Shape
 
+> **Square corners (current).** All radii below are set to 0: buttons, nav, cards, panels, chips, clips,
+> tiles and the footer mark are rectangles. Only the footer's curved edge and the engine-drawn
+> timeline/video content keep their own shapes. The nesting rule now applies to outlines only.
+
 ### Radii
 
 | Radius | Used for |

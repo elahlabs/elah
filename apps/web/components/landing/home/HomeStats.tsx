@@ -13,7 +13,7 @@ export function HomeStats({ stats }: { stats: SiteStatsDisplay }) {
   return (
     <section className={`bg-white py-10 lg:py-14`} aria-label="elah in numbers">
       <div className={container}>
-        <dl className={`m-0 grid grid-cols-2 overflow-hidden rounded-[20px] bg-[#FFF5F3] lg:grid-cols-4 ${outline}`}>
+        <dl className={`m-0 grid grid-cols-2 overflow-hidden bg-[#FFF5F3] lg:grid-cols-4 ${outline}`}>
           {cells.map((c, i) => (
             <div key={c.label} className={`flex flex-col gap-1 p-5 ${i > 0 ? 'lg:border-l lg:border-[#F3E2DF]' : ''} ${i % 2 === 1 ? 'border-l border-[#F3E2DF] lg:border-l' : ''} ${i >= 2 ? 'border-t border-[#F3E2DF] lg:border-t-0' : ''}`}>
               <dt className={`text-[12px] text-[#77696B] ${mono}`}>{c.label}</dt>

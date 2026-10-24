@@ -113,7 +113,7 @@ function Inner({ project, preview = true, timeline = true, timelineHeight = 150,
               type="button"
               onClick={() => usePlaybackStore.getState().togglePlayPause()}
               aria-label={isPlaying ? `Pause ${label}` : `Play ${label}`}
-              className="absolute bottom-[10px] left-[10px] grid h-9 w-9 place-items-center rounded-full bg-white text-[#1B1416] transition-colors hover:bg-[#FFF5F3]"
+              className="absolute bottom-[10px] left-[10px] grid h-9 w-9 place-items-center bg-white text-[#1B1416] transition-colors hover:bg-[#FFF5F3]"
             >
               {isPlaying ? <Pause size={15} strokeWidth={2} aria-hidden /> : <Play size={15} strokeWidth={2} aria-hidden />}
             </button>

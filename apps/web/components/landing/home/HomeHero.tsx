@@ -69,7 +69,7 @@ export function HomeHero() {
       </div>
 
       <div className={`${container} mt-10 sm:mt-12`}>
-        <figure className={`m-0 overflow-hidden rounded-t-[20px] border border-b-0 border-[#F3E2DF] bg-[#170F10]`}>
+        <figure className={`m-0 overflow-hidden border border-b-0 border-[#F3E2DF] bg-[#170F10]`}>
           <div className="mx-auto w-full max-w-[880px]">
             <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={560} />
           </div>

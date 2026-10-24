@@ -33,7 +33,7 @@ export function HomeWhy() {
   const td = `border-t border-[#F3E2DF] px-4 py-4 align-top text-[15px] leading-[23px] text-[#77696B] ${sans}`
   return (
     <Section bg="blush" id="why" title="How elah compares.">
-      <div className={`overflow-x-auto rounded-[20px] bg-white ${outline}`} tabIndex={0} role="region" aria-label="Comparison table">
+      <div className={`overflow-x-auto bg-white ${outline}`} tabIndex={0} role="region" aria-label="Comparison table">
         <table className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr>

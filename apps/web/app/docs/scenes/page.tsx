@@ -26,7 +26,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -35,7 +35,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Experimental() {
   return (
-    <span className="ml-2 rounded border border-outline-variant px-1.5 py-0.5 align-middle text-2xs font-mono uppercase tracking-wider text-on-surface-variant">
+    <span className="ml-2 border border-outline-variant px-1.5 py-0.5 align-middle text-2xs font-mono uppercase tracking-wider text-on-surface-variant">
       Experimental
     </span>
   )

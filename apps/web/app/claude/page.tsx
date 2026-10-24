@@ -21,10 +21,10 @@ const PLUGIN_INSTALL = ['/plugin marketplace add elahlabs/elah', '/plugin instal
 
 function Card({ title, tag, children }: { title: string; tag: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-outline-variant bg-surface-low p-6">
+    <section className="flex flex-col gap-4 border border-outline-variant bg-surface-low p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-semibold tracking-tight text-on-surface">{title}</h2>
-        <span className="label-mono rounded border border-outline-variant px-2 py-0.5 text-2xs text-on-surface-variant">
+        <span className="label-mono border border-outline-variant px-2 py-0.5 text-2xs text-on-surface-variant">
           {tag}
         </span>
       </div>
@@ -35,7 +35,7 @@ function Card({ title, tag, children }: { title: string; tag: string; children: 
 
 function Cmd({ command }: { command: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container px-3 py-2 font-mono text-xs text-on-surface">
+    <div className="flex items-center gap-2 border border-outline-variant bg-surface-container px-3 py-2 font-mono text-xs text-on-surface">
       <span className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">{command}</span>
       <CopyButton text={command} />
     </div>
@@ -73,11 +73,11 @@ export default function ClaudePage() {
               </div>
               <ul className="space-y-1.5 text-sm text-on-surface-variant">
                 <li>
-                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs">/elah:video</code>{' '}
+                  <code className="bg-surface-container px-1.5 py-0.5 font-mono text-xs">/elah:video</code>{' '}
                   plans the beats, writes a VideoSpec (or an HTML/CSS scene), validates it and publishes the artifact.
                 </li>
                 <li>
-                  <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs">/elah:promo</code>{' '}
+                  <code className="bg-surface-container px-1.5 py-0.5 font-mono text-xs">/elah:promo</code>{' '}
                   runs the same flow with a fixed 15 to 30 second launch structure.
                 </li>
               </ul>
@@ -101,7 +101,7 @@ export default function ClaudePage() {
         </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
-          <div className="rounded-md border border-outline-variant bg-surface-low p-6">
+          <div className="border border-outline-variant bg-surface-low p-6">
             <h2 className="text-lg font-semibold tracking-tight text-on-surface">A video made in Claude is a normal project</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
               Because the plugin and the artifact use the open-source engine, you can open what Claude made and keep editing it later. Export uses Chrome or Edge.
@@ -109,13 +109,13 @@ export default function ClaudePage() {
             <div className="mt-4 flex flex-wrap gap-3">
               <a
                 href={GITHUB_URL}
-                className="rounded-full border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
+                className="border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
               >
                 Watch on GitHub
               </a>
               <a
                 href="/playground/motion"
-                className="rounded-full border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
+                className="border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
               >
                 Try the motion playground
               </a>

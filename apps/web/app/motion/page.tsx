@@ -74,10 +74,10 @@ export default function MotionPage() {
           }
         >
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/playground/motion" className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-on-primary">
+            <Link href="/playground/motion" className="bg-primary px-5 py-2.5 text-sm font-medium text-on-primary">
               Try the motion playground
             </Link>
-            <Link href="/docs/motion" className="rounded-full border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container">
+            <Link href="/docs/motion" className="border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container">
               Read the docs
             </Link>
           </div>
@@ -99,7 +99,7 @@ export default function MotionPage() {
           </h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {capabilities.map((c) => (
-              <article key={c.title} className="flex min-w-0 flex-col gap-3 rounded-md border border-outline-variant bg-surface-low p-5">
+              <article key={c.title} className="flex min-w-0 flex-col gap-3 border border-outline-variant bg-surface-low p-5">
                 <h3 className="text-base font-semibold text-on-surface">{c.title}</h3>
                 <p className="text-sm leading-relaxed text-on-surface-variant">
                   {c.text} {c.note}

@@ -47,7 +47,7 @@ export default function BindingExplainer() {
 
   return (
     <EditorProvider fps={TITLE_CARD.fps} stage={TITLE_CARD.stage} defaultTrackHeight={36} initialTracks={[]}>
-      <div className={`overflow-hidden rounded-[20px] bg-white ${outline}`}>
+      <div className={`overflow-hidden bg-white ${outline}`}>
         <div className="flex flex-wrap items-center gap-2 border-b border-[#F3E2DF] p-3">
           <div className="flex gap-1" role="tablist" aria-label="Source language">
             {(['html', 'spec'] as const).map((s) => (
@@ -57,7 +57,7 @@ export default function BindingExplainer() {
                 role="tab"
                 aria-selected={source === s}
                 onClick={() => setSource(s)}
-                className={`rounded-full px-4 py-[7px] text-[14px] font-semibold transition-colors ${sans} ${
+                className={`px-4 py-[7px] text-[14px] font-semibold transition-colors ${sans} ${
                   source === s ? 'bg-[#1B1416] text-white' : 'bg-transparent text-[#77696B] hover:bg-[#FFF5F3] hover:text-[#1B1416]'
                 }`}
               >
@@ -65,7 +65,7 @@ export default function BindingExplainer() {
               </button>
             ))}
           </div>
-          <span className={`rounded-[6px] px-[10px] py-[3px] text-[11px] text-[#77696B] ${mono} ${outline}`}>Experimental</span>
+          <span className={`px-[10px] py-[3px] text-[11px] text-[#77696B] ${mono} ${outline}`}>Experimental</span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3">
           <div className="min-w-0 border-b border-[#F3E2DF] lg:border-b-0 lg:border-r">
@@ -113,7 +113,7 @@ function Stage({ converted }: { converted: Converted | null }) {
           type="button"
           onClick={toggle}
           aria-label={isPlaying ? 'Pause' : 'Play'}
-          className="absolute bottom-2 left-2 grid h-9 w-9 place-items-center rounded-full bg-white text-[#1B1416] transition-colors hover:bg-[#FFF5F3]"
+          className="absolute bottom-2 left-2 grid h-9 w-9 place-items-center bg-white text-[#1B1416] transition-colors hover:bg-[#FFF5F3]"
         >
           {isPlaying ? <Pause size={15} strokeWidth={2} aria-hidden /> : <Play size={15} strokeWidth={2} aria-hidden />}
         </button>

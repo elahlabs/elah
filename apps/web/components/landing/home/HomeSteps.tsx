@@ -46,7 +46,7 @@ export function HomeSteps() {
             <h3 className={cardTitle}>Clips and keys</h3>
             <p className={cardBody}>It lands as native clips and keyframes. Each key has an id, a frame, a value and an easing.</p>
           </div>
-          <div className="flex-1 overflow-hidden rounded-[14px]">
+          <div className="flex-1 overflow-hidden ">
             <LoadOnView placeholder={<div aria-hidden className="min-h-[220px] bg-[#170F10]" />}>
               <StepTimeline />
             </LoadOnView>
@@ -61,7 +61,7 @@ export function HomeSteps() {
           </div>
           <div className="flex flex-1 flex-col justify-end gap-4">
             <div className={`${panel} flex items-center gap-3 p-4`}>
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-[#F0625A] text-white">
+              <span className="grid h-10 w-10 shrink-0 place-items-center bg-[#F0625A] text-white">
                 <Download size={18} strokeWidth={2} aria-hidden />
               </span>
               <div className="min-w-0">

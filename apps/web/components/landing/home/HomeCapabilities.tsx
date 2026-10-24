@@ -28,14 +28,14 @@ export function HomeCapabilities() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
           <article key={t.demo} className={`${cardWhite} min-w-0 !p-5`}>
-            <div className="overflow-hidden rounded-[14px]">
+            <div className="overflow-hidden ">
               <LazyDemo name={t.demo} timeline={false} showKeys={false} label={`${t.title} demo`} minHeight={160} />
             </div>
             <div className="flex flex-col gap-[10px]">
               <h3 className={cardTitle}>{t.title}</h3>
               <p className={cardBody}>{t.text}</p>
             </div>
-            <code className={`mt-auto block overflow-x-auto whitespace-nowrap rounded-[10px] bg-[#FFF5F3] px-3 py-2 text-[12px] text-[#1B1416] ${mono} ${outline}`}>{t.code}</code>
+            <code className={`mt-auto block overflow-x-auto whitespace-nowrap bg-[#FFF5F3] px-3 py-2 text-[12px] text-[#1B1416] ${mono} ${outline}`}>{t.code}</code>
           </article>
         ))}
       </div>

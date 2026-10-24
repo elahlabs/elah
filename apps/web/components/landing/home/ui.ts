@@ -26,7 +26,7 @@ export const cardBody = `m-0 text-[15px] leading-[23px] text-[#77696B] ${sans}`
 export const monoLabel = `text-[12px] text-[#77696B] ${mono}`
 
 /** Buttons. Large: hero CTAs. Small: nav, footer. */
-const btnBase = `inline-flex items-center justify-center gap-2 rounded-full font-semibold no-underline transition-colors ${sans}`
+const btnBase = `inline-flex items-center justify-center gap-2 font-semibold no-underline transition-colors ${sans}`
 export const btnLarge = 'px-[26px] py-[14px] text-[15px]'
 export const btnSmall = 'px-4 py-[7px] text-[14px]'
 export const btnPrimary = `${btnBase} bg-[#F0625A] text-white hover:bg-[#E0544C]`
@@ -34,7 +34,7 @@ export const btnSecondary = `${btnBase} bg-white text-[#1B1416] hover:bg-[#FFF5F
 export const btnDark = `${btnBase} bg-[#1B1416] text-white hover:bg-[#2E2224]`
 
 /** Cards. A light card on a white section; white on blush. */
-export const cardLight = `rounded-[20px] bg-[#FFF5F3] p-6 flex flex-col gap-5 ${outline}`
-export const cardWhite = `rounded-[20px] bg-white p-6 flex flex-col gap-5 ${outline}`
-export const panel = `rounded-[14px] bg-white ${outline}`
-export const chip = `rounded-[8px] px-[10px] py-[6px] text-[12px] ${mono}`
+export const cardLight = `bg-[#FFF5F3] p-6 flex flex-col gap-5 ${outline}`
+export const cardWhite = `bg-white p-6 flex flex-col gap-5 ${outline}`
+export const panel = `bg-white ${outline}`
+export const chip = `px-[10px] py-[6px] text-[12px] ${mono}`
