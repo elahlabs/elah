@@ -1,0 +1,31 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Launch card",
+  "source": {
+    "kind": "spec",
+    "spec": {
+      "version": 1,
+      "title": "Launch card",
+      "format": { "width": 1080, "height": 1920, "fps": 30 },
+      "duration": 4,
+      "background": "$bg",
+      "design": {
+        "colors": [
+          { "name": "bg", "value": "#0b1020" },
+          { "name": "ink", "value": "#ffffff" },
+          { "name": "accent", "value": "#ffd166" }
+        ],
+        "fonts": [
+          { "role": "sans", "font": "inter" },
+          { "role": "display", "font": "bebas-neue" }
+        ]
+      },
+      "elements": [
+        { "id": "ring", "kind": "shape", "shape": "arc", "at": 0.2, "duration": 3.6, "w": 420, "h": 420, "stroke": "$accent", "strokeWidth": 18, "cap": "round", "x": 0.5, "y": 0.4, "draw": { "duration": 1.2, "curve": "cubic-out" } },
+        { "id": "big", "kind": "text", "at": 0.4, "duration": 3.4, "text": "72%", "font": "$display", "size": 220, "color": "$ink", "x": 0.5, "y": 0.4, "enter": "pop-in", "exit": "fade-out" },
+        { "id": "label", "kind": "text", "at": 0.8, "duration": 3, "text": "of attacks start on free Wi-Fi", "font": "$sans", "size": 48, "color": "$ink", "maxWidth": 800, "x": 0.5, "y": 0.62, "reveal": { "preset": "word-rise", "stagger": 0.08, "duration": 0.4 } }
+      ]
+    }
+  }
+}

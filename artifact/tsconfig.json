@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../apps/web/*"],
+      "react": ["../node_modules/@types/react/index.d.ts"],
+      "react/*": ["../node_modules/@types/react/*"],
+      "react-dom": ["../node_modules/@types/react-dom/index.d.ts"],
+      "react-dom/*": ["../node_modules/@types/react-dom/*"],
+      "@elah/core": ["../packages/core/src/index.ts"],
+      "@elah/core/engine": ["../packages/core/src/engine.ts"],
+      "@elah/core/spec": ["../packages/core/src/spec/index.ts"],
+      "@elah/core/html": ["../packages/core/src/vector/html/index.ts"],
+      "@elah/core/ops": ["../packages/core/src/ops/index.ts"],
+      "@elah/core/icons": ["../packages/core/src/icons/index.ts"],
+      "@elah/react": ["../packages/react/src/index.ts"],
+      "@elah/timeline": ["../packages/timeline/src/index.ts"],
+      "@elah/editor": ["../packages/editor/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

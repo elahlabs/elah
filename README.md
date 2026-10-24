@@ -323,6 +323,20 @@ const scene = resolveTimeline(currentFrame, engine.getProject())
 
 ---
 
+## Use Elah from Claude Code
+
+An unofficial Claude Code plugin lets Claude write a video as data, validate it with the engine, and open it in an artifact
+where you preview it, edit it and export an MP4 in your browser:
+
+```
+/plugin marketplace add elahlabs/elah
+/plugin install elah@elah
+```
+
+Then run `/elah:video <what to make>` or `/elah:promo <product launch brief>`. Details: [`plugins/elah/README.md`](plugins/elah/README.md).
+
+---
+
 ## Headless: CLI, Node API & render server
 
 The engine also runs with **no UI at all** via [`@elah/cli`](./packages/cli) — built for automation and AI-generation pipelines. `split`, `trim`, and `build` run in plain Node; `export` runs core's real `exportVideo` pipeline in headless Chrome, so CLI output is identical to editor output by construction.
