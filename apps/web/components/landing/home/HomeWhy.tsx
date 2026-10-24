@@ -25,12 +25,12 @@ const rows: Row[] = [
   { label: 'Renders in the browser with no server', elah: 'Yes, in Chrome or Edge', remotion: 'Experimental web renderer, a subset of html and css', hyperframes: 'Renders with headless Chrome and FFmpeg' },
 ]
 
-const link = 'text-[#1B1416] underline underline-offset-2'
+const link = 'text-[#77696B] underline underline-offset-2 transition-colors hover:text-[#1B1416]'
 
 /** "Why elah" comparison (brief section 8). Short, factual, no adjectives. */
 export function HomeWhy() {
-  const th = `px-4 py-3 text-left text-[12px] font-normal text-[#1B1416] ${mono}`
-  const td = `border-t border-[#F3E2DF] px-4 py-4 align-top text-[15px] leading-[23px] text-[#1B1416] ${sans}`
+  const th = `px-4 py-3 text-left text-[12px] font-normal text-[#77696B] ${mono}`
+  const td = `border-t border-[#F3E2DF] px-4 py-4 align-top text-[15px] leading-[23px] text-[#77696B] ${sans}`
   return (
     <Section bg="blush" id="why" title="How elah compares.">
       <div className={`overflow-x-auto rounded-[20px] bg-white ${outline}`} tabIndex={0} role="region" aria-label="Comparison table">
@@ -40,7 +40,7 @@ export function HomeWhy() {
               <th scope="col" className={th}>
                 <span className="sr-only">Capability</span>
               </th>
-              <th scope="col" className={`${th} !text-[#1B1416]`}>elah</th>
+              <th scope="col" className={`${th} !text-[#F0625A]`}>elah</th>
               <th scope="col" className={th}>Remotion</th>
               <th scope="col" className={th}>HyperFrames</th>
             </tr>
@@ -57,7 +57,7 @@ export function HomeWhy() {
           </tbody>
         </table>
       </div>
-      <p className={`m-0 self-start rounded-[14px] bg-[#FFF5F3] px-5 py-3 text-[13px] leading-[21px] text-[#1B1416] ${sans} ${outline}`}>
+      <p className={`m-0 text-[13px] leading-[21px] text-[#77696B] ${sans}`}>
         Sources: <a href={SOURCES.remotionLicense} className={link}>Remotion license</a>, <a href={SOURCES.remotionWeb} className={link}>Remotion web renderer</a>,{' '}
         <a href={SOURCES.hyperframes} className={link}>HyperFrames on GitHub</a>. Checked against their public pages; check them for current terms.
       </p>

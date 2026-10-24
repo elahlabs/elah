@@ -7,30 +7,6 @@ The landing is styled with Tailwind **arbitrary values** (`text-[15px]`, `bg-[#F
 `--elah-*` editor tokens. The values below are the vocabulary; reuse them exactly rather than
 inventing near-misses.
 
-
-> **Red theme (current).** The page runs on three dark reds instead of blush and white. Cards,
-> panels, the nav pill and secondary buttons stay white or blush with black text, so every
-> text/surface pair keeps its contrast. Text that sits directly on a dark red section is light.
->
-> | Role | Hex |
-> | --- | --- |
-> | Section red A (page, hero, alternate sections) | `#5A1218` |
-> | Section red B (alternate sections) | `#4B0E13` |
-> | Section red C (closing CTA, the colour hanging into the footer) | `#6A1A22` |
-> | Heading on red | `#FFF5F3` |
-> | Body on red | `#E8C9C6` |
-> | Accent text on red (hero line 2) | `#FF8F86` |
-> | Hero stage border on red | `#7A2A31` |
->
-> **Black text only.** Every piece of page text is ink `#1B1416`, with no grey, no cream and no coral text.
-> Headings, leads, the hero, the CTA and the footer content sit on blush panels (`rounded-[20px] bg-[#FFF5F3]`)
-> over the red, so nothing is black on red. Primary buttons are coral with ink text, and the dark
-> button becomes blush with ink text. The only light-on-dark text left is inside the real
-> `@elah/timeline` and engine-rendered video, which are product UI and footage.
->
-> Everywhere below, read "blush section" as red A, "white section" as red B and "carousel" as
-> red C. Card, panel, button and type rules are unchanged. Constants live in `home/ui.ts` (`RED`).
-
 ---
 
 ## 1. Personality

@@ -16,9 +16,9 @@ export function HomeFaq() {
               <Plus size={18} strokeWidth={2} aria-hidden className="shrink-0 text-[#F0625A] transition-transform duration-200 group-open:rotate-45 motion-reduce:transition-none" />
             </summary>
             <div className="px-5 pb-5">
-              <p className={`m-0 text-[15px] leading-[23px] text-[#1B1416] text-pretty ${sans}`}>{item.a}</p>
+              <p className={`m-0 text-[15px] leading-[23px] text-[#77696B] text-pretty ${sans}`}>{item.a}</p>
               {item.href && (
-                <Link href={item.href} className={`mt-3 inline-block text-[14px] font-semibold text-[#1B1416] no-underline transition-colors hover:underline ${sans}`}>
+                <Link href={item.href} className={`mt-3 inline-block text-[14px] font-semibold text-[#1B1416] no-underline transition-colors hover:text-[#F0625A] ${sans}`}>
                   {item.hrefLabel ?? 'Read more'} →
                 </Link>
               )}

@@ -14,7 +14,7 @@ import { mono, outline, sans } from '@/components/landing/home/ui'
 type Source = 'html' | 'spec'
 const TITLE_CARD = STARTERS[0]
 
-const colHead = `border-b border-[#F3E2DF] px-4 py-3 text-[12px] text-[#1B1416] ${mono}`
+const colHead = `border-b border-[#F3E2DF] px-4 py-3 text-[12px] text-[#77696B] ${mono}`
 
 /**
  * Source, Keys, Timeline: the same animation read three ways (brief 6.2). Read
@@ -58,14 +58,14 @@ export default function BindingExplainer() {
                 aria-selected={source === s}
                 onClick={() => setSource(s)}
                 className={`rounded-full px-4 py-[7px] text-[14px] font-semibold transition-colors ${sans} ${
-                  source === s ? 'bg-[#F0625A] text-[#1B1416]' : 'bg-transparent text-[#1B1416] hover:bg-[#FFF5F3]'
+                  source === s ? 'bg-[#1B1416] text-white' : 'bg-transparent text-[#77696B] hover:bg-[#FFF5F3] hover:text-[#1B1416]'
                 }`}
               >
                 {s === 'html' ? 'HTML + CSS' : 'VideoSpec'}
               </button>
             ))}
           </div>
-          <span className={`rounded-[6px] px-[10px] py-[3px] text-[11px] text-[#1B1416] ${mono} ${outline}`}>Experimental</span>
+          <span className={`rounded-[6px] px-[10px] py-[3px] text-[11px] text-[#77696B] ${mono} ${outline}`}>Experimental</span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3">
           <div className="min-w-0 border-b border-[#F3E2DF] lg:border-b-0 lg:border-r">

@@ -17,7 +17,7 @@ export function HomeLibraries() {
             </div>
             <div className="mt-auto flex flex-col gap-4">
               <div className={`${panel} overflow-x-auto whitespace-nowrap px-4 py-3 text-[12px] text-[#1B1416] ${mono}`}>
-                <span>$ </span>
+                <span className="text-[#F0625A]">$ </span>
                 {lib.extraCmd ?? `npm install ${lib.pkg}`}
               </div>
               <Link href={lib.href} className={`${btnSecondary} ${btnSmall} self-start`}>
@@ -31,7 +31,7 @@ export function HomeLibraries() {
           <div className="flex flex-col gap-[10px]">
             <div className="flex items-center justify-between gap-3">
               <h3 className={cardTitle}>@elah/core subpaths</h3>
-              <span className={`shrink-0 rounded-full bg-white px-3 py-[3px] text-[12px] text-[#1B1416] ${mono} ${outline}`}>Experimental</span>
+              <span className={`shrink-0 rounded-full bg-white px-3 py-[3px] text-[12px] text-[#77696B] ${mono} ${outline}`}>Experimental</span>
             </div>
             <p className={cardBody}>Coming in 1.0. Separate entries, so an app that does not import them pays nothing.</p>
           </div>
@@ -39,7 +39,7 @@ export function HomeLibraries() {
             {coreSubpaths.map((p) => (
               <li key={p.path} className="flex flex-col">
                 <code className={`text-[12px] text-[#1B1416] ${mono}`}>{p.path}</code>
-                <span className="text-[13px] text-[#1B1416]">{p.what}</span>
+                <span className="text-[13px] text-[#77696B]">{p.what}</span>
               </li>
             ))}
           </ul>
