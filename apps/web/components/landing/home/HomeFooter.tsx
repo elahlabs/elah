@@ -31,10 +31,10 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
   }, [])
 
   return (
-    <footer ref={ref} className="relative w-full bg-[#FFF5F3]">
+    <footer ref={ref} className="relative w-full bg-[#5A1218]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[55px]">
-        <div className="absolute inset-x-0 top-0 h-[4px] bg-[#FBEEEB]" />
-        <div className="absolute left-[calc(50%-58px)] top-0 h-[51px] w-[116px] bg-[#FBEEEB]" />
+        <div className="absolute inset-x-0 top-0 h-[4px] bg-[#6A1A22]" />
+        <div className="absolute left-[calc(50%-58px)] top-0 h-[51px] w-[116px] bg-[#6A1A22]" />
         {(['left', 'right'] as const).map((side) => (
           <svg
             key={side}
@@ -42,7 +42,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
             preserveAspectRatio="none"
             className={`absolute top-[3px] h-[52px] w-[calc(50%-58px)] ${side === 'left' ? 'left-0' : 'right-0 -scale-x-100'}`}
           >
-            <path d="M0 0 L0 1 C 45 1, 62 48, 100 48 L100 0 Z" fill="#FBEEEB" />
+            <path d="M0 0 L0 1 C 45 1, 62 48, 100 48 L100 0 Z" fill="#6A1A22" />
           </svg>
         ))}
       </div>
@@ -57,7 +57,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
               side === 'left' ? 'left-0' : 'right-0 -scale-x-100'
             } ${near ? '[clip-path:inset(0_0_0_0)]' : '[clip-path:inset(0_100%_0_0)]'}`}
           >
-            <path d="M0 1 C 45 1, 62 48, 100 48" fill="none" stroke="#B59C97" strokeWidth="1.5" strokeDasharray="5 5" vectorEffect="non-scaling-stroke" />
+            <path d="M0 1 C 45 1, 62 48, 100 48" fill="none" stroke="#C99A9A" strokeWidth="1.5" strokeDasharray="5 5" vectorEffect="non-scaling-stroke" />
           </svg>
         ))}
       </div>
@@ -75,11 +75,11 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
         <nav aria-label="Footer" className="grid w-full max-w-[920px] grid-cols-1 gap-8 sm:grid-cols-3">
           {footerColumns.map((col) => (
             <div key={col.heading} className="flex flex-col gap-3">
-              <p className={`m-0 text-[16px] font-semibold tracking-[-0.3px] text-[#1B1416] ${sans}`}>{col.heading}</p>
+              <p className={`m-0 text-[16px] font-semibold tracking-[-0.3px] text-[#FFF5F3] ${sans}`}>{col.heading}</p>
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {col.links.map((l) => {
                   const external = !l.href.startsWith('/')
-                  const cls = `text-[14px] text-[#77696B] no-underline transition-colors hover:text-[#1B1416] ${sans}`
+                  const cls = `text-[14px] text-[#E8C9C6] no-underline transition-colors hover:text-white ${sans}`
                   return (
                     <li key={l.href}>
                       {external ? (
@@ -105,7 +105,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
             near ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
           }`}
         >
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={`group ${btnDark} ${btnSmall} gap-[10px] !py-[7px] !pl-4 !pr-[7px]`}>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={`group ${btnDark} ${btnSmall} gap-[10px] !py-[7px] !pl-4 !pr-[7px] [outline:1px_solid_#FFFFFF33] [outline-offset:-0.5px]`}>
             <GitHubLogo />
             Star us on GitHub
             <span className="inline-flex items-center gap-[5px] rounded-full bg-white/10 px-[10px] py-[3px] text-[13px] font-medium">
@@ -116,7 +116,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
             </span>
           </a>
         </div>
-        <p className={`m-0 text-[12px] text-[#77696B] ${sans}`}>elah is open source under Apache-2.0.</p>
+        <p className={`m-0 text-[12px] text-[#E8C9C6] ${sans}`}>elah is open source under Apache-2.0.</p>
       </div>
     </footer>
   )

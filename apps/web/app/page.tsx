@@ -44,7 +44,7 @@ const softwareJsonLd = {
 export default async function HomePage() {
   const stats = toDisplay(await getSiteStats())
   return (
-    <div className={`${homeFontVars} min-h-screen bg-[#FFF5F3] leading-[normal]`}>
+    <div className={`${homeFontVars} min-h-screen bg-[#5A1218] leading-[normal]`}>
       <JsonLd data={softwareJsonLd} />
       <HomeNav stars={stats.stars} />
       <main id="main">

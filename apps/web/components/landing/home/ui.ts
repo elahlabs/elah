@@ -38,3 +38,10 @@ export const cardLight = `rounded-[20px] bg-[#FFF5F3] p-6 flex flex-col gap-5 ${
 export const cardWhite = `rounded-[20px] bg-white p-6 flex flex-col gap-5 ${outline}`
 export const panel = `rounded-[14px] bg-white ${outline}`
 export const chip = `rounded-[8px] px-[10px] py-[6px] text-[12px] ${mono}`
+
+/** Red theme surfaces (DESIGN.md "Red theme"): three dark reds, cards stay white or blush. */
+export const RED = { a: '#5A1218', b: '#4B0E13', c: '#6A1A22' } as const
+
+/** Text that sits directly on a dark red section (cards keep ink and muted). */
+export const h2OnDark = h2.replace('text-[#1B1416]', 'text-[#FFF5F3]')
+export const leadOnDark = lead.replace('text-[#77696B]', 'text-[#E8C9C6]')

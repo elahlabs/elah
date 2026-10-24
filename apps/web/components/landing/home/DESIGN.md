@@ -7,6 +7,24 @@ The landing is styled with Tailwind **arbitrary values** (`text-[15px]`, `bg-[#F
 `--elah-*` editor tokens. The values below are the vocabulary; reuse them exactly rather than
 inventing near-misses.
 
+
+> **Red theme (current).** The page runs on three dark reds instead of blush and white. Cards,
+> panels, the nav pill and secondary buttons stay white or blush with black text, so every
+> text/surface pair keeps its contrast. Text that sits directly on a dark red section is light.
+>
+> | Role | Hex |
+> | --- | --- |
+> | Section red A (page, hero, alternate sections) | `#5A1218` |
+> | Section red B (alternate sections) | `#4B0E13` |
+> | Section red C (closing CTA, the colour hanging into the footer) | `#6A1A22` |
+> | Heading on red | `#FFF5F3` |
+> | Body on red | `#E8C9C6` |
+> | Accent text on red (hero line 2) | `#FF8F86` |
+> | Hero stage border on red | `#7A2A31` |
+>
+> Everywhere below, read "blush section" as red A, "white section" as red B and "carousel" as
+> red C. Card, panel, button and type rules are unchanged. Constants live in `home/ui.ts` (`RED`).
+
 ---
 
 ## 1. Personality

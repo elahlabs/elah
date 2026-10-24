@@ -25,7 +25,7 @@ const rows: Row[] = [
   { label: 'Renders in the browser with no server', elah: 'Yes, in Chrome or Edge', remotion: 'Experimental web renderer, a subset of html and css', hyperframes: 'Renders with headless Chrome and FFmpeg' },
 ]
 
-const link = 'text-[#77696B] underline underline-offset-2 transition-colors hover:text-[#1B1416]'
+const link = 'text-[#E8C9C6] underline underline-offset-2 transition-colors hover:text-white'
 
 /** "Why elah" comparison (brief section 8). Short, factual, no adjectives. */
 export function HomeWhy() {
@@ -57,7 +57,7 @@ export function HomeWhy() {
           </tbody>
         </table>
       </div>
-      <p className={`m-0 text-[13px] leading-[21px] text-[#77696B] ${sans}`}>
+      <p className={`m-0 text-[13px] leading-[21px] text-[#E8C9C6] ${sans}`}>
         Sources: <a href={SOURCES.remotionLicense} className={link}>Remotion license</a>, <a href={SOURCES.remotionWeb} className={link}>Remotion web renderer</a>,{' '}
         <a href={SOURCES.hyperframes} className={link}>HyperFrames on GitHub</a>. Checked against their public pages; check them for current terms.
       </p>

@@ -6,7 +6,7 @@ import { ArrowRight, Check, Copy } from 'lucide-react'
 import posthog from 'posthog-js'
 import { trackPlaygroundLaunch } from '@/lib/analytics'
 import { LazyDemo } from '@/components/home/LazyDemo'
-import { btnLarge, btnPrimary, btnSecondary, container, headingSans, lead, mono, outline } from './ui'
+import { btnLarge, btnPrimary, btnSecondary, container, headingSans, leadOnDark, mono } from './ui'
 
 const INSTALL = 'npm install @elah/core'
 const PLAYGROUND = '/playground/motion'
@@ -33,15 +33,15 @@ export function HomeHero() {
   }
 
   return (
-    <header className="bg-[#FFF5F3] pt-12 sm:pt-16">
+    <header className="bg-[#5A1218] pt-12 sm:pt-16">
       <div className={`${container} flex flex-col items-center gap-6 text-center`}>
         <h1
           className={`m-0 max-w-[820px] text-[34px] leading-[38px] font-semibold tracking-[-1.4px] text-balance sm:text-[48px] sm:leading-[52px] sm:tracking-[-2px] ${headingSans}`}
         >
-          <span className="block text-[#1B1416]">Write motion as code.</span>
-          <span className="block text-[#F0625A]">It stays editable.</span>
+          <span className="block text-[#FFF5F3]">Write motion as code.</span>
+          <span className="block text-[#FF8F86]">It stays editable.</span>
         </h1>
-        <p className={`${lead} max-w-[560px]`}>Open source. Renders in the browser.</p>
+        <p className={`${leadOnDark} max-w-[560px]`}>Open source. Renders in the browser.</p>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -64,14 +64,14 @@ export function HomeHero() {
             {copied ? <Check size={16} strokeWidth={2} aria-hidden /> : <Copy size={16} strokeWidth={2} aria-hidden />}
           </button>
         </div>
-        <p className={`m-0 text-[12px] text-[#77696B] ${mono}`}>The motion layer is coming in 1.0.</p>
-        <Link href="/changelog" className={`text-[14px] text-[#77696B] no-underline transition-colors hover:text-[#1B1416] ${mono}`}>
+        <p className={`m-0 text-[12px] text-[#E8C9C6] ${mono}`}>The motion layer is coming in 1.0.</p>
+        <Link href="/changelog" className={`text-[14px] text-[#E8C9C6] no-underline transition-colors hover:text-white ${mono}`}>
           Coming in 1.0: the motion and programmatic layer. Read the changelog →
         </Link>
       </div>
 
       <div className={`${container} mt-10 sm:mt-12`}>
-        <figure className={`m-0 overflow-hidden rounded-t-[20px] border border-b-0 border-[#F3E2DF] bg-[#170F10]`}>
+        <figure className={`m-0 overflow-hidden rounded-t-[20px] border border-b-0 border-[#7A2A31] bg-[#170F10]`}>
           <div className="mx-auto w-full max-w-[880px]">
             <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={560} />
           </div>
