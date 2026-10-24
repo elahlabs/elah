@@ -14,7 +14,7 @@ import { mono, outline, sans } from '@/components/landing/home/ui'
 type Source = 'html' | 'spec'
 const TITLE_CARD = STARTERS[0]
 
-const colHead = `border-b border-[#D9D7D0] px-4 py-3 text-[12px] text-[#5E5D58] ${mono}`
+const colHead = `border-b border-[var(--lp-line)] px-4 py-3 text-[12px] text-[var(--lp-muted)] ${mono}`
 
 /**
  * Source, Keys, Timeline: the same animation read three ways (brief 6.2). Read
@@ -47,8 +47,8 @@ export default function BindingExplainer() {
 
   return (
     <EditorProvider fps={TITLE_CARD.fps} stage={TITLE_CARD.stage} defaultTrackHeight={36} initialTracks={[]}>
-      <div className={`overflow-hidden bg-[#F7F6F2] ${outline}`}>
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#D9D7D0] p-3">
+      <div className={`overflow-hidden bg-[var(--lp-card)] ${outline}`}>
+        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--lp-line)] p-3">
           <div className="flex gap-1" role="tablist" aria-label="Source language">
             {(['html', 'spec'] as const).map((s) => (
               <button
@@ -58,23 +58,23 @@ export default function BindingExplainer() {
                 aria-selected={source === s}
                 onClick={() => setSource(s)}
                 className={`px-4 py-[7px] text-[14px] font-semibold transition-colors ${sans} ${
-                  source === s ? 'bg-[#0E0E10] text-white' : 'bg-transparent text-[#5E5D58] hover:bg-[#F0EFEA] hover:text-[#0E0E10]'
+                  source === s ? 'bg-[var(--lp-ink)] text-[var(--lp-paper)]' : 'bg-transparent text-[var(--lp-muted)] hover:bg-[var(--lp-paper)] hover:text-[var(--lp-ink)]'
                 }`}
               >
                 {s === 'html' ? 'HTML + CSS' : 'VideoSpec'}
               </button>
             ))}
           </div>
-          <span className={`px-[10px] py-[3px] text-[11px] text-[#5E5D58] ${mono} ${outline}`}>Experimental</span>
+          <span className={`px-[10px] py-[3px] text-[11px] text-[var(--lp-muted)] ${mono} ${outline}`}>Experimental</span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3">
-          <div className="min-w-0 border-b border-[#D9D7D0] lg:border-b-0 lg:border-r">
+          <div className="min-w-0 border-b border-[var(--lp-line)] lg:border-b-0 lg:border-r">
             <div className={colHead}>Source</div>
-            <pre tabIndex={0} aria-label="Scene source" className={`m-0 h-64 overflow-auto p-4 text-[12px] leading-[20px] text-[#0E0E10] ${mono}`}>
+            <pre tabIndex={0} aria-label="Scene source" className={`m-0 h-64 overflow-auto p-4 text-[12px] leading-[20px] text-[var(--lp-ink)] ${mono}`}>
               <code>{code}</code>
             </pre>
           </div>
-          <div className="min-w-0 border-b border-[#D9D7D0] lg:border-b-0 lg:border-r">
+          <div className="min-w-0 border-b border-[var(--lp-line)] lg:border-b-0 lg:border-r">
             <div className={colHead}>Keys</div>
             <div className="h-64">
               {error ? <p className={`m-0 p-4 text-[13px] text-[#D10030] ${sans}`}>{error}</p> : <KeysTable readOnly tone="landing" />}
@@ -106,14 +106,14 @@ function Stage({ converted }: { converted: Converted | null }) {
   }, [engine, converted])
 
   return (
-    <div className="elah-root flex h-64 flex-col bg-[#0E0E10]" style={stageVars}>
-      <div className="relative min-h-0 flex-1 bg-[#0E0E10]">
+    <div className="elah-root flex h-64 flex-col bg-[var(--lp-ink)]" style={stageVars}>
+      <div className="relative min-h-0 flex-1 bg-[var(--lp-ink)]">
         <Preview demuxerFactory={demuxerFactory.current} style={{ width: '100%', height: '100%' }} />
         <button
           type="button"
           onClick={toggle}
           aria-label={isPlaying ? 'Pause' : 'Play'}
-          className="absolute bottom-2 left-2 grid h-9 w-9 place-items-center bg-[#F7F6F2] text-[#0E0E10] transition-colors hover:bg-[#F0EFEA]"
+          className="absolute bottom-2 left-2 grid h-9 w-9 place-items-center bg-[var(--lp-card)] text-[var(--lp-ink)] transition-colors hover:bg-[var(--lp-paper)]"
         >
           {isPlaying ? <Pause size={15} strokeWidth={2} aria-hidden /> : <Play size={15} strokeWidth={2} aria-hidden />}
         </button>

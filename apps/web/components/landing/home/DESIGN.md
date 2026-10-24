@@ -30,7 +30,26 @@ never for body text (it is 3.4:1 on paper).
 | On-ink muted | `#9A9993` |
 | On-ink hairline | `#2E2E33` |
 
-All of these live in `ui.ts` (`C`, plus the class strings).
+Light and dark. The neutrals are CSS variables (`--lp-paper`, `--lp-paper2`, `--lp-card`,
+`--lp-ink`, `--lp-muted`, `--lp-line`, `--lp-stage`, `--lp-stage-line`) defined in
+`styles/landing.css`. Light values sit on `:root`; `.lp[data-theme='dark']` swaps them on the
+homepage only. Write classes as `text-[var(--lp-ink)]`, never the raw hex. Cyber red, the
+scrub bar and the engine stage are the same in both themes. Text on red stays literal ink
+`#0E0E10` in both.
+
+| Variable | Light | Dark |
+| --- | --- | --- |
+| `--lp-paper` | `#F0EFEA` | `#0C0C0E` |
+| `--lp-paper2` | `#E8E6E0` | `#18181B` |
+| `--lp-card` | `#F7F6F2` | `#121215` |
+| `--lp-ink` | `#0E0E10` | `#EDECE7` |
+| `--lp-muted` | `#5E5D58` | `#9C9B95` |
+| `--lp-line` | `#D9D7D0` | `#2A2A2F` |
+| `--lp-stage` | `#0E0E10` | `#141417` |
+
+The toggle (`ThemeToggle.tsx`) sits in the nav. It stores the choice in `localStorage`
+(`elah-lp-theme`) and follows the system until the user picks. An inline script at the top of the
+`.lp` wrapper applies the theme before first paint.
 
 **Type.** Three voices:
 - *Display*: Big Shoulders 800, uppercase, tight leading (`display` in `ui.ts`). Headlines and card titles.

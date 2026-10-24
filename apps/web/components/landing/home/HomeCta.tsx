@@ -10,7 +10,7 @@ export function HomeCta() {
   return (
     <section data-scene="Wrap" className={sectionY}>
       <div className={container}>
-        <div className="relative bg-[#0E0E10] px-6 py-16 text-[#F0EFEA] sm:px-12 lg:py-24">
+        <div className="relative bg-[var(--lp-stage)] [outline:1px_solid_var(--lp-stage-line)] px-6 py-16 text-[#F0EFEA] sm:px-12 lg:py-24">
           <CropMarks color="#5E5D58" size={18} inset={14} />
           <p className={`m-0 mb-8 text-[#9A9993] ${label}`}>Final cut</p>
           <h2 className={`m-0 text-[52px] font-extrabold leading-[0.88] sm:text-[88px] lg:text-[120px] ${display}`}>

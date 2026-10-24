@@ -39,7 +39,7 @@ export function HomeClaude() {
             <div className="flex flex-col gap-[10px]">
               <div className="flex items-center justify-between gap-3">
                 <h3 className={cardTitle}>{c.title}</h3>
-                <span className={`shrink-0 bg-[#F7F6F2] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono} ${outline}`}>{c.tag}</span>
+                <span className={`shrink-0 bg-[var(--lp-card)] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono} ${outline}`}>{c.tag}</span>
               </div>
               <p className={cardBody}>{c.body}</p>
             </div>

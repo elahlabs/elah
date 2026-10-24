@@ -10,7 +10,7 @@ export function MotionBindingDemo() {
   return (
     <LoadOnView
       placeholder={
-        <div className="flex h-[22rem] items-center justify-center bg-[#F7F6F2] text-[15px] text-[#5E5D58] [outline:1px_solid_#D9D7D0] [outline-offset:-0.5px]">
+        <div className="flex h-[22rem] items-center justify-center bg-[var(--lp-card)] text-[15px] text-[var(--lp-muted)] [outline:1px_solid_var(--lp-line)] [outline-offset:-0.5px]">
           Source, keys and timeline load as you scroll here.
         </div>
       }

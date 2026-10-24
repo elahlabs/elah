@@ -16,13 +16,13 @@ export function HomeArchitecture() {
     >
       <ol className="m-0 flex max-w-[860px] list-none flex-col gap-2 p-0">
         {flow.map((layer, i) => (
-          <li key={layer.name} className={`flex flex-col gap-3 bg-[#F0EFEA] p-4 sm:flex-row sm:items-center sm:gap-5 ${outline}`}>
-            <span className={`w-[140px] shrink-0 text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono}`}>
+          <li key={layer.name} className={`flex flex-col gap-3 bg-[var(--lp-paper)] p-4 sm:flex-row sm:items-center sm:gap-5 ${outline}`}>
+            <span className={`w-[140px] shrink-0 text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono}`}>
               {String(i + 1).padStart(2, '0')} · {layer.name.toLowerCase()}
             </span>
             <div className="flex flex-wrap gap-2">
               {layer.items.map((it, j) => (
-                <span key={it} className={`${chip} ${i === flow.length - 1 && j === layer.items.length - 1 ? 'bg-[#FF003C] text-[#0E0E10]' : `bg-[#F7F6F2] text-[#0E0E10] ${outline}`}`}>
+                <span key={it} className={`${chip} ${i === flow.length - 1 && j === layer.items.length - 1 ? 'bg-[#FF003C] text-[#0E0E10]' : `bg-[var(--lp-card)] text-[var(--lp-ink)] ${outline}`}`}>
                   {it}
                 </span>
               ))}

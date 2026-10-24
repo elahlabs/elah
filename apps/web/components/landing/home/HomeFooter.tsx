@@ -18,17 +18,17 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
   return (
     <footer data-scene="Credits" className="w-full pb-[44px]">
       <div className={container}>
-        <div className="grid grid-cols-1 border-t border-[#0E0E10] sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 border-t border-[var(--lp-ink)] sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-5 py-8 pr-6">
             <span aria-hidden="true" className="h-[36px] w-[36px]" style={{ backgroundImage: `url(${MARK})`, backgroundSize: 'cover' }} />
-            <p className={`m-0 max-w-[280px] text-[15px] leading-[23px] text-[#5E5D58] ${sans}`}>
+            <p className={`m-0 max-w-[280px] text-[15px] leading-[23px] text-[var(--lp-muted)] ${sans}`}>
               The open-source video engine for the browser. Write motion as code, keep it on a timeline.
             </p>
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex h-[36px] items-center gap-2 self-start bg-[#0E0E10] px-4 text-[#F0EFEA] no-underline transition-colors hover:bg-[#FF003C] hover:text-[#0E0E10] ${label}`}
+              className={`inline-flex h-[36px] items-center gap-2 self-start bg-[var(--lp-ink)] px-4 text-[var(--lp-paper)] no-underline transition-colors hover:bg-[#FF003C] hover:text-[#0E0E10] ${label}`}
             >
               <GitHubLogo />
               Star on GitHub
@@ -36,12 +36,12 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
             </a>
           </div>
           {footerColumns.map((col) => (
-            <nav key={col.heading} aria-label={col.heading} className="flex flex-col gap-4 border-t border-[#D9D7D0] py-8 sm:border-l sm:border-t-0 sm:pl-6">
-              <p className={`m-0 text-[#5E5D58] ${label}`}>{col.heading}</p>
+            <nav key={col.heading} aria-label={col.heading} className="flex flex-col gap-4 border-t border-[var(--lp-line)] py-8 sm:border-l sm:border-t-0 sm:pl-6">
+              <p className={`m-0 text-[var(--lp-muted)] ${label}`}>{col.heading}</p>
               <ul className="m-0 flex list-none flex-col gap-[10px] p-0">
                 {col.links.map((l) => {
                   const external = !l.href.startsWith('/')
-                  const cls = `text-[15px] text-[#0E0E10] no-underline underline-offset-4 hover:underline ${sans}`
+                  const cls = `text-[15px] text-[var(--lp-ink)] no-underline underline-offset-4 hover:underline ${sans}`
                   return (
                     <li key={l.href}>
                       {external ? (
@@ -61,11 +61,11 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
           ))}
         </div>
 
-        <div className={`flex items-center justify-between gap-4 border-t border-[#D9D7D0] py-3 text-[#5E5D58] ${label}`}>
+        <div className={`flex items-center justify-between gap-4 border-t border-[var(--lp-line)] py-3 text-[var(--lp-muted)] ${label}`}>
           <span>elah is open source under Apache-2.0.</span>
           <span className="hidden sm:inline">End of reel</span>
         </div>
-        <p aria-hidden className={`m-0 flex select-none justify-between overflow-hidden pt-4 text-[34vw] font-extrabold leading-[0.74] text-[#0E0E10] lg:text-[24vw] ${display}`}>
+        <p aria-hidden className={`m-0 flex select-none justify-between overflow-hidden pt-4 text-[34vw] font-extrabold leading-[0.74] text-[var(--lp-ink)] lg:text-[24vw] ${display}`}>
           {['e', 'l', 'a', 'h'].map((ch) => (
             <span key={ch}>{ch}</span>
           ))}

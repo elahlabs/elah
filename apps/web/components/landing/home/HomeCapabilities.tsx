@@ -36,7 +36,7 @@ export function HomeCapabilities() {
               <h3 className={cardTitle}>{t.title}</h3>
               <p className={cardBody}>{t.text}</p>
             </div>
-            <code className={`mt-auto block overflow-x-auto whitespace-nowrap bg-[#F0EFEA] px-3 py-2 text-[12px] text-[#0E0E10] ${mono} ${outline}`}>{t.code}</code>
+            <code className={`mt-auto block overflow-x-auto whitespace-nowrap bg-[var(--lp-paper)] px-3 py-2 text-[12px] text-[var(--lp-ink)] ${mono} ${outline}`}>{t.code}</code>
           </article>
         ))}
       </div>

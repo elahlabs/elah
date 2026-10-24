@@ -58,20 +58,20 @@ export function HomeHero() {
   return (
     <header data-scene="Open" className="pt-6 sm:pt-8">
       <div className={container}>
-        <div className={`flex items-center justify-between gap-4 py-3 text-[#0E0E10] ${label}`}>
+        <div className={`flex items-center justify-between gap-4 py-3 text-[var(--lp-ink)] ${label}`}>
           <span className="flex items-center gap-2">
             <span aria-hidden className="h-[8px] w-[8px] animate-pulse bg-[#FF003C] motion-reduce:animate-none" />
             REC <RecTimecode />
           </span>
-          <span className="hidden text-[#5E5D58] sm:inline">Open source · Apache-2.0</span>
+          <span className="hidden text-[var(--lp-muted)] sm:inline">Open source · Apache-2.0</span>
         </div>
 
         <div className="relative px-5 py-12 sm:px-10 sm:py-16 lg:py-20">
           <CropMarks size={18} />
-          <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[22px] w-px -translate-y-1/2 bg-[#D9D7D0]" />
-          <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-px w-[22px] -translate-x-1/2 bg-[#D9D7D0]" />
+          <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[22px] w-px -translate-y-1/2 bg-[var(--lp-line)]" />
+          <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-px w-[22px] -translate-x-1/2 bg-[var(--lp-line)]" />
 
-          <h1 className={`relative m-0 text-[64px] font-extrabold leading-[0.86] tracking-[-0.5px] text-[#0E0E10] sm:text-[112px] lg:text-[148px] ${display}`}>
+          <h1 className={`relative m-0 text-[64px] font-extrabold leading-[0.86] tracking-[-0.5px] text-[var(--lp-ink)] sm:text-[112px] lg:text-[148px] ${display}`}>
             <span className="block">Write motion</span>
             <span className="block">
               as <Sel>code.</Sel>
@@ -82,7 +82,7 @@ export function HomeHero() {
           <div className="relative mt-10 flex flex-col gap-6 lg:mt-12 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-3">
               <p className={`${lead} max-w-[440px]`}>Open source. Renders in the browser.</p>
-              <p className={`m-0 text-[#5E5D58] ${label}`}>The motion layer is coming in 1.0.</p>
+              <p className={`m-0 text-[var(--lp-muted)] ${label}`}>The motion layer is coming in 1.0.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Link href={CLAUDE} className={`${btnPrimary} ${btnLarge}`}>
@@ -100,13 +100,13 @@ export function HomeHero() {
 
         <Link
           href="/changelog"
-          className={`flex items-center justify-between gap-4 border-y border-[#D9D7D0] py-3 text-[#0E0E10] no-underline transition-colors hover:bg-[#E8E6E0] ${label}`}
+          className={`flex items-center justify-between gap-4 border-y border-[var(--lp-line)] py-3 text-[var(--lp-ink)] no-underline transition-colors hover:bg-[var(--lp-paper2)] ${label}`}
         >
           <span>Coming in 1.0: the motion and programmatic layer.</span>
           <span className="shrink-0">Read the changelog →</span>
         </Link>
 
-        <figure className="m-0 mt-10 bg-[#0E0E10] sm:mt-12">
+        <figure className="m-0 mt-10 bg-[var(--lp-stage)] [outline:1px_solid_var(--lp-stage-line)] sm:mt-12">
           <div className={`flex items-center justify-between gap-4 border-b border-[#2E2E33] px-4 py-3 text-[#9A9993] ${label}`}>
             <span>
               <span className="text-[#F0EFEA]">Program</span> · hero.json

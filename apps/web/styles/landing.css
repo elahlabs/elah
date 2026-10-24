@@ -222,3 +222,36 @@
     transform: none !important;
   }
 }
+
+/*
+ * Homepage "edit bay" palette (components/landing/home/DESIGN.md §0).
+ * Light values sit on :root so the shared motion demos keep them on other
+ * pages; `.lp[data-theme='dark']` swaps them on the homepage only. Cyber red
+ * (#FF003C) and the stage stay put across themes.
+ */
+:root {
+  --lp-paper: #f0efea;
+  --lp-paper2: #e8e6e0;
+  --lp-card: #f7f6f2;
+  --lp-ink: #0e0e10;
+  --lp-muted: #5e5d58;
+  --lp-line: #d9d7d0;
+  --lp-stage: #0e0e10;
+  --lp-stage-line: #0e0e10;
+}
+
+.lp {
+  color-scheme: light;
+}
+
+.lp[data-theme='dark'] {
+  color-scheme: dark;
+  --lp-paper: #0c0c0e;
+  --lp-paper2: #18181b;
+  --lp-card: #121215;
+  --lp-ink: #edece7;
+  --lp-muted: #9c9b95;
+  --lp-line: #2a2a2f;
+  --lp-stage: #141417;
+  --lp-stage-line: #2a2a2f;
+}

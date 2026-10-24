@@ -52,7 +52,7 @@ export function HomePlaygrounds() {
           return (
             <article key={p.title} className={`${cardWhite} min-w-0 !p-5`}>
               <div className="flex flex-col gap-[10px]">
-                <span className={`self-start bg-[#F0EFEA] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono} ${outline}`}>
+                <span className={`self-start bg-[var(--lp-paper)] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono} ${outline}`}>
                   {p.badge === 'live' ? 'Live' : 'Experimental'}
                 </span>
                 <h3 className={cardTitle}>{p.title}</h3>

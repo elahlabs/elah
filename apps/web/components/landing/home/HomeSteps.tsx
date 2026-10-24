@@ -19,7 +19,7 @@ function StepTimeline() {
   useEffect(() => {
     void getTitleCard().then(setC)
   }, [])
-  if (!c) return <div aria-hidden className="min-h-[220px] bg-[#0E0E10]" />
+  if (!c) return <div aria-hidden className="min-h-[220px] bg-[var(--lp-ink)]" />
   return <LazyDemo eager project={c.project} preview={false} timelineHeight={220} loop={false} label="The scene as clips and keys on a timeline" />
 }
 
@@ -30,25 +30,25 @@ export function HomeSteps() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <article className={`${cardWhite} min-w-0`}>
           <div className="flex flex-col gap-[10px]">
-            <p className={`m-0 text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono}`}>1 · write</p>
+            <p className={`m-0 text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono}`}>1 · write</p>
             <h3 className={cardTitle}>An html scene</h3>
             <p className={cardBody}>
-              The motion lives in a <code className={`text-[13px] text-[#0E0E10] ${mono}`}>data-motion</code> attribute.
+              The motion lives in a <code className={`text-[13px] text-[var(--lp-ink)] ${mono}`}>data-motion</code> attribute.
             </p>
           </div>
-          <pre tabIndex={0} aria-label="Title card scene source" className={`${panel} m-0 max-h-[300px] flex-1 overflow-auto p-4 text-[12px] leading-[20px] text-[#0E0E10] ${mono}`}>
+          <pre tabIndex={0} aria-label="Title card scene source" className={`${panel} m-0 max-h-[300px] flex-1 overflow-auto p-4 text-[12px] leading-[20px] text-[var(--lp-ink)] ${mono}`}>
             <code>{`${TITLE_CARD.html}\n\n${TITLE_CARD.css}`}</code>
           </pre>
         </article>
 
         <article className={`${cardWhite} min-w-0`}>
           <div className="flex flex-col gap-[10px]">
-            <p className={`m-0 text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono}`}>2 · timeline</p>
+            <p className={`m-0 text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono}`}>2 · timeline</p>
             <h3 className={cardTitle}>Clips and keys</h3>
             <p className={cardBody}>It lands as native clips and keyframes. Each key has an id, a frame, a value and an easing.</p>
           </div>
           <div className="flex-1 overflow-hidden ">
-            <LoadOnView placeholder={<div aria-hidden className="min-h-[220px] bg-[#0E0E10]" />}>
+            <LoadOnView placeholder={<div aria-hidden className="min-h-[220px] bg-[var(--lp-ink)]" />}>
               <StepTimeline />
             </LoadOnView>
           </div>
@@ -56,7 +56,7 @@ export function HomeSteps() {
 
         <article className={`${cardWhite} min-w-0`}>
           <div className="flex flex-col gap-[10px]">
-            <p className={`m-0 text-[11px] uppercase tracking-[0.14em] text-[#5E5D58] ${mono}`}>3 · export</p>
+            <p className={`m-0 text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono}`}>3 · export</p>
             <h3 className={cardTitle}>Exported in your browser</h3>
             <p className={cardBody}>MP4 export runs on your own machine in Chrome or Edge. No render server, and nothing is uploaded.</p>
           </div>
@@ -66,11 +66,11 @@ export function HomeSteps() {
                 <Download size={18} strokeWidth={2} aria-hidden />
               </span>
               <div className="min-w-0">
-                <div className={`text-[13px] text-[#0E0E10] ${mono}`}>title-card.mp4</div>
-                <div className={`text-[12px] text-[#5E5D58] ${sans}`}>Exported in your browser</div>
+                <div className={`text-[13px] text-[var(--lp-ink)] ${mono}`}>title-card.mp4</div>
+                <div className={`text-[12px] text-[var(--lp-muted)] ${sans}`}>Exported in your browser</div>
               </div>
             </div>
-            <Link href="/playground/motion" className={`inline-flex items-center gap-2 text-[14px] font-semibold text-[#0E0E10] no-underline transition-colors hover:text-[#FF003C] ${sans}`}>
+            <Link href="/playground/motion" className={`inline-flex items-center gap-2 text-[14px] font-semibold text-[var(--lp-ink)] no-underline transition-colors hover:text-[#FF003C] ${sans}`}>
               Try it in the playground
               <ArrowRight size={16} strokeWidth={2} aria-hidden />
             </Link>

@@ -19,6 +19,7 @@ import { HomeFaq } from '@/components/landing/home/HomeFaq'
 import { HomeCta } from '@/components/landing/home/HomeCta'
 import { HomeFooter } from '@/components/landing/home/HomeFooter'
 import { ScrubBar } from '@/components/landing/home/ScrubBar'
+import { lpThemeInitScript } from '@/components/landing/home/ThemeToggle'
 
 export const metadata: Metadata = {
   title: { absolute: 'elah — write motion as code, edit it on a timeline' },
@@ -45,7 +46,8 @@ const softwareJsonLd = {
 export default async function HomePage() {
   const stats = toDisplay(await getSiteStats())
   return (
-    <div className={`${homeFontVars} min-h-screen bg-[#F0EFEA] leading-[normal] text-[#0E0E10]`}>
+    <div suppressHydrationWarning className={`lp ${homeFontVars} min-h-screen bg-[var(--lp-paper)] leading-[normal] text-[var(--lp-ink)] transition-colors duration-300 motion-reduce:transition-none`}>
+      <script dangerouslySetInnerHTML={{ __html: lpThemeInitScript }} />
       <JsonLd data={softwareJsonLd} />
       <HomeNav stars={stats.stars} />
       <main id="main">

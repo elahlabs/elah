@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
  * a cyber red box and four square handles. Decorative; the text reads as-is.
  */
 export function Sel({ children }: { children: ReactNode }) {
-  const handle = 'absolute h-[7px] w-[7px] border border-[#FF003C] bg-[#F0EFEA]'
+  const handle = 'absolute h-[7px] w-[7px] border border-[#FF003C] bg-[var(--lp-paper)]'
   return (
     <span className="relative mx-[0.08em] inline-block px-[0.08em] [outline:2px_solid_#FF003C] [outline-offset:-1px]">
       {children}
@@ -18,7 +18,7 @@ export function Sel({ children }: { children: ReactNode }) {
 }
 
 /** L-shaped crop marks at the four corners of a positioned parent. */
-export function CropMarks({ color = '#0E0E10', size = 14, inset = 0 }: { color?: string; size?: number; inset?: number }) {
+export function CropMarks({ color = 'var(--lp-ink)', size = 14, inset = 0 }: { color?: string; size?: number; inset?: number }) {
   const s = { width: size, height: size, borderColor: color, margin: inset }
   const base = 'pointer-events-none absolute'
   return (
