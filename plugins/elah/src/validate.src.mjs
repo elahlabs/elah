@@ -26,9 +26,14 @@ function usage() {
 
 if (rest[0] === '--vocabulary') {
   // The engine's KINDS line lists only the compiler's kinds; an authored file may also use component, system and vector.
+  // `page` (source.kind, the programmatic video) leads the line: it is the default medium; the rest are VideoSpec element kinds.
   const vocabulary = specVocabulary()
     .split('\n')
-    .map((line) => (line.startsWith('KINDS (element.kind):') ? `KINDS (element.kind, authored): ${AUTHORED_KINDS.join(', ')}` : line))
+    .map((line) =>
+      line.startsWith('KINDS (element.kind):')
+        ? `KINDS (source.kind "page", then VideoSpec element.kind, authored): page (programmatic video, the default), ${AUTHORED_KINDS.join(', ')}`
+        : line,
+    )
     .join('\n')
   process.stdout.write(vocabulary + '\n')
   process.exit(0)
@@ -89,8 +94,8 @@ const BANNED_TAGS = {
   iframe: 'an inline <svg> or plain elements; nothing can be embedded',
   object: 'an inline <svg> or plain elements; nothing can be embedded',
   embed: 'an inline <svg> or plain elements; nothing can be embedded',
-  video: 'drawn elements; the page has no media (footage is not part of a page video)',
-  audio: 'nothing; a page video is silent',
+  video: 'drawn elements; a programmatic video has no media files (footage is not part of it)',
+  audio: 'nothing; a programmatic video is silent',
   link: 'the css field (no stylesheet or font links)',
   base: 'nothing; there is no network',
   style: 'the css field (a <style> tag would skip the CSS checks)',
@@ -269,7 +274,7 @@ function checkCssText(path, rawText, isBlock, ctx) {
   for (const m of text.matchAll(/url\(\s*(['"]?)\s*([^)'"]*)/gi)) {
     const target = m[2].trim()
     if (!/^data:/i.test(target) && !target.startsWith('#')) {
-      add('error', path, `url(${target.slice(0, 40)}${target.length > 40 ? '...' : ''}) points outside the page (no network)`, { substitute: 'a data: URI, a #fragment reference to an inline <svg> def, or a gradient' })
+      add('error', path, `url(${target.slice(0, 40)}${target.length > 40 ? '...' : ''}) points outside the video (no network)`, { substitute: 'a data: URI, a #fragment reference to an inline <svg> def, or a gradient' })
     }
   }
   const root = isBlock ? { prelude: '', decls: text, children: [] } : parseCss(text)
@@ -322,7 +327,7 @@ function checkPage(src, title) {
   const css = src.css
   if (Buffer.byteLength(html, 'utf8') > PAGE_HTML_MAX) add('error', 'source.html', `markup is ${(Buffer.byteLength(html, 'utf8') / 1024).toFixed(1)} KB; the cap is 64 KB`, { substitute: 'fewer elements; repeat a pattern with one class instead of inline styles' })
   if (Buffer.byteLength(css, 'utf8') > PAGE_CSS_MAX) add('error', 'source.css', `CSS is ${(Buffer.byteLength(css, 'utf8') / 1024).toFixed(1)} KB; the cap is 32 KB`, { substitute: 'shared classes and custom properties instead of repeated declarations' })
-  if (/<script/i.test(html)) add('error', 'source.html <script>', 'scripts are not allowed in a page video', { substitute: 'CSS @keyframes and animation-delay for every movement' })
+  if (/<script/i.test(html)) add('error', 'source.html <script>', 'scripts are not allowed in a programmatic video', { substitute: 'CSS @keyframes and animation-delay for every movement' })
   if (/<(?:html|head|body)\b|<!doctype/i.test(html)) add('warn', 'source.html', 'html is a fragment inside the stage: <html>, <head>, <body> and <!doctype> are dropped', { substitute: 'one root element such as <main class="stage">' })
 
   const ctx = { defined: new Set(), used: new Set(), custom: new Map(), fontLists: [], animations: 0, keyframes: 0, duration: src.durationSeconds }
@@ -334,14 +339,14 @@ function checkPage(src, title) {
     if (m[1]) continue
     const tag = m[2].toLowerCase()
     if (BANNED_TAGS[tag]) add('error', `source.html <${tag}>`, `<${tag}> is not allowed`, { substitute: BANNED_TAGS[tag] })
-    if (tag === 'meta' && /http-equiv/i.test(m[3])) add('error', 'source.html <meta http-equiv>', 'meta http-equiv can redirect or refresh the page', { substitute: 'nothing' })
+    if (tag === 'meta' && /http-equiv/i.test(m[3])) add('error', 'source.html <meta http-equiv>', 'meta http-equiv can redirect or refresh the video', { substitute: 'nothing' })
     for (const a of m[3].matchAll(/([^\s=\/"'<>]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'>]+))?/g)) {
       const name = a[1].toLowerCase()
       const value = (a[2] ?? '').replace(/^["']|["']$/g, '')
       if (name === 'data-scene') scenes++
-      if (/^on[a-z]+$/.test(name)) add('error', `source.html <${tag} ${name}>`, 'event-handler attributes are not allowed', { substitute: 'CSS animation (the page runs no script)' })
+      if (/^on[a-z]+$/.test(name)) add('error', `source.html <${tag} ${name}>`, 'event-handler attributes are not allowed', { substitute: 'CSS animation (a programmatic video runs no script)' })
       else if (['src', 'href', 'xlink:href', 'poster', 'srcset', 'action', 'formaction'].includes(name) && !/^\s*(?:data:|#)/i.test(value)) {
-        add('error', `source.html <${tag} ${name}>`, `${name}="${value.slice(0, 40)}" points outside the page (no network)`, { substitute: 'a data: URI, or draw it with elements and inline <svg>' })
+        add('error', `source.html <${tag} ${name}>`, `${name}="${value.slice(0, 40)}" points outside the video (no network)`, { substitute: 'a data: URI, or draw it with elements and inline <svg>' })
       } else if (name === 'style') cssPieces.push(value)
       else if (name === 'font-family') ctx.fontLists.push({ path: `source.html <${tag} font-family>`, value })
       else if (/url\(/i.test(value)) cssPieces.push(`x{v:${value}}`)
@@ -388,7 +393,7 @@ if (doc.format !== 'elah-input') add('error', 'format', 'must be the string "ela
 if (doc.version !== 1) add('error', 'version', 'must be the number 1')
 if (doc.title !== undefined && typeof doc.title !== 'string') add('error', 'title', 'must be a string')
 if (!isObj(doc.source)) {
-  add('error', 'source', 'must be an object with kind "spec", "html", "page" or "project"')
+  add('error', 'source', 'must be an object with kind "page" (programmatic video, the default), "spec", "html" or "project"')
   finish('')
 }
 
@@ -442,8 +447,8 @@ if (src.kind === 'spec') {
   if (!Number.isInteger(src.fps) || src.fps < 24 || src.fps > 60) add('error', 'source.fps', 'must be an integer from 24 to 60')
   if (issues.length) finish('')
   const stats = checkPage(src, title)
-  add('info', 'source.html', 'only string-level checks ran here (no DOM in Node); the artifact mounts the page, seeks every animation and reports what it cannot draw')
-  finish(`page "${title}", ${src.stage.width}x${src.stage.height} @ ${src.fps} fps, ${src.durationSeconds} s, ${stats.scenes} scenes, ${stats.animations} animations, ${stats.keyframes} keyframe sets`)
+  add('info', 'source.html', 'only string-level checks ran here (no DOM in Node); the artifact mounts the programmatic video, seeks every animation and reports what it cannot draw')
+  finish(`programmatic video "${title}", ${src.stage.width}x${src.stage.height} @ ${src.fps} fps, ${src.durationSeconds} s, ${stats.scenes} scenes, ${stats.animations} animations, ${stats.keyframes} keyframe sets`)
 } else if (src.kind === 'project') {
   if (!isObj(src.project)) {
     add('error', 'source.project', 'must be a .elah.json Project document object')
@@ -458,6 +463,6 @@ if (src.kind === 'spec') {
     finish('')
   }
 } else {
-  add('error', 'source.kind', `must be "spec", "html", "page" or "project", got ${JSON.stringify(src.kind)}`)
+  add('error', 'source.kind', `must be "page" (programmatic video, the default), "spec", "html" or "project", got ${JSON.stringify(src.kind)}`)
   finish('')
 }

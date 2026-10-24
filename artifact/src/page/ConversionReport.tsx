@@ -30,7 +30,7 @@ export function ConversionReport({ report, text, dirty, onRevert }: Props) {
         Converted to keyframes: {r.elements} elements, {r.animations} animations → native; {r.channels.sampled} channels sampled; {r.unconverted.length} could not convert
       </summary>
       <div className="conv-actions">
-        <button type="button" className="btn" onClick={revert} data-testid="revert-page" title="Go back to the HTML page (its export is the HTML export again)">
+        <button type="button" className="btn" onClick={revert} data-testid="revert-page" title="Back to the original programmatic video (export comes from it again)">
           <Undo2 size={14} /> {confirming ? 'Discard edits and revert?' : 'Revert to original'}
         </button>
         {confirming && (

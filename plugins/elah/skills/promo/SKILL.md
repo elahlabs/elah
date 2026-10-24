@@ -1,6 +1,6 @@
 ---
 name: promo
-description: Make a 15 to 30 second product launch promo with Elah (hook, problem, product, three features, call to action). Claude writes it, validates it, and publishes an Elah artifact to preview, edit and export as MP4. Use when the user asks for a launch video, product promo, app teaser or ad.
+description: Make a 15 to 30 second product launch promo with Elah (hook, problem, product, three features, call to action). Claude writes it as a programmatic video (HTML + CSS motion) by default, or from Elah components when it needs a soundtrack or supplied media, validates it, and publishes an Elah artifact to preview, edit and export as MP4. Use when the user asks for a launch video, product promo, app teaser or ad.
 argument-hint: "[product name, one-line pitch, brand colour, length]"
 allowed-tools: Bash(node *validate.mjs *) Bash(node *stage.mjs *)
 ---
@@ -33,17 +33,17 @@ are proposed; never invent numbers, customers, awards or testimonials. Say what 
 
 Use the beat table in `formats/launch.md` (hook, problem, product, features, optional proof, call to action), time-boxed to the
 chosen length, with one hero per beat and the product named in the first third. End with a held call-to-action beat of at least 1.5 s
-(2-3 s is better). Components and presets for each beat are in that file; type sizes, margins and the accent budget are in
+(2-3 s is better). That file names each beat's programmatic recipe (and the VideoSpec component for the alternative); type sizes, margins and the accent budget are in
 `craft/type-and-layout.md`.
 
 ## 3. Author, validate, review, publish
 
 Follow the `video` skill from its step 1 on, with the beat table above as the plan:
 
-1. Take the medium from the director's Medium row: default VideoSpec, a **page** (`source.kind: "page"`, one HTML + CSS page) when the brief says html, css, web or page or wants backdrop blur, blend modes, rich gradients or SVG illustration. VideoSpec: read `${CLAUDE_PLUGIN_ROOT}/reference/authoring.md` and run `node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --vocabulary`; use only names it prints. Page: read `${CLAUDE_PLUGIN_ROOT}/reference/page.md` and `reference/page/motion.md` instead; the launch beat table still sets the scenes (one `data-scene` per beat).
+1. Take the medium from the director's Medium row: the default is a **programmatic video** (HTML + CSS motion, `source.kind: "page"`). Use a **VideoSpec** only when the brief needs a soundtrack or sound effects, supplied image or audio URLs, or asks for Elah components or a VideoSpec; then say why in one line ("built from Elah components because it has a soundtrack"). Programmatic video: read `${CLAUDE_PLUGIN_ROOT}/reference/programmatic.md` and `reference/programmatic/motion.md`; the launch beat table still sets the scenes (one `data-scene` per beat) and links each beat's recipe in `reference/programmatic/recipes.md`. VideoSpec: read `${CLAUDE_PLUGIN_ROOT}/reference/authoring.md` and run `node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --vocabulary`; use only names it prints. Call the medium "programmatic video" in everything the user reads.
 2. Write `elah-input.json` (title = the product name plus "launch") in a work folder (the scratchpad directory if the system prompt names one, otherwise `.elah/<slug>/` in the current directory) and run `node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<work folder>/elah-input.json"`. Fix every error and re-run.
 3. **Self-review round (mandatory).** Read `${CLAUDE_PLUGIN_ROOT}/reference/craft/review.md` and run it against the validator output and the file; fix what it finds and validate again. It counts inside the validation rounds: at most 3 in total, then show the remaining messages instead of publishing.
-4. If the `Artifact` tool is available: load the `artifact-capabilities` skill first if listed (declare `downloads`), run `node "${CLAUDE_PLUGIN_ROOT}/scripts/stage.mjs" "<work folder>"`, then publish with `file_path` = the printed page, `files` = the printed map plus `"elah-input.json"`, `capabilities` declaring `downloads`, `icon: "video"`, and a one-sentence `description`. Tell the user they can Preview, Edit (text, timing, keyframes, curves), Export MP4 and Open in Elah, and that they can paste any problems the page lists back here.
+4. If the `Artifact` tool is available: load the `artifact-capabilities` skill first if listed (declare `downloads`), run `node "${CLAUDE_PLUGIN_ROOT}/scripts/stage.mjs" "<work folder>"`, then publish with `file_path` = the printed page, `files` = the printed map plus `"elah-input.json"`, `capabilities` declaring `downloads`, `icon: "video"`, and a one-sentence `description`. Tell the user they can Preview, Edit (text, timing, keyframes, curves), Export MP4 and Open in Elah, and that they can paste any problems the artifact lists back here.
 5. If the Artifact tool is not available: write `<product-slug>.elah-input.json` to the current directory and say previewing and exporting need the Elah artifact page; do not invent a web import.
 
 After publishing, offer two quick follow-ups (a vertical cut, or a different accent colour) and republish to the same artifact

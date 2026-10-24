@@ -1,12 +1,12 @@
 {
   "name": "elah",
   "version": "0.1.0",
-  "description": "Make a video or motion graphic with Elah from Claude Code: Claude writes it as data, the plugin validates it, and an Elah artifact previews, edits and exports it as MP4.",
+  "description": "Make a programmatic video or motion graphic with Elah from Claude Code: Claude writes it as HTML + CSS motion, the plugin validates it, and an Elah artifact previews, edits and exports it as MP4.",
   "author": {
     "name": "Elah"
   },
   "homepage": "https://elah.dev",
   "repository": "https://github.com/elahlabs/elah",
   "license": "Apache-2.0",
-  "keywords": ["video", "motion-graphics", "elah", "mp4", "promo"]
+  "keywords": ["video", "programmatic-video", "motion-graphics", "elah", "mp4", "promo"]
 }

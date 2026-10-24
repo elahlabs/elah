@@ -58,15 +58,15 @@ const refusal = (where: string, message: string, substitute: string): Issue => (
 })
 
 const FORBIDDEN_TAGS: Record<string, string> = {
-  script: 'Remove it. A page has no scripts; all motion comes from @keyframes in the css.',
-  iframe: 'Draw the content with HTML and inline SVG inside the page.',
-  object: 'Draw the content with HTML and inline SVG inside the page.',
-  embed: 'Draw the content with HTML and inline SVG inside the page.',
-  video: 'Pages have no media elements. Build the visual from HTML, CSS gradients and inline SVG.',
-  audio: 'Pages have no audio in this version. Remove it.',
+  script: 'Remove it. A programmatic video has no scripts; all motion comes from @keyframes in the css.',
+  iframe: 'Draw the content with HTML and inline SVG inside the video.',
+  object: 'Draw the content with HTML and inline SVG inside the video.',
+  embed: 'Draw the content with HTML and inline SVG inside the video.',
+  video: 'A programmatic video has no media elements. Build the visual from HTML, CSS gradients and inline SVG.',
+  audio: 'A programmatic video has no audio in this version. Remove it.',
   style: 'Move the rules into the separate css field of the input; the markup carries no <style>.',
   link: 'Put the rules in the css field. Bundled fonts are used by naming the family in font-family.',
-  base: 'Remove it. A page has no network and no base URL.',
+  base: 'Remove it. A programmatic video has no network and no base URL.',
 }
 
 const URL_ATTRS = ['src', 'href', 'xlink:href', 'poster', 'srcset', 'action', 'formaction']
@@ -152,7 +152,7 @@ export function checkHtml(html: string): Issue[] {
     if (FORBIDDEN_TAGS[tag] && !tagSeen.has(tag)) {
       tagSeen.add(tag)
       const count = all.filter((e) => e.localName === tag).length
-      out.push(refusal(`<${tag}>${count > 1 ? ` (x${count})` : ''}`, `<${tag}> is not allowed in a page.`, FORBIDDEN_TAGS[tag]))
+      out.push(refusal(`<${tag}>${count > 1 ? ` (x${count})` : ''}`, `<${tag}> is not allowed in a programmatic video.`, FORBIDDEN_TAGS[tag]))
     }
     for (const a of Array.from(el.attributes)) {
       const name = a.name.toLowerCase()
@@ -203,8 +203,8 @@ export function validatePage(src: {
   const issues: Issue[] = []
   const bad = (where: string, message: string, substitute: string) => issues.push(refusal(where, message, substitute))
 
-  if (typeof src.html !== 'string' || src.html.trim() === '') bad('source.html', 'source.html must be a non-empty string.', 'the page markup, e.g. "<main data-scene=\\"intro\\">...</main>".')
-  if (src.css !== undefined && typeof src.css !== 'string') bad('source.css', 'source.css must be a string.', 'the page stylesheet as one string.')
+  if (typeof src.html !== 'string' || src.html.trim() === '') bad('source.html', 'source.html must be a non-empty string.', 'the video markup, e.g. "<main data-scene=\\"intro\\">...</main>".')
+  if (src.css !== undefined && typeof src.css !== 'string') bad('source.css', 'source.css must be a string.', 'the video stylesheet as one string.')
   if (!isPosNum(src.durationSeconds, 600)) bad('source.durationSeconds', 'durationSeconds must be a number of seconds, greater than 0 and at most 600.', 'e.g. "durationSeconds": 14.')
 
   const rawStage = src.stage as { width?: unknown; height?: unknown } | undefined
@@ -228,10 +228,10 @@ export function validatePage(src: {
   if (css) issues.push(...checkCss(css, 'css'))
 
   if (!/@keyframes\b/i.test(css)) {
-    issues.push({ severity: 'warn', where: 'css', message: 'No @keyframes found: the page will be a still image. Motion comes from @keyframes with an explicit duration and delay.' })
+    issues.push({ severity: 'warn', where: 'css', message: 'No @keyframes found: the video will be a still image. Motion comes from @keyframes with an explicit duration and delay.' })
   }
   if (/(^|[}\s,])(:root|html|body)(?![\w-])\s*[{,]/.test(stripComments(css))) {
-    issues.push({ severity: 'warn', where: 'css: :root / html / body', message: 'These selectors do not match inside the page mount (they are re-pointed at the stage element here, but nowhere else). Put colours and fonts on the root <main class="stage"> element instead.' })
+    issues.push({ severity: 'warn', where: 'css: :root / html / body', message: 'These selectors do not match inside the video (they are re-pointed at the stage element here, but nowhere else). Put colours and fonts on the root <main class="stage"> element instead.' })
   }
   if (html && !/data-scene\s*=/.test(html)) {
     issues.push({ severity: 'info', where: 'html', message: 'No [data-scene] elements: the player shows no scene bars. Name each scene with data-scene="name" on sibling elements.' })

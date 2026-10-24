@@ -1,7 +1,9 @@
 # Taste: brutalist
 
 Read `floor.md` too. Raw and structural: sport, streetwear, a manifesto, a data story with attitude, gaming, a loud announcement.
-Rigid grid, extreme type contrast, mono labels, hard cuts. Numbers are starting values; adapt them to the clip.
+Rigid grid, extreme type contrast, mono labels, hard cuts. Numbers are starting values; adapt them to the clip. The motion block and
+components below are the VideoSpec's; for a programmatic video read the taste as tokens, curves and recipes in
+`programmatic/motion.md` and `programmatic/recipes.md` (`word-hits` is the signature recipe).
 
 ## Palette (all six tokens) and fonts
 
@@ -18,7 +20,8 @@ Type the capitals yourself; do not rely on a case style. Never a second accent.
 
 `"motion": { "energy": "bold", "camera": false, "ambient": "grid", "transition": "cut" }`. Mechanical, nothing soft: arrivals of
 0.25-0.33 s on `spring:stiff` or `expo-out`, exits `wipe-out` of 0.2 s, rules draw on. Beats are hard cuts; one `section-break`
-or `wipe` hand-off at most once per 4 s. Hold the hit for 1 s, then cut. Energy `bold` is x0.75 on every time.
+or `wipe` hand-off at most once per 4 s. Hold the hit for 1 s, then cut. These times are already bold: do not scale them again
+(`craft/motion.md`, Energy).
 
 ## Type, colour and layout
 

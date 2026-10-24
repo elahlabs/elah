@@ -5,13 +5,15 @@ or ask once for the figures. Round them to what a viewer can say aloud.
 
 ## Beat table (30 s)
 
-| Beat | Seconds | Job | What fits |
-| --- | --- | --- | --- |
-| Question | 0-4 | the question the numbers answer, frame 0 already on screen | `kinetic-title`, `typewriter-line`, raw hero text |
-| The big number | 4-10 | the one headline figure, the largest element in the frame | `big-number` (variant `below`), or `counter` generator with a label |
-| Context | 10-22 (2 x 6) | two comparisons: the thing against what a viewer knows | `stat-bars` (one bar `highlight`, the others muted), `stat-ring`, `comparison` |
-| The turn | 22-27 | what it means, one sentence | `circled-phrase` (marker) around the key phrase, `kinetic-title` |
-| Takeaway | 27-30 | one line (a source line, if the brief named one, is still on screen) | `quote-card`, raw hero line, `logo-outro` if a name is given (tagline as a raw line, see `components.md`) |
+The last column is the programmatic video (the default medium); the column before it is the VideoSpec alternative.
+
+| Beat | Seconds | Job | What fits (VideoSpec) | Programmatic recipe (`programmatic/recipes.md`) |
+| --- | --- | --- | --- | --- |
+| Question | 0-4 | the question the numbers answer, frame 0 already on screen | `kinetic-title`, `typewriter-line`, raw hero text | [Kinetic title](../programmatic/recipes.md#kinetic-title), [Typewriter line](../programmatic/recipes.md#typewriter-line), a hero line |
+| The big number | 4-10 | the one headline figure, the largest element in the frame | `big-number` (variant `below`), or `counter` generator with a label | [Count-up (digit reel)](../programmatic/recipes.md#count-up-digit-reel): the figure with its separators, the label after it lands |
+| Context | 10-22 (2 x 6) | two comparisons: the thing against what a viewer knows | `stat-bars` (one bar `highlight`, the others muted), `stat-ring`, `comparison` | [Stat bars](../programmatic/recipes.md#stat-bars) (one bar in the accent), [Stat ring](../programmatic/recipes.md#stat-ring), [Comparison](../programmatic/recipes.md#comparison) |
+| The turn | 22-27 | what it means, one sentence | `circled-phrase` (marker) around the key phrase, `kinetic-title` | [Circled phrase](../programmatic/recipes.md#circled-phrase) (marker variant), [Kinetic title](../programmatic/recipes.md#kinetic-title) |
+| Takeaway | 27-30 | one line (a source line, if the brief named one, is still on screen) | `quote-card`, raw hero line, `logo-outro` if a name is given (tagline as a raw line, see `components.md`) | [Quote card](../programmatic/recipes.md#quote-card), a hero line, [Logo outro](../programmatic/recipes.md#logo-outro) if a name is given |
 
 ## Rules
 

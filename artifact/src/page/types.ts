@@ -4,6 +4,8 @@
  * the hooks below.
  */
 
+import type { Issue } from '../input'
+
 /** A validated, fully defaulted page. */
 export interface PageSource {
   kind: 'page'
@@ -27,6 +29,8 @@ export interface PagePlayerHandle {
   readonly root: ShadowRoot
   readonly stageEl: HTMLElement
   readonly scenes: readonly SceneWindow[]
+  /** The layout report measured at mount: its warnings and how long it took (ms). */
+  readonly layout: { issues: Issue[]; ms: number; times: number[] }
   /** Every animation under the stage, paused. Collected once at mount. */
   animations(): Animation[]
   /** Seek the page AND the scrub bar / readout to `t` seconds (clamped to the video). */

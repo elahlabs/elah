@@ -1,6 +1,6 @@
-# Page example: Orbit 2, 6 s, two scenes, dark-glass tokens
+# Programmatic video example: Orbit 2, 6 s, two scenes, dark-glass tokens
 
-Validates clean (OK, 2 scenes, 13 animations, no warnings). Wrap the two blocks in the envelope from `page.md` with `durationSeconds: 6`, stage 1920x1080, fps 30.
+Validates clean (OK, 2 scenes, 13 animations, no warnings). Wrap the two blocks in the envelope from `programmatic.md` with `durationSeconds: 6`, stage 1920x1080, fps 30.
 
 ```html
 <main class="stage">
@@ -75,4 +75,4 @@ Validates clean (OK, 2 scenes, 13 animations, no warnings). Wrap the two blocks 
 ```
 
 Beat read: scene 1 0-3.4 s (hero blurs in at t = 0, label slides, rule draws, sub rises 0.3 s apart); scene 2 3.0-6 s (dot pops,
-label, hero, rule, sub in order 0.1-0.15 s apart, held 1 s). Validator: `OK: page ... 2 scenes, 13 animations`, no warnings.
+label, hero, rule, sub in order 0.1-0.15 s apart, held 1 s). Validator: `OK: programmatic video ... 2 scenes, 13 animations`, no warnings.

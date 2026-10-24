@@ -19,7 +19,7 @@ import type { PagePlayerHandle } from './types'
 /** Thrown when this browser cannot draw the SVG image (decode failed or the canvas is tainted). */
 export class PageExportUnsupported extends Error {
   constructor(detail: string) {
-    super(`Export from HTML is not supported in this browser; press Edit to export with the native engine. (${detail})`)
+    super(`Exporting the programmatic video directly is not supported in this browser; press Edit to export with the native engine. (${detail})`)
     this.name = 'PageExportUnsupported'
   }
 }

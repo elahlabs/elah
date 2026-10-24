@@ -1,7 +1,7 @@
 {
   "format": "elah-input",
   "version": 1,
-  "title": "Warning page",
+  "title": "Warning sample",
   "source": {
     "kind": "page",
     "html": "<main class=\"stage\"><h1 class=\"a\">One</h1><p class=\"b\">Two</p><p class=\"c\">Three</p><p class=\"d\">Four</p></main>",

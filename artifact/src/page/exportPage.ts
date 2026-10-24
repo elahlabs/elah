@@ -19,7 +19,7 @@ type LastExport = { size: number; type: string; route: string; source: 'page'; s
 
 export async function exportPage(ctx: PageExportContext): Promise<void> {
   const { title, player, setStatus, signal } = ctx
-  if (!player) throw new Error('The page is not mounted yet.')
+  if (!player) throw new Error('The programmatic video is not loaded yet.')
   player.pause()
   const resumeAt = player.time()
   setStatus({ text: 'Exporting MP4: starting', progress: 0 })
@@ -38,7 +38,7 @@ export async function exportPage(ctx: PageExportContext): Promise<void> {
     const route = await saveFile(name, blob)
     const mb = (blob.size / 1048576).toFixed(2)
     setStatus({
-      text: `Exported ${name} (${mb} MB, rendered from the HTML page, saved by ${route === 'capability' ? 'the artifact downloads capability' : 'a browser download'}).`,
+      text: `Exported ${name} (${mb} MB, rendered from the programmatic video, saved by ${route === 'capability' ? 'the artifact downloads capability' : 'a browser download'}).`,
     })
     ;(window as unknown as { __elahLastExport?: LastExport }).__elahLastExport = {
       size: blob.size,

@@ -5,12 +5,14 @@ Vertical suits it best; landscape works with raw text in the landscape bands.
 
 ## Beat table (15 s)
 
-| Beat | Seconds | Job | What fits |
-| --- | --- | --- | --- |
-| Open | 0-1 | the strongest word is on screen at frame 0 | `word-hits` first item, or raw hero text `pop-overshoot` / `punch-in` |
-| Phrases | 1-12 | one phrase of 2-6 words per 1.5-3 s, one idea per phrase; exits overlap the next arrival by 0.2 s | `word-hits` (3-8 words), `kinetic-title` (`emphasis` on the key word), `typewriter-line` for a quiet line, `circled-phrase` |
-| Turn | one beat | a change of scale or tempo: one very short phrase after a longer one, or a `section-break` | `section-break`, `word-hits` with 2 items |
-| Last phrase | final 2-3 s | the point, held at least 1.5 s | `kinetic-title` or raw hero text; `logo-outro` only if a name is given |
+The last column is the programmatic video (the default medium); the column before it is the VideoSpec alternative.
+
+| Beat | Seconds | Job | What fits (VideoSpec) | Programmatic recipe (`programmatic/recipes.md`) |
+| --- | --- | --- | --- | --- |
+| Open | 0-1 | the strongest word is on screen at frame 0 | `word-hits` first item, or raw hero text `pop-overshoot` / `punch-in` | [Word hits](../programmatic/recipes.md#word-hits) (first word, a small negative `--at` so it is in at frame 0), or a hero line with the `punch` curve |
+| Phrases | 1-12 | one phrase of 2-6 words per 1.5-3 s, one idea per phrase; exits overlap the next arrival by 0.2 s | `word-hits` (3-8 words), `kinetic-title` (`emphasis` on the key word), `typewriter-line` for a quiet line, `circled-phrase` | [Word hits](../programmatic/recipes.md#word-hits) (3-8 words), [Kinetic title](../programmatic/recipes.md#kinetic-title) (the key word in the accent), [Typewriter line](../programmatic/recipes.md#typewriter-line) for a quiet line, [Circled phrase](../programmatic/recipes.md#circled-phrase) |
+| Turn | one beat | a change of scale or tempo: one very short phrase after a longer one, or a `section-break` | `section-break`, `word-hits` with 2 items | [Section break](../programmatic/recipes.md#section-break), [Word hits](../programmatic/recipes.md#word-hits) with 2 words |
+| Last phrase | final 2-3 s | the point, held at least 1.5 s | `kinetic-title` or raw hero text; `logo-outro` only if a name is given | [Kinetic title](../programmatic/recipes.md#kinetic-title) or a hero line; [Logo outro](../programmatic/recipes.md#logo-outro) only if a name is given |
 
 ## Rules
 

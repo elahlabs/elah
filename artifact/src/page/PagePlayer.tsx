@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Maximize2, Minimize2, Pause, Play, Square } from 'lucide-react'
 import { framesToTimecode } from '@elah/editor'
-import { loadAllFonts } from '../input'
+import { loadAllFonts, type Issue } from '../input'
+import { layoutReport, type LayoutReport } from './layout'
 import { mountPage, type MountedPage } from './mount'
 import { collectAnimations, sceneWindows, seekAnimations } from './seek'
 import type { PagePlayerHandle, PageSource, SceneWindow } from './types'
@@ -12,6 +13,8 @@ interface Props {
   onToggleFullscreen: () => void
   /** Called with the live handle once mounted, and with null on unmount. */
   onHandle?: (h: PagePlayerHandle | null) => void
+  /** Called once after mount with the layout report's warnings (possibly none). */
+  onLayout?: (issues: Issue[]) => void
 }
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
@@ -37,7 +40,7 @@ const typing = (t: EventTarget | null) => {
  * children `.player` expects (stage, timeline strip, transport) so it drops into the same region the editor
  * preview uses and the fullscreen / theater mode of that region works unchanged.
  */
-export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle }: Props) {
+export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onLayout }: Props) {
   const fitRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -125,6 +128,14 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle }: P
         animsRef.current = anims
         const windows = sceneWindows(mounted.stageEl, anims, duration)
         setScenes(windows)
+        // Layout report (overlaps, safe margin): measured once, here; a failure must never stop the preview.
+        let layout: LayoutReport = { issues: [], ms: 0, times: [] }
+        try {
+          layout = layoutReport(mounted.stageEl, anims, windows, page.stage, duration)
+        } catch (e) {
+          console.warn('layout report failed', e)
+        }
+        onLayout?.(layout.issues)
         handle = {
           page,
           root: mounted.root,
@@ -136,6 +147,7 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle }: P
           play,
           pause: stopLoop,
           isPlaying: () => playingRef.current,
+          layout,
         }
         seek(0)
         ;(window as unknown as { __elahPage?: unknown }).__elahPage = handle
@@ -148,6 +160,10 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle }: P
       cancelled = true
       playingRef.current = false
       cancelAnimationFrame(rafRef.current)
+      // The window hook must never outlive its mount (Edit and Revert unmount the player).
+      const w = window as unknown as { __elahPage?: unknown }
+      if (handle && w.__elahPage === handle) delete w.__elahPage
+      handle = null
       mountedRef.current?.dispose()
       mountedRef.current = null
       animsRef.current = []
@@ -232,7 +248,7 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle }: P
             style={{ width: page.stage.width, height: page.stage.height, transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})` }}
           />
         </div>
-        {error && <p className="page-error" role="alert">The page could not be mounted: {error}</p>}
+        {error && <p className="page-error" role="alert">The video could not be loaded: {error}</p>}
       </div>
 
       <div

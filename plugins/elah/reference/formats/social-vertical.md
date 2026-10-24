@@ -25,6 +25,8 @@ Applies on top of any other format whenever the brief says social, reel, story, 
 - A new beat every 2-4 s (1.5-2.5 s for energetic pieces); an arrival every 0.5-1 s inside a beat. Faster than landscape.
 - Assume sound is off: the picture carries the hook. With a voice-over (the user's audio URL only) put short on-screen lines, not the
   transcript word for word.
-- Centre one subject and stack vertically; rebuild any side-by-side idea as a sequence of beats. Components are native here.
+- Centre one subject and stack vertically; rebuild any side-by-side idea as a sequence of beats. Components are native here
+  (VideoSpec). In a programmatic video the recipes in `programmatic/recipes.md` are written for 1920x1080: keep their animation
+  lines and rebuild the positions as one stack inside y 190-1380 with the vertical bands.
 - Taste, palette and motion block come from `director.md` and the taste file (a brief with no taste signal gets the underlying
   format's default). This file adds shape, safe zones and beat pace only.

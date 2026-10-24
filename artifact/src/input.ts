@@ -86,7 +86,7 @@ export async function loadInput(): Promise<ElahInput> {
     } catch (e) {
       throw new InputError(`Could not fetch ./elah-input.json: ${(e as Error).message}`)
     }
-    if (!res.ok) throw new InputError(`Could not fetch ./elah-input.json (HTTP ${res.status}). Put an elah-input.json beside this page.`)
+    if (!res.ok) throw new InputError(`Could not fetch ./elah-input.json (HTTP ${res.status}). Put an elah-input.json beside this file.`)
     try {
       raw = await res.json()
     } catch (e) {
@@ -134,7 +134,7 @@ export interface PreparedPage {
 export function preparePage(input: ElahInput): PreparedPage {
   const title = input.title?.trim() || 'Elah video'
   const verdict = validatePage(input.source as PageInputSource)
-  if (!verdict.page) throw new InputError('The page was refused.', verdict.issues)
+  if (!verdict.page) throw new InputError('The programmatic video was refused.', verdict.issues)
   return { title, page: verdict.page, issues: verdict.issues }
 }
 
@@ -144,7 +144,7 @@ export async function convert(input: ElahInput): Promise<Converted> {
   const title = input.title?.trim() || 'Elah video'
   const src = input.source
 
-  if (src.kind === 'page') throw new InputError('A page source is previewed as HTML; use preparePage(), not convert().')
+  if (src.kind === 'page') throw new InputError('A programmatic video is played by its own player; use preparePage(), not convert().')
 
   if (src.kind === 'project') {
     let project: Project

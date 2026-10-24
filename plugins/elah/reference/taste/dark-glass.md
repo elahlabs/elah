@@ -1,7 +1,10 @@
 # Taste: dark glass
 
-Read `floor.md` too. Quiet, high-end tech: AI, hardware, fintech, developer tools, a product reveal, a logo sting. Near-black ground,
-one soft glow, hairline rules, wide light sans. Numbers are starting values; adapt them to the clip.
+Read `floor.md` too. Quiet, high-end tech: AI, hardware, fintech, open source, GitHub, developer tools, CLI, API, SDK, library,
+framework, programmatic video, a product reveal, a logo sting. Near-black ground, one soft glow, hairline rules, wide light sans.
+Numbers are starting values; adapt them to the clip. The motion block, components and presets below are the VideoSpec's; for a
+programmatic video read the same taste as tokens, curves and recipes in `programmatic/motion.md` ("Quiet taste mapping") and
+`programmatic/recipes.md`.
 
 ## Palette (all six tokens) and fonts
 
@@ -16,7 +19,8 @@ Fonts: `sans: inter` for the headline at weight 400 (never a condensed face), `d
 ## Motion block
 
 `"motion": { "energy": "calm", "camera": true, "ambient": "orbs", "transition": "crossfade" }` (`gradient` ambient for a flatter look).
-Calm energy means 1.3x longer arrivals on `spring:gentle`; hand-offs are crossfades, `zoom` for one reveal at most. No shake, no glitch.
+Calm energy is the standard recipe scaled once (`craft/motion.md`, Energy); the figures in this file are already calm, never
+scale them again. Arrivals sit on `spring:gentle`; hand-offs are crossfades, `zoom` for one reveal at most. No shake, no glitch.
 
 ## Type, colour and layout
 

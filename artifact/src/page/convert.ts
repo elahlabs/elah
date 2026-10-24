@@ -14,6 +14,10 @@
  * The emitter nests compounds only two containers deep. Layout-only wrappers are hoisted away first, and a
  * deeper wrapper is dissolved here (its look becomes a leaf, its opacity and transform are pushed down into its
  * descendants as per-frame series) instead of being dropped by the emitter.
+ *
+ * HF-7: the root's lone top-level wrapper around every scene (a "camera" group) is dissolved the same way, so the
+ * scenes sit at the top of the timeline and its motion rides on each of them; `<br>` is not a layer, so a headline
+ * with a line break stays one text clip.
  */
 
 import { createEffect, type AnyKeyframeChannel, type Clip, type Keyframe, type Project } from '@elah/core'
@@ -96,8 +100,8 @@ export function takePageConversion(page: PageSource): PageConversion | undefined
 /** `pageHooks.onEditPage`: convert the page and leave the result for the shell to take. */
 export async function editPage(ctx: PageActionContext): Promise<void> {
   const player = ctx.player
-  if (!player) throw new Error('The page is not mounted yet.')
-  ctx.setStatus({ text: 'Converting the page to native clips and keyframes...', progress: 0 })
+  if (!player) throw new Error('The programmatic video is not loaded yet.')
+  ctx.setStatus({ text: 'Converting the programmatic video to editable clips and keyframes...', progress: 0 })
   const conv = await convertPage(ctx.page, ctx.title, player, (p, text) => ctx.setStatus({ text, progress: p }))
   results.set(ctx.page, conv)
   const r = conv.report
@@ -276,7 +280,7 @@ function blurOf(filter: string): { blur: number; other: string[] } {
 /** Everything read from the hidden measure host before the measure reads its own styles (animations are off there). */
 function prepareHost(rootEl: HTMLElement, host: HTMLElement, mountedEls: Element[], animated: Set<Element>, data: HostData): void {
   const hostEls = [rootEl, ...Array.from(rootEl.querySelectorAll('*'))]
-  if (hostEls.length !== mountedEls.length) throw new Error(`The measured copy of the page has ${hostEls.length} elements, the live page ${mountedEls.length}.`)
+  if (hostEls.length !== mountedEls.length) throw new Error(`The measured copy of the programmatic video has ${hostEls.length} elements, the live one ${mountedEls.length}.`)
   // The live stage supplies these through `.elah-stage`; the measure host has to match it.
   host.style.color = '#fff'
   host.style.fontFamily = '"elah-inter", sans-serif'
@@ -443,6 +447,39 @@ interface NodeInfo {
 
 type NodeX = MeasuredNode & { el?: Element }
 
+/**
+ * The root's one group child when it holds every `[data-scene]` (or, without scenes, is the root's only child) and
+ * is a pure wrapper: no background, border, clip, filter, blend or text of its own. A wrapper with a look stays a
+ * compound and the note says why. Anything but the lone top-level group is left to the depth rules.
+ */
+function findLoneWrapper(
+  root: MeasuredNode,
+  infoOf: (n: MeasuredNode) => NodeInfo,
+  stageEl: HTMLElement,
+  notes: ReportEntry[],
+  byEl: ReadonlyMap<Element, readonly AnimInfo[]>,
+): MeasuredNode | null {
+  const groups = root.children.filter((c) => c.children.length > 0 && !c.svg && !c.img)
+  if (groups.length !== 1) return null
+  const w = groups[0]!
+  const info = infoOf(w)
+  const sceneEls = Array.from(stageEl.querySelectorAll('[data-scene]'))
+  const holdsEverything = sceneEls.length > 0 ? sceneEls.every((s) => s !== info.mounted && info.mounted.contains(s)) : root.children.length === 1
+  if (!holdsEverything) return null
+  const st = w.style
+  const why: string[] = []
+  if (hasBackground(st)) why.push('a background or border')
+  if (st.overflowHidden || (st.clipPath && st.clipPath !== 'none')) why.push('a clip (overflow / clip-path)')
+  if (info.baseBlur > 0 || (byEl.get(info.mounted) ?? []).some((a) => a.props.has('filter'))) why.push('a filter')
+  if (st.mixBlendMode && st.mixBlendMode !== 'normal') why.push('a blend mode')
+  if (w.text && w.text.lines.length > 0) why.push('text of its own')
+  if (why.length > 0) {
+    notes.push({ where: describe(info.mounted), message: `Kept as one group around the scenes (not lifted): it has ${why.join(', ')}.` })
+    return null
+  }
+  return w
+}
+
 function walk(node: MeasuredNode, fn: (n: MeasuredNode) => void): void {
   fn(node)
   for (const c of node.children) walk(c, fn)
@@ -544,8 +581,8 @@ export async function convertPage(
   const animatedEls = new Set(byEl.keys())
 
   const mainEl = player.stageEl.firstElementChild as HTMLElement | null
-  if (!mainEl) throw new Error('The page has no root element.')
-  if (player.stageEl.children.length > 1) notes.push({ where: 'page', message: 'Only the first top-level element is converted; the others are ignored.' })
+  if (!mainEl) throw new Error('The programmatic video has no root element.')
+  if (player.stageEl.children.length > 1) notes.push({ where: 'root', message: 'Only the first top-level element is converted; the others are ignored.' })
   const mountedEls = [mainEl, ...Array.from(mainEl.querySelectorAll('*'))]
 
   // --- 2. rest layout -----------------------------------------------------------------------------------------
@@ -597,7 +634,7 @@ export async function convertPage(
   const infoOf = (n: MeasuredNode): NodeInfo => infos.get(n.id as string) as NodeInfo
   const isAnimated = (info: NodeInfo): boolean => animatedEls.has(info.mounted)
   const rootInfo = infoOf(measured.root)
-  if (isAnimated(rootInfo) || !isIdentity(rootInfo.baseC)) notes.push({ where: describe(rootInfo.mounted), message: 'Animation or transform on the page root is not converted.' })
+  if (isAnimated(rootInfo) || !isIdentity(rootInfo.baseC)) notes.push({ where: describe(rootInfo.mounted), message: 'Animation or transform on the root element is not converted.' })
 
   // --- 4. hoist layout-only wrappers, dissolve what the emitter would drop --------------------------------------
   const inert = (n: MeasuredNode): boolean => {
@@ -617,6 +654,13 @@ export async function convertPage(
       st.zIndex === undefined
     )
   }
+  // A line break is not a layer: the measured text already carries its lines, and an empty <br> child would turn a
+  // headline into a compound (a group with one text inside) that needs "Edit contents" before it can be changed.
+  const dropBreaks = (n: MeasuredNode): void => {
+    n.children = n.children.filter((c) => !((c.tag === 'br' || c.tag === 'wbr') && c.children.length === 0 && !c.text))
+    for (const c of n.children) dropBreaks(c)
+  }
+  dropBreaks(measured.root)
   const hoist = (n: MeasuredNode): void => {
     const out: MeasuredNode[] = []
     for (const c of n.children) {
@@ -680,7 +724,39 @@ export async function convertPage(
     }
     return out
   }
-  measured.root.children = lower(measured.root.children, 1, [])
+  // A lone top-level wrapper that holds every scene (typically a "camera" group with a push) is lifted: it stops
+  // being a compound, and its static pose, opacity and animation compose onto each of its children through the same
+  // push-down the deeper wrappers use (position(t) = o + S(t)R(t)(p - o) + T(t); the child's scale times S(t)). The
+  // oracle then checks the composed series against the browser per channel and samples what does not fit. The
+  // children are lowered at depth 2, where they were as the wrapper's children, so the structure below them is the
+  // same as before: only the wrapper level is gone.
+  const lift = findLoneWrapper(measured.root, infoOf, player.stageEl, notes, byEl)
+  if (lift) {
+    const wrapperInfo = infoOf(lift)
+    wrapperInfo.dissolved = true
+    const next: MeasuredNode[] = []
+    for (const c of measured.root.children) {
+      if (c === lift) next.push(...lower(c.children, 2, [wrapperInfo]))
+      else next.push(...lower([c], 1, []))
+    }
+    measured.root.children = next
+    // "Scenes" are the `[data-scene]` elements inside the wrapper (a scene without a look is hoisted away, so its
+    // clips sit directly on the timeline); without any, the top-level clips that carry the wrapper's motion.
+    const inside = Array.from(player.stageEl.querySelectorAll('[data-scene]')).filter((s) => wrapperInfo.mounted.contains(s)).length
+    const moved = inside > 0 ? inside : next.filter((n) => infoOf(n).chain[0] === wrapperInfo).length
+    const props = (byEl.get(wrapperInfo.mounted) ?? []).flatMap((a) => [...a.props])
+    const who = describe(wrapperInfo.mounted)
+    const scenes = `${moved} scene${moved === 1 ? '' : 's'}`
+    notes.push({
+      where: 'top-level wrapper',
+      message:
+        props.length === 0
+          ? `Static transform and opacity of ${who} folded onto ${scenes}.`
+          : `${props.some((p) => POSE_PROPS.includes(p)) ? 'Camera move' : 'Animation'} on ${who} moved onto ${scenes}.`,
+    })
+  } else {
+    measured.root.children = lower(measured.root.children, 1, [])
+  }
   if (dissolved.length > 0) {
     notes.push({
       where: 'nesting depth',
@@ -782,7 +858,7 @@ export async function convertPage(
         s.dash[f] = parseFloat(cs.strokeDashoffset) || 0
       }
       if (f % 30 === 0) {
-        progress(0.1 + 0.6 * (f / frames), `Sampling the page: frame ${f} of ${frames}`)
+        progress(0.1 + 0.6 * (f / frames), `Sampling the programmatic video: frame ${f} of ${frames}`)
         await new Promise((r) => setTimeout(r, 0))
       }
     }
@@ -844,7 +920,7 @@ export async function convertPage(
   }
   const unhandled = (aList: readonly AnimInfo[]): void => {
     for (const a of aList) {
-      if (a.props.size === 0) addUnconverted(`${describe(a.el)} @keyframes ${a.name}`, 'the animation exposes no readable property (a custom-property counter registered with @property is not animatable inside the page shadow root)')
+      if (a.props.size === 0) addUnconverted(`${describe(a.el)} @keyframes ${a.name}`, 'the animation exposes no readable property (a custom-property counter registered with @property is not animatable inside the isolated mount)')
       for (const p of a.props) {
         if (HANDLED.has(p)) continue
         addUnconverted(`${describe(a.el)} { ${kebab(p)} } @keyframes ${a.name}`, p.startsWith('--') ? 'custom-property animation (an @property counter, say) has no native channel' : `no native channel for ${kebab(p)}`)

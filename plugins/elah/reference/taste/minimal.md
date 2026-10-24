@@ -1,7 +1,9 @@
 # Taste: minimal
 
 Read `floor.md` too. Clarity first: software, finance, B2B, one number, a considered announcement, an explainer that must be easy to
-follow. Flat, sparse, mostly empty. Numbers are starting values; adapt them to the clip.
+follow. Flat, sparse, mostly empty. Numbers are starting values; adapt them to the clip. The motion block and components below are
+the VideoSpec's; for a programmatic video read the taste as tokens, curves and recipes in `programmatic/motion.md` and
+`programmatic/recipes.md`.
 
 ## Palette (all six tokens) and fonts
 

@@ -1,13 +1,19 @@
-# Page route: the video is one HTML + CSS page
+# Programmatic video: the video is one HTML + CSS document
 
-Read this instead of `authoring.md`'s VideoSpec sections when `director.md` picks Medium = page. The craft rules (taste, type bands,
-beat sheet, review) still apply; `page/motion.md` turns the motion numbers into CSS. Preview and export show your page exactly as you
-wrote it; keyframes appear only when the person presses Edit, so every choice of curve, delay and layout here is the final picture.
+Read this instead of `authoring.md`'s VideoSpec sections when `director.md` picks Medium = programmatic (the default). The craft
+rules (taste, type bands, beat sheet, review) still apply; `programmatic/motion.md` turns the motion numbers into CSS;
+`programmatic/recipes.md` holds ready beats (headline with an emphasis word, word hits, count-up, circled phrase, logo outro...).
+Preview and export show your HTML and CSS exactly as you wrote them; keyframes appear only when the person presses Edit, so every
+choice of curve, delay and layout here is the final picture.
+
+Naming: users call this **programmatic video** (a short graphic is **programmatic motion**). In your replies, notes and the
+artifact description use those words only. The JSON key `source.kind: "page"` is internal and stays; never describe the video to the
+user as a page.
 
 ## Input shape
 
 ```json
-{ "format": "elah-input", "version": 1, "title": "Orbit 2 page",
+{ "format": "elah-input", "version": 1, "title": "Orbit 2 launch",
   "source": { "kind": "page", "html": "<main class=\"stage\">...</main>", "css": ".stage { ... }",
               "durationSeconds": 6, "stage": { "width": 1920, "height": 1080 }, "fps": 30 } }
 ```
@@ -69,7 +75,8 @@ draw-on, `<defs>` gradients and masks). No `<img src="https://...">`, `<script>`
 
 Converts to keys: `opacity`, `transform` (translate, scale, rotate; the same function list in every keyframe), SVG
 `stroke-dashoffset`, `cubic-bezier()` and `steps()` curves, delays, fill and iterations (unrolled). Reported and left at the resting
-state: colour or `background` animation, `backdrop-filter`, 3D transforms, `clip-path` morphs, custom-property animation. `filter:
+state: colour or `background` animation, `backdrop-filter`, 3D transforms, `clip-path` morphs, custom-property animation (so a
+count-up is a digit reel of `translateY`, never an `@property` counter; see `programmatic/recipes.md`). `filter:
 blur()` is a polish move that may be reported; the resting state is always correct. Anything reported keeps working in Preview and
 Export until Edit, and "Revert to original" brings it back.
 
@@ -77,7 +84,9 @@ Export until Edit, and "Revert to original" brings it back.
 
 Direct as `director.md` says (defaults, beat sheet, taste), then: write `elah-input.json` with `kind: "page"`; run
 `node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<file>"`; fix every error; self-review with `craft/review.md` (the
-items that apply to a page: beat sheet, reading holds, hook, accent budget, one transition family, facts) and the validator warnings
-(a warning is fixed or kept on purpose, and said). At most three validation rounds.
+items that apply to a programmatic video: beat sheet, reading holds, hook, accent budget, one transition family, facts) and the
+validator warnings (a warning is fixed or kept on purpose, and said). At most three validation rounds.
 
-A complete, validated 6 s two-scene page (HTML, CSS and the beat read) is in `page/example.md`; copy its structure, not its words.
+A complete, validated 6 s two-scene programmatic video (HTML, CSS and the beat read) is in `programmatic/example.md`; copy its
+structure, not its words. Ready recipes for the beats the formats name (a count-up, a circled phrase, a logo outro, an icon row...)
+are in `programmatic/recipes.md`; they keep their time in `--at` on the scene, so a recipe drops into any scene of the example.

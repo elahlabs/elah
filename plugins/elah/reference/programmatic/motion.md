@@ -1,7 +1,8 @@
-# Page motion: the craft layer in CSS terms
+# Programmatic motion: the craft layer in CSS terms
 
-Same rules as `craft/motion.md` and `craft/type-and-layout.md`, written as CSS you can paste. Numbers are seconds at standard energy;
-calm (dark-glass, editorial) is x1.3, bold (brutalist) x0.75. Adapted in our own words from HeyGen HyperFrames' motion, story and
+Same rules as `craft/motion.md` and `craft/type-and-layout.md`, written as CSS you can paste. Numbers in the tables are seconds at
+standard energy; scale them once for the taste's energy exactly as `craft/motion.md` ("Energy") says, and never scale a number a
+taste file already gives. Adapted in our own words from HeyGen HyperFrames' motion, story and
 launch guidance (Apache-2.0, see `THIRD_PARTY_NOTICES.md`) and Elah's craft files; none of their script, GSAP or timing contract applies.
 
 ## Tokens (all six, as custom properties on `.stage`)
@@ -57,8 +58,10 @@ never overshoot, so a curve with a y above 1 serves `transform` (opacity is clam
 - The next element starts when the previous one is 30-50% through its arrival. Words 0.07-0.12 s apart, characters 0.03 s, list rows
   and chips 0.07-0.10 s; the whole group finishes arriving inside 0.5 s (shrink the step, or start from the centre outward).
 - Write the step once: `style="--i: 2"` on each item and `animation-delay: calc(var(--at) + var(--i) * 0.08s)` in the rule, with
-  `--at` set on the scene or the item. Calm x1.3 (0.10 s), bold x0.75 (0.06 s).
-- One stagger value for the whole piece; one moving thing at a time in calm tastes (0.2 s apart).
+  `--at` set on the scene or the item. The 0.08 s step is the standard recipe: scale it once for the energy (calm 0.10 s, bold
+  0.06 s, `craft/motion.md` "Energy").
+- One stagger value for the whole piece. In calm tastes one thing moves at a time, 0.2 s apart (already a calm figure: write 0.2 s,
+  not 0.26).
 
 ## Scenes and transitions
 
@@ -76,13 +79,17 @@ never overshoot, so a curve with a y above 1 serves `transform` (opacity is clam
 - SVG path draw-on: `stroke-dasharray: 1; stroke-dashoffset: 1` on a `pathLength="1"` path, keyframes `to { stroke-dashoffset: 0 }`,
   0.8 s `cubic-bezier(0.215, 0.61, 0.355, 1)`, with `fill-opacity` arriving after. Converts to keys on Edit.
 - A rule or bar: `transform: scaleX(0)` to `scaleX(1)` with `transform-origin: left center` (not `width`, which does not convert).
-- A count-up: `@property --n { syntax: "<integer>"; inherits: false; initial-value: 0 }`, animate `--n` to the value over 1.2-1.6 s,
-  show it with `counter-reset: n var(--n)` and `.num::after { content: counter(n) }`; hold at least 1.5 s. Edit reports it (custom
-  property animation); preview and export are exact.
+- A count-up is a **digit reel**: one column per digit, each column a strip of the digits 0-9 (and a second 0 at the end) behind an
+  `overflow: hidden` window one line tall, animated with `translateY` to the digit it stops on; separators (a comma) are static
+  glyphs between the columns, so thousands separators survive. Edit converts it (it is `transform`), the reel plays in preview and
+  export, and it needs no `@property`. Hold at least 1.5 s after it lands. The full recipe is "Count-up (digit reel)" in
+  `programmatic/recipes.md`. An `@property` + `counter()` count is allowed only for a number under 1,000 that will not be edited
+  (a counter cannot show a separator, and Edit reports it as a custom-property animation).
 
 ## Quiet taste mapping
 
-dark-glass: calm, `cubic-bezier(0.22, 1, 0.36, 1)` and `0.19, 1, 0.22, 1`, blur-in headlines, crossfade or zoom, one soft
+The figures below are the tastes' own and already scaled for their energy: use them as written. dark-glass: calm,
+`cubic-bezier(0.22, 1, 0.36, 1)` and `0.19, 1, 0.22, 1`, blur-in headlines, crossfade or zoom, one soft
 `radial-gradient` glow under 15% of the frame, a glass panel (`background: var(--surface)` at opacity 0.7, 1 px `var(--muted)` hairline,
 radius 24-32, optional `backdrop-filter: blur(24px)`, one per scene). editorial: calm, serif at weight 400, one mover at a time 0.2 s
 apart, rules drawn 0.8 s, crossfade. brutalist: bold, `cubic-bezier(0.19, 1, 0.22, 1)` at 0.25-0.33 s, hard cuts, a wipe at most

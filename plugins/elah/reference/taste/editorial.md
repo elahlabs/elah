@@ -1,7 +1,9 @@
 # Taste: editorial
 
 Read `floor.md` too. Calm, serif-led, paper and grain: fashion, hospitality, property, beauty, a founder story, a pull quote, an
-opening title. Not for fast social energy. Numbers are starting values; adapt them to the clip.
+opening title. Not for fast social energy. Numbers are starting values; adapt them to the clip. The motion block and components below
+are the VideoSpec's; for a programmatic video read the taste as tokens, curves and recipes in `programmatic/motion.md` and
+`programmatic/recipes.md`.
 
 ## Palette (all six tokens) and fonts
 
@@ -18,7 +20,8 @@ Declare the `serif` role so `kinetic-title` sets its emphasis word in the serif 
 
 `"motion": { "energy": "calm", "camera": true, "ambient": "grain", "transition": "crossfade" }`. One mover at a time, 6 frames
 (0.2 s) apart. Arrivals on `spring:gentle`; headline reveal `line-rise` (lines 0.2 s apart) or `char-fade`; labels `fade-in`.
-Rules draw on with `draw` (`cubic-out`, 0.8 s). Beats hand off with one crossfade family only.
+Rules draw on with `draw` (`cubic-out`, 0.8 s). Beats hand off with one crossfade family only. These times (0.2 s, 0.8 s) are already
+calm: do not scale them again (`craft/motion.md`, Energy).
 
 ## Type, colour and layout
 

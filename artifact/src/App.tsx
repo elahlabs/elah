@@ -124,6 +124,9 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
   const { fullscreen, theater, toggleFullscreen } = usePlayerFullscreen(playerRef)
   const exporting = useRef<AbortController | null>(null)
   const [busy, setBusy] = useState(false)
+  // Layout warnings (overlapping text, text outside the safe margin) measured by the player after mount.
+  const [layoutIssues, setLayoutIssues] = useState<Issue[]>([])
+  const allIssues = useMemo(() => [...issues, ...layoutIssues], [issues, layoutIssues])
 
   useEffect(() => {
     const read = () => setDark(document.documentElement.getAttribute('data-theme') !== 'light' && (document.documentElement.getAttribute('data-theme') === 'dark' || matchMedia('(prefers-color-scheme: dark)').matches))
@@ -136,6 +139,7 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
   const onHandle = useCallback((h: PagePlayerHandle | null) => {
     handleRef.current = h
   }, [])
+  const onLayout = useCallback((found: Issue[]) => setLayoutIssues(found), [])
 
   const onExport = useCallback(async () => {
     if (exporting.current) {
@@ -195,7 +199,7 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
 
       <div className="main">
         <div className="player" ref={playerRef}>
-          <PagePlayer page={page} fullscreen={fullscreen || theater} onToggleFullscreen={toggleFullscreen} onHandle={onHandle} />
+          <PagePlayer page={page} fullscreen={fullscreen || theater} onToggleFullscreen={toggleFullscreen} onHandle={onHandle} onLayout={onLayout} />
         </div>
       </div>
 
@@ -205,7 +209,7 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
           {status.progress !== undefined && <span className="bar"><i style={{ width: `${Math.round(status.progress * 100)}%` }} /></span>}
         </div>
       )}
-      <IssueList issues={issues} open={issues.some((i) => i.severity === 'error')} />
+      <IssueList issues={allIssues} open={allIssues.some((i) => i.severity === 'error')} />
     </div>
   )
 }
@@ -294,6 +298,14 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
     engine.loadProject(converted.project)
     ;(window as unknown as { __elah?: unknown }).__elah = { engine } // handle for browser checks
   }, [engine, converted])
+  // Revert disposes this engine: the probe handle must not keep pointing at it.
+  useEffect(
+    () => () => {
+      const w = window as unknown as { __elah?: { engine?: unknown } }
+      if (w.__elah?.engine === engine) delete w.__elah
+    },
+    [engine],
+  )
 
   useEffect(() => {
     const read = () => setDark(document.documentElement.getAttribute('data-theme') !== 'light' && (document.documentElement.getAttribute('data-theme') === 'dark' || matchMedia('(prefers-color-scheme: dark)').matches))
@@ -521,7 +533,7 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
             <ExternalLink size={14} /> Open in Elah <span className="pill">Coming soon</span>
           </button>
           {origin && (
-            <button type="button" className="btn" onClick={onRevertClick} disabled={inCompound} title={lockedTitle ?? 'Go back to the HTML page (Export is the HTML export again)'} data-testid="revert-header">
+            <button type="button" className="btn" onClick={onRevertClick} disabled={inCompound} title={lockedTitle ?? 'Back to the original programmatic video (export comes from it again)'} data-testid="revert-header">
               <Undo2 size={14} /> {confirmRevert ? 'Discard edits?' : 'Revert to original'}
             </button>
           )}

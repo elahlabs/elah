@@ -91,11 +91,11 @@ const runDoc = (doc, ...flags) => {
   return run(...flags, file)
 }
 
-test('page: the reference example is valid and is the page.md example verbatim', () => {
+test('page: the reference example is valid and is the programmatic/example.md example verbatim', () => {
   const r = run(fx('valid-page.json'))
   assert.equal(r.status, 0, r.stdout + r.stderr)
-  assert.match(r.stdout, /^OK: page "Orbit 2 page", 1920x1080 @ 30 fps, 6 s, 2 scenes, 13 animations, 9 keyframe sets\n$/)
-  const md = readFileSync(join(HERE, '..', 'reference', 'page', 'example.md'), 'utf8').replace(/\r\n/g, '\n')
+  assert.match(r.stdout, /^OK: programmatic video "Orbit 2 launch", 1920x1080 @ 30 fps, 6 s, 2 scenes, 13 animations, 9 keyframe sets\n$/)
+  const md = readFileSync(join(HERE, '..', 'reference', 'programmatic', 'example.md'), 'utf8').replace(/\r\n/g, '\n')
   const html = md.match(/```html\n([\s\S]*?)```/)[1]
   const cssText = md.match(/```css\n([\s\S]*?)```/)[1]
   const fixture = JSON.parse(readFileSync(fx('valid-page.json'), 'utf8')).source
@@ -107,13 +107,14 @@ test('page: every refused construct is listed with its substitute', () => {
   const r = run(fx('invalid-page.json'))
   assert.equal(r.status, 1)
   const out = r.stdout
-  assert.match(out, /<script>: scripts are not allowed/)
+  assert.match(out, /<script>: scripts are not allowed in a programmatic video/)
+  assert.match(out, /<video>: <video> is not allowed .*a programmatic video has no media files/)
   assert.match(out, /<main onclick>: event-handler attributes/)
   for (const tag of ['iframe', 'link', 'video', 'animate']) assert.match(out, new RegExp(`<${tag}>: <${tag}> is not allowed`), tag)
-  assert.match(out, /<img src>: src="https:\/\/example\.com\/a\.png" points outside the page/)
+  assert.match(out, /<img src>: src="https:\/\/example\.com\/a\.png" points outside the video/)
   assert.match(out, /@import fetches over the network/)
   assert.match(out, /@font-face is not allowed .*use instead: font-family: one of inter/)
-  assert.match(out, /url\(https:\/\/example\.com\/bg\.png\) points outside the page/)
+  assert.match(out, /url\(https:\/\/example\.com\/bg\.png\) points outside the video/)
   assert.match(out, /transition never runs .*use instead: @keyframes plus animation/)
   assert.match(out, /animation-play-state must not be authored/)
   assert.match(out, /\.b: animation-play-state \(paused or running\) must not be authored, not even inside the animation shorthand/)
@@ -125,7 +126,7 @@ test('page: every refused construct is listed with its substitute', () => {
 test('page: warnings are reported but exit 0', () => {
   const r = run(fx('warn-page.json'))
   assert.equal(r.status, 0, r.stdout)
-  assert.match(r.stdout, /^OK: page "Warning page", 1080x1920/)
+  assert.match(r.stdout, /^OK: programmatic video "Warning sample", 1080x1920/)
   assert.match(r.stdout, /body: html, body and :root do not match/)
   assert.match(r.stdout, /\.a \{ animation: rise \}: the animation has no explicit duration/)
   assert.match(r.stdout, /\.b \{ animation: spin \}: infinite animation: allowed/)
@@ -147,7 +148,7 @@ test('page: envelope fields are required and range-checked', () => {
   assert.match(runDoc(pageDoc({ fps: 29.97 })).stdout, /source\.fps/)
   assert.equal(runDoc(pageDoc({ fps: 24 })).status, 0)
   assert.equal(runDoc(pageDoc({ fps: 60 })).status, 0)
-  assert.match(run(fx('invalid-kind.json')).stdout, /"spec", "html", "page" or "project"/)
+  assert.match(run(fx('invalid-kind.json')).stdout, /"page" \(programmatic video, the default\), "spec", "html" or "project"/)
 })
 
 test('page: markup over 64 KB and CSS over 32 KB are refused', () => {
@@ -164,7 +165,7 @@ test('page: url() allows data: and #fragments, a font may come through a custom 
   const r = runDoc(pageDoc({ css: okCss }))
   assert.equal(r.status, 1) // 'Space Grotesk' (spaces, not the id) is refused, the rest is fine
   assert.match(r.stdout, /font-family space grotesk is not a bundled font/)
-  assert.doesNotMatch(r.stdout, /points outside the page/)
+  assert.doesNotMatch(r.stdout, /points outside the video/)
   assert.doesNotMatch(r.stdout, /playfair-display is not a bundled font/)
   const viaVar = runDoc(pageDoc({ css: `${pageDoc().source.css}\n.g { font-family: var(--f); --f: Georgia; }` }))
   assert.match(viaVar.stdout, /font-family georgia is not a bundled font/)
@@ -185,9 +186,21 @@ test('page: animation-timeline, <style>, <meta http-equiv>, javascript: links an
   assert.equal(r.status, 1)
   assert.match(r.stdout, /<style>: <style> is not allowed .*use instead: the css field/)
   assert.match(r.stdout, /<meta http-equiv>/)
-  assert.match(r.stdout, /<a href>: href="javascript:alert\(1\)" points outside the page/)
+  assert.match(r.stdout, /<a href>: href="javascript:alert\(1\)" points outside the video/)
   assert.match(r.stdout, /animation-timeline .* cannot be seeked/)
   assert.match(r.stdout, /warn: source\.html: html is a fragment inside the stage/)
+})
+
+test('page: every recipe in programmatic/recipes.md composes into one video with no errors and no warnings', () => {
+  const md = readFileSync(join(HERE, '..', 'reference', 'programmatic', 'recipes.md'), 'utf8').replace(/\r\n/g, '\n')
+  const htmls = [...md.matchAll(/```html\n([\s\S]*?)```/g)].map((m) => m[1])
+  const csses = [...md.matchAll(/```css\n([\s\S]*?)```/g)].map((m) => m[1])
+  assert.ok(htmls.length >= 19, `expected 19 recipe scenes, found ${htmls.length}`)
+  assert.equal(csses.length, htmls.length + 1, 'the shared base plus one css block per recipe')
+  const r = runDoc(pageDoc({ html: `<main class="stage">\n${htmls.join('\n')}\n</main>`, css: csses.join('\n'), durationSeconds: 90 }), '--json')
+  const out = JSON.parse(r.stdout)
+  assert.equal(r.status, 0, JSON.stringify(out.issues.filter((i) => i.severity !== 'info'), null, 1))
+  assert.deepEqual(out.issues.filter((i) => i.severity !== 'info'), [])
 })
 
 test('page: --json carries the page issues', () => {
@@ -205,4 +218,5 @@ test('--vocabulary lists the authored kinds, including component, system and vec
     assert.match(line, new RegExp(`\\b${kind}\\b`), `${kind} is listed`)
   }
   assert.equal(v.stdout.split('\n').filter((l) => l.startsWith('KINDS')).length, 1)
+  assert.match(line, /: page \(programmatic video, the default\), text, /, 'page leads the line as the programmatic video')
 })

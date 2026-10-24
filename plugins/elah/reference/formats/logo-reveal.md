@@ -5,11 +5,15 @@ or imitate a logo, and use an `image` only when the user gave a URL (then it sta
 
 ## Beat table (4 s)
 
-| Beat | Seconds | Job | What fits |
-| --- | --- | --- | --- |
-| Build | 0-1.2 | something already on screen at frame 0 (a ring drawing, dots gathering); no black frame | the ring and dots of `logo-outro`, or a drawn `arc` / `circle` |
-| Reveal | 1.2-1.8 | the mark lands in 0.4-0.6 s with an overshoot, then settles | `logo-outro` (`text` the wordmark), `pop-overshoot` on a raw wordmark |
-| Hold | 1.8-4 | still and readable for at least 1.5 s; the tagline rises 0.75 s after the beat starts | a raw tagline line below the ring (never the component's `sub`, see Tagline) |
+The last column is the programmatic video (the default medium); the column before it is the VideoSpec alternative. The whole
+programmatic beat is one recipe, [Logo outro](../programmatic/recipes.md#logo-outro): a wordmark in type, an accent ring stroke drawn
+round it, a tagline below the ring.
+
+| Beat | Seconds | Job | What fits (VideoSpec) | Programmatic recipe (`programmatic/recipes.md`) |
+| --- | --- | --- | --- | --- |
+| Build | 0-1.2 | something already on screen at frame 0 (a ring drawing, dots gathering); no black frame | the ring and dots of `logo-outro`, or a drawn `arc` / `circle` | the ring stroke of [Logo outro](../programmatic/recipes.md#logo-outro) drawing from the first frame (`lo-ring`, 1 s) |
+| Reveal | 1.2-1.8 | the mark lands in 0.4-0.6 s with an overshoot, then settles | `logo-outro` (`text` the wordmark), `pop-overshoot` on a raw wordmark | the wordmark of [Logo outro](../programmatic/recipes.md#logo-outro) popping on the bouncy curve at 1.2 s (`lo-mark`) |
+| Hold | 1.8-4 | still and readable for at least 1.5 s; the tagline rises 0.75 s after the beat starts | a raw tagline line below the ring (never the component's `sub`, see Tagline) | the tagline of [Logo outro](../programmatic/recipes.md#logo-outro) rising in the caption band under the ring (`lo-tag`); nothing exits |
 
 ## Rules
 

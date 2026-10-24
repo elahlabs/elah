@@ -1,7 +1,7 @@
 {
   "format": "elah-input",
   "version": 1,
-  "title": "Refused page",
+  "title": "Refused sample",
   "source": {
     "kind": "page",
     "html": "<main class=\"stage\" onclick=\"go()\"><section data-scene=\"a\"><h1 style=\"font-family: Georgia, serif; transition: opacity 1s\">Hi</h1><img src=\"https://example.com/a.png\"><iframe src=\"data:text/html,x\"></iframe><link rel=\"stylesheet\" href=\"a.css\"><video src=\"data:video/mp4;base64,AA\"></video><svg><animate attributeName=\"x\" to=\"4\" dur=\"1s\"/></svg></section><script>alert(1)</script></main>",

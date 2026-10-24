@@ -1,7 +1,7 @@
 {
   "format": "elah-input",
   "version": 1,
-  "title": "Orbit 2 page",
+  "title": "Orbit 2 launch",
   "source": {
     "kind": "page",
     "html": "<main class=\"stage\">\n  <div class=\"glow\"></div>\n  <div class=\"cam\">\n    <section class=\"scene s1\" data-scene=\"open\">\n      <p class=\"label l1\">ORBIT 2 / PREVIEW</p>\n      <h1 class=\"hero h1\">Quiet power.</h1>\n      <span class=\"rule r1\"></span>\n      <p class=\"sub u1\">All day, every day.</p>\n    </section>\n    <section class=\"scene s2\" data-scene=\"close\">\n      <span class=\"dot\"></span>\n      <p class=\"label l2\">AVAILABLE NOW</p>\n      <h1 class=\"hero h2\">Orbit 2</h1>\n      <span class=\"rule r2\"></span>\n      <p class=\"sub u2\">Hear the difference.</p>\n    </section>\n  </div>\n</main>\n",

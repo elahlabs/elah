@@ -8,11 +8,11 @@
     {
       "name": "elah",
       "source": "./plugins/elah",
-      "description": "Make a video or motion graphic: Claude writes it, the plugin validates it, an Elah artifact previews, edits and exports it as MP4.",
+      "description": "Make a programmatic video or motion graphic: Claude writes it as HTML + CSS motion, the plugin validates it, an Elah artifact previews, edits and exports it as MP4.",
       "version": "0.1.0",
       "homepage": "https://elah.dev",
       "license": "Apache-2.0",
-      "keywords": ["video", "motion-graphics", "mp4", "promo"]
+      "keywords": ["video", "programmatic-video", "motion-graphics", "mp4", "promo"]
     }
   ]
 }

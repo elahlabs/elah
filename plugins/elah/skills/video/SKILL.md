@@ -1,6 +1,6 @@
 ---
 name: video
-description: Make a video, motion graphic, explainer, title card or social clip with Elah. Claude writes the video as data (a VideoSpec, or one HTML + CSS page with real CSS animations), validates it, and publishes an Elah artifact where the user can preview it, edit it, and export an MP4. Use when the user asks to make, animate or draft a video or motion graphic.
+description: Make a video, motion graphic, explainer, title card or social clip with Elah. Claude writes a programmatic video (HTML + CSS motion with real CSS animations) by default, or a VideoSpec of Elah components when the brief needs sound or supplied images and audio, validates it, and publishes an Elah artifact where the user can preview it, edit it, and export an MP4. Use when the user asks to make, animate or draft a video or motion graphic.
 argument-hint: "[what the video is about, length, format, style]"
 allowed-tools: Bash(node *validate.mjs *) Bash(node *stage.mjs *)
 ---
@@ -18,16 +18,21 @@ artifact (Export MP4). Never say the plugin rendered, exported or saved a video 
 ## 1. Direct the video
 
 **Start by reading `${CLAUDE_PLUGIN_ROOT}/reference/director.md`** and follow it: it turns the brief into defaults (length, shape,
-palette), picks a format and a taste, and gives the beat sheet, spec-writing and review procedure. It tells you which of the small
+palette), picks a format and a taste, and gives the beat sheet, writing and review procedure. It tells you which of the small
 files under `reference/formats/`, `reference/taste/` and `reference/craft/` to read for this brief (not all of them).
 
 Write the beat sheet (one line per beat, with seconds and the one hero of each) in your reply before the document.
 
-The director's **Medium** row picks the route; say which in your one-line choice. Default to a **VideoSpec**. Choose a **page**
-(one self-contained HTML + CSS page with real CSS animations, `source.kind: "page"`) when the brief says html, css, web or page, or
-asks for a look a VideoSpec cannot draw (backdrop blur, blend modes, rich gradients, SVG illustration); a brief that needs sound or
-supplied images and audio stays VideoSpec. Do not use the older `kind: "html"` subset scene.
+The director's **Medium** row picks the route. The default is a **programmatic video** (HTML + CSS motion: one self-contained
+document with real CSS animations, `source.kind: "page"`; a short graphic is programmatic motion). Switch to a **VideoSpec** (Elah
+components and presets) only when the brief needs what only a VideoSpec has: sound (music, voice-over, sound effects), supplied image
+or audio URLs, or an explicit ask for Elah components or a VideoSpec. When you switch, say why in one line ("built from Elah
+components because it has a soundtrack"); a programmatic video needs no announcement. Do not use the older `kind: "html"` subset
+scene. Call the medium "programmatic video" in everything the user reads (your reply, the closing note, the artifact description).
 
+- **Programmatic video (default):** read `${CLAUDE_PLUGIN_ROOT}/reference/programmatic.md` and `reference/programmatic/motion.md`
+  (and `programmatic/example.md` for a complete valid video; `programmatic/recipes.md` for the format's beats as HTML + CSS). The
+  fonts are the twelve bundled ids; there is no vocabulary to print.
 - **VideoSpec:** read `${CLAUDE_PLUGIN_ROOT}/reference/authoring.md` for the input format, and run
 
   ```
@@ -35,22 +40,21 @@ supplied images and audio stays VideoSpec. Do not use the older `kind: "html"` s
   ```
 
   once to get the exact font, icon, preset, component and curve names. Use only names it prints.
-- **Page:** read `${CLAUDE_PLUGIN_ROOT}/reference/page.md` and `reference/page/motion.md` instead (and `page/example.md` for a
-  complete valid page). The fonts are the twelve bundled ids; there is no vocabulary to print.
 
 ## 2. Write and validate `elah-input.json`
 
 Pick a work folder: the scratchpad directory if the system prompt names one, otherwise `.elah/<short-slug>/` under the
-current directory. Create it. Write `elah-input.json` there (format in the authoring reference, or `page.md` for a page), then run
+current directory. Create it. Write `elah-input.json` there (format in `programmatic.md`, or the authoring reference for a
+VideoSpec), then run
 
 ```
 node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<work folder>/elah-input.json"
 ```
 
-Exit 0 means it compiles; the output is a one-line summary, any warnings, and `info` notes on what the engine's polish pass added
-(a page has no polish pass: its warnings are the animation checks listed in `page.md`).
-Exit 1 lists every error with its path (for example `source.spec.elements[3].enter: unknown motion preset "teleport-in"`). Fix
-every error in the file and run it again.
+Exit 0 means it compiles; the output is a one-line summary, any warnings, and `info` notes (for a VideoSpec, what the engine's
+polish pass added; a programmatic video has no polish pass: its warnings are the animation checks listed in `programmatic.md`).
+Exit 1 lists every error with its path (for example `source.css: transition never runs` or, for a VideoSpec,
+`source.spec.elements[3].enter: unknown motion preset "teleport-in"`). Fix every error in the file and run it again.
 
 **Self-review round (mandatory).** Once the file validates, read `${CLAUDE_PLUGIN_ROOT}/reference/craft/review.md` and run its
 checklist against the validator output and the file; fix what it finds and validate again. This round is one of the validation
@@ -64,24 +68,24 @@ Check whether the `Artifact` tool exists in this session. If it does:
 
 1. Load the `artifact-capabilities` skill first if it is listed, because the page must declare the `downloads` capability
    (MP4 export hands the viewer a file to save). Also load `artifact-design` if listed and the Artifact tool asks for it.
-2. Stage the page into the work folder:
+2. Stage the artifact page into the work folder:
    ```
    node "${CLAUDE_PLUGIN_ROOT}/scripts/stage.mjs" "<work folder>"
    ```
-   It copies the Elah page and engine next to your input and prints JSON with `file_path` (the page) and `files` (every other
-   engine file, published path to local path). If it says the page is missing, go to step 4.
+   It copies the Elah artifact page and engine next to your input and prints JSON with `file_path` (the page) and `files` (every
+   other engine file, published path to local path). If it says the page is missing, go to step 4.
 3. Call `Artifact` to publish:
    - `file_path`: the printed `file_path` (the work folder's `index.html`).
    - `files`: the printed `files` map, plus `"elah-input.json": "<work folder>/elah-input.json"`.
    - `capabilities`: declare `downloads` (use the exact config the `artifact-capabilities` skill gives for it).
    - `icon`: `"video"`.
    - `description`: one sentence about this video.
-   Do not edit the page file; it is the same page for every video. Artifacts start private; do not share or change who can
+   Do not edit the artifact page file; it is the same page for every video. Artifacts start private; do not share or change who can
    see it unless the user asks.
 4. Tell the user, briefly, what they can do in the artifact: **Preview** (play and scrub), **Edit** (change text, timing,
-   keyframes and curves), **Export MP4** (renders in their browser and saves a file), **Open in Elah** (continue in the full
-   editor). Say that if the page lists problems, they can paste that panel back here and you will fix the input and republish
-   with the same file path. Give the artifact link.
+   keyframes and curves; a programmatic video is converted to native keyframes when they press Edit), **Export MP4** (renders in
+   their browser and saves a file), **Open in Elah** (continue in the full editor). Say that if the artifact lists problems, they can
+   paste that panel back here and you will fix the input and republish with the same file path. Give the artifact link.
 
 ## 4. If the Artifact tool is not available
 
@@ -93,6 +97,7 @@ description of the video, so they can keep it.
 ## Rules
 
 - Never claim a video was rendered or exported by this plugin. Export happens in the artifact.
-- Do not call any paid or external service, and do not invent image, audio or font files. Use only what the vocabulary lists (a page: only the twelve bundled font ids, no network, no scripts).
+- Do not call any paid or external service, and do not invent image, audio or font files. A programmatic video uses only the twelve
+  bundled font ids, no network and no scripts, and draws every picture; a VideoSpec uses only what the vocabulary lists.
 - Never skip validation. Never publish an input the validator rejected.
 - Keep the user's wording (names, numbers, claims) exactly; do not invent statistics or testimonials.

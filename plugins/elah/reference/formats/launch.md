@@ -5,14 +5,16 @@ top-level elements that touch (end == next start), 2-4 s each, one hero per beat
 
 ## Beat table (seconds; scale the middle beats to the length)
 
-| Beat | 15 s | 20 s | 30 s | Job | What fits |
-| --- | --- | --- | --- | --- | --- |
-| Hook | 0-2.5 | 0-2.5 | 0-3 | stop the scroll; frame 0 already has the line; the pain or the claim in up to 6 words | raw hero text (`blur-in`, reveal `word-pop`), `kinetic-title` with `emphasis`, `word-hits` for a bold piece |
-| Problem | 2.5-5 | 2.5-6 | 3-8 | the old way failing, one sentence plus a simple visual | `circled-phrase` (no `sub`; the beat is the component plus a top-band label, never a raw line in its box), `comparison` (muted left only), `chip-cloud` of the pains, `clock-sweep` for time |
-| Product | 5-8 | 6-9 | 8-12 | the name large, the pitch under it, named by 25-35% of the way in | raw hero text + support line, `kinetic-title`, a `section-break` into it |
-| Features | 8-12 (one beat, 3 items) | 9-17 (3 beats of about 2.7) | 12-22 (3 beats of about 3.3) | 2-3 short benefits as verbs: icon, 2-4 word title, one supporting line | `icon-row` (highlight one), `badge-callouts`, `checklist`, `stat-ring` / `big-number` if the user gave a number |
-| Proof | none | none | 22-26 | only a number, rating or quote the user supplied | `big-number`, `stat-ring`, `quote-card`, `testimonial-cards` |
-| Call to action | 12-15 | 17-20 | 26-30 | the product name, one action, a URL only if given; held 2-3 s | `logo-outro` (`text` the name, `sub` left empty) plus the action as a raw line below the ring (position, size and timing all in `components.md`, "logo-outro tagline"; no other file needed) |
+The last column is the programmatic video (the default medium); the column before it is the VideoSpec alternative.
+
+| Beat | 15 s | 20 s | 30 s | Job | What fits (VideoSpec) | Programmatic recipe (`programmatic/recipes.md`) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Hook | 0-2.5 | 0-2.5 | 0-3 | stop the scroll; frame 0 already has the line; the pain or the claim in up to 6 words | raw hero text (`blur-in`, reveal `word-pop`), `kinetic-title` with `emphasis`, `word-hits` for a bold piece | [Kinetic title](../programmatic/recipes.md#kinetic-title) (blur-in headline, one emphasis word); [Word hits](../programmatic/recipes.md#word-hits) for a bold piece |
+| Problem | 2.5-5 | 2.5-6 | 3-8 | the old way failing, one sentence plus a simple visual | `circled-phrase` (no `sub`; the beat is the component plus a top-band label, never a raw line in its box), `comparison` (muted left only), `chip-cloud` of the pains, `clock-sweep` for time | [Circled phrase](../programmatic/recipes.md#circled-phrase) (SVG ellipse drawn round the phrase, a top-band label); [Comparison](../programmatic/recipes.md#comparison) (the muted left card alone); [Chip cloud](../programmatic/recipes.md#chip-cloud) of the pains; [Clock sweep](../programmatic/recipes.md#clock-sweep) for time |
+| Product | 5-8 | 6-9 | 8-12 | the name large, the pitch under it, named by 25-35% of the way in | raw hero text + support line, `kinetic-title`, a `section-break` into it | the hero line + support of `programmatic/example.md`; [Kinetic title](../programmatic/recipes.md#kinetic-title); a [Section break](../programmatic/recipes.md#section-break) into it |
+| Features | 8-12 (one beat, 3 items) | 9-17 (3 beats of about 2.7) | 12-22 (3 beats of about 3.3) | 2-3 short benefits as verbs: icon, 2-4 word title, one supporting line | `icon-row` (highlight one), `badge-callouts`, `checklist`, `stat-ring` / `big-number` if the user gave a number | [Icon row](../programmatic/recipes.md#icon-row) (inline SVG icons, staggered rise, highlight one); [Badge callouts](../programmatic/recipes.md#badge-callouts); [Checklist](../programmatic/recipes.md#checklist); [Stat ring](../programmatic/recipes.md#stat-ring) / [Count-up](../programmatic/recipes.md#count-up-digit-reel) if the user gave a number |
+| Proof | none | none | 22-26 | only a number, rating or quote the user supplied | `big-number`, `stat-ring`, `quote-card`, `testimonial-cards` | [Count-up](../programmatic/recipes.md#count-up-digit-reel), [Stat ring](../programmatic/recipes.md#stat-ring), [Quote card](../programmatic/recipes.md#quote-card), [Testimonial cards](../programmatic/recipes.md#testimonial-cards) |
+| Call to action | 12-15 | 17-20 | 26-30 | the product name, one action, a URL only if given; held 2-3 s | `logo-outro` (`text` the name, `sub` left empty) plus the action as a raw line below the ring (position, size and timing all in `components.md`, "logo-outro tagline"; no other file needed) | [Logo outro](../programmatic/recipes.md#logo-outro) (wordmark in type, ring stroke drawn round it, tagline in the caption band below the ring) |
 
 ## Rules
 
@@ -26,7 +28,9 @@ top-level elements that touch (end == next start), 2-4 s each, one hero per beat
   it; never invent a screen, a dashboard or a logo file. No `image` unless the user supplied a URL.
 - Hold: every line 0.5 s + 0.3 s per word; the product name and call to action at least 1.5 s each; the end card 2-3 s.
 - Stat or proof beats: count up over 1.2-1.6 s then hold at least 1.5 s.
-- Sound is optional: a hit on the hook landing, a tick per feature, a chime on the end card, gain 0.25-0.35; none on plain cuts.
+- Sound is optional, and it decides the medium: a hit on the hook landing, a tick per feature, a chime on the end card, gain
+  0.25-0.35; none on plain cuts. A programmatic video is silent, so a promo that wants a soundtrack or sound effects is a VideoSpec
+  (`director.md`, Medium row; say why in one line).
 
 ## Shape
 
