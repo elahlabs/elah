@@ -1,7 +1,9 @@
 /**
  * The `elah-input.json` contract (plan section 3) and its conversion to a `Project`.
  *
- *   { format: 'elah-input', version: 1, title, source: spec | html | project }
+ *   { format: 'elah-input', version: 1, title, source: spec | html | page | project }
+ *
+ * `page` is not converted: it is validated (page/validate.ts) and previewed as HTML (page/PagePlayer.tsx).
  *
  * Read order: inline `<script type="application/json" id="elah-input">` first, else `./elah-input.json`.
  * Every refusal or spec issue is kept verbatim in `issues` so the page can show it (and a user can paste it
@@ -12,6 +14,8 @@ import { readProjectDocument, ensureFonts, FONT_REGISTRY, type Project } from '@
 import { buildVideo, type AuthoredSpec, type SpecIssue } from '@elah/core/spec'
 import { sceneToClip, validateScene, type SceneSource } from '@elah/core/html'
 import { measureScene } from './measure'
+import type { PageSource } from './page/types'
+import { validatePage } from './page/validate'
 
 export interface HtmlSource {
   kind: 'html'
@@ -21,9 +25,19 @@ export interface HtmlSource {
   stage?: { width: number; height: number }
   fps?: number
 }
+/** HTML-first page (PLAN-HTML-FIRST): real CSS animations, previewed as HTML. Validated by `page/validate.ts`. */
+export interface PageInputSource {
+  kind: 'page'
+  html: string
+  css?: string
+  durationSeconds: number
+  stage?: { width: number; height: number }
+  fps?: number
+}
 export type InputSource =
   | { kind: 'spec'; spec: unknown }
   | HtmlSource
+  | PageInputSource
   | { kind: 'project'; project: unknown }
 
 export interface ElahInput {
@@ -89,8 +103,8 @@ export function validateInput(raw: unknown): ElahInput {
   if (o.version !== 1) throw new InputError(`elah-input.version must be 1 (got ${JSON.stringify(o.version)})`)
   const s = o.source as InputSource | undefined
   if (!s || typeof s !== 'object') throw new InputError('elah-input.source is missing')
-  if (s.kind !== 'spec' && s.kind !== 'html' && s.kind !== 'project') {
-    throw new InputError(`elah-input.source.kind must be "spec", "html" or "project" (got ${JSON.stringify((s as { kind?: unknown }).kind)})`)
+  if (s.kind !== 'spec' && s.kind !== 'html' && s.kind !== 'page' && s.kind !== 'project') {
+    throw new InputError(`elah-input.source.kind must be "spec", "html", "page" or "project" (got ${JSON.stringify((s as { kind?: unknown }).kind)})`)
   }
   return o as ElahInput
 }
@@ -107,11 +121,30 @@ export function loadAllFonts(): Promise<void> {
   ).then(() => document.fonts.ready).then(() => undefined)
 }
 
+export interface PreparedPage {
+  title: string
+  page: PageSource
+  issues: Issue[]
+}
+
+/**
+ * A `page` input is not converted to a `Project`: it is validated and handed to the page player as HTML.
+ * Throws an `InputError` carrying every refusal (each with "Use instead") when the page is not acceptable.
+ */
+export function preparePage(input: ElahInput): PreparedPage {
+  const title = input.title?.trim() || 'Elah video'
+  const verdict = validatePage(input.source as PageInputSource)
+  if (!verdict.page) throw new InputError('The page was refused.', verdict.issues)
+  return { title, page: verdict.page, issues: verdict.issues }
+}
+
 const specIssue = (i: SpecIssue): Issue => ({ severity: i.severity, where: i.path, message: `${i.code}: ${i.message}` })
 
 export async function convert(input: ElahInput): Promise<Converted> {
   const title = input.title?.trim() || 'Elah video'
   const src = input.source
+
+  if (src.kind === 'page') throw new InputError('A page source is previewed as HTML; use preparePage(), not convert().')
 
   if (src.kind === 'project') {
     let project: Project

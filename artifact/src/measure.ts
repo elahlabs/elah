@@ -15,6 +15,20 @@ export interface MeasureOptions {
   stage: { width: number; height: number }
   /** Resolves when the bundled faces are loaded. */
   fontsReady: () => Promise<void>
+  /**
+   * HF-3 (page conversion): called with the live scene root and its hidden host after the fonts are ready and
+   * before anything is read, so the caller can inline SVG styles, bake transforms or add ids. Optional; the
+   * HTML-subset path never sets it.
+   */
+  onMounted?: (rootEl: HTMLElement, host: HTMLElement) => void
+  /** HF-3: attach the live element to every `MeasuredNode` as `el` (valid only while the caller holds it). */
+  keepElements?: boolean
+  /**
+   * Plain-document text defaults: the hidden host gets `all: initial` so it inherits nothing from the artifact app's
+   * `body` (line-height 1.5, 14px, ...). Page conversion sets it to match `page/mount.ts` (`:host { all: initial }`);
+   * the HTML-subset path leaves it off and keeps measuring against the app's inherited text styles.
+   */
+  plainDocument?: boolean
 }
 
 const HOST_ATTR = 'data-mc-host'
@@ -195,7 +209,7 @@ export async function measureScene(src: SceneSource, opts: MeasureOptions): Prom
 
   const host = document.createElement('div')
   host.setAttribute(HOST_ATTR, '')
-  host.style.cssText = `position:fixed;left:-100000px;top:0;width:${opts.stage.width}px;height:${opts.stage.height}px;overflow:hidden;pointer-events:none;margin:0;padding:0;box-sizing:border-box`
+  host.style.cssText = `${opts.plainDocument ? 'all:initial;' : ''}position:fixed;left:-100000px;top:0;width:${opts.stage.width}px;height:${opts.stage.height}px;overflow:hidden;pointer-events:none;margin:0;padding:0;box-sizing:border-box`
   const style = document.createElement('style')
   style.textContent = scopeCss(mapBundledFontFamilies(sheet))
   host.append(style)
@@ -208,6 +222,7 @@ export async function measureScene(src: SceneSource, opts: MeasureOptions): Prom
     if (!rootEl) throw new Error('The scene has no root element')
 
     await opts.fontsReady()
+    opts.onMounted?.(rootEl, host)
 
     const styles = new Map<Element, MeasuredStyle>()
     const collect = (el: Element): void => {
@@ -237,6 +252,7 @@ export async function measureScene(src: SceneSource, opts: MeasureOptions): Prom
         ...(el.id ? { id: el.id } : {}),
         ...(el.getAttribute('data-motion') ? { motion: el.getAttribute('data-motion') as string } : {}),
       }
+      if (opts.keepElements) (node as MeasuredNode & { el?: Element }).el = el
       if (tag === 'svg') {
         node.svg = domToSvgNode(el)
         if (/currentcolor/i.test(el.outerHTML) && st.color) node.svg.attrs.color = st.color

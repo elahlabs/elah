@@ -1,0 +1,13 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Warning page",
+  "source": {
+    "kind": "page",
+    "html": "<main class=\"stage\"><h1 class=\"a\">One</h1><p class=\"b\">Two</p><p class=\"c\">Three</p><p class=\"d\">Four</p></main>",
+    "css": "body { margin: 0; }\n.stage { position: absolute; inset: 0; font-family: inter, sans-serif; }\n.a { animation: rise; }\n.b { animation: spin 1s linear infinite; }\n.c { animation: rise 0.6s ease-out 2s; }\n.d { animation: rise 1s ease-out 5.5s both; }\n.e { animation: missing 1s ease 0s both; }\n@keyframes rise { from { opacity: 0 } to { opacity: 1 } }\n@keyframes spin { to { transform: rotate(360deg) } }\n@keyframes unused { to { opacity: 0 } }",
+    "durationSeconds": 6,
+    "stage": { "width": 1080, "height": 1920 },
+    "fps": 30
+  }
+}

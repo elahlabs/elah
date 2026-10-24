@@ -1,6 +1,6 @@
 ---
 name: video
-description: Make a video, motion graphic, explainer, title card or social clip with Elah. Claude writes the video as data (a VideoSpec, or an HTML/CSS scene), validates it, and publishes an Elah artifact where the user can preview it, edit it, and export an MP4. Use when the user asks to make, animate or draft a video or motion graphic.
+description: Make a video, motion graphic, explainer, title card or social clip with Elah. Claude writes the video as data (a VideoSpec, or one HTML + CSS page with real CSS animations), validates it, and publishes an Elah artifact where the user can preview it, edit it, and export an MP4. Use when the user asks to make, animate or draft a video or motion graphic.
 argument-hint: "[what the video is about, length, format, style]"
 allowed-tools: Bash(node *validate.mjs *) Bash(node *stage.mjs *)
 ---
@@ -9,41 +9,54 @@ allowed-tools: Bash(node *validate.mjs *) Bash(node *stage.mjs *)
 
 The user wants: $ARGUMENTS
 
-If that is empty or too vague to start, ask once for: what the video is about, the length (default 15 s), the shape
-(landscape 1920x1080, vertical 1080x1920 or square 1080x1080; default landscape) and any style or brand colours. Do not
-interrogate: pick sensible defaults for everything else and say what you picked.
+If that is empty, ask once what the video is about and for whom. Otherwise do not ask anything: a one-line brief is enough.
+`reference/director.md` fills in the length, shape, format, taste and palette, and you say what you picked in one line.
 
 Elah renders in the viewer's browser. This plugin never renders an MP4 itself: the MP4 is exported by the user from the
 artifact (Export MP4). Never say the plugin rendered, exported or saved a video file.
 
-## 1. Plan the video
+## 1. Direct the video
 
-Write a short beat list first (one line per beat, with seconds), then the document. Aim for a clear structure: a hook in the
-first 2 seconds, one idea per beat, a closing line. Typical beats last 2 to 4 seconds.
+**Start by reading `${CLAUDE_PLUGIN_ROOT}/reference/director.md`** and follow it: it turns the brief into defaults (length, shape,
+palette), picks a format and a taste, and gives the beat sheet, spec-writing and review procedure. It tells you which of the small
+files under `reference/formats/`, `reference/taste/` and `reference/craft/` to read for this brief (not all of them).
 
-Read `${CLAUDE_PLUGIN_ROOT}/reference/authoring.md` for the input format and the VideoSpec and HTML rules, and run
+Write the beat sheet (one line per beat, with seconds and the one hero of each) in your reply before the document.
 
-```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --vocabulary
-```
+The director's **Medium** row picks the route; say which in your one-line choice. Default to a **VideoSpec**. Choose a **page**
+(one self-contained HTML + CSS page with real CSS animations, `source.kind: "page"`) when the brief says html, css, web or page, or
+asks for a look a VideoSpec cannot draw (backdrop blur, blend modes, rich gradients, SVG illustration); a brief that needs sound or
+supplied images and audio stays VideoSpec. Do not use the older `kind: "html"` subset scene.
 
-once to get the exact font, icon, preset, component and curve names. Use only names it prints.
+- **VideoSpec:** read `${CLAUDE_PLUGIN_ROOT}/reference/authoring.md` for the input format, and run
 
-Default to a **VideoSpec**. Use an **HTML/CSS scene** only when the user asks for it or the piece is mostly CSS layout.
+  ```
+  node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --vocabulary
+  ```
+
+  once to get the exact font, icon, preset, component and curve names. Use only names it prints.
+- **Page:** read `${CLAUDE_PLUGIN_ROOT}/reference/page.md` and `reference/page/motion.md` instead (and `page/example.md` for a
+  complete valid page). The fonts are the twelve bundled ids; there is no vocabulary to print.
 
 ## 2. Write and validate `elah-input.json`
 
 Pick a work folder: the scratchpad directory if the system prompt names one, otherwise `.elah/<short-slug>/` under the
-current directory. Create it. Write `elah-input.json` there (format in the authoring reference), then run
+current directory. Create it. Write `elah-input.json` there (format in the authoring reference, or `page.md` for a page), then run
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" "<work folder>/elah-input.json"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<work folder>/elah-input.json"
 ```
 
-Exit 0 means it compiles; the output is a one-line summary plus any warnings. Exit 1 lists every error with its path
-(for example `source.spec.elements[3].enter: unknown motion preset "teleport-in"`). Fix every error in the file and run it again. Do at most 3
-rounds; if errors remain after that, show the user the remaining messages and stop instead of publishing a broken file.
-Warnings are advice: fix the cheap ones, ignore the rest.
+Exit 0 means it compiles; the output is a one-line summary, any warnings, and `info` notes on what the engine's polish pass added
+(a page has no polish pass: its warnings are the animation checks listed in `page.md`).
+Exit 1 lists every error with its path (for example `source.spec.elements[3].enter: unknown motion preset "teleport-in"`). Fix
+every error in the file and run it again.
+
+**Self-review round (mandatory).** Once the file validates, read `${CLAUDE_PLUGIN_ROOT}/reference/craft/review.md` and run its
+checklist against the validator output and the file; fix what it finds and validate again. This round is one of the validation
+rounds, not an extra one: do at most 3 rounds in total (write, review, one more fix), and if errors remain after that, show the
+user the remaining messages and stop instead of publishing a broken file. Warnings are fixed or kept on purpose; say which you kept
+and why in your closing note.
 
 ## 3. Publish the artifact (if the Artifact tool is available)
 
@@ -80,6 +93,6 @@ description of the video, so they can keep it.
 ## Rules
 
 - Never claim a video was rendered or exported by this plugin. Export happens in the artifact.
-- Do not call any paid or external service, and do not invent image, audio or font files. Use only what the vocabulary lists.
+- Do not call any paid or external service, and do not invent image, audio or font files. Use only what the vocabulary lists (a page: only the twelve bundled font ids, no network, no scripts).
 - Never skip validation. Never publish an input the validator rejected.
 - Keep the user's wording (names, numbers, claims) exactly; do not invent statistics or testimonials.
