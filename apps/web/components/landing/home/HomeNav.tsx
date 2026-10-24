@@ -26,7 +26,7 @@ export function HomeNav({ stars = null }: { stars?: string | null }) {
         <ul className="m-0 hidden list-none items-center gap-[34px] p-0 lg:flex">
           {navLinks.map((l) => (
             <li key={l.href}>
-              <Link href={l.href} className={`text-[14px] text-[#77696B] no-underline transition-colors hover:text-[#1B1416] ${sans}`}>
+              <Link href={l.href} className={`text-[14px] text-[#1B1416] no-underline transition-colors hover:text-[#1B1416] ${sans}`}>
                 {l.label}
               </Link>
             </li>

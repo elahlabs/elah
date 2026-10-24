@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { footerColumns, GITHUB_URL } from '@/config/nav'
-import { MARK, btnDark, btnSmall, sans } from './ui'
+import { MARK, btnDark, btnSmall, outline, sans } from './ui'
 
 function GitHubLogo() {
   return (
@@ -72,14 +72,15 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
       </div>
 
       <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center gap-10 px-4 pb-16 pt-[128px] sm:px-8 sm:pt-[136px] lg:px-[88px]">
+       <div className={`flex w-full max-w-[1000px] flex-col items-center gap-10 rounded-[20px] bg-[#FFF5F3] p-6 sm:p-10 ${outline}`}>
         <nav aria-label="Footer" className="grid w-full max-w-[920px] grid-cols-1 gap-8 sm:grid-cols-3">
           {footerColumns.map((col) => (
             <div key={col.heading} className="flex flex-col gap-3">
-              <p className={`m-0 text-[16px] font-semibold tracking-[-0.3px] text-[#FFF5F3] ${sans}`}>{col.heading}</p>
+              <p className={`m-0 text-[16px] font-semibold tracking-[-0.3px] text-[#1B1416] ${sans}`}>{col.heading}</p>
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {col.links.map((l) => {
                   const external = !l.href.startsWith('/')
-                  const cls = `text-[14px] text-[#E8C9C6] no-underline transition-colors hover:text-white ${sans}`
+                  const cls = `text-[14px] text-[#1B1416] no-underline transition-colors hover:underline ${sans}`
                   return (
                     <li key={l.href}>
                       {external ? (
@@ -108,7 +109,7 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={`group ${btnDark} ${btnSmall} gap-[10px] !py-[7px] !pl-4 !pr-[7px] [outline:1px_solid_#FFFFFF33] [outline-offset:-0.5px]`}>
             <GitHubLogo />
             Star us on GitHub
-            <span className="inline-flex items-center gap-[5px] rounded-full bg-white/10 px-[10px] py-[3px] text-[13px] font-medium">
+            <span className="inline-flex items-center gap-[5px] rounded-full bg-black/5 px-[10px] py-[3px] text-[13px] font-medium">
               <svg viewBox="0 0 24 24" className="h-[13px] w-[13px] fill-[#F0625A] transition-transform duration-300 group-hover:rotate-[72deg] group-hover:scale-125" aria-hidden="true">
                 <path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z" />
               </svg>
@@ -116,7 +117,8 @@ export function HomeFooter({ stars = null }: { stars?: string | null }) {
             </span>
           </a>
         </div>
-        <p className={`m-0 text-[12px] text-[#E8C9C6] ${sans}`}>elah is open source under Apache-2.0.</p>
+        <p className={`m-0 text-[12px] text-[#1B1416] ${sans}`}>elah is open source under Apache-2.0.</p>
+       </div>
       </div>
     </footer>
   )

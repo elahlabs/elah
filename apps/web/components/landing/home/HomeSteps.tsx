@@ -29,7 +29,7 @@ export function HomeSteps() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <article className={`${cardWhite} min-w-0`}>
           <div className="flex flex-col gap-[10px]">
-            <p className={`m-0 text-[12px] text-[#77696B] ${mono}`}>1 · write</p>
+            <p className={`m-0 text-[12px] text-[#1B1416] ${mono}`}>1 · write</p>
             <h3 className={cardTitle}>An html scene</h3>
             <p className={cardBody}>
               The motion lives in a <code className={`text-[13px] text-[#1B1416] ${mono}`}>data-motion</code> attribute.
@@ -42,7 +42,7 @@ export function HomeSteps() {
 
         <article className={`${cardWhite} min-w-0`}>
           <div className="flex flex-col gap-[10px]">
-            <p className={`m-0 text-[12px] text-[#77696B] ${mono}`}>2 · timeline</p>
+            <p className={`m-0 text-[12px] text-[#1B1416] ${mono}`}>2 · timeline</p>
             <h3 className={cardTitle}>Clips and keys</h3>
             <p className={cardBody}>It lands as native clips and keyframes. Each key has an id, a frame, a value and an easing.</p>
           </div>
@@ -55,21 +55,21 @@ export function HomeSteps() {
 
         <article className={`${cardWhite} min-w-0`}>
           <div className="flex flex-col gap-[10px]">
-            <p className={`m-0 text-[12px] text-[#77696B] ${mono}`}>3 · export</p>
+            <p className={`m-0 text-[12px] text-[#1B1416] ${mono}`}>3 · export</p>
             <h3 className={cardTitle}>Exported in your browser</h3>
             <p className={cardBody}>MP4 export runs on your own machine in Chrome or Edge. No render server, and nothing is uploaded.</p>
           </div>
           <div className="flex flex-1 flex-col justify-end gap-4">
             <div className={`${panel} flex items-center gap-3 p-4`}>
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-[#F0625A] text-white">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-[#F0625A] text-[#1B1416]">
                 <Download size={18} strokeWidth={2} aria-hidden />
               </span>
               <div className="min-w-0">
                 <div className={`text-[13px] text-[#1B1416] ${mono}`}>title-card.mp4</div>
-                <div className={`text-[12px] text-[#77696B] ${sans}`}>Exported in your browser</div>
+                <div className={`text-[12px] text-[#1B1416] ${sans}`}>Exported in your browser</div>
               </div>
             </div>
-            <Link href="/playground/motion" className={`inline-flex items-center gap-2 text-[14px] font-semibold text-[#1B1416] no-underline transition-colors hover:text-[#F0625A] ${sans}`}>
+            <Link href="/playground/motion" className={`inline-flex items-center gap-2 text-[14px] font-semibold text-[#1B1416] no-underline transition-colors hover:underline ${sans}`}>
               Try it in the playground
               <ArrowRight size={16} strokeWidth={2} aria-hidden />
             </Link>

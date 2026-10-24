@@ -22,6 +22,12 @@ inventing near-misses.
 > | Accent text on red (hero line 2) | `#FF8F86` |
 > | Hero stage border on red | `#7A2A31` |
 >
+> **Black text only.** Every piece of page text is ink `#1B1416`, with no grey, no cream and no coral text.
+> Headings, leads, the hero, the CTA and the footer content sit on blush panels (`rounded-[20px] bg-[#FFF5F3]`)
+> over the red, so nothing is black on red. Primary buttons are coral with ink text, and the dark
+> button becomes blush with ink text. The only light-on-dark text left is inside the real
+> `@elah/timeline` and engine-rendered video, which are product UI and footage.
+>
 > Everywhere below, read "blush section" as red A, "white section" as red B and "carousel" as
 > red C. Card, panel, button and type rules are unchanged. Constants live in `home/ui.ts` (`RED`).
 

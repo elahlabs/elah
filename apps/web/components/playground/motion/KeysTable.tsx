@@ -19,11 +19,11 @@ const tones = {
   },
   // DESIGN.md: ink on white, muted labels, #F3E2DF outlines, blush hover.
   landing: {
-    empty: 'p-4 text-[12px] text-[#77696B]',
-    head: 'sticky top-0 bg-[#FFF5F3] text-[#77696B]',
+    empty: 'p-4 text-[12px] text-[#1B1416]',
+    head: 'sticky top-0 bg-[#FFF5F3] text-[#1B1416]',
     row: 'cursor-pointer border-t border-[#F3E2DF] text-[#1B1416] transition-colors hover:bg-[#FFF5F3]',
     input: 'rounded-[6px] border border-[#F3E2DF] bg-white px-1.5 py-0.5',
-    id: 'text-[#77696B]',
+    id: 'text-[#1B1416]',
   },
 } as const
 
