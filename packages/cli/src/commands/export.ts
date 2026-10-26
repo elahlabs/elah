@@ -3,15 +3,19 @@ import { usageError } from '../lib/errors'
 import { readProject } from '../lib/project-io'
 import { parsePositiveInt } from '../lib/flags'
 import { exportProject } from '../lib/export-project'
-import { CODECS } from '../lib/render-session'
+import { resolveOutputFormat } from '../lib/format'
+import { ENCODER_CHOICES, type EncoderChoice } from '../lib/ffmpeg/select'
 
 export interface ExportArgs {
   project: string
   out: string
+  container?: string
   codec?: string
   height?: string
   videoBitrate?: string
   audioBitrate?: string
+  encoder?: string
+  ffmpeg?: string
   browser?: string
   headed: boolean
   timeoutSec?: string
@@ -28,8 +32,9 @@ export async function runExportForProject(
   projectDir: string,
   args: Omit<ExportArgs, 'project'>
 ): Promise<void> {
-  if (args.codec !== undefined && !(CODECS as readonly string[]).includes(args.codec)) {
-    throw usageError(`--codec must be one of: ${CODECS.join(', ')}`)
+  const format = resolveOutputFormat({ container: args.container, videoCodec: args.codec, outPath: args.out })
+  if (args.encoder !== undefined && !(ENCODER_CHOICES as readonly string[]).includes(args.encoder)) {
+    throw usageError(`--encoder must be one of: ${ENCODER_CHOICES.join(', ')}`)
   }
   const height = args.height !== undefined ? parsePositiveInt(args.height, '--height') : undefined
   const videoBitrate =
@@ -41,6 +46,7 @@ export async function runExportForProject(
 
   const stderr = (line: string) => process.stderr.write(line)
   let progressLineOpen = false
+  let encodedWith = ''
 
   try {
     const result = await exportProject(
@@ -48,10 +54,13 @@ export async function runExportForProject(
         project,
         projectDir,
         outPath: args.out,
-        videoCodec: args.codec as (typeof CODECS)[number] | undefined,
+        container: format.container,
+        videoCodec: format.videoCodec,
         outputHeight: height,
         videoBitrate,
         audioBitrate,
+        encoder: args.encoder as EncoderChoice | undefined,
+        ffmpegPath: args.ffmpeg,
         browserPath: args.browser,
         headed: args.headed,
         timeoutMs,
@@ -71,9 +80,12 @@ export async function runExportForProject(
           }
         },
         onLog: (line) => args.verbose && stderr(`${line}\n`),
+        onEncoder: (description) => {
+          encodedWith = description
+        },
       }
     )
-    stderr(`\nwrote ${args.out} (${result.sizeBytes} bytes)\n`)
+    stderr(`\nwrote ${args.out} (${result.sizeBytes} bytes, encoded by ${encodedWith})\n`)
   } catch (err) {
     if (progressLineOpen) stderr('\n')
     throw err

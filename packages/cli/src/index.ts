@@ -13,6 +13,14 @@ export type {
   VideoCodec,
 } from './lib/render-session'
 
+export { CONTAINERS, resolveOutputFormat } from './lib/format'
+export type { Container, OutputFormat } from './lib/format'
+
+export { ENCODER_CHOICES } from './lib/ffmpeg/select'
+export type { EncoderChoice } from './lib/ffmpeg/select'
+export { locateFfmpeg, MIN_FFMPEG_VERSION } from './lib/ffmpeg/locate'
+export type { FfmpegBinary, LocateFfmpegOptions } from './lib/ffmpeg/locate'
+
 export { CliError, CliError as ElahError } from './lib/errors'
 
 export { validateSpec, specToProject } from './lib/spec'

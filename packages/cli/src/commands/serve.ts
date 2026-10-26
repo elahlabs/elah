@@ -1,6 +1,8 @@
 import { usageError } from '../lib/errors'
 import { parsePositiveInt } from '../lib/flags'
-import { CODECS, createRenderSession } from '../lib/render-session'
+import { createRenderSession } from '../lib/render-session'
+import { resolveOutputFormat } from '../lib/format'
+import { ENCODER_CHOICES, type EncoderChoice } from '../lib/ffmpeg/select'
 import { curlExample, powershellExample, startServe } from '../lib/serve'
 
 export interface ServeArgs {
@@ -8,18 +10,22 @@ export interface ServeArgs {
   host?: string
   concurrency?: string
   mediaRoot?: string
+  container?: string
   codec?: string
   height?: string
   videoBitrate?: string
   audioBitrate?: string
+  encoder?: string
+  ffmpeg?: string
   browser?: string
   timeoutSec?: string
   verbose: boolean
 }
 
 export async function runServe(args: ServeArgs): Promise<void> {
-  if (args.codec !== undefined && !(CODECS as readonly string[]).includes(args.codec)) {
-    throw usageError(`--codec must be one of: ${CODECS.join(', ')}`)
+  const format = resolveOutputFormat({ container: args.container, videoCodec: args.codec })
+  if (args.encoder !== undefined && !(ENCODER_CHOICES as readonly string[]).includes(args.encoder)) {
+    throw usageError(`--encoder must be one of: ${ENCODER_CHOICES.join(', ')}`)
   }
   const port = args.port !== undefined ? parsePositiveInt(args.port, '--port') : 8080
   const concurrency = args.concurrency !== undefined ? parsePositiveInt(args.concurrency, '--concurrency') : 1
@@ -35,7 +41,7 @@ export async function runServe(args: ServeArgs): Promise<void> {
 
   const stderr = (line: string) => process.stderr.write(`${line}\n`)
 
-  const session = createRenderSession({ browserPath: args.browser })
+  const session = createRenderSession({ browserPath: args.browser, ffmpegPath: args.ffmpeg })
   await session.warmup()
 
   const handle = await startServe({
@@ -45,10 +51,12 @@ export async function runServe(args: ServeArgs): Promise<void> {
     mediaRoot,
     session,
     render: {
-      videoCodec: args.codec as (typeof CODECS)[number] | undefined,
+      container: format.container,
+      videoCodec: format.videoCodec,
       outputHeight: height,
       videoBitrate,
       audioBitrate,
+      encoder: args.encoder as EncoderChoice | undefined,
       timeoutMs,
     },
     log: stderr,

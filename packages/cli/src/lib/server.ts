@@ -12,6 +12,27 @@ export interface ProgressPayload {
   totalFrames: number
 }
 
+export interface AudioMixMeta {
+  sampleRate: number
+  channels: number
+  /** Frames per channel. */
+  length: number
+}
+
+/**
+ * Where an ffmpeg-encoded render sends its output. Present only when the page
+ * runs with `encoder: 'ffmpeg'`; the /audio, /frame and /finish routes 404
+ * without it.
+ */
+export interface EncodeSink {
+  /** The audio mix: planar Float32 channels, concatenated. Arrives before any frame. */
+  audio(meta: AudioMixMeta, planarPcm: Buffer): Promise<void>
+  /** One PNG frame, in order. The page is answered only once this resolves. */
+  frame(png: Buffer): Promise<void>
+  /** Every frame is written: finish the encode and return the file's bytes. */
+  finish(): Promise<Buffer>
+}
+
 export interface HarnessServerArgs {
   /** Per-run random secret protecting the callback and media routes. */
   token: string
@@ -19,6 +40,8 @@ export interface HarnessServerArgs {
   media: Map<string, string>
   onProgress?: (p: ProgressPayload) => void
   onAudioIssue?: (message: string, src?: string) => void
+  /** Set for ffmpeg-encoded renders; see EncodeSink. */
+  encodeSink?: EncodeSink
   log?: (line: string) => void
 }
 
@@ -232,6 +255,14 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
 
     if (req.method === 'POST') {
       const body = await readBody(req)
+      if (args.encodeSink && path.startsWith(`/cb/${args.token}/`)) {
+        const handled = await handleEncodeRoute(args.encodeSink, path.slice(`/cb/${args.token}`.length), url, body)
+        if (handled !== undefined) {
+          res.writeHead(handled ? 204 : 500)
+          res.end()
+          return
+        }
+      }
       switch (path) {
         case `/cb/${args.token}/progress`:
           args.onProgress?.(JSON.parse(body.toString('utf8')) as ProgressPayload)
@@ -337,6 +368,37 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     res.end()
   }
 
+  /**
+   * The ffmpeg-encode routes. Returns undefined for any other route, true on
+   * success, false when the sink failed — that failure also rejects `result`,
+   * so the export reports ffmpeg's own error rather than the page's 500.
+   */
+  async function handleEncodeRoute(
+    sink: EncodeSink,
+    route: string,
+    url: URL,
+    body: Buffer
+  ): Promise<boolean | undefined> {
+    try {
+      switch (route) {
+        case '/audio':
+          await sink.audio(parseAudioMeta(url.searchParams, body.length), body)
+          return true
+        case '/frame':
+          await sink.frame(body)
+          return true
+        case '/finish':
+          resolveResult(await sink.finish())
+          return true
+        default:
+          return undefined
+      }
+    } catch (err) {
+      rejectResult(err instanceof Error ? err : new CliError(String(err)))
+      return false
+    }
+  }
+
   await new Promise<void>((res) => server.listen(0, '127.0.0.1', res))
   const address = server.address()
   if (address === null || typeof address === 'string') {
@@ -353,6 +415,25 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
         server.close(() => res())
       }),
   }
+}
+
+/** Validate the /audio query against the body it describes (4 bytes per sample). */
+export function parseAudioMeta(params: URLSearchParams, bodyBytes: number): AudioMixMeta {
+  const read = (name: string): number => {
+    const value = Number(params.get(name))
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new CliError(`Audio mix from the browser has an invalid ${name}: ${params.get(name)}`)
+    }
+    return value
+  }
+  const meta = { sampleRate: read('sampleRate'), channels: read('channels'), length: read('length') }
+  if (bodyBytes !== meta.channels * meta.length * 4) {
+    throw new CliError(
+      `Audio mix from the browser is ${bodyBytes} bytes; expected ${meta.channels * meta.length * 4} ` +
+        `(${meta.channels} channels x ${meta.length} Float32 samples)`
+    )
+  }
+  return meta
 }
 
 function readBody(req: IncomingMessage): Promise<Buffer> {

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { Project } from '@elah/core'
 import { CliError } from './errors'
 import { buildProject } from './build-project'
+import { CONTAINER_MIME } from './format'
 import type { RenderJobOptions, RenderSession } from './render-session'
 
 export class Semaphore {
@@ -31,6 +32,8 @@ export interface ServeHandlerDeps {
   browserConnected(): boolean
   semaphore: Semaphore
   maxBodyBytes: number
+  /** Content-Type of a rendered response. Default 'video/mp4'. */
+  mimeType?: string
   log(line: string): void
 }
 
@@ -81,7 +84,7 @@ function welcomePage(origin: string, browserConnected: boolean): string {
 POST a build spec, get an MP4 back.</p>
 <table>
   <tr><td><code>GET /healthz</code></td><td class="muted">status + browser state</td></tr>
-  <tr><td><code>POST /render</code></td><td class="muted">build spec JSON in, <code>video/mp4</code> out</td></tr>
+  <tr><td><code>POST /render</code></td><td class="muted">build spec JSON in, <code>video/mp4</code> (or <code>video/webm</code> with <code>--container webm</code>) out</td></tr>
 </table>
 <p>Render your first video (no media files needed):</p>
 <pre>${escapedCurl}</pre>
@@ -195,7 +198,7 @@ async function handleRender(req: IncomingMessage, res: ServerResponse, deps: Ser
     }
 
     deps.log(`[job ${jobId}] done in ${((Date.now() - start) / 1000).toFixed(1)}s (${bytes.length} bytes)`)
-    res.writeHead(200, { 'content-type': 'video/mp4', 'content-length': bytes.length })
+    res.writeHead(200, { 'content-type': deps.mimeType ?? 'video/mp4', 'content-length': bytes.length })
     res.end(bytes)
   } finally {
     deps.semaphore.release()
@@ -276,6 +279,7 @@ export async function startServe(options: ServeOptions): Promise<ServeHandle> {
     browserConnected: () => options.session.browserConnected(),
     semaphore,
     maxBodyBytes: options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
+    mimeType: CONTAINER_MIME[options.render.container ?? 'mp4'],
     log,
   }
 

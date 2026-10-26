@@ -6,30 +6,47 @@ import { CliError } from './errors'
 import { resolveMediaSource, isRemoteUrl } from './project-io'
 import { startHarnessServer, type ProgressPayload } from './server'
 import { launchBrowser } from './browser'
+import { locateFfmpeg, type FfmpegBinary } from './ffmpeg/locate'
+import { pickEncoder, type EncoderChoice, type EncoderDecision } from './ffmpeg/select'
+import { createFfmpegEncodeSink, type FfmpegEncodeSink } from './ffmpeg/sink'
+import { DEFAULT_AUDIO_BITRATE, DEFAULT_VIDEO_BITRATE } from './ffmpeg/encoder'
+import { resolveOutputFormat, type Container, type OutputFormat, type VideoCodec } from './format'
 
-export type VideoCodec = 'avc' | 'vp9' | 'vp8'
-export const CODECS: readonly VideoCodec[] = ['avc', 'vp9', 'vp8']
+export { CODECS, type VideoCodec } from './format'
 
 export interface RenderSessionArgs {
   browserPath?: string
   headed?: boolean
+  /** Explicit ffmpeg executable (--ffmpeg); otherwise ELAH_FFMPEG, then PATH. */
+  ffmpegPath?: string
 }
 
 export interface RenderJobOptions {
+  /** Default 'mp4'. MP4 takes avc/hevc/av1, WebM takes vp9/vp8/av1 (core's matrix). */
+  container?: Container
+  /** Default per container: avc for MP4, vp9 for WebM. */
   videoCodec?: VideoCodec
   outputHeight?: number
   videoBitrate?: number
   audioBitrate?: number
+  /**
+   * Who encodes the MP4. Default 'auto': ffmpeg when it is installed and can
+   * write the codec, else Chrome's WebCodecs encoder (with a warning). Chrome
+   * composites every frame either way.
+   */
+  encoder?: EncoderChoice
   /** Default 600_000 (10 minutes). */
   timeoutMs?: number
 }
 
 export interface RenderCallbacks {
   onProgress?: (p: ProgressPayload) => void
-  /** Audio-clip-skipped warnings and in-page errors. */
+  /** Audio-clip-skipped warnings, in-page errors, and an 'auto' fallback to Chrome. */
   onWarning?: (message: string) => void
   /** Verbose [server]/[browser] log lines. */
   onLog?: (line: string) => void
+  /** Which encoder this render uses, e.g. 'ffmpeg (libx264)' or 'chrome'. Called once, before rendering. */
+  onEncoder?: (description: string) => void
 }
 
 export interface RenderSession {
@@ -50,6 +67,28 @@ const DEFAULT_TIMEOUT_MS = 600_000
 export function createRenderSession(args: RenderSessionArgs = {}): RenderSession {
   let browserPromise: Promise<Browser> | undefined
   let lastBrowser: Browser | undefined
+  // Looked up once per session; a failure is remembered so serve mode doesn't
+  // re-spawn a missing binary on every request.
+  let ffmpegPromise: Promise<FfmpegBinary | Error> | undefined
+  const warnedFallbacks = new Set<string>()
+
+  async function decideEncoder(
+    format: OutputFormat,
+    options: RenderJobOptions,
+    callbacks: RenderCallbacks
+  ): Promise<EncoderDecision> {
+    const choice = options.encoder ?? 'auto'
+    if (choice !== 'chrome') {
+      ffmpegPromise ??= locateFfmpeg({ ffmpegPath: args.ffmpegPath }).catch((err: Error) => err)
+    }
+    const decision = pickEncoder(choice, format, choice === 'chrome' ? undefined : await ffmpegPromise)
+    if (decision.encoder === 'chrome' && decision.fallbackReason && !warnedFallbacks.has(decision.fallbackReason)) {
+      warnedFallbacks.add(decision.fallbackReason)
+      callbacks.onWarning?.(`encoding with Chrome instead of ffmpeg: ${decision.fallbackReason}`)
+    }
+    callbacks.onEncoder?.(decision.encoder === 'ffmpeg' ? `ffmpeg (${decision.videoEncoder})` : 'chrome')
+    return decision
+  }
 
   async function ensureBrowser(): Promise<Browser> {
     if (browserPromise) {
@@ -78,19 +117,48 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
       callbacks: RenderCallbacks = {}
     ): Promise<Buffer> {
       const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+      const format = resolveOutputFormat({ container: options.container, videoCodec: options.videoCodec })
       const token = randomUUID()
       const { exportProject, media } = prepareMedia(project, projectDir, token)
+      const decision = await decideEncoder(format, options, callbacks)
 
-      const server = await startHarnessServer({
-        token,
-        media,
-        onProgress: (p) => callbacks.onProgress?.(p),
-        onAudioIssue: (message, src) =>
-          callbacks.onWarning?.(`audio clip skipped (${src ?? 'unknown'}): ${message}`),
-        log: (line) => callbacks.onLog?.(`[server] ${line}`),
-      })
+      let encodeSink: FfmpegEncodeSink | undefined
+      if (decision.encoder === 'ffmpeg') {
+        encodeSink = await createFfmpegEncodeSink({
+          ffmpeg: decision.ffmpeg,
+          container: format.container,
+          videoEncoder: decision.videoEncoder,
+          audioEncoder: decision.audioEncoder,
+          fps: project.fps,
+          videoBitrate: options.videoBitrate ?? DEFAULT_VIDEO_BITRATE,
+          audioBitrate: options.audioBitrate ?? DEFAULT_AUDIO_BITRATE,
+        })
+      }
 
-      const browser = await ensureBrowser()
+      let server: Awaited<ReturnType<typeof startHarnessServer>>
+      try {
+        server = await startHarnessServer({
+          token,
+          media,
+          encodeSink,
+          onProgress: (p) => callbacks.onProgress?.(p),
+          onAudioIssue: (message, src) =>
+            callbacks.onWarning?.(`audio clip skipped (${src ?? 'unknown'}): ${message}`),
+          log: (line) => callbacks.onLog?.(`[server] ${line}`),
+        })
+      } catch (err) {
+        await encodeSink?.dispose()
+        throw err
+      }
+
+      let browser: Browser
+      try {
+        browser = await ensureBrowser()
+      } catch (err) {
+        await server.close()
+        await encodeSink?.dispose()
+        throw err
+      }
       const onDisconnect = () =>
         server.fail(new CliError('Browser disconnected before the export finished'))
       browser.on('disconnected', onDisconnect)
@@ -113,7 +181,9 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
         page.on('pageerror', (err) => callbacks.onWarning?.(`[browser:pageerror] ${err.message}`))
 
         const renderOptions = {
-          videoCodec: options.videoCodec,
+          encoder: decision.encoder,
+          container: format.container,
+          videoCodec: format.videoCodec,
           outputHeight: options.outputHeight,
           videoBitrate: options.videoBitrate,
           audioBitrate: options.audioBitrate,
@@ -131,6 +201,7 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
         browser.off('disconnected', onDisconnect)
         await page?.close().catch(() => {})
         await server.close()
+        await encodeSink?.dispose()
         if (!browser.isConnected()) browserPromise = undefined
       }
     },
