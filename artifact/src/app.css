@@ -268,3 +268,15 @@ a.btn { text-decoration: none; }
 .comment-row { flex: none; display: flex; justify-content: flex-end; padding: 4px 12px; background: var(--a-surface-2); border-top: 1px solid var(--a-border); }
 .btn.comment-at { white-space: nowrap; }
 @media (max-width: 640px) { .btn.comment-at span { font-size: 12px; } }
+
+/* Ask Claude (TICKET-PF-17): rendered only where the sample capability can run page tools. */
+.ask { display: grid; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--a-border); }
+.ask-h { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--a-text); }
+.ask-h svg { color: var(--a-accent); }
+.ask-input { width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px; padding: 7px 9px; border-radius: 8px; font: inherit; font-size: 13px; line-height: 1.4; color: var(--a-text); background: var(--a-surface); border: 1px solid var(--a-border); }
+.ask-input:focus { outline: none; border-color: var(--a-accent); }
+.ask-input:disabled { opacity: 0.6; }
+.ask-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ask-note { font-size: 11px; color: var(--a-muted); flex: 1 1 120px; }
+.ask-out { margin: 0; font-size: 12px; line-height: 1.45; color: var(--a-text); overflow-wrap: anywhere; }
+.ask-meta { display: block; margin-top: 2px; font-size: 11px; color: var(--a-muted); }

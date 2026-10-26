@@ -37,6 +37,7 @@ import { HeaderLinks, MadeWithElah } from './HeaderLinks'
 import { FollowUps } from './FollowUps'
 import { InElah } from './InElah'
 import { PreviewStrip } from './PreviewStrip'
+import { AskClaude } from './ask/AskClaude'
 import { clockLabel, composeAt, edgePoint, inside, requestPlace, setPinSurface, shownRect, startMomentComments, stripPoint, stripTime, useMomentComments, type Moment } from './comments'
 import { convert, fontBaseUrl, InputError, loadAllFonts, loadInput, preparePage, type Converted, type Issue } from './input'
 import { PagePlayer } from './page/PagePlayer'
@@ -1014,6 +1015,8 @@ function Shell({ converted, origin, footageKey: storeKey, initialFootage, startU
         </div>
         {edit && (
           <aside className="props" aria-label="Properties">
+            {/* PF-17: hidden unless `sample` can run page tools; inside a compound the engine holds a draft. */}
+            {!inCompound && <AskClaude title={converted.title} />}
             {selectedCompound && (
               <div className="props-head">
                 <button type="button" className="btn" onClick={enterSelected} data-testid="edit-contents" title="Open this compound and edit its parts on their own timeline">

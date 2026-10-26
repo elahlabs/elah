@@ -29,3 +29,35 @@ export interface CommentsCap {
   sendToClaude(target: { anchor: unknown; text: string }): Promise<unknown>
   canSendToClaude(): Promise<CanSend>
 }
+
+/**
+ * TICKET-PF-17: the slice of the `sample` capability the Ask Claude box uses (contract: sample.d.ts). Calls are
+ * memoryless; `tools` run here in the page; failures reject with `{code, message, text?}`.
+ */
+export type SampleTier = 'quick' | 'default' | 'complex'
+export interface SampleTool {
+  name: string
+  description: string
+  inputSchema?: { type: 'object'; properties?: Record<string, unknown>; required?: string[] }
+  execute(input: { [name: string]: unknown }, context: { signal: AbortSignal }): unknown
+}
+export interface SampleOptions {
+  onText?: (update: { text: string; delta: string }) => void
+  signal?: AbortSignal
+  tools?: SampleTool[]
+  modelTier?: SampleTier
+}
+export interface SampleResult {
+  text: string
+  truncated: boolean
+  modelTierApplied?: SampleTier
+}
+export interface SampleError {
+  code: string
+  message: string
+  text?: string
+}
+export interface SampleCap {
+  (input: string, options?: SampleOptions): Promise<SampleResult>
+  limits?: () => Promise<{ maxPromptBytes: number; tools?: { maxCount: number } }>
+}
