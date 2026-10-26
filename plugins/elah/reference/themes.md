@@ -6,19 +6,19 @@ that sits well on `bg`), `surface` (cards, icon discs, glass panels). Paste the 
 Contrast was checked: ink on bg at least 12:1, muted on bg at least 4.1:1, accent on bg at least 3.9:1 (use accent for large text only).
 The Taste column lists the taste files that name the palette; the taste itself is chosen only in `director.md`.
 
-| Palette | bg | ink | muted | accent | accentSoft | surface | Fonts (role: font) | Taste |
+| Palette | bg | ink | muted | accent | accentSoft | surface | Fonts (role: font) | Look |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| midnight-teal | #0b0f14 | #f4f6f8 | #8a94a3 | #5eead4 | #134e4a | #151b24 | sans: inter, display: space-grotesk | dark-glass |
-| graphite-violet | #0e0b16 | #f5f3ff | #9b95b5 | #a78bfa | #3b2a6b | #181326 | sans: inter, display: space-grotesk | dark-glass |
-| ocean-depths | #0a1f33 | #eaf4fb | #8fb0c7 | #38bdf8 | #0f4c75 | #11304d | sans: inter, display: montserrat | dark-glass, minimal |
-| sunset-pop | #1d0f2e | #fff5ec | #c9a9b8 | #ff7a59 | #6b2a4a | #2b1744 | sans: poppins, display: archivo-black | dark-glass for a consumer or social brief (these fonts replace its pair) |
-| neon-lime | #0a0a0a | #f2f2ee | #8c8c85 | #c6f432 | #3a4a0c | #161616 | display: anton, mono: roboto-mono | brutalist |
-| paper-crimson | #f4efe6 | #1b1a17 | #6f6a60 | #b3261e | #ecd0cb | #fffaf0 | serif: playfair-display, sans: inter | editorial |
-| golden-hour | #f7ecd8 | #2a1d10 | #7d6747 | #b85c12 | #f3d3a4 | #fff6e6 | serif: dm-serif-display, sans: poppins | editorial, warm brands |
-| clean-green | #f7f7f5 | #111111 | #6b6b6b | #15803d | #bbf7d0 | #ffffff | sans: inter, serif: playfair-display | minimal |
-| forest-sage | #eef2e6 | #1d2a1c | #5d6f55 | #2f7d4f | #cfe3c0 | #f9fbf4 | serif: dm-serif-display, sans: inter | editorial, wellness, minimal |
-| arctic-steel | #f3f7fa | #0f1b26 | #5f7487 | #2563eb | #cfe0fb | #ffffff | sans: inter, display: montserrat | minimal, B2B, finance |
-| rose-dust | #f6ebe8 | #3a2325 | #7e6164 | #b4415a | #f0cfd4 | #fff7f5 | serif: playfair-display, sans: poppins | editorial, beauty |
+| midnight-teal | #0b0f14 | #f4f6f8 | #8a94a3 | #5eead4 | #134e4a | #151b24 | sans: inter, display: space-grotesk | Midnight Glass |
+| graphite-violet | #0e0b16 | #f5f3ff | #9b95b5 | #a78bfa | #3b2a6b | #181326 | sans: inter, display: space-grotesk | Midnight Glass |
+| ocean-depths | #0a1f33 | #eaf4fb | #8fb0c7 | #38bdf8 | #0f4c75 | #11304d | sans: inter, display: montserrat | Midnight Glass, Clean Sheet |
+| sunset-pop | #1d0f2e | #fff5ec | #c9a9b8 | #ff7a59 | #6b2a4a | #2b1744 | sans: poppins, display: archivo-black | Midnight Glass for a consumer or social brief (these fonts replace its pair) |
+| neon-lime | #0a0a0a | #f2f2ee | #8c8c85 | #c6f432 | #3a4a0c | #161616 | display: anton, mono: roboto-mono | Poster Shout |
+| paper-crimson | #f4efe6 | #1b1a17 | #6f6a60 | #b3261e | #ecd0cb | #fffaf0 | serif: playfair-display, sans: inter | Gallery Serif |
+| golden-hour | #f7ecd8 | #2a1d10 | #7d6747 | #b85c12 | #f3d3a4 | #fff6e6 | serif: dm-serif-display, sans: poppins | Gallery Serif, warm brands |
+| clean-green | #f7f7f5 | #111111 | #6b6b6b | #15803d | #bbf7d0 | #ffffff | sans: inter, serif: playfair-display | Clean Sheet |
+| forest-sage | #eef2e6 | #1d2a1c | #5d6f55 | #2f7d4f | #cfe3c0 | #f9fbf4 | serif: dm-serif-display, sans: inter | Gallery Serif, wellness, Clean Sheet |
+| arctic-steel | #f3f7fa | #0f1b26 | #5f7487 | #2563eb | #cfe0fb | #ffffff | sans: inter, display: montserrat | Clean Sheet, B2B, finance |
+| rose-dust | #f6ebe8 | #3a2325 | #7e6164 | #b4415a | #f0cfd4 | #fff7f5 | serif: playfair-display, sans: poppins | Gallery Serif, beauty |
 
 Palette moods follow the family of themes in the Anthropic theme-factory set (ocean, sunset, forest, golden hour, arctic, rose,
 midnight, minimalist, tech); the colour values here are our own and only the font ids are Elah's twelve bundled fonts.

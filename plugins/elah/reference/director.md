@@ -5,29 +5,37 @@ decide the craft yourself, state your choices in one line, and build. Ask only w
 and for whom). Never interrogate; every default below is a decision, not a question.
 
 Read, in this order: this file; `programmatic.md` (with `programmatic/motion.md`; the default medium); only for a `VideoSpec`
-`authoring.md` (the file format, once) instead; `formats/<format>.md`; `taste/<taste>.md` (it points at `taste/floor.md`, read that
+`authoring.md` (the file format, once) instead; `formats/<format>.md`; `taste/<look id>.md` (it points at `taste/floor.md`, read that
 too); `craft/motion.md`; `craft/type-and-layout.md`. Read only when needed: `programmatic/recipes.md` (the format's beats as HTML +
 CSS, which the format tables link), `components.md` (VideoSpec only: when you use a component, which is most beats there),
-`themes.md` (palette or brand colour swap), `craft/generators.md` (VideoSpec `counter`, `barChart` or `progressBar`),
+`themes.md` (palette or brand colour swap), `brand.md` (when `.elah/brand.json` exists), `craft/generators.md` (VideoSpec `counter`, `barChart` or `progressBar`),
 `craft/review.md` (step 6, mandatory).
 
 ## 1. Fill in the brief
 
 | Decide | Default | Overrides in the brief |
 | --- | --- | --- |
-| Length | launch 20 s, explainer 45, data story 30, kinetic type 15, logo reveal 4, social 15 | "30s", "a minute", "short" (15) |
+| Length | launch 20 s, explainer 45, data story 30, words in motion 15, logo sting 4, social 15 | "30s", "a minute", "short" (15) |
 | Shape | landscape 1920x1080; vertical 1080x1920 if it says social, reel, story, Short, TikTok, phone, vertical, 9:16; square 1080x1080 if feed or square | `vertical`, `square`, `landscape` |
-| Format | launch / promo / ad / teaser / app: `launch`; explain / how / what is / why: `explainer`; numbers, stats, report, growth: `data-story`; quote, manifesto, statement, lyric, words: `kinetic-type`; logo, intro, sting, end card: `logo-reveal`; anything vertical or social also reads `social-vertical` | `format: data-story` |
-| Medium | `programmatic` (programmatic video: HTML + CSS motion, `source.kind: "page"`, read `programmatic.md`), also for a short graphic (programmatic motion). Choose `VideoSpec` (Elah components, presets, sound; read `authoring.md`) only when the brief needs what only a VideoSpec has: sound (music, soundtrack, voice-over, narration, sound effects), supplied image or audio URLs, or an explicit ask for "components", "VideoSpec" or "medium: spec". A programmatic video is silent and draws everything, so a brief that needs sound or supplied media is a VideoSpec even when it also asks for a look only CSS draws (say so in one line). A bare "make a video" is programmatic. | `medium: programmatic`, `medium: spec` |
-| Taste | the first row that matches the brief's words: AI, developer, hardware, fintech, tech, open source, GitHub, developer tool, CLI, API, SDK, library, framework, programmatic: `dark-glass`; fashion, hospitality, property, beauty, founder story, luxury, quote, lyric, quiet statement: `editorial`; sport, streetwear, gaming, loud, manifesto: `brutalist`; software, B2B, finance, plain clarity: `minimal`. No signal: explainer, data story, kinetic type: `minimal`; launch, logo reveal, social: `dark-glass` | `style: editorial` |
+| Format | launch / promo / ad / teaser / app: `launch`; explain / how / what is / why: `explainer`; numbers, stats, report, growth: `data-story`; quote, manifesto, statement, lyric, words: **Words in motion** (`kinetic-type`); logo, intro, sting, end card: **Logo sting** (`logo-reveal`); anything vertical or social also reads `social-vertical`. Launch, Explainer, Data story and Social keep their names. | `format: data story` or `format: data-story`; the old labels "kinetic type" and "logo reveal" and the ids still work |
+| Medium (internal; never named to the user) | `programmatic` (programmatic video: HTML + CSS motion, `source.kind: "page"`, read `programmatic.md`), also for a short graphic (programmatic motion). Choose `VideoSpec` (Elah components, presets, sound; read `authoring.md`) only when the brief needs what only a VideoSpec has: a soundtrack, voice-over or narration, supplied audio URLs, or an explicit ask for "components", "VideoSpec" or "medium: spec". Sound effects and supplied images do NOT need a VideoSpec: a programmatic video plays the bundled sound cues (`data-sfx`, `programmatic.md` "Sound cues") and shows images from `assets/` ("Supplied images"). A brief that needs a soundtrack, voice or supplied audio is a VideoSpec even when it also asks for a look only CSS draws. A bare "make a video" is programmatic. Never ask the user to choose it and never announce it. | hidden expert overrides `medium: programmatic`, `medium: spec` |
+| Look | the first row that matches the brief's words: AI, developer, hardware, fintech, tech, open source, GitHub, developer tool, CLI, API, SDK, library, framework, programmatic: **Midnight Glass** (`dark-glass`); fashion, hospitality, property, beauty, founder story, luxury, quote, lyric, quiet statement: **Gallery Serif** (`editorial`); sport, streetwear, gaming, loud, manifesto: **Poster Shout** (`brutalist`); software, B2B, finance, plain clarity: **Clean Sheet** (`minimal`). No signal: explainer, data story, words in motion: Clean Sheet; launch, logo sting, social: Midnight Glass | `look: Gallery Serif`; the older `style:` and `taste:` keys, the ids and the look names in any case also work |
 | Palette | the taste's own (see its file); a brand colour in the brief becomes `accent` (recipe in `themes.md`) | a hex, "warm", "dark", "pastel" |
-| Energy | `calm` for dark-glass and editorial, `standard` for minimal, `bold` for brutalist | `calm`, `bold`, "punchy", "slow" |
+| Brand kit | none | if `.elah/brand.json` exists in the current folder, it sets palette, fonts and look unless the brief overrides; the brief beats the kit, the kit beats these defaults; its logo file goes in `assets/` (`brand.md`) | a hex, a palette word, a font, `look:`, a different brand |
+| Energy | `calm` for Midnight Glass and Gallery Serif, `standard` for Clean Sheet, `bold` for Poster Shout | `calm`, `bold`, "punchy", "slow" |
 
-The brief's own words win over every default, and a single word such as "vertical", "30s" or "style: editorial" is an instruction.
-This table is the only place a taste is chosen. Format files add beats, components and rules; they never set taste, palette, ambient
-or energy, and the taste file supplies the whole `motion` block (a data story under dark-glass gets dark-glass's orbs).
-State your choices in one line before you build: "20 s landscape launch, dark-glass on midnight-teal, calm, 6 beats." The line
-names the medium only when it is the VideoSpec, with the reason: "..., built from Elah components for the soundtrack."
+The brief's own words win over every default, and a single word such as "vertical", "30s" or "look: Gallery Serif" is an instruction.
+This table is the only place a look is chosen. Format files add beats, components and rules; they never set taste, palette, ambient
+or energy, and the taste file supplies the whole `motion` block (a data story under Midnight Glass gets its orbs).
+State your choices in one line before you build: "20 s landscape launch, Midnight Glass on midnight-teal, calm, 6 beats." The line
+never names the medium. When the route needs a reason, say what was built: "..., built from Elah components so it can carry the soundtrack."
+
+## Options first (only when asked)
+
+When the brief says "options", "directions", "treatments" or "show me a few", do not build yet. Reply with three one-line
+treatments, each different in look and hook (and in structure where the format allows), for example "1. Midnight Glass: opens on
+the number, then three product beats; 2. Gallery Serif: opens on a quiet question; 3. Poster Shout: opens on one loud word." Then
+wait for the pick and build that one with the rest of the flow unchanged. Never do this unasked; a plain brief is built at once.
 
 ## 2. Facts
 
@@ -55,7 +63,7 @@ soft glow (or none), transition is the scene hand-off family. Write the file `el
 (defaults, facts, beat sheet) and 5-6 (validate, self-review) apply unchanged.
 
 **VideoSpec (the alternative: sound, supplied images or audio, or an explicit ask for Elah components).** When a brief lands here for
-sound or supplied media, say so in your one-line choice, and say it again to the user in the closing note. Follow `authoring.md`;
+sound or supplied media, give the reason in one plain line ("built from Elah components so it can carry the soundtrack") and no more. Follow `authoring.md`;
 the bullets below describe it.
 
 - `design`: all six colour tokens (`bg`, `ink`, `muted`, `accent`, `accentSoft`, `surface`) and at most two font families, declared

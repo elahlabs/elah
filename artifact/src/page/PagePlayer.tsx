@@ -5,6 +5,7 @@ import { loadAllFonts, type Issue } from '../input'
 import { layoutReport, type LayoutReport } from './layout'
 import { mountPage, type MountedPage } from './mount'
 import { collectAnimations, sceneWindows, seekAnimations } from './seek'
+import { createCuePlayer, cueProject, cuesFromPage, type CuePlayer } from './sfxCues'
 import type { PagePlayerHandle, PageSource, SceneWindow } from './types'
 
 interface Props {
@@ -54,6 +55,8 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onL
   const playingRef = useRef(false)
   const rafRef = useRef(0)
   const lastRef = useRef(0)
+  /** Sound cues (data-sfx), scheduled against this player's clock; null for a silent video. */
+  const sfxRef = useRef<CuePlayer | null>(null)
 
   const [playing, setPlaying] = useState(false)
   const [scenes, setScenes] = useState<SceneWindow[]>([])
@@ -81,6 +84,7 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onL
       tRef.current = c
       seekAnimations(animsRef.current, c)
       paint(c)
+      sfxRef.current?.sync(c, playingRef.current)
     },
     [duration, paint],
   )
@@ -89,6 +93,7 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onL
     playingRef.current = false
     cancelAnimationFrame(rafRef.current)
     setPlaying(false)
+    sfxRef.current?.sync(tRef.current, false)
   }, [])
 
   const play = useCallback(() => {
@@ -96,6 +101,7 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onL
     playingRef.current = true
     setPlaying(true)
     lastRef.current = performance.now()
+    sfxRef.current?.sync(tRef.current, true)
     const tick = (now: number) => {
       if (!playingRef.current) return
       const dt = Math.min(0.25, (now - lastRef.current) / 1000)
@@ -135,7 +141,12 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onL
         } catch (e) {
           console.warn('layout report failed', e)
         }
-        onLayout?.(layout.issues)
+        // Sound cues: read once from the mounted animations; the files are fetched now and decoded on the first Play.
+        const sfx = cuesFromPage(mounted.stageEl, anims, duration)
+        const mix = cueProject(sfx.cues, page)
+        sfxRef.current = mix ? createCuePlayer(mix) : null
+        ;(window as unknown as { __elahPageSfx?: unknown }).__elahPageSfx = { cues: sfx.cues, notes: sfx.notes, player: sfxRef.current }
+        onLayout?.([...layout.issues, ...sfx.notes.map((n) => ({ severity: 'warn' as const, where: n.where, message: n.message }))])
         handle = {
           page,
           root: mounted.root,
@@ -167,6 +178,9 @@ export function PagePlayer({ page, fullscreen, onToggleFullscreen, onHandle, onL
       mountedRef.current?.dispose()
       mountedRef.current = null
       animsRef.current = []
+      sfxRef.current?.dispose()
+      sfxRef.current = null
+      delete (window as unknown as { __elahPageSfx?: unknown }).__elahPageSfx
       onHandle?.(null)
     }
     // The page is fixed for the life of the player; seek/play are stable for it.

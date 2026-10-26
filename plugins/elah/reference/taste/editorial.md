@@ -1,4 +1,4 @@
-# Taste: editorial
+# Look: Gallery Serif (`editorial`)
 
 Read `floor.md` too. Calm, serif-led, paper and grain: fashion, hospitality, property, beauty, a founder story, a pull quote, an
 opening title. Not for fast social energy. Numbers are starting values; adapt them to the clip. The motion block and components below

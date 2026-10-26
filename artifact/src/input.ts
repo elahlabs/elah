@@ -14,6 +14,7 @@ import { readProjectDocument, ensureFonts, FONT_REGISTRY, type Project } from '@
 import { buildVideo, type AuthoredSpec, type SpecIssue } from '@elah/core/spec'
 import { sceneToClip, validateScene, type SceneSource } from '@elah/core/html'
 import { measureScene } from './measure'
+import { addSfxClips } from './sfx'
 import type { PageSource } from './page/types'
 import { validatePage } from './page/validate'
 
@@ -114,6 +115,15 @@ export function fontBaseUrl(): string {
   return new URL('./fonts/', document.baseURI).href
 }
 
+/**
+ * Where the images the person supplied are served from: `assets/` next to this page (TICKET-PF-11). On claude.ai the
+ * files are published beside index.html; the local server answers them from the sample folder. A programmatic video
+ * references them as `assets/<name>`; page/assetsInline.ts resolves each against this URL.
+ */
+export function assetBaseUrl(): string {
+  return new URL('./assets/', document.baseURI).href
+}
+
 export function loadAllFonts(): Promise<void> {
   return ensureFonts(
     FONT_REGISTRY.map((f) => f.id),
@@ -163,7 +173,10 @@ export async function convert(input: ElahInput): Promise<Converted> {
     const errors = issues.filter((i) => i.severity === 'error')
     const hasClips = Object.values(built.project.clips).some((l) => l.length > 0)
     if (!hasClips) throw new InputError(`The spec compiled to an empty video (${errors.length} error(s)).`, issues)
-    return { title, kind: 'spec', project: built.project, fps: built.project.fps, stage: built.project.stage, issues }
+    // Sound cues (PF-12): the bundled CC0 pack; an unknown cue is a warning in the Issues panel.
+    const sfx = addSfxClips(built.project, built.expandedSpec.sfx)
+    for (const i of sfx.issues) issues.push(i)
+    return { title, kind: 'spec', project: sfx.project, fps: sfx.project.fps, stage: sfx.project.stage, issues }
   }
 
   // html

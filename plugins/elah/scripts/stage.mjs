@@ -6,9 +6,11 @@
 // working directory or the scratchpad, and the plugin lives elsewhere) and prints one JSON object:
 //   { "workFolder": "...", "file_path": "<work-folder>/index.html",
 //     "files": { "<published path>": "<local path>", ... } }
-// `files` lists every path in MANIFEST.json except index.html. Add "elah-input.json" yourself.
-import { cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+// `files` lists every path in MANIFEST.json except index.html, plus every file under <work-folder>/assets/ as
+// "assets/<name>" (the images the person supplied, referenced from the programmatic video as assets/<name>).
+// Add "elah-input.json" yourself.
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -38,6 +40,18 @@ for (const p of paths) {
   const local = join(work, p)
   if (!existsSync(local)) missing.push(p)
   files[p] = local
+}
+// Supplied images: <work>/assets/** is published beside the page, so assets/<name> resolves the same on claude.ai.
+const supplied = join(work, 'assets')
+if (existsSync(supplied) && statSync(supplied).isDirectory()) {
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const local = join(dir, entry.name)
+      if (entry.isDirectory()) walk(local)
+      else if (entry.isFile()) files[`assets/${relative(supplied, local).split(sep).join('/')}`] = local
+    }
+  }
+  walk(supplied)
 }
 if (missing.length) {
   process.stderr.write(`MANIFEST.json lists files that are missing: ${missing.join(', ')}\n`)

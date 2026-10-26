@@ -168,6 +168,9 @@ writeFileSync(join(DIST, 'index.html'), template.replace('/*CSS*/', () => css))
 
 // 5. Fonts (12 OFL families + their licence files).
 cpSync(join(ROOT, 'packages/core/fonts'), join(DIST, 'fonts'), { recursive: true })
+// 5b. Sound effects: the CC0 pack, its sfx.json and LICENSES.md (PF-12). The artifact app reads cue -> file from sfx.json.
+cpSync(join(ART, 'sfx'), join(DIST, 'sfx'), { recursive: true })
+rmSync(join(DIST, 'sfx/SHA256SUMS'), { force: true })
 rmSync(CACHE, { recursive: true, force: true })
 
 // 6. Manifest + limits.

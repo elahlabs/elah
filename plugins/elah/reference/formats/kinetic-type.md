@@ -1,4 +1,4 @@
-# Format: kinetic type (words as the picture)
+# Format: Words in motion (`kinetic-type`, words as the picture)
 
 10-20 s (default 15). A statement, a manifesto, a quote, a lyric, a hype reel. The words are the design, so no separate captions.
 Vertical suits it best; landscape works with raw text in the landscape bands.

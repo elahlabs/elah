@@ -30,7 +30,8 @@
 
 import { createEffect, remapKeyframes, type AnyKeyframeChannel, type Clip, type Keyframe, type Project } from '@elah/core'
 import { sceneToClip, type MeasuredNode, type MeasuredScene, type MeasuredStyle, type SceneReport } from '@elah/core/html'
-import { loadAllFonts, type Converted } from '../input'
+import { assetBaseUrl, loadAllFonts, type Converted } from '../input'
+import { assetName, assetNamesInCss, collectAssetNames, loadAssets, preloadAssets } from './assetsInline'
 import { measureScene } from '../measure'
 import { buildGroup, fitBezier, type ChannelInput, type ChannelResult, type TimingInfo } from './animationsToKeys'
 import {
@@ -47,6 +48,8 @@ import {
   type Pose,
 } from './pose'
 import { seekAnimations } from './seek'
+import { cuesFromPage, sfxClipName } from './sfxCues'
+import { addSfxClips } from '../sfx'
 import { verifyConversion } from './verify'
 import type { PageActionContext, PagePlayerHandle, PageSource } from './types'
 
@@ -82,7 +85,18 @@ export interface ConversionReport {
   unconverted: ReportEntry[]
   /** Static look the emitter or this converter could not carry. */
   notes: ReportEntry[]
+  /** Sound cues (data-sfx) that became audio clips, in start order. */
+  sounds: SoundEntry[]
   ms: number
+}
+
+export interface SoundEntry {
+  /** Clip name, `sfx · <cue>`. */
+  name: string
+  /** Seconds. */
+  at: number
+  frame: number
+  frames: number
 }
 
 export interface PageConversion {
@@ -697,6 +711,11 @@ export async function convertPage(
     notes,
   }
   const css = `${page.css}\n*, *::before, *::after { animation: none !important; transition: none !important; box-sizing: border-box; }`
+  // Supplied images (assets/<name>, TICKET-PF-11): decode them first, so the measuring copy of each <img> is complete
+  // and reports its natural size (the image clip is then the image itself, not a box-sized compound).
+  const assetBase = assetBaseUrl()
+  const assetNames = collectAssetNames(player.stageEl, page.css)
+  if (assetNames.size) await preloadAssets(assetNames, assetBase)
   const measured = await measureScene(
     { html: page.html, css },
     {
@@ -1470,6 +1489,36 @@ export async function convertPage(
       project = mapProject(project, (c, _stage, depth) => (depth === 0 && c.id === id ? { ...c, durationFrames: c.durationFrames + (frames - end) } : c))
     }
   }
+  // Image clips point at the supplied file as a data: URL: the project stays whole when it is downloaded, and the
+  // export worker never has to resolve a path relative to the page. A CSS background image has no native clip.
+  if (assetNames.size) {
+    const { map } = await loadAssets(assetNames, assetBase)
+    project = mapProject(project, (clip) => {
+      const name = clip.type === 'image' && typeof clip.src === 'string' ? assetName(clip.src) : undefined
+      const data = name ? map.get(name) : undefined
+      return data ? { ...clip, src: data } : clip
+    })
+    for (const el of mountedEls) {
+      const bg = `${el.getAttribute('style') ?? ''} ${getComputedStyle(el).backgroundImage}`
+      const names = assetNamesInCss(bg, assetBase)
+      if (names.length) addUnconverted(`${describe(el)} url(assets/${names[0]})`, 'a CSS background image is not converted (it shows in Preview and Export); put the image in an <img> to edit it as an image clip')
+    }
+  }
+  // Sound cues (data-sfx, TICKET-PF-13): one audio clip per cue at its time, on a new "Sound effects" track, the same
+  // clips the page's preview and export play.
+  const sfxRead = cuesFromPage(player.stageEl, anims, page.durationSeconds)
+  const sounds: SoundEntry[] = []
+  if (sfxRead.cues.length) {
+    const added = addSfxClips(project, sfxRead.cues.map((c) => ({ at: c.at, cue: c.cue, gain: c.gain })))
+    const before = new Set(Object.keys(project.clips))
+    project = { ...added.project, clips: Object.fromEntries(Object.entries(added.project.clips).map(([id, list]) => [id, before.has(id) ? list : list.map((c) => ({ ...c, name: sfxClipName(c) }))])) }
+    for (const [id, list] of Object.entries(project.clips)) {
+      if (before.has(id)) continue
+      for (const c of list) sounds.push({ name: c.name, at: c.startFrame / fps, frame: c.startFrame, frames: c.durationFrames })
+    }
+    for (const i of added.issues) notes.push({ where: i.where, message: i.message })
+  }
+  for (const n of sfxRead.notes) notes.push(n)
   const elementsConverted = new Set<string>(convertedKeys)
   const report: ConversionReport = {
     elements: elementsConverted.size,
@@ -1480,6 +1529,7 @@ export async function convertPage(
     sampledList,
     unconverted,
     notes,
+    sounds,
     ms: Math.round(performance.now() - started),
   }
   const converted: Converted = { title, kind: 'page', project, fps, stage, issues: [] }
@@ -1520,6 +1570,10 @@ export function reportText(title: string, r: ConversionReport): string {
   if (r.unconverted.length) {
     lines.push('', 'Could not convert:')
     for (const u of r.unconverted) lines.push(`  ${u.where}: ${u.message}`)
+  }
+  if (r.sounds.length) {
+    lines.push('', `Sound: ${r.sounds.length} cue${r.sounds.length === 1 ? '' : 's'} -> audio clips on the "Sound effects" track:`)
+    for (const s of r.sounds) lines.push(`  ${s.name} at ${s.at.toFixed(2)} s (frame ${s.frame})`)
   }
   if (r.notes.length) {
     lines.push('', 'Notes:')

@@ -42,6 +42,23 @@ Every spec issue or refusal is listed verbatim in the Issues panel (with Copy is
   `apps/web/styles/globals.css`, inlined into `index.html`. Dark is the Elah look; light is a variant.
 - Save: `window.claude.downloads.save({ filename, data: Blob })` when present, else an `<a download>`.
 
+## Links
+
+The header links (Try Elah, Star on GitHub, Made with Elah) are plain `<a target="_blank">` links, so they work where the viewer blocks `window.open`. Every URL lives in `src/links.ts`; change `TRY_ELAH_URL` there to repoint Try Elah, whose UTM tags are fixed strings built by `tryElahHref`. The page makes no network call, so the GitHub link shows no star count.
+
+## Your own footage
+
+"Add footage" (header) or dropping files on the page adds video and audio clips at the playhead through the engine's own
+import (`importFiles`, an object URL, then `TimelineEngine.addClip`). Nothing is uploaded: there is no network call and no
+`assets` capability for footage. A video clip goes on a `Footage` video lane at order 0 and keeps its own sound
+(`embeddedAudio`); video lanes draw under every elements lane, so the first clip also hides the full-length backdrop shape
+(`Background` / `stage-bg`), which the viewer can turn back on. On a programmatic video the button runs Edit first. Each clip
+carries `clip.media` with the file's name and size only (`lastModified` 0). While footage is on the timeline the project is kept
+per viewer in `localStorage`; after a reload, or for an imported project with `blob:` sources, "Reconnect your clips" matches
+dropped files by name and size. Over 3 minutes of footage shows one dismissible Try Elah line (`tryElahHref('footage')`).
+Code: `src/footageFiles.ts` (logic) and `src/Footage.tsx` (UI); the logic file is not `footage.ts` because Windows resolves
+`./Footage` and `./footage` to the same module.
+
 ## Samples
 
 `samples/<name>/elah-input.json`, served at `http://localhost:<port>/<name>/` (default `promo`): `promo` (spec),

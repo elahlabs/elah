@@ -1,7 +1,10 @@
 # Elah plugin for Claude Code
 
-Make a video or motion graphic from Claude Code. Claude writes a programmatic video (HTML + CSS motion), the plugin validates it
-with the Elah engine, and an Elah artifact opens it for preview, editing and MP4 export in the browser.
+AI drafts your video, you edit it frame by frame, all in your browser, then export an MP4. Ask Claude Code for a video or motion
+graphic; Claude writes it, the plugin checks it with the Elah engine, and an Elah artifact opens it for preview, keyframe editing
+and MP4 export.
+
+Star us on GitHub: https://github.com/elahlabs/elah
 
 This is an unofficial, open-source plugin for Claude Code from the Elah project. It is not made or endorsed by Anthropic.
 
@@ -21,14 +24,16 @@ if the skills do not show up.
 
 | Skill | Run | What it does |
 | --- | --- | --- |
-| `video` | `/elah:video a 20 second explainer on how DNS works` | Plans the beats, writes a programmatic video (HTML + CSS motion; a VideoSpec of Elah components when the brief needs sound or supplied images and audio), validates it, publishes the artifact. |
+| `video` | `/elah:video a 20 second explainer on how DNS works` | Plans the beats, writes a programmatic video (HTML + CSS motion; built from Elah components when the brief needs sound or supplied images and audio), validates it, publishes the artifact. |
 | `promo` | `/elah:promo launch video for our AI notes app, 20 s, dark, punchy` | Same flow with a fixed 15 to 30 second launch structure: hook, problem, product, three features, call to action. |
+| `social` | `/elah:social 15s teaser for a running app` | A vertical 9:16 cut for Reels, Shorts and TikTok (1:1 when you say feed), with phone safe zones. Otherwise the same flow as `video`. |
+| `revise` | `/elah:revise make it 10 seconds and Poster Shout` | Reopens the last video and changes it as asked (shorter, another look, new wording, vertical), keeping your edits, and updates the same artifact link. |
+| `brand` | `/elah:brand #1e90ff` (or a logo file, or a website URL) | Saves a brand kit in `.elah/brand.json` (palette, two bundled fonts, look, and the logo you supply) that every later video in that folder uses unless your brief says otherwise. |
 
-Both start from a short brief. Claude reads `reference/director.md`, picks length, shape, format, taste and palette for you (and says so), writes a beat sheet, builds the video, then reviews it against the validator before publishing. Overrides go in the brief: `vertical`, `30s`, `style: editorial`, `format: data-story`, `calm` or `bold`, `medium: spec`.
+All of them start from a short brief. Claude reads `reference/director.md`, picks length, shape, format, look and palette for you (and says so), writes a beat sheet, builds the video, then reviews it against the validator before publishing. Overrides go in the brief: `vertical`, `30s`, `look: Gallery Serif`, `format: data story`, `calm` or `bold`. Ask for "options" (or "directions", "treatments") and Claude first offers three one-line treatments and builds the one you pick. The four looks are Midnight Glass, Gallery Serif, Poster Shout and Clean Sheet; the formats are Launch, Explainer, Data story, Words in motion, Logo sting and Social. The old words still work: `style:`, `taste:`, the old ids (`dark-glass`, `editorial`, `brutalist`, `minimal`), "kinetic type" and "logo reveal".
 
-Medium: a **programmatic video** by default (HTML + CSS motion: one self-contained document with real CSS animations, no scripts, no network, the twelve bundled fonts; it draws backdrop blur, blend modes, rich gradients and SVG art, and a short graphic is programmatic motion). Claude writes a **VideoSpec** (Elah components, presets, sound, supplied images and audio) instead only when the brief needs a soundtrack or sound effects, supplied image or audio URLs, or asks for Elah components, and says why in one line. Say `medium: programmatic` or `medium: spec` to force either. The validator checks a programmatic video at string level (refusals name the substitute; warnings cover animation durations, fill modes, missing `@keyframes`, scenes); the artifact does the DOM-level checks and converts the animations to native keyframes when you press Edit.
-
-In the artifact: Preview, Edit (Animate tab, keyframes, curves), Export MP4 (rendered in your browser), Open in Elah.
+In the artifact: Preview, Edit (Animate tab, keyframes, curves), Export MP4 (rendered in your browser), Download project (an `.elah.json` file that opens in Elah Creator), and Try Elah (opens Elah Creator, where captions, background removal, voice-over, image and video generation, the AI Assistant and advanced editing live).
+While building, the plugin's `sfx-search.mjs` may contact api.openverse.org and cdn.freesound.org to fetch a CC0 sound the bundled pack lacks; the artifact itself never reaches the network.
 The plugin never renders a video itself. Without the Artifact tool the skills write `<name>.elah-input.json` and say so.
 
 ## What is inside
@@ -37,23 +42,32 @@ The plugin never renders a video itself. Without the Artifact tool the skills wr
 .claude-plugin/plugin.json      manifest (name "elah")
 skills/video/SKILL.md           the video skill
 skills/promo/SKILL.md           the promo skill
+skills/social/SKILL.md          the vertical social cut (9:16, or 1:1 for a feed)
+skills/revise/SKILL.md          change the last video and update the same artifact link
+skills/brand/SKILL.md           save a brand kit (.elah/brand.json) from a hex, a logo or a website
+reference/brand.md              the brand.json shape and how the director applies it
 reference/authoring.md          input format, VideoSpec and HTML-subset cheat sheet (the VideoSpec route)
-reference/director.md           the managing layer: brief -> defaults, format, taste, beat sheet, build, review (read first)
+reference/director.md           the managing layer: brief -> defaults, format, look, beat sheet, build, review (read first)
 reference/programmatic.md       the programmatic video route (the default): `kind: "page"` input, time rules, safe stage, fonts, what Edit converts
 reference/programmatic/         motion.md (curves, durations, stagger, transitions as CSS), example.md (a validated 6 s two-scene video), recipes.md (the formats' beats as HTML + CSS, validated together)
 reference/components.md         the 17 motion components and 6 systems, and the lint notes each one carries
 reference/themes.md             eleven ready palettes (all six tokens) and bundled font pairs
 reference/craft/                motion.md, type-and-layout.md, generators.md, review.md
-reference/formats/              launch, explainer, data-story, kinetic-type, logo-reveal, social-vertical beat tables
-reference/taste/                floor.md plus dark-glass, editorial, brutalist, minimal
+reference/formats/              launch, explainer, data-story, kinetic-type (Words in motion), logo-reveal (Logo sting), social-vertical beat tables
+reference/taste/                floor.md plus the four looks: dark-glass (Midnight Glass), editorial (Gallery Serif), brutalist (Poster Shout), minimal (Clean Sheet)
 THIRD_PARTY_NOTICES.md          the open-source guidance the craft files were adapted from
 scripts/validate.mjs            GENERATED validator bundle, plain Node: node validate.mjs <elah-input.json> [--json] [--notes] | --vocabulary
 scripts/stage.mjs               copies assets/artifact into a work folder and prints the Artifact `files` map
+scripts/sfx-search.mjs          searches Openverse for a CC0 sound the pack lacks and saves it to assets/sfx/ with credits
 scripts/validate.test.mjs       node --test file; scripts/fixtures/ its inputs
 src/validate.src.mjs            validator source
 build.mjs                       builds scripts/validate.mjs and copies artifact/dist into assets/artifact
 assets/artifact/                GENERATED copy of artifact/dist (the page, engine bundle, workers, fonts, MANIFEST.json)
 ```
+
+## Technical: the medium (expert override)
+
+Plain briefs never need this. A **programmatic video** is the default (HTML + CSS motion: one self-contained document with real CSS animations, no scripts, no network, the twelve bundled fonts; it draws backdrop blur, blend modes, rich gradients and SVG art, and a short graphic is programmatic motion). Claude writes a **VideoSpec** (Elah components, presets, sound, supplied images and audio) instead only when the brief needs a soundtrack or sound effects, supplied image or audio URLs, or asks for Elah components, and says what was built, in plain words. An expert can write `medium: programmatic` or `medium: spec` in the brief to force either. The validator checks a programmatic video at string level (refusals name the substitute; warnings cover animation durations, fill modes, missing `@keyframes`, scenes); the artifact does the DOM-level checks and converts the animations to native keyframes when you press Edit.
 
 ## Craft sources
 

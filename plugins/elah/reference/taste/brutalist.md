@@ -1,4 +1,4 @@
-# Taste: brutalist
+# Look: Poster Shout (`brutalist`)
 
 Read `floor.md` too. Raw and structural: sport, streetwear, a manifesto, a data story with attitude, gaming, a loud announcement.
 Rigid grid, extreme type contrast, mono labels, hard cuts. Numbers are starting values; adapt them to the clip. The motion block and

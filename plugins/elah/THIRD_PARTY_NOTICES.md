@@ -32,3 +32,28 @@ The Elah plugin is an unofficial plugin and is not endorsed by any of the projec
 ## Bundled in `assets/artifact/`
 
 The twelve bundled fonts ship with their SIL Open Font Licence texts in `assets/artifact/fonts/<family>/OFL.txt`.
+
+The sixteen sound effects in `assets/artifact/sfx/` (eight cue words, two variants each) are Freesound sounds released under Creative Commons 0 (http://creativecommons.org/publicdomain/zero/1.0/), which requires no attribution; they are credited anyway. Each is the Freesound preview mp3 of the sound. Every file's title, author, source page, size and sha256 is in `assets/artifact/sfx/sfx.json` and `LICENSES.md`.
+
+| Cue | Title | Author | Source page |
+| --- | --- | --- | --- |
+| whoosh | digital_whoosh_hard.wav | ludvique | https://freesound.org/people/ludvique/sounds/71851/ |
+| whoosh | Whoosh.wav | huw2k8 | https://freesound.org/people/huw2k8/sounds/459941/ |
+| swoosh | swoosh-1.mp3 | lesaucisson | https://freesound.org/people/lesaucisson/sounds/585257/ |
+| swoosh | swoosh_v2 | migoreng1 | https://freesound.org/people/migoreng1/sounds/786514/ |
+| pop | Pop 4 | quatricise | https://freesound.org/people/quatricise/sounds/789793/ |
+| pop | Pop sound | deraj | https://freesound.org/people/deraj/sounds/202230/ |
+| click | Click.wav | budek | https://freesound.org/people/budek/sounds/513481/ |
+| click | Videogame Menu BUTTON CLICK | Christopherderp | https://freesound.org/people/Christopherderp/sounds/342200/ |
+| tick | single-tick.wav | DeltaCode | https://freesound.org/people/DeltaCode/sounds/668355/ |
+| tick | front tick.wav | Alexsani | https://freesound.org/people/Alexsani/sounds/117280/ |
+| snap | Snap 11.mp3 | Baconation | https://freesound.org/people/Baconation/sounds/592467/ |
+| snap | Snap.aif | R_mac | https://freesound.org/people/R_mac/sounds/241152/ |
+| impact | Impact 2 | Daftrio | https://freesound.org/people/Daftrio/sounds/816738/ |
+| impact | Hit Impact | MadPanCake | https://freesound.org/people/MadPanCake/sounds/660770/ |
+| chime | chime_ping.wav | Asteroiderer | https://freesound.org/people/Asteroiderer/sounds/442923/ |
+| chime | Chime.wav | Psykoosiossi | https://freesound.org/people/Psykoosiossi/sounds/398661/ |
+
+## Searched sounds
+
+Sounds fetched with `scripts/sfx-search.mjs` come from Openverse (https://openverse.org), CC0 1.0 only. Each carries its own credit (title, author, source page, licence, length, size, sha256) in `assets/sfx/credits.json` in the work folder where it was downloaded. None is bundled with the plugin.

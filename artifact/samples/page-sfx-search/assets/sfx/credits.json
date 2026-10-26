@@ -1,0 +1,17 @@
+{
+  "sounds": [
+    {
+      "file": "camera-shutter.mp3",
+      "path": "assets/sfx/camera-shutter.mp3",
+      "query": "camera shutter",
+      "title": "Camera Shutter",
+      "author": "animationIsaac",
+      "sourcePage": "https://freesound.org/people/animationIsaac/sounds/195826",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "seconds": 1.131,
+      "bytes": 30265,
+      "sha256": "058896628109bd3cac20f740778a2485da40a6cb2cca9c90a96e8877edcadf48"
+    }
+  ]
+}

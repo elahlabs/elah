@@ -1,7 +1,7 @@
 {
   "name": "elah",
   "version": "0.1.0",
-  "description": "Make a programmatic video or motion graphic with Elah from Claude Code: Claude writes it as HTML + CSS motion, the plugin validates it, and an Elah artifact previews, edits and exports it as MP4.",
+  "description": "Claude drafts your video or motion graphic, you preview it, edit it frame by frame and export an MP4, all in your browser, with Elah. Written as programmatic video (HTML + CSS motion), validated by the plugin.",
   "author": {
     "name": "Elah"
   },
