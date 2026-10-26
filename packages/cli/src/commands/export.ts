@@ -83,6 +83,7 @@ export async function runExportForProject(
         onEncoder: (description) => {
           encodedWith = description
         },
+        onStatus: (message) => stderr(`${message}\n`),
       }
     )
     stderr(`\nwrote ${args.out} (${result.sizeBytes} bytes, encoded by ${encodedWith})\n`)

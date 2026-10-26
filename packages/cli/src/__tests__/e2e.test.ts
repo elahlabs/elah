@@ -168,6 +168,59 @@ describe.runIf(process.env.ELAH_E2E === '1' && !!process.env.ELAH_FFMPEG)(
       }
     }, 240_000)
 
+    it('converts sources Chrome cannot decode (ProRes, AVI, AC-3 MKV, MPEG-TS) and keeps their sound', async () => {
+      const { execFileSync } = await import('node:child_process')
+      const { writeFileSync } = await import('node:fs')
+      const { buildProject } = await import('../lib/build-project')
+      const { exportProject } = await import('../lib/export-project')
+      const ffmpeg = process.env.ELAH_FFMPEG!
+      const dir = mkdtempSync(join(tmpdir(), 'elah-e2e-convert-'))
+      const sources: Record<string, string[]> = {
+        'prores.mov': ['-c:v', 'prores_ks', '-c:a', 'pcm_s16le'],
+        'mpeg4.avi': ['-c:v', 'mpeg4', '-q:v', '3', '-c:a', 'libmp3lame'],
+        'ac3.mkv': ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'ac3'],
+        'stream.ts': ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac'],
+      }
+      for (const [name, codecArgs] of Object.entries(sources)) {
+        execFileSync(ffmpeg, [
+          '-hide_banner', '-loglevel', 'error', '-y',
+          '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000',
+          '-t', '3', ...codecArgs, join(dir, name),
+        ])
+      }
+
+      for (const name of Object.keys(sources)) {
+        const spec = {
+          fps: 30,
+          stage: { width: 640, height: 360 },
+          assets: { f: `./${name}` },
+          clips: [
+            { track: 'video', asset: 'f', start: 0, duration: 2, sourceStart: 0.5 },
+            { track: 'audio', asset: 'f', start: 0, duration: 2, sourceStart: 0.5 },
+          ],
+        }
+        writeFileSync(join(dir, `${name}.json`), JSON.stringify(spec))
+        const { project } = await buildProject({ spec, baseDir: dir })
+        const status: string[] = []
+        const warnings: string[] = []
+        const out = join(dir, `${name}.mp4`)
+        await exportProject(
+          { project, projectDir: dir, outPath: out },
+          { onStatus: (m) => status.push(m), onWarning: (m) => warnings.push(m) }
+        )
+        expect(status.some((m) => m.includes('converted in')), name).toBe(true)
+        expect(warnings, name).toEqual([])
+
+        // The sound survived: a 440 Hz tone, not the -91 dB silence of a skipped clip.
+        const { spawnSync } = await import('node:child_process')
+        const stderr = String(
+          spawnSync(ffmpeg, ['-hide_banner', '-i', out, '-af', 'volumedetect', '-vn', '-f', 'null', '-']).stderr
+        )
+        const meanDb = Number(/mean_volume: (-?[\d.]+) dB/.exec(stderr)?.[1] ?? NaN)
+        expect(meanDb, `${name} audio level`).toBeGreaterThan(-40)
+      }
+    }, 300_000)
+
     it('auto falls back to Chrome with one warning when ffmpeg is missing', async () => {
       const { exportProject } = await import('../lib/export-project')
       const { readProject } = await import('../lib/project-io')

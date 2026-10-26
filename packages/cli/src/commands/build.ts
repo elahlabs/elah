@@ -39,7 +39,7 @@ export async function runBuild(args: BuildArgs): Promise<void> {
   }
   const specDir = dirname(specPath)
 
-  const { project, summary } = await buildProject({ spec: parsed, baseDir: specDir })
+  const { project, summary } = await buildProject({ spec: parsed, baseDir: specDir, ffmpegPath: args.ffmpeg })
   process.stderr.write(
     `built project: ${summary.tracks} tracks, ${summary.clips} clips, ` +
       `${summary.totalFrames} frames @ ${summary.fps}fps\n`

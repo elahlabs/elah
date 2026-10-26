@@ -10,6 +10,7 @@ import { locateFfmpeg, type FfmpegBinary } from './ffmpeg/locate'
 import { pickEncoder, type EncoderChoice, type EncoderDecision } from './ffmpeg/select'
 import { createFfmpegEncodeSink, type FfmpegEncodeSink } from './ffmpeg/sink'
 import { DEFAULT_AUDIO_BITRATE, DEFAULT_VIDEO_BITRATE } from './ffmpeg/encoder'
+import { createSourcePreparer } from './ffmpeg/prepare'
 import { resolveOutputFormat, type Container, type OutputFormat, type VideoCodec } from './format'
 
 export { CODECS, type VideoCodec } from './format'
@@ -47,6 +48,8 @@ export interface RenderCallbacks {
   onLog?: (line: string) => void
   /** Which encoder this render uses, e.g. 'ffmpeg (libx264)' or 'chrome'. Called once, before rendering. */
   onEncoder?: (description: string) => void
+  /** Progress the user should see before frames start, e.g. converting a source Chrome cannot decode. */
+  onStatus?: (message: string) => void
 }
 
 export interface RenderSession {
@@ -71,6 +74,10 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
   // re-spawn a missing binary on every request.
   let ffmpegPromise: Promise<FfmpegBinary | Error> | undefined
   const warnedFallbacks = new Set<string>()
+  const getFfmpeg = (): Promise<FfmpegBinary | Error> =>
+    (ffmpegPromise ??= locateFfmpeg({ ffmpegPath: args.ffmpegPath }).catch((err: Error) => err))
+  // Sources Chrome cannot decode, converted once per session (see ffmpeg/prepare.ts).
+  const preparer = createSourcePreparer(getFfmpeg)
 
   async function decideEncoder(
     format: OutputFormat,
@@ -78,10 +85,7 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
     callbacks: RenderCallbacks
   ): Promise<EncoderDecision> {
     const choice = options.encoder ?? 'auto'
-    if (choice !== 'chrome') {
-      ffmpegPromise ??= locateFfmpeg({ ffmpegPath: args.ffmpegPath }).catch((err: Error) => err)
-    }
-    const decision = pickEncoder(choice, format, choice === 'chrome' ? undefined : await ffmpegPromise)
+    const decision = pickEncoder(choice, format, choice === 'chrome' ? undefined : await getFfmpeg())
     if (decision.encoder === 'chrome' && decision.fallbackReason && !warnedFallbacks.has(decision.fallbackReason)) {
       warnedFallbacks.add(decision.fallbackReason)
       callbacks.onWarning?.(`encoding with Chrome instead of ffmpeg: ${decision.fallbackReason}`)
@@ -119,7 +123,7 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
       const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
       const format = resolveOutputFormat({ container: options.container, videoCodec: options.videoCodec })
       const token = randomUUID()
-      const { exportProject, media } = prepareMedia(project, projectDir, token)
+      const { exportProject, media, decodeRoutes } = prepareMedia(project, projectDir, token)
       const decision = await decideEncoder(format, options, callbacks)
 
       let encodeSink: FfmpegEncodeSink | undefined
@@ -150,6 +154,9 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
         await encodeSink?.dispose()
         throw err
       }
+      // A tab crash or disconnect can reject this before anything awaits it
+      // (while sources are still being converted); the real handler is below.
+      server.result.catch(() => {})
 
       let browser: Browser
       try {
@@ -165,20 +172,32 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
 
       let page: Awaited<ReturnType<Browser['newPage']>> | undefined
       try {
-        // Attach the timeout wrapper (and a no-op catch) immediately: the page
-        // can POST /error before page.goto() resolves, and an unhandled
-        // rejection here would crash the process past the cleanup in `finally`.
+        page = await browser.newPage()
+        page.on('crash', () => server.fail(new CliError('Browser tab crashed during export')))
+        page.on('console', (msg) => callbacks.onLog?.(`[browser] ${msg.text()}`))
+        page.on('pageerror', (err) => callbacks.onWarning?.(`[browser:pageerror] ${err.message}`))
+
+        // Before the export: ask this browser about every video/audio source
+        // and point the ones it cannot decode at ffmpeg-converted copies. The
+        // check needs a page on the harness origin (WebCodecs is secure-context only).
+        if (decodeRoutes.size > 0) {
+          await page.goto(`${server.origin}/blank`)
+          await preparer.prepare(page, media, decodeRoutes, {
+            onStatus: callbacks.onStatus,
+            onWarning: callbacks.onWarning,
+          })
+        }
+
+        // The timeout covers the export, not the conversions above. Attach it
+        // (and a no-op catch) before page.goto(): the page can POST /error
+        // before goto resolves, and an unhandled rejection here would crash
+        // the process past the cleanup in `finally`.
         const result = withTimeout(
           server.result,
           timeoutMs,
           `Export timed out after ${timeoutMs / 1000}s — pass a higher timeout to raise the limit`
         )
         result.catch(() => {})
-
-        page = await browser.newPage()
-        page.on('crash', () => server.fail(new CliError('Browser tab crashed during export')))
-        page.on('console', (msg) => callbacks.onLog?.(`[browser] ${msg.text()}`))
-        page.on('pageerror', (err) => callbacks.onWarning?.(`[browser:pageerror] ${err.message}`))
 
         const renderOptions = {
           encoder: decision.encoder,
@@ -213,6 +232,7 @@ export function createRenderSession(args: RenderSessionArgs = {}): RenderSession
       }
       browserPromise = undefined
       lastBrowser = undefined
+      await preparer.dispose()
     },
   }
 }
@@ -226,9 +246,11 @@ export function prepareMedia(
   project: Project,
   projectDir: string,
   token: string
-): { exportProject: Project; media: Map<string, string> } {
+): { exportProject: Project; media: Map<string, string>; decodeRoutes: Set<string> } {
   const exportProject = structuredClone(project)
   const media = new Map<string, string>()
+  /** Routes read by video/audio clips — the ones whose codecs Chrome must decode. */
+  const decodeRoutes = new Set<string>()
   const routeBySource = new Map<string, string>()
 
   // A compound clip holds a whole nested project whose media needs the same
@@ -251,11 +273,12 @@ export function prepareMedia(
           media.set(route, resolved)
         }
         clip.src = route
+        if (clip.type === 'video' || clip.type === 'audio') decodeRoutes.add(route)
       }
     }
   }
   visit(exportProject)
-  return { exportProject, media }
+  return { exportProject, media, decodeRoutes }
 }
 
 /** Clip types whose `src` is a media file the harness must serve. */

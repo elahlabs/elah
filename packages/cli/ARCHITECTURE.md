@@ -37,7 +37,7 @@ bin.ts                       argv dispatch, usage, exit codes, lazy command impo
     ├── flags.ts timecode.ts small parsers (positive ints, SS:FF timecodes)
     ├── project-io.ts        read/validate/write Project JSON, media src resolution
     ├── spec.ts              build-spec validation + spec → Project via engine
-    ├── probe.ts             media duration/dimensions via mediabunny (pure Node)
+    ├── probe.ts             media duration/dimensions via mediabunny (pure Node); ffmpeg for AVI/WMV/FLV
     ├── build-project.ts     orchestrates: validate spec → probe assets → build
     ├── browser.ts           Chromium discovery + launch (playwright-core)
     ├── harness.ts           the in-page export harness (HTML/JS as strings)
@@ -46,11 +46,13 @@ bin.ts                       argv dispatch, usage, exit codes, lazy command impo
     ├── export-project.ts    one-shot render: session → render → write file
     ├── serve.ts             HTTP render service: routes, semaphore, 4xx/5xx mapping
     ├── format.ts            container + codec, validated against core's matrix
-    └── ffmpeg/              the ffmpeg encoder (ported from task-engine's media-export)
+    └── ffmpeg/              ffmpeg: encoder (ported from task-engine's media-export) + source conversion
         ├── locate.ts        --ffmpeg → ELAH_FFMPEG → PATH, 4.4 floor, encoder list
         ├── select.ts        auto | ffmpeg | chrome → a decision (pure)
         ├── encoder.ts       PNG-on-stdin + f32le audio → MP4 process, backpressure
         ├── sink.ts          the harness server's EncodeSink for one render
+        ├── transcode.ts     probe, decode-check JS, conversion plan + argv (pure)
+        ├── prepare.ts       per-session: check each source, convert, cache
         └── spawn.ts         stderr tail
 ```
 
@@ -204,6 +206,43 @@ Why PNG, not raw pixels: core's only streaming frame output is the
 `png-sequence` FrameSink, so this needs no core change. The cost is the
 in-page PNG compression, which makes this path slower than Chrome's encoder
 today; a raw-RGBA sink in core would remove it.
+
+#### Converting sources Chrome cannot decode
+
+`prepareMedia` marks the routes video/audio clips read (`decodeRoutes`).
+Before the harness loads, the render opens `/blank` on the harness origin
+(WebCodecs needs a secure context) and the session's
+[SourcePreparer](./src/lib/ffmpeg/prepare.ts) settles each source:
+
+```
+probeSource (Node, mediabunny)   container, primary tracks, decoder configs,
+                                 first video timestamp; container null = unreadable
+page.evaluate(check JS)          VideoDecoder / AudioDecoder.isConfigSupported
+                                 on those exact configs
+planConversion (pure)            null → serve the source as it is; else which
+                                 streams to re-encode vs copy, and the rebase
+pickIntermediate (once)          H.264/AAC MP4 if this browser decodes it, else
+                                 VP9/Opus WebM; must also be writable by ffmpeg
+runTranscode                     ffmpeg to the session's scratch dir; the
+                                 server's media map now points the route at it
+```
+
+Two measured facts shape `planConversion`
+([transcode.ts](./src/lib/ffmpeg/transcode.ts)). Core decodes audio with
+Web Audio's `decodeAudioData` on the whole file, which cannot read MPEG-TS
+even when its AAC decodes, hence the container allowlist. And core's
+export reads source time as the container's absolute timestamps, while
+ffmpeg's default rebase moves the *earliest* stream to 0. A TS whose audio
+starts 21 ms before its video then converts one frame late, so a conversion
+with a known first video timestamp runs `-copyts -output_ts_offset -<start>
+-avoid_negative_ts disabled`: first frame at 0, audio shifted with it.
+
+Conversions are cached for the session by path + size + mtime (URL for
+remote sources). Concurrent renders share one in-flight conversion, a
+failure is not cached, and `session.close()` deletes the scratch dir. The
+render's timeout starts after preparation, so a long conversion is not
+counted against the export. With no ffmpeg, or no intermediate both sides
+can handle, the source is served unchanged with a warning.
 
 ## RenderSession: one browser, N renders
 

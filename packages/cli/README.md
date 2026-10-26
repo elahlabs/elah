@@ -91,6 +91,35 @@ Today the ffmpeg path is slower than Chrome's encoder (8.8 s against 3.5 s for 5
 on the machine it was measured on): each frame is compressed to PNG in the page before ffmpeg
 sees it. ffmpeg's own encode was 1.3 s of that.
 
+### Sources Chrome cannot decode
+
+Before an export, the CLI asks the browser it is about to use whether it can decode each video
+and audio source, using the exact stream (WebCodecs `isConfigSupported` on the track's decoder
+config). When it cannot, and ffmpeg is installed, the source is converted first:
+
+| Source | Why Chrome fails | What ffmpeg does |
+| --- | --- | --- |
+| ProRes `.mov` | no ProRes decoder | re-encodes the video, converts PCM audio to AAC |
+| HEVC, where Chrome has no HEVC decoder (most Linux, Chromium) | no decoder | re-encodes the video, copies AAC |
+| AVI, WMV, FLV | container cannot be read | re-encodes everything |
+| `.mkv` with AC-3/DTS audio | no audio decoder | copies the video, converts the audio |
+| MPEG-TS (`.ts`) | Web Audio cannot read the container | remuxes (no re-encode) |
+
+```
+footage.mov: Chrome cannot decode prores video; converting to H.264/AAC MP4 with ffmpeg
+footage.mov: converted in 0.3s
+```
+
+The converted copy is H.264/AAC MP4 (`libx264 -crf 14`, a near-lossless scratch file), or
+VP9/Opus WebM for a browser without H.264. Frame timing is passed through untouched, and every
+stream is shifted so the first video frame is at 0 (MPEG-TS often starts at ~1.4 s). Copies live
+in a temporary directory until the export (or `elah serve`) ends; `serve` converts each source
+once. `build` also reads AVI/WMV/FLV durations through ffmpeg.
+
+Without ffmpeg, the CLI warns and hands the source to Chrome as before (an undecodable video
+fails the export; undecodable audio exports as silence). Not handled: HDR sources are converted
+to 8-bit SDR without tone mapping, and an alpha channel (ProRes 4444) is dropped.
+
 ---
 
 ## The build spec — the AI-generation contract

@@ -50,6 +50,7 @@ export async function runServe(args: ServeArgs): Promise<void> {
     concurrency,
     mediaRoot,
     session,
+    ffmpegPath: args.ffmpeg,
     render: {
       container: format.container,
       videoCodec: format.videoCodec,

@@ -244,6 +244,8 @@ export interface ServeOptions {
   /** Server-level codec/height/bitrate/timeout applied to every render. */
   render: RenderJobOptions
   session: RenderSession
+  /** ffmpeg for probing spec assets mediabunny cannot read; pass the session's --ffmpeg. */
+  ffmpegPath?: string
   maxBodyBytes?: number
   log?: (line: string) => void
   verbose?: boolean
@@ -260,10 +262,12 @@ export async function startServe(options: ServeOptions): Promise<ServeHandle> {
   const lastDecile = new Map<string, number>()
 
   const deps: ServeHandlerDeps = {
-    buildSpec: (spec) => buildProject({ spec, baseDir: options.mediaRoot }).then((r) => r.project),
+    buildSpec: (spec) =>
+      buildProject({ spec, baseDir: options.mediaRoot, ffmpegPath: options.ffmpegPath }).then((r) => r.project),
     renderProject: (project, jobId) =>
       options.session.render(project, options.mediaRoot, options.render, {
         onWarning: (message) => log(`[job ${jobId}] warning: ${message}`),
+        onStatus: (message) => log(`[job ${jobId}] ${message}`),
         ...(options.verbose
           ? {
               onLog: (line: string) => log(`[job ${jobId}] ${line}`),

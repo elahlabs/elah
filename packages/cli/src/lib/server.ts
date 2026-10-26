@@ -295,6 +295,13 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
       res.end(HARNESS_HTML)
       return
     }
+    if (path === '/blank') {
+      // An empty page on this origin, for the decode checks that run before
+      // the harness loads (WebCodecs needs a secure context; 127.0.0.1 is one).
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<!doctype html><meta charset="utf-8"><title>elah</title>')
+      return
+    }
     if (path === '/harness.js') {
       res.writeHead(200, { 'content-type': 'text/javascript' })
       res.end(harnessJs(args.token))
