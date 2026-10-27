@@ -42,7 +42,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -105,7 +105,7 @@ function Toolbar() {
           <P>
             Each hook is a React view over one of core&apos;s vanilla Zustand stores. Pass a selector so a component re-renders only for the slice it reads. A trim on track 3 never re-renders a component subscribed to track 7.
           </P>
-          <div className="mb-4 overflow-hidden rounded-md border border-outline-variant">
+          <div className="mb-4 overflow-hidden border border-outline-variant">
             {STORES.map(([hook, store, desc], i) => (
               <div
                 key={hook}
@@ -207,7 +207,7 @@ function ClipStatus({ clipId }: { clipId: string }) {
 }`}
           />
           <P>
-            <C>useTextStylePresetsStore</C> binds <C>textStylePresetsStore</C>, the user-saved text looks. The built-in ones are the separate <C>BUILT_IN_TEXT_STYLE_PRESETS</C> array. See <Link href="/docs/text-templates-and-motion#style-presets" className="text-primary hover:underline">Text Templates &amp; Motion</Link>.
+            <C>useTextStylePresetsStore</C> binds <C>textStylePresetsStore</C>, the user-saved text looks. The built-in ones are the separate <C>BUILT_IN_TEXT_STYLE_PRESETS</C> array. See <Link href="/docs/text-templates-and-motion#style-presets" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Text Templates &amp; Motion</Link>.
           </P>
           <CodeBlock
             language="tsx"
@@ -249,7 +249,7 @@ playbackStore.getState().togglePlayPause()`}
             The stores are only mirrors. Something has to feed them, and in React that is <C>EditorProvider</C>. Outside React you create the engines yourself and call <C>tracksStore.getState().sync(project, {'{ canUndo, canRedo }'})</C> and <C>transitionsStore.getState().sync(project)</C> from <C>engine.on(&apos;change&apos;, ...)</C>. Or skip the stores entirely and read <C>engine.getProject()</C> and subscribe with <C>engine.on</C>, which is all a headless script needs.
           </P>
           <P>
-            For a typed view of the whole data model see <Link href="/docs/api#types" className="text-primary hover:underline">API Reference: Types</Link>. The same <C>TimelineEngine</C> runs unchanged in Node and Web Workers, which is how <Link href="/docs/cli" className="text-primary hover:underline">@elah/cli</Link> renders projects server-side.
+            For a typed view of the whole data model see <Link href="/docs/api#types" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">API Reference: Types</Link>. The same <C>TimelineEngine</C> runs unchanged in Node and Web Workers, which is how <Link href="/docs/cli" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/cli</Link> renders projects server-side.
           </P>
         </section>
       </article>

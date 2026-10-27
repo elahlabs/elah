@@ -5,6 +5,11 @@ import { Footer } from '@/components/marketing/Footer'
 import { PageHeader } from '@/components/site/PageHeader'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { MotionBindingDemo } from '@/components/motion/MotionBindingDemo'
+import {
+  ButtonLink, Slate, cardBody, cardLight, cardTitle, container, h2, lead, sectionY,
+} from '@/components/eb'
+
+const textLink = 'text-on-surface underline decoration-primary underline-offset-4 hover:bg-surface-container'
 
 export const metadata: Metadata = {
   title: 'Motion',
@@ -59,6 +64,17 @@ const capabilities: { title: string; text: string; code: string; note?: string }
   },
 ]
 
+function SectionHead({ id, title, children }: { id: string; title: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex max-w-[900px] flex-col gap-5">
+      <h2 id={id} className={h2}>
+        {title}
+      </h2>
+      {children ? <div className={`${lead} max-w-[640px]`}>{children}</div> : null}
+    </div>
+  )
+}
+
 export default function MotionPage() {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
@@ -74,74 +90,82 @@ export default function MotionPage() {
           }
         >
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/playground/motion" className="bg-primary px-5 py-2.5 text-sm font-medium text-on-primary">
+            <ButtonLink href="/playground/motion" size="sm">
               Try the motion playground
-            </Link>
-            <Link href="/docs/motion" className="border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container">
+            </ButtonLink>
+            <ButtonLink href="/docs/motion" variant="secondary" size="sm">
               Read the docs
-            </Link>
+            </ButtonLink>
           </div>
         </PageHeader>
 
-        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6" aria-labelledby="binding">
-          <h2 id="binding" className="mb-2 text-2xl font-semibold tracking-tight text-on-surface">
-            The motion is bound to the timeline
-          </h2>
-          <p className="mb-6 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-            The same animation, three ways: the source you write, the keys it lands as, and the clip on a track. Hover a row in Keys to jump to that key. The same project plays in the preview and exports to MP4 in the browser.
-          </p>
-          <MotionBindingDemo />
-        </section>
-
-        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6" aria-labelledby="capabilities">
-          <h2 id="capabilities" className="mb-6 text-2xl font-semibold tracking-tight text-on-surface">
-            Capabilities
-          </h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {capabilities.map((c) => (
-              <article key={c.title} className="flex min-w-0 flex-col gap-3 border border-outline-variant bg-surface-low p-5">
-                <h3 className="text-base font-semibold text-on-surface">{c.title}</h3>
-                <p className="text-sm leading-relaxed text-on-surface-variant">
-                  {c.text} {c.note}
-                </p>
-                <div className="min-w-0 overflow-x-auto">
-                  <CodeBlock language="typescript" code={c.code} />
-                </div>
-              </article>
-            ))}
+        <section className={`${container} pt-12 ${sectionY}`} aria-labelledby="binding">
+          <Slate n={1} label="Binding" kicker="Source · Keys · Clip" />
+          <div className="flex flex-col gap-10 pt-10">
+            <SectionHead id="binding" title="The motion is bound to the timeline">
+              The same animation, three ways: the source you write, the keys it lands as, and the clip on a track. Hover a row in Keys to jump to that key. The same project plays in the preview and exports to MP4 in the browser.
+            </SectionHead>
+            <MotionBindingDemo />
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6" aria-labelledby="model">
-          <h2 id="model" className="mb-2 text-2xl font-semibold tracking-tight text-on-surface">
-            From a model
-          </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-            A model writes a VideoSpec or an HTML scene. Because Elah converts it into ordinary clips and keyframes, the output stays editable: you can inspect, retime, split and diff it like any other data. Both layers are experimental. See{' '}
-            <Link href="/docs/agents" className="text-primary hover:underline">For AI agents</Link> and{' '}
-            <Link href="/docs/scenes" className="text-primary hover:underline">HTML scenes and VideoSpec</Link>.
-          </p>
+        <section className={`${container} ${sectionY}`} aria-labelledby="capabilities">
+          <Slate n={2} label="Capabilities" />
+          <div className="flex flex-col gap-10 pt-10">
+            <SectionHead id="capabilities" title="Capabilities" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {capabilities.map((c) => (
+                <article key={c.title} className={`${cardLight} min-w-0`}>
+                  <h3 className={cardTitle}>{c.title}</h3>
+                  <p className={cardBody}>
+                    {c.text} {c.note}
+                  </p>
+                  <div className="min-w-0 overflow-x-auto">
+                    <CodeBlock language="typescript" code={c.code} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6" aria-labelledby="export">
-          <h2 id="export" className="mb-2 text-2xl font-semibold tracking-tight text-on-surface">
-            Export
-          </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-            Export to MP4 runs in the browser, in Chrome or Edge. There is no render server, so no render bill, and your footage is never uploaded.
-          </p>
+        <section className={`${container} ${sectionY}`} aria-labelledby="model">
+          <Slate n={3} label="Model" kicker="Experimental" />
+          <div className="pt-10">
+            <SectionHead id="model" title="From a model">
+              A model writes a VideoSpec or an HTML scene. Because Elah converts it into ordinary clips and keyframes, the output stays editable: you can inspect, retime, split and diff it like any other data. Both layers are experimental. See{' '}
+              <Link href="/docs/agents" className={textLink}>For AI agents</Link> and{' '}
+              <Link href="/docs/scenes" className={textLink}>HTML scenes and VideoSpec</Link>.
+            </SectionHead>
+          </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6" aria-labelledby="limits">
-          <h2 id="limits" className="mb-2 text-2xl font-semibold tracking-tight text-on-surface">
-            Limits
-          </h2>
-          <ul className="max-w-2xl list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>Export needs a Chromium browser (Chrome or Edge). Effects and the six newer transitions need WebGL2.</li>
-            <li>Keyframes are plain data: every key has an id you can read, write and diff. The open-source editor has no visual keyframe editor yet.</li>
-            <li>HTML scenes, VideoSpec and edit operations are experimental and may change in minor releases.</li>
-            <li>3D tilt works on media and groups, not on text or shapes.</li>
-          </ul>
+        <section className={`${container} ${sectionY}`} aria-labelledby="export">
+          <Slate n={4} label="Export" kicker="Chrome · Edge" />
+          <div className="pt-10">
+            <SectionHead id="export" title="Export">
+              Export to MP4 runs in the browser, in Chrome or Edge. There is no render server, so no render bill, and your footage is never uploaded.
+            </SectionHead>
+          </div>
+        </section>
+
+        <section className={`${container} ${sectionY}`} aria-labelledby="limits">
+          <Slate n={5} label="Limits" />
+          <div className="flex flex-col gap-8 pt-10">
+            <SectionHead id="limits" title="Limits" />
+            <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-2">
+              {[
+                'Export needs a Chromium browser (Chrome or Edge). Effects and the six newer transitions need WebGL2.',
+                'Keyframes are plain data: every key has an id you can read, write and diff. The open-source editor has no visual keyframe editor yet.',
+                'HTML scenes, VideoSpec and edit operations are experimental and may change in minor releases.',
+                '3D tilt works on media and groups, not on text or shapes.',
+              ].map((t) => (
+                <li key={t} className={cardLight}>
+                  <p className={cardBody}>{t}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       </main>
       <Footer />

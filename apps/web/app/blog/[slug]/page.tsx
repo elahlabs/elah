@@ -7,7 +7,8 @@ import { Footer } from '@/components/marketing/Footer'
 import { CodeBlock, InlineCode } from '@/components/docs/CodeBlock'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { siteConfig } from '@/config/site'
-import { posts, getPost, categoryColors, type Block } from '../posts'
+import { posts, getPost, type Block } from '../posts'
+import { btnPrimary, btnSecondary, btnSmall, container, display, label, outline, sectionY } from '@/components/eb'
 
 export function generateStaticParams() {
   return posts.map((post) => ({ slug: post.slug }))
@@ -54,14 +55,14 @@ function renderBlock(block: Block, i: number) {
         <h2
           key={i}
           id={block.id}
-          className="mb-4 mt-10 scroll-mt-24 text-xl font-semibold tracking-tight text-on-surface"
+          className={`mb-4 mt-12 scroll-mt-24 text-[32px] leading-[1] font-extrabold text-on-surface ${display}`}
         >
           {block.text}
         </h2>
       )
     case 'p':
       return (
-        <p key={i} className="mb-5 text-sm leading-relaxed text-on-surface-variant">
+        <p key={i} className="mb-5 text-[16px] leading-[26px] text-on-surface-variant">
           {renderInline(block.text)}
         </p>
       )
@@ -73,20 +74,20 @@ function renderBlock(block: Block, i: number) {
       )
     case 'note':
       return (
-        <div key={i} className="mb-5 rounded-md border border-outline-variant bg-surface-low p-4">
+        <div key={i} className={`mb-5 bg-surface-low p-4 ${outline}`}>
           {block.title && (
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">
+            <div className={`mb-1 text-on-surface ${label}`}>
               {block.title}
             </div>
           )}
-          <p className="text-xs leading-relaxed text-on-surface-variant">{renderInline(block.text)}</p>
+          <p className="text-[14px] leading-[22px] text-on-surface-variant">{renderInline(block.text)}</p>
         </div>
       )
     case 'quote':
       return (
         <blockquote
           key={i}
-          className="mb-5 border-l-2 border-primary pl-4 text-sm italic leading-relaxed text-on-surface"
+          className="mb-5 border-l-2 border-on-surface pl-4 text-[16px] italic leading-[26px] text-on-surface"
         >
           {renderInline(block.text)}
         </blockquote>
@@ -95,7 +96,7 @@ function renderBlock(block: Block, i: number) {
       return (
         <ul key={i} className="mb-5 list-disc space-y-2 pl-5">
           {block.items.map((item, j) => (
-            <li key={j} className="text-sm leading-relaxed text-on-surface-variant">
+            <li key={j} className="text-[16px] leading-[26px] text-on-surface-variant">
               {renderInline(item)}
             </li>
           ))}
@@ -137,60 +138,55 @@ export default async function BlogPostPage({
       <main id="main" className="flex-1">
         {/* Header */}
         <div className="border-b border-outline-variant bg-surface py-14">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <div className={container}>
+            <div className="max-w-3xl">
             <Link
               href="/blog"
-              className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-on-surface-variant transition-colors hover:text-on-surface"
+              className={`mb-6 inline-flex items-center gap-1.5 text-on-surface underline decoration-primary underline-offset-4 ${label}`}
             >
               <ArrowLeft className="h-3 w-3" />
               All posts
             </Link>
             <div className="mb-3 flex items-center gap-2">
-              <span
-                className={`rounded px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high'}`}
-              >
+              <span className={`bg-surface-low px-2 py-[3px] text-on-surface ${label} ${outline}`}>
                 {post.category}
               </span>
-              <span className="text-2xs text-on-surface-variant">{post.readingTime}</span>
+              <span className={`text-on-surface-variant ${label}`}>{post.readingTime}</span>
             </div>
-            <h1
-              className="text-3xl font-semibold tracking-tight text-on-surface md:text-4xl"
-            >
+            <h1 className={`m-0 text-[44px] leading-[0.95] font-extrabold tracking-[-0.3px] text-on-surface text-balance sm:text-[64px] ${display}`}>
               {post.title}
             </h1>
-            <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">{post.excerpt}</p>
-            <time dateTime={post.date} className="mt-4 block text-xs text-on-surface-variant">
+            <p className="mt-4 text-[17px] leading-[27px] text-on-surface-variant">{post.excerpt}</p>
+            <time dateTime={post.date} className={`mt-4 block text-on-surface-variant ${label}`}>
               {post.date}
             </time>
+            </div>
           </div>
         </div>
 
         {/* Body + TOC */}
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-          <div className="flex gap-12">
-            <article className="min-w-0 flex-1">
+        <div className={`${container} pt-12 ${sectionY}`}>
+          <div className="flex max-w-[1000px] gap-12">
+            <article className="min-w-0 max-w-3xl flex-1">
               {post.content.map(renderBlock)}
 
               {/* Footer CTA */}
-              <div className="mt-12 rounded-md border border-outline-variant bg-surface-low p-5">
-                <p className="text-sm text-on-surface">
+              <div className={`mt-12 bg-surface-low p-5 ${outline}`}>
+                <p className="text-[16px] text-on-surface">
                   Building something with browser-native video?
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">
+                <p className="mt-1 text-[14px] leading-[22px] text-on-surface-variant">
                   Try the SDK, read the docs, or join the conversation.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Link
-                    href="/docs/getting-started"
-                    className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover"
-                  >
+                  <Link href="/docs/getting-started" className={`${btnPrimary} ${btnSmall}`}>
                     Get started
                   </Link>
                   <a
                     href={siteConfig.links.discord}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
+                    className={`${btnSecondary} ${btnSmall}`}
                   >
                     Join Discord
                   </a>
@@ -202,7 +198,7 @@ export default async function BlogPostPage({
             {toc.length > 0 && (
               <nav aria-label="Table of contents" className="hidden w-48 shrink-0 lg:block">
                 <div className="sticky top-24">
-                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
+                  <div className={`mb-3 text-on-surface-variant ${label}`}>
                     On this page
                   </div>
                   <ul className="space-y-2">
@@ -210,7 +206,7 @@ export default async function BlogPostPage({
                       <li key={h.id}>
                         <a
                           href={`#${h.id}`}
-                          className="block text-xs leading-snug text-on-surface-variant transition-colors hover:text-on-surface"
+                          className="block text-[13px] leading-snug text-on-surface-variant transition-colors hover:text-on-surface"
                         >
                           {h.text}
                         </a>

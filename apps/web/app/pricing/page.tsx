@@ -5,6 +5,7 @@ import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { siteConfig } from '@/config/site'
 import { PageHeader } from '@/components/site/PageHeader'
+import { Slate, btnPrimary, btnSecondary, btnSmall, cardBody, cardLight, cardTitle, container, label, outline, sectionY } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -44,19 +45,18 @@ export default function PricingPage() {
         />
 
         {/* Cards */}
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className={`${container} pt-12 ${sectionY}`}>
+          <Slate n={1} label="Plans" kicker="Apache-2.0" />
+          <div className="grid grid-cols-1 gap-4 pt-10 md:grid-cols-2">
             {/* Open source */}
-            <div className="flex flex-col rounded-lg border border-outline-variant bg-surface-container p-7">
-              <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
+            <div className={`${cardLight} gap-0 p-7`}>
+              <div className={`mb-3 text-on-surface-variant ${label}`}>
                 Open source
               </div>
-              <h2
-                className="text-2xl font-semibold tracking-tight text-on-surface"
-              >
+              <h2 className={`${cardTitle} text-[44px]`}>
                 Free
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+              <p className={`${cardBody} mt-3`}>
                 Everything you need to build a browser-native video editor, in
                 the open. Install from npm and ship today.
               </p>
@@ -64,8 +64,8 @@ export default function PricingPage() {
               <ul className="mt-6 space-y-3">
                 {openSourceIncludes.map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-tertiary" />
-                    <span className="text-sm leading-relaxed text-on-surface-variant">{item}</span>
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-on-surface" />
+                    <span className={cardBody}>{item}</span>
                   </li>
                 ))}
               </ul>
@@ -73,7 +73,7 @@ export default function PricingPage() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/docs/getting-started"
-                  className="inline-flex items-center justify-center gap-2 rounded bg-primary px-5 py-2.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
+                  className={`${btnPrimary} ${btnSmall}`}
                 >
                   Get started
                 </Link>
@@ -81,7 +81,7 @@ export default function PricingPage() {
                   href="https://github.com/elahlabs/elah"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded border border-outline-variant bg-transparent px-5 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+                  className={`${btnSecondary} ${btnSmall}`}
                 >
                   <Github className="h-3.5 w-3.5" />
                   GitHub
@@ -90,16 +90,14 @@ export default function PricingPage() {
             </div>
 
             {/* Support / contact */}
-            <div className="flex flex-col rounded-lg border border-primary/40 bg-surface-low p-7">
-              <div className="label-mono mb-2 text-2xs text-on-surface-variant opacity-90">
+            <div className={`${cardLight} gap-0 p-7`}>
+              <div className={`mb-3 text-on-surface-variant ${label}`}>
                 Support &amp; services
               </div>
-              <h2
-                className="text-2xl font-semibold tracking-tight text-on-surface"
-              >
+              <h2 className={`${cardTitle} text-[44px]`}>
                 Let&apos;s talk
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+              <p className={`${cardBody} mt-3`}>
                 For priority support, custom integration help, or production
                 deployment (including self-hosted @elah/cli render infrastructure),
                 get in touch. No forms, no sales funnel — just email or Discord.
@@ -108,29 +106,29 @@ export default function PricingPage() {
               <div className="mt-6 space-y-3">
                 <a
                   href="mailto:paul@elah.dev"
-                  className="flex items-center gap-3 rounded-md border border-outline-variant bg-surface-container p-4 transition-colors hover:border-outline"
+                  className={`flex items-center gap-3 bg-surface p-4 transition-colors hover:bg-surface-container ${outline}`}
                 >
-                  <Mail className="h-4 w-4 shrink-0 text-primary" />
-                  <span className="text-sm font-medium text-on-surface">paul@elah.dev</span>
+                  <Mail className="h-4 w-4 shrink-0 text-on-surface" />
+                  <span className={`text-on-surface ${label}`}>paul@elah.dev</span>
                 </a>
                 <a
                   href={siteConfig.links.discord}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-md border border-outline-variant bg-surface-container p-4 transition-colors hover:border-outline"
+                  className={`flex items-center gap-3 bg-surface p-4 transition-colors hover:bg-surface-container ${outline}`}
                 >
-                  <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
-                  <span className="text-sm font-medium text-on-surface">Join the Discord</span>
+                  <MessageCircle className="h-4 w-4 shrink-0 text-on-surface" />
+                  <span className={`text-on-surface ${label}`}>Join the Discord</span>
                 </a>
               </div>
 
-              <p className="mt-6 text-xs leading-relaxed text-on-surface-variant">
+              <p className="mt-6 text-[13px] leading-[20px] text-on-surface-variant">
                 See the{' '}
                 <a
                   href="https://github.com/elahlabs/elah/blob/main/LICENSE"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-on-surface underline decoration-primary underline-offset-4"
                 >
                   LICENSE
                 </a>{' '}

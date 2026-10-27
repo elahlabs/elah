@@ -3,8 +3,9 @@ import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { posts, categoryColors } from './posts'
+import { posts } from './posts'
 import { PageHeader } from '@/components/site/PageHeader'
+import { cardLight, cardTitle, container, label, outline, sectionY } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -33,37 +34,35 @@ export default function BlogPage() {
         />
 
         {/* Posts */}
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <div className={`${container} pt-12 ${sectionY}`}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {sortedPosts.map((post) => (
               <article
                 key={post.slug}
-                className="group flex flex-col overflow-hidden rounded-md border border-outline-variant bg-surface-container p-5 transition-colors hover:border-outline"
+                className={`group ${cardLight} min-w-0 gap-0 transition-colors hover:bg-surface-container`}
               >
                 <div className="mb-3 flex items-center gap-2">
-                  <span className={`rounded px-2 py-0.5 text-2xs font-medium ${categoryColors[post.category] ?? 'text-on-surface-variant bg-surface-high'}`}>
+                  <span className={`bg-surface px-2 py-[3px] text-on-surface ${label} ${outline}`}>
                     {post.category}
                   </span>
-                  <span className="text-2xs text-on-surface-variant">{post.readingTime}</span>
+                  <span className={`text-on-surface-variant ${label}`}>{post.readingTime}</span>
                 </div>
 
-                <h2
-                  className="mb-2 text-sm font-semibold leading-snug text-on-surface"
-                >
+                <h2 className={`${cardTitle} mb-3`}>
                   {post.title}
                 </h2>
 
-                <p className="mb-4 flex-1 text-xs leading-relaxed text-on-surface-variant">
+                <p className="mb-5 flex-1 text-[15px] leading-[23px] text-on-surface-variant">
                   {post.excerpt}
                 </p>
 
                 <div className="flex items-center justify-between">
-                  <time dateTime={post.date} className="text-xs text-on-surface-variant">
+                  <time dateTime={post.date} className={`text-on-surface-variant ${label}`}>
                     {post.date}
                   </time>
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="flex items-center gap-1 text-xs font-medium text-on-surface underline underline-offset-2 transition-colors hover:text-primary"
+                    className={`flex items-center gap-1 text-on-surface underline decoration-primary underline-offset-4 ${label}`}
                   >
                     Read
                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />

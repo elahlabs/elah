@@ -29,24 +29,10 @@ export function CopyButton({ text, label = 'Copy snippet' }: { text: string; lab
   return (
     <button
       type="button"
-      className="lv-copy lv-snippet-copy"
+      className="inline-flex h-[26px] w-[26px] shrink-0 cursor-pointer items-center justify-center border border-outline-variant bg-transparent text-on-surface-variant transition-colors hover:border-on-surface hover:text-on-surface"
       onClick={copy}
       title={label}
       aria-label={label}
-      style={{
-        all: 'unset',
-        boxSizing: 'border-box',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 26,
-        height: 26,
-        borderRadius: 7,
-        border: '1px solid var(--line)',
-        color: 'var(--muted)',
-        transition: 'border-color .18s, color .18s',
-      }}
     >
       <motion.span
         key={copied ? 'done' : 'idle'}
@@ -55,7 +41,7 @@ export function CopyButton({ text, label = 'Copy snippet' }: { text: string; lab
         transition={{ type: 'spring', stiffness: 520, damping: 14 }}
         style={{ display: 'inline-flex' }}
       >
-        {copied ? <Check size={14} color="var(--accent)" /> : <Copy size={14} color="var(--muted)" />}
+        {copied ? <Check size={14} className="text-on-surface" /> : <Copy size={14} />}
       </motion.span>
     </button>
   )

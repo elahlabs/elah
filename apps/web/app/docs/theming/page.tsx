@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 import { PageHeader } from '@/components/site/PageHeader'
+import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Theming',
@@ -57,7 +58,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -115,7 +116,7 @@ import '@elah/editor/styles/tokens.css'   // --elah-* values (dark defaults)
           <P>
             You can also map the variables onto your own tokens, for example <C>{'--elah-bg-panel: var(--color-surface-low)'}</C>, so the editor follows your app&apos;s light and dark theme automatically. The components are identical in every case. Only the values differ. The full variable list is the public theming surface, in <C>packages/editor/src/styles/tokens.css</C>, and the repository&apos;s <C>docs/design-tokens.md</C> documents the groups. Every name below is prefixed with <C>--elah-</C>:
           </P>
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {GROUPS.map(([names, purpose], i) => (
               <div
                 key={names}
@@ -134,13 +135,13 @@ import '@elah/editor/styles/tokens.css'   // --elah-* values (dark defaults)
           <P>
             Before 0.6.0 the preview overlays and clip badges used hard-coded colours and could not be themed. They now read these variables. The values below are the standalone defaults from <C>tokens.css</C>.
           </P>
-          <div className="mb-4 overflow-x-auto rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mb-4 overflow-x-auto border border-outline-variant bg-surface-low p-4">
             <table className="w-full min-w-[34rem] text-xs">
               <thead>
                 <tr className="border-b border-outline-variant">
-                  <th className="pb-2 text-left font-medium text-on-surface">Variable</th>
-                  <th className="pb-2 text-left font-medium text-on-surface">Default</th>
-                  <th className="pb-2 text-left font-medium text-on-surface">Used for</th>
+                  <th className={`${label} pb-2 text-left font-normal text-on-surface-variant`}>Variable</th>
+                  <th className={`${label} pb-2 text-left font-normal text-on-surface-variant`}>Default</th>
+                  <th className={`${label} pb-2 text-left font-normal text-on-surface-variant`}>Used for</th>
                 </tr>
               </thead>
               <tbody className="text-on-surface-variant">

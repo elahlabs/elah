@@ -122,8 +122,8 @@ export default function MotionDocsPage() {
           <H2 id="editing">Editing keys</H2>
           <P>
             Keyframes are plain data: every key has an id you can read, write and diff. In the open-source editor you edit them through the API (<C>setKeyframe</C>) or the project JSON. See the{' '}
-            <Link href="/playground/motion" className="text-primary hover:underline">motion playground</Link> for a keys table and{' '}
-            <Link href="/docs/scenes" className="text-primary hover:underline">HTML scenes and VideoSpec</Link> for writing motion as code.
+            <Link href="/playground/motion" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">motion playground</Link> for a keys table and{' '}
+            <Link href="/docs/scenes" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">HTML scenes and VideoSpec</Link> for writing motion as code.
           </P>
         </section>
       </article>

@@ -40,7 +40,12 @@ export function HomeWhy() {
               <th scope="col" className={th}>
                 <span className="sr-only">Capability</span>
               </th>
-              <th scope="col" className={`${th} !text-[#FF003C]`}>elah</th>
+              <th scope="col" className={`${th} !text-[var(--lp-ink)]`}>
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="h-[8px] w-[8px] bg-[#FF003C]" />
+                  elah
+                </span>
+              </th>
               <th scope="col" className={th}>Remotion</th>
               <th scope="col" className={th}>HyperFrames</th>
             </tr>
