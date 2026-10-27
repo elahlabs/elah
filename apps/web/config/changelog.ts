@@ -108,7 +108,7 @@ export const releases: Release[] = [
         kind: 'changed',
         scope: '@elah/cli',
         items: [
-          'Unreleased, still 0.1.2: exports version 5 projects (shader and folder module imports, compound and sequence media, no hard-coded project version 1). Its @elah/core range is now ^1.0.0. It gets its own release.',
+          '1.0.0: exports version 5 projects (shader and folder module imports, compound and sequence media, no hard-coded project version 1). Its @elah/core range is now ^1.0.0. It versions and ships on its own line.',
         ],
       },
     ],

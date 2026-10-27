@@ -119,8 +119,8 @@ npm publish --workspace=packages/core --access public
 check each package, and `@elah/cli` is released on its own version and schedule.
 
 Tag the release commit after the lockfile is committed: `v<version>` for the four
-lockstep packages (for 0.6.0, `v0.6.0`) and `cli-v<version>` for the CLI (for CLI 0.1.2,
-`cli-v0.1.2`).
+lockstep packages (for 1.0.0, `v1.0.0`) and `cli-v<version>` for the CLI (for CLI 1.0.0,
+`cli-v1.0.0`).
 
 ## Conventions
 

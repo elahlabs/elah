@@ -971,8 +971,8 @@ so a large export is bounded by their machine, not by a server.
 ## 10. Headless rendering with `@elah/cli`
 
 For server-side or no-UI rendering (an AI backend that emits a video), `@elah/cli` runs the same
-engine and export pipeline in headless Chrome. The published version **0.1.2** depends on `@elah/core@^0.6.0`
-and exports 0.6.x projects; the next CLI release depends on `@elah/core@^1.0.0` and exports version 5 projects.
+engine and export pipeline in headless Chrome. **1.0.0** depends on `@elah/core@^1.0.0` and exports
+version 5 projects; `0.1.2` is the last release for 0.6.x projects.
 Node >= 18.17 and a system Chrome (or `--browser <path>` / `ELAH_BROWSER`) are required for
 export.
 
@@ -1207,6 +1207,6 @@ changelog and `CURRENT_LIMITATIONS.md`.
 | `@elah/core` | Engine, resolver, renderer, export. Zero React. Also the 1.0.0 programmatic layer: effects, generators, motion, VideoSpec, HTML scenes, ops | For custom renderers, non-React hosts, and anything in [§11](#11-writing-videos-and-scenes-with-a-model) |
 | `@elah/react` | React bindings (context + store hooks) | Rarely — `@elah/editor` re-exports these |
 | `@elah/timeline` | The `<Timeline>` UI | Rarely — same |
-| `@elah/cli` | Headless server-side rendering (`elah build / export / serve`), see [section 10](#10-headless-rendering-with-elahcli) | Separate Node tool, versioned independently (0.1.2) |
+| `@elah/cli` | Headless server-side rendering (`elah build / export / serve`), see [section 10](#10-headless-rendering-with-elahcli) | Separate Node tool, versioned independently (1.0.0) |
 
 Bundle cost: `@elah/core` grew a lot in 1.0.0 (about 1.2 MB as a tarball, half of it optional fonts). What an app downloads (minified, gzipped, `node scripts/measure-bundle.mjs`): an editor app (`EditorProvider`, `Preview`, `Timeline`) is about 112 KiB gz, up from 68 KiB in 0.6.0; the engine alone about 45 KiB gz; engine plus `GpuRenderer` and `exportVideo` about 75 KiB gz. Effects, generators, sequence clips, roto masks and audio Enhance are separate chunks that load on first use (`prepareFeatures(project)` loads a project's up front); a frame that needs one still loading draws without it and the renderer redraws by itself. The `spec`, `html`, `ops` and `icons` subpaths cost nothing unless imported (`@elah/core/spec` alone is about 71 KiB gz). Do not quote a number from an older version of this guide. `mediabunny` (the demuxer) loads lazily on first decode unless the app calls `createDefaultDemuxerFactory()`, whose static import puts it in the startup graph. Import `@elah/core/engine` for the engine without the renderer or the codec.

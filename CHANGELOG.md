@@ -11,8 +11,8 @@ versions independently, starting from its own 0.1.0.
 
 ## [Unreleased]
 
-Not part of the 1.0.0 packages. `@elah/cli` keeps its own version (0.1.2) and is
-released separately.
+`@elah/cli` versions independently of the four lockstep packages and is released
+separately; it is now at 1.0.0 too (see its own section below).
 
 ### Added
 
@@ -28,14 +28,39 @@ released separately.
 
 ### Changed
 
-- **`@elah/cli` (unreleased, still 0.1.2): exports version 5 projects.** The harness server
-  answers a module directory request with a redirect to its `index.js` and resolves dotted
-  module names (`./shaders/quad.frag`), so the export worker loads against the converged core;
-  served modules get `process.env.NODE_ENV` inlined; media inside compound clips and
-  animated-image sequence clips is served; the hard-coded project version 1 is gone, and the
-  version warning fires only for a project newer than `PROJECT_VERSION`. A `frames` sequence
-  whose template is a relative URL is not routed yet. Its `@elah/core` range is now `^1.0.0`.
 - The root `workspaces` list names `apps/web` and `apps/server` instead of `apps/*`.
+
+## `@elah/cli` [1.0.0] — 2026-10-27
+
+### Added
+
+- **ffmpeg encoding (`--encoder auto|ffmpeg|chrome`).** Chrome still draws every frame, so the
+  picture matches the Editor either way; what changes is who compresses them. `auto` (the default)
+  uses ffmpeg when it is found and can write the codec, otherwise Chrome's WebCodecs encoder with
+  one warning saying why. ffmpeg is resolved through `--ffmpeg <path>`, then `ELAH_FFMPEG`, then
+  `PATH`, must be 4.4+, and is always a **system binary, never an npm dependency** — no GPL code in
+  your install, and your platform's hardware encoders are kept. `avc` uses `libx264`, `hevc`
+  `libx265` (tagged `hvc1`), `av1` `libsvtav1` or `libaom-av1`, `vp9` `libvpx-vp9`, `vp8` `libvpx`,
+  at the same 8 Mbps / 128 kbps defaults as Chrome; audio is `aac` in MP4 and 48 kHz `libopus` in
+  WebM. Output is tagged BT.709 limited range, like Chrome's. The finished line names the encoder
+  that ran. The ffmpeg path is currently slower than Chrome's (8.8 s against 3.5 s for 5 s of
+  1080p30 as measured), because each frame is compressed to PNG in the page first.
+- **Sources Chrome cannot decode are converted first.** Before an export the CLI asks the browser
+  whether it can decode each video source; when it cannot and ffmpeg is installed, the source is
+  transcoded to a near-lossless H.264/AAC MP4 scratch file (`libx264 -crf 14`) and the conversion is
+  reported per file. Covers ProRes `.mov`, AVI, `.mkv` with AC-3/DTS audio and MPEG-TS.
+
+### Changed
+
+- **Exports version 5 projects.** The harness server answers a module directory request with a
+  redirect to its `index.js` and resolves dotted module names (`./shaders/quad.frag`), so the
+  export worker loads against the converged core; served modules get `process.env.NODE_ENV`
+  inlined; media inside compound clips and animated-image sequence clips is served; the
+  hard-coded project version 1 is gone, and the version warning fires only for a project newer
+  than `PROJECT_VERSION`. A `frames` sequence whose template is a relative URL is not routed yet.
+- **Depends on `@elah/core@^1.0.0`.**
+- **1.0.0.** The CLI's command surface, build-spec format and Node API now follow semver, in step
+  with the four lockstep packages. It keeps its own version line and its own `cli-v<version>` tag.
 
 ## [1.0.0] — 2026-10-22
 
@@ -573,6 +598,7 @@ timeline**. Additive — no breaking changes to the 0.2.x public API.
 
 [1.0.0]: https://github.com/elahlabs/elah/releases/tag/v1.0.0
 [0.6.0]: https://github.com/elahlabs/elah/releases/tag/v0.6.0
+[@elah/cli 1.0.0]: https://github.com/elahlabs/elah/releases/tag/cli-v1.0.0
 [@elah/cli 0.1.2]: https://github.com/elahlabs/elah/releases/tag/cli-v0.1.2
 [0.4.1]: https://github.com/elahlabs/elah/releases/tag/v0.4.1
 [0.4.0]: https://github.com/elahlabs/elah/releases/tag/v0.4.0

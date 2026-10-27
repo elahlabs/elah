@@ -15,7 +15,7 @@ Headless command-line runtime for the Elah video engine. A thin consumer of
 npm install -g @elah/cli
 ```
 
-Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. The published 0.1.2 depends on `@elah/core@^0.6.0`; the next release depends on `@elah/core@^1.0.0` and exports version 5 projects (adjustment, generator, compound and sequence clips, the nine transitions). That release is not out yet: until then, use `0.1.2` with 0.6.x projects.
+Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. 1.0.0 depends on `@elah/core@^1.0.0` and exports version 5 projects (adjustment, generator, compound and sequence clips, the nine transitions). For a 0.6.x project, stay on `0.1.2`.
 `export`/`build --export`/`serve` additionally require a system Google Chrome
 (or `--browser <path>` / `ELAH_BROWSER`) — see [Serve mode](#serve-mode) and
 [Docker](#docker) for headless environments. Installing **ffmpeg 4.4+** is

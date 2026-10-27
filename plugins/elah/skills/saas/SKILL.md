@@ -1,6 +1,6 @@
 ---
 name: saas
-description: Scaffold your own video editor app on the Elah libraries: a real Vite or Next.js project you run and deploy. Use when someone wants to build their own editor or video product.
+description: Scaffold your own video editor app on the Elah libraries - a real Vite or Next.js project you run and deploy. Use when someone wants to build their own editor or video product.
 argument-hint: "[what the product is for, e.g. a podcast clip editor for agencies]"
 allowed-tools: AskUserQuestion Bash(npm view *) Bash(npm install*) Bash(npm run *) Bash(npx *)
 ---
