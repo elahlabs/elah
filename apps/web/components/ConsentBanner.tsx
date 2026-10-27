@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { useConsent } from '@/components/ConsentProvider'
-import { bottomBar } from '@/components/bottomBar'
+import { bottomBar } from '@/components/eb/bottomBar'
 
 // Shown only until the visitor makes a choice, and never when Do-Not-Track is
 // set (that already resolves to denied). Fixed to the bottom, above content.
-// Styled by the shared bottom bar (components/bottomBar.ts).
+// Styled by the shared bottom bar (components/eb/bottomBar.ts).
 export function ConsentBanner() {
   const { consent, dnt, resolved, accept, decline } = useConsent()
 

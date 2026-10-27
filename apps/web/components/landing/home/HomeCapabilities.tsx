@@ -1,8 +1,7 @@
 import type { DemoName } from '@/lib/demos/load'
 import { LazyDemo } from '@/components/home/LazyDemo'
 import { Section } from './Section'
-import { Sel } from './Sel'
-import { cardBody, cardTitle, cardWhite, mono, outline } from './ui'
+import { Sel, cardBody, cardTitle, cardWhite, mono, outline } from '@/components/eb'
 
 interface Tile {
   demo: DemoName

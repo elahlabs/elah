@@ -9,7 +9,7 @@ import { ConvertError, convertSpec, type Converted } from '@/lib/motion/convert'
 import { getTitleCard } from '@/lib/motion/titleCard'
 import { KeysTable } from '@/components/playground/motion/KeysTable'
 import { stageVars } from '@/components/landing/home/stageVars'
-import { mono, outline, sans } from '@/components/landing/home/ui'
+import { mono, outline, sans } from '@/components/eb'
 
 type Source = 'html' | 'spec'
 const TITLE_CARD = STARTERS[0]

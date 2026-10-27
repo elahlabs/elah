@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { GITHUB_URL } from '@/config/nav'
-import { CropMarks, Sel } from './Sel'
-import { btnLarge, container, display, label, lead, sectionY } from './ui'
+import { CropMarks, Sel, btnLarge, container, display, label, lead, sectionY } from '@/components/eb'
 
 /** Closing call to action: the last shot, on the ink stage, framed by crop marks. */
 export function HomeCta() {

@@ -5,9 +5,8 @@ import { ArrowRight } from 'lucide-react'
 import { trackPlaygroundLaunch } from '@/lib/analytics'
 import { playgrounds } from '../landingData'
 import { Section } from './Section'
-import { Sel } from './Sel'
+import { Sel, btnSecondary, btnSmall, cardBody, cardTitle, cardWhite, mono, outline } from '@/components/eb'
 import { MiniLanes, TRACK, type MiniClip } from './MiniLanes'
-import { btnSecondary, btnSmall, cardBody, cardTitle, cardWhite, mono, outline } from './ui'
 
 const LANES: Record<string, { lanes: MiniClip[][]; playhead: number }> = {
   Motion: {

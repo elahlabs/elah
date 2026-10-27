@@ -1,6 +1,5 @@
 import { Section } from './Section'
-import { Sel } from './Sel'
-import { mono, outline, sans } from './ui'
+import { Sel, mono, outline, sans } from '@/components/eb'
 
 const SOURCES = {
   remotionLicense: 'https://github.com/remotion-dev/remotion/blob/main/LICENSE.md',

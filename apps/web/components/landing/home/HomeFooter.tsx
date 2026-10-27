@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { footerColumns, GITHUB_URL } from '@/config/nav'
-import { MARK, container, display, label, sans } from './ui'
+import { MARK, container, display, label, sans } from '@/components/eb'
 
 function GitHubLogo() {
   return (

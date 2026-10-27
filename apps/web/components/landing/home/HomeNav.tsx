@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { Star } from 'lucide-react'
 import { GET_STARTED_URL, GITHUB_URL, navLinks } from '@/config/nav'
-import { ThemeToggle } from './ThemeToggle'
-import { MARK, display, label } from './ui'
+import { ThemeToggle, MARK, display, label } from '@/components/eb'
 
 /**
  * Nav as a strip of hairline cells, like an editor's menu bar. Links, the

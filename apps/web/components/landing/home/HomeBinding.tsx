@@ -1,6 +1,6 @@
 import { MotionBindingDemo } from '@/components/motion/MotionBindingDemo'
 import { Section } from './Section'
-import { Sel } from './Sel'
+import { Sel } from '@/components/eb'
 
 /** Keyframe binding explainer (brief section 5 item 4, section 6.2). */
 export function HomeBinding() {

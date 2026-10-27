@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { label, mono } from './ui'
+import { label, mono } from '@/components/eb'
 
 const FPS = 30
 /** The whole page plays as one minute of "footage". */

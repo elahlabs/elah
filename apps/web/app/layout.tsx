@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Geist, Geist_Mono, Bricolage_Grotesque } from 'next/font/google'
+import { Inter, Geist, Geist_Mono, Big_Shoulders } from 'next/font/google'
 // Published-package stylesheets are imported here (root layout) rather than
 // in the playground/editor nested layouts so their cascade position is fixed
 // at first paint. When they were imported per-route, client-side back
@@ -42,12 +42,12 @@ const geistMono = Geist_Mono({
   weight: ['400', '500', '600'],
 })
 
-// Display face for landing-v2 headings and the wordmark.
-const bricolage = Bricolage_Grotesque({
+// Condensed display face for headings and the wordmark.
+const displayFace = Big_Shoulders({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
-  weight: ['500', '600', '700'],
+  weight: ['700', '800'],
 })
 
 export const metadata: Metadata = {
@@ -111,9 +111,10 @@ const webSiteJsonLd = {
   description: siteConfig.description,
 }
 
-// The site is dark-only. Apply the class before first paint so there is no
-// flash of the light fallback tokens.
-const themeInitScript = `document.documentElement.classList.add('dark');`
+// Site-wide theme, applied before first paint so there is no flash. Order:
+// stored choice (elah-theme), the homepage's old key (elah-lp-theme, migrated
+// once), then the system preference.
+const themeInitScript = `(function(){try{var d=document.documentElement,t=localStorage.getItem('elah-theme');if(t!=='light'&&t!=='dark'){var o=localStorage.getItem('elah-lp-theme');if(o==='light'||o==='dark'){t=o;localStorage.setItem('elah-theme',o)}else{t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}}d.classList.toggle('dark',t==='dark')}catch(e){}})();`
 
 // beforeinstallprompt can fire before React hydrates (e.g. a repeat visit
 // with an already-active service worker), so a useEffect listener in
@@ -154,7 +155,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${geist.variable} ${geistMono.variable} ${bricolage.variable} bg-surface text-on-surface antialiased`}
+        className={`${inter.variable} ${geist.variable} ${geistMono.variable} ${displayFace.variable} bg-surface text-on-surface antialiased`}
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
       >
         <a

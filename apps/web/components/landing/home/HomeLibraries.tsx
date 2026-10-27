@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { coreSubpaths, libraries } from '../landingData'
 import { Section } from './Section'
-import { Sel } from './Sel'
-import { btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline, panel } from './ui'
+import { Sel, btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline, panel } from '@/components/eb'
 
 /** Libraries and install (brief section 5, item 8), with the experimental @elah/core subpaths. */
 export function HomeLibraries() {

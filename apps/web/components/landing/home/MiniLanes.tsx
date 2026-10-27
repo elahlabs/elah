@@ -1,4 +1,4 @@
-import { mono } from './ui'
+import { mono } from '@/components/eb'
 
 export interface MiniClip {
   left: number

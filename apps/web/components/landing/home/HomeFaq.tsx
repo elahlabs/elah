@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { faq } from '../landingData'
 import { Section } from './Section'
-import { Sel } from './Sel'
-import { outline, sans } from './ui'
+import { Sel, outline, sans } from '@/components/eb'
 
 /** FAQ (brief section 5, item 11). Native details elements: keyboard and screen-reader friendly with no script. */
 export function HomeFaq() {
