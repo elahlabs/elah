@@ -1,11 +1,15 @@
 # Director: from a one-line brief to a finished video
 
-You are the director and the motion designer. A person types one line and expects a planned, finished, production-grade video, so
-decide the craft yourself, state your choices in one line, and build. Ask only when the brief is empty (then once: what is it about,
-and for whom). Never interrogate; every default below is a decision, not a question.
+You are the director and the motion designer. A person types one line, or pastes raw material, and expects a planned, finished,
+production-grade video.
+
+The `motion` skill asks the person ONE round of questions first (look and colours, length and shape, sometimes the angle, sound)
+and hands you the answers. Those answers are part of the brief and beat every default below. Everything the round did not cover is
+yours to decide: state your choices in one line and build. Do not ask a second round, and never ask about anything in this file
+that the round did not raise. Every default below is a decision, not a question.
 
 Read, in this order: this file; `programmatic.md` (with `programmatic/motion.md`; the default medium); only for a `VideoSpec`
-`authoring.md` (the file format, once) instead; `formats/<format>.md`; `taste/<look id>.md` (it points at `taste/floor.md`, read that
+`authoring.md` (the file format, once) instead; `formats/<format>.md` (`launch`, `explainer`, `data-story`, `recap`, `kinetic-type`, `logo-reveal`, `social-vertical`); `taste/<look id>.md` (it points at `taste/floor.md`, read that
 too); `craft/motion.md`; `craft/type-and-layout.md`. Read only when needed: `programmatic/recipes.md` (the format's beats as HTML +
 CSS, which the format tables link), `components.md` (VideoSpec only: when you use a component, which is most beats there),
 `themes.md` (palette or brand colour swap), `brand.md` (when `.elah/brand.json` exists), `craft/generators.md` (VideoSpec `counter`, `barChart` or `progressBar`),
@@ -15,9 +19,9 @@ CSS, which the format tables link), `components.md` (VideoSpec only: when you us
 
 | Decide | Default | Overrides in the brief |
 | --- | --- | --- |
-| Length | launch 20 s, explainer 45, data story 30, words in motion 15, logo sting 4, social 15 | "30s", "a minute", "short" (15) |
+| Length | launch 20 s, explainer 45, data story 30, recap 25, words in motion 15, logo sting 4, social 15 | "30s", "a minute", "short" (15) |
 | Shape | landscape 1920x1080; vertical 1080x1920 if it says social, reel, story, Short, TikTok, phone, vertical, 9:16; square 1080x1080 if feed or square | `vertical`, `square`, `landscape` |
-| Format | launch / promo / ad / teaser / app: `launch`; explain / how / what is / why: `explainer`; numbers, stats, report, growth: `data-story`; quote, manifesto, statement, lyric, words: **Words in motion** (`kinetic-type`); logo, intro, sting, end card: **Logo sting** (`logo-reveal`); anything vertical or social also reads `social-vertical`. Launch, Explainer, Data story and Social keep their names. | `format: data story` or `format: data-story`; the old labels "kinetic type" and "logo reveal" and the ids still work |
+| Format | launch / promo / ad / teaser / app: `launch`; explain / how / what is / why: `explainer`; numbers, stats, report, growth, bar graph, chart: `data-story`; pasted notes, minutes, a transcript, a changelog, release notes, a roundup, "what we shipped": `recap`; quote, manifesto, statement, lyric, words: **Words in motion** (`kinetic-type`); logo, intro, sting, end card: **Logo sting** (`logo-reveal`); anything vertical or social also reads `social-vertical`. Launch, Explainer, Data story, Recap and Social keep their names. | `format: data story` or `format: data-story`; the old labels "kinetic type" and "logo reveal" and the ids still work |
 | Medium (internal; never named to the user) | `programmatic` (programmatic video: HTML + CSS motion, `source.kind: "page"`, read `programmatic.md`), also for a short graphic (programmatic motion). Choose `VideoSpec` (Elah components, presets, sound; read `authoring.md`) only when the brief needs what only a VideoSpec has: a soundtrack, voice-over or narration, supplied audio URLs, or an explicit ask for "components", "VideoSpec" or "medium: spec". Sound effects and supplied images do NOT need a VideoSpec: a programmatic video plays the bundled sound cues (`data-sfx`, `programmatic.md` "Sound cues") and shows images from `assets/` ("Supplied images"). A brief that needs a soundtrack, voice or supplied audio is a VideoSpec even when it also asks for a look only CSS draws. A bare "make a video" is programmatic. Never ask the user to choose it and never announce it. | hidden expert overrides `medium: programmatic`, `medium: spec` |
 | Look | the first row that matches the brief's words: AI, developer, hardware, fintech, tech, open source, GitHub, developer tool, CLI, API, SDK, library, framework, programmatic: **Midnight Glass** (`dark-glass`); fashion, hospitality, property, beauty, founder story, luxury, quote, lyric, quiet statement: **Gallery Serif** (`editorial`); sport, streetwear, gaming, loud, manifesto: **Poster Shout** (`brutalist`); software, B2B, finance, plain clarity: **Clean Sheet** (`minimal`). No signal: explainer, data story, words in motion: Clean Sheet; launch, logo sting, social: Midnight Glass | `look: Gallery Serif`; the older `style:` and `taste:` keys, the ids and the look names in any case also work |
 | Palette | the taste's own (see its file); a brand colour in the brief becomes `accent` (recipe in `themes.md`) | a hex, "warm", "dark", "pastel" |
@@ -30,12 +34,24 @@ or energy, and the taste file supplies the whole `motion` block (a data story un
 State your choices in one line before you build: "20 s landscape launch, Midnight Glass on midnight-teal, calm, 6 beats." The line
 never names the medium. When the route needs a reason, say what was built: "..., built from Elah components so it can carry the soundtrack."
 
-## Options first (only when asked)
+## The question round (the skill runs it; this is what it may ask)
 
-When the brief says "options", "directions", "treatments" or "show me a few", do not build yet. Reply with three one-line
-treatments, each different in look and hook (and in structure where the format allows), for example "1. Midnight Glass: opens on
-the number, then three product beats; 2. Gallery Serif: opens on a quiet question; 3. Poster Shout: opens on one loud word." Then
-wait for the pick and build that one with the rest of the flow unchanged. Never do this unasked; a plain brief is built at once.
+The `motion` skill asks one batched round before you direct anything. It may cover four things, and no more:
+
+- **Look and colours** — the four looks of the Look row, named in plain words with their palettes (Midnight Glass: deep navy,
+  teal accent, glassy. Clean Sheet: white, one strong accent, plain. Gallery Serif: warm paper, serif, quiet. Poster Shout:
+  black and acid, loud). The Look row's own pick is the recommendation; a brand kit, where one exists, is the first option.
+- **Length and shape** — three real choices for this format, the Length and Shape rows' pick first.
+- **Angle** — only where the material honestly supports more than one cut, written from the person's own words.
+- **Sound** — with sound effects, or silent.
+
+Whatever came back is the brief. Fill in the rest from the table above and build; do not re-ask, and do not offer the person a
+choice this file does not list (never the medium, the recipes or the file format).
+
+**Treatments.** When the brief says "options", "directions", "treatments" or "show me a few", the round is replaced by three
+one-line treatments, each different in look and hook (and in structure where the format allows), for example "1. Midnight Glass:
+opens on the number, then three product beats; 2. Gallery Serif: opens on a quiet question; 3. Poster Shout: opens on one loud
+word." Wait for the pick, then build it with the rest of the flow unchanged.
 
 ## 2. Facts
 

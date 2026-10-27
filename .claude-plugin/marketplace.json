@@ -8,11 +8,18 @@
     {
       "name": "elah",
       "source": "./plugins/elah",
-      "description": "Claude drafts your video or motion graphic, you preview it, edit it frame by frame and export an MP4, all in your browser. Written as programmatic video (HTML + CSS motion), validated by the plugin.",
-      "version": "0.1.0",
+      "description": "Claude asks a few questions, drafts your video or motion graphic, and you preview it, edit it frame by frame and export an MP4 in your browser. Also scaffolds your own video editor app on the Elah libraries.",
+      "version": "0.2.0",
       "homepage": "https://elah.dev",
       "license": "Apache-2.0",
-      "keywords": ["video", "programmatic-video", "motion-graphics", "mp4", "promo"]
+      "keywords": [
+        "video",
+        "programmatic-video",
+        "motion-graphics",
+        "mp4",
+        "promo",
+        "video-editor"
+      ]
     }
   ]
 }

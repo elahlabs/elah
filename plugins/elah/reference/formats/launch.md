@@ -31,9 +31,9 @@ The last column is the programmatic video (the default medium); the column befor
   it; never invent a screen, a dashboard or a logo file. No `image` unless the user supplied a URL.
 - Hold: every line 0.5 s + 0.3 s per word; the product name and call to action at least 1.5 s each; the end card 2-3 s.
 - Stat or proof beats: count up over 1.2-1.6 s then hold at least 1.5 s.
-- Sound is optional, and it decides the medium: a hit on the hook landing, a tick per feature, a chime on the end card, gain
-  0.25-0.35; none on plain cuts. A programmatic video is silent, so a promo that wants a soundtrack or sound effects is a VideoSpec
-  (`director.md`, Medium row; say why in one line).
+- Sound: a hit on the hook landing, a tick per feature, a chime on the end card, gain 0.25-0.35; none on plain cuts. Sound
+  effects do not change the medium (a programmatic video carries them as `data-sfx`); only a soundtrack, a voice-over or supplied
+  audio makes a promo a VideoSpec (`director.md`, Medium row; say why in one line).
 
 ## Shape
 

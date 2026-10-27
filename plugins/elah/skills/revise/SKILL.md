@@ -1,6 +1,6 @@
 ---
 name: revise
-description: Change the last Elah video as asked (shorter, another look, new wording, vertical) and update the same artifact link, keeping any edits the person already made in the artifact. Use when the user asks to revise, tweak, redo, shorten, restyle or reformat a video made with Elah.
+description: Change the last Elah video (shorter, new look, new wording, vertical) and update the same link, keeping edits made in the artifact. Use to revise, tweak, shorten, restyle or reformat an Elah video.
 argument-hint: "[what to change, e.g. make it 10 seconds and Poster Shout]"
 allowed-tools: Bash(node *validate.mjs *) Bash(node *stage.mjs *) Bash(node *sfx-search.mjs *)
 ---
@@ -48,13 +48,13 @@ instead; never invent a link.
   from `reference/taste/<id>.md` and `reference/themes.md`); **new wording** (keep the same boxes and line counts); **vertical or
   square** (restack inside the safe zones of `reference/formats/social-vertical.md`); **with sound or silent** (add or remove the
   `data-sfx` cues of a programmatic video, `programmatic.md` "Sound cues", or the `sfx` list of a VideoSpec; cues only where
-  something lands, at most one per beat). A sound beyond the pack follows the `video` skill's rule (`sfx-search.mjs`, CC0 only, at most 4 per video, each named with its author in the closing note).
+  something lands, at most one per beat). A sound beyond the pack follows the `motion` skill's rule (`sfx-search.mjs`, CC0 only, at most 4 per video, each named with its author in the closing note).
 - A change that needs a different route (for example adding a soundtrack or voice-over to a programmatic video; sound effects are not one, they are `data-sfx` cues) is a rebuild of that video from
   its own text; say what you kept.
 
 ## 3. Validate, review, republish
 
-Follow the `video` skill's step 2 and step 3: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<file>"`, run the
+Follow the `motion` skill's step 3 and step 4: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<file>"`, run the
 self-review round with `reference/craft/review.md`, at most 3 rounds in total, never publish a rejected input. Then
 `node "${CLAUDE_PLUGIN_ROOT}/scripts/stage.mjs" "<work folder>"`, load `artifact-capabilities` if listed, and publish to the same
 artifact (same `file_path`, or `url` plus `files` including `"elah-input.json"`, with `capabilities: {downloads: true, comments: {customAnchors: true}, artifact: {}}`, shapes from the `artifact-capabilities` skill; `artifact` keeps the editor's Save button). Say in one line

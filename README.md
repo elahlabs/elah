@@ -333,7 +333,9 @@ where you preview it, edit it and export an MP4 in your browser:
 /plugin install elah@elah
 ```
 
-Then run `/elah:video <what to make>` or `/elah:promo <product launch brief>`. Details: [`plugins/elah/README.md`](plugins/elah/README.md).
+Then run `/elah:motion <what to make>` — a launch, an explainer, a chart, a recap of pasted notes, a vertical reel.
+Or `/elah:saas <what your product is for>` to scaffold your own editor app on these packages. Details:
+[`plugins/elah/README.md`](plugins/elah/README.md).
 
 ---
 

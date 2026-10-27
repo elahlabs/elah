@@ -1,6 +1,6 @@
 ---
 name: brand
-description: Save a brand kit (colours, fonts, base look, optional logo) from a hex colour, a logo file or a website URL, so every later /elah:video, /elah:promo, /elah:social and /elah:revise in this folder uses it automatically. Use when the user gives a brand colour, logo or website and wants their videos to match it.
+description: Save a brand kit (colours, fonts, look, logo) from a hex, a logo file or a website, so every later Elah video matches it. Use when someone gives a brand colour, logo or site for their videos.
 argument-hint: "[a hex colour, a logo file path, or a website URL; optionally the brand name]"
 allowed-tools: WebFetch
 ---
@@ -70,7 +70,7 @@ One line, then a small table, then how to change it:
 | Look | Midnight Glass |
 | Logo | .elah/logo.svg (or "none") |
 
-"Every `/elah:video`, `/elah:promo`, `/elah:social` and `/elah:revise` in this folder now uses it unless your brief says
+"Every `/elah:motion` and `/elah:revise` in this folder now uses it unless your brief says
 otherwise. Run `/elah:brand` again with a new hex, logo or URL to replace it, or edit `.elah/brand.json`."
 
 If a logo was recorded, add: "Your logo file is placed in the closing beat of each video."
