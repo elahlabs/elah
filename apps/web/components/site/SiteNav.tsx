@@ -1,140 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { AnimatePresence, motion, useReducedMotion, useScroll, type MotionStyle } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, Star, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
-import { DISCORD_URL, GITHUB_URL, isActiveHref, navLinks, navVariantFor, type NavVariant } from '@/config/nav'
+import { DISCORD_URL, GET_STARTED_URL, GITHUB_URL, isActiveHref, navLinks, type NavVariant } from '@/config/nav'
 import { VersionBadge } from '@/components/marketing/VersionBadge'
-import { useScrollDirection } from '@/components/landing/motion/useScrollDirection'
+import { ThemeToggle, label } from '@/components/eb'
 import { Logo } from './Logo'
 
 export interface SiteNavProps {
-  /**
-   * `floating`: glass pill that hides on scroll-down and draws a scroll
-   * progress filament. `bar`: calm sticky full-width bar that never hides.
-   * Omit to choose from the route (`/docs/**` is a bar, everything else floats).
-   */
-  variant?: NavVariant
-  /**
-   * Floating only. When true the pill overlaps the first section (the landing
-   * hero reserves space for it); otherwise it takes its own height in flow.
-   */
+  /** Both variants render the same hairline-cell bar; kept so callers compile. */
+  variant?: NavVariant | 'pill'
+  /** Ignored (the old floating pill overlapped the hero). Kept so callers compile. */
   overlap?: boolean
+  /** GitHub star count shown in the GitHub cell (homepage). */
+  stars?: string | null
+  /** Show the version badge and Discord link. The homepage turns these off. */
+  extras?: boolean
+  /** Show the solid "Get started" cell. */
+  cta?: boolean
 }
 
-const EASE = [0.16, 1, 0.3, 1] as const
-
-const linkBase = 'rounded-lg px-2.5 py-1.5 text-[13.5px] transition-colors'
-const linkIdle = 'text-on-surface-variant hover:bg-surface-high hover:text-on-surface'
-const linkActive = 'bg-surface-high font-medium text-on-surface'
-
-function DesktopLinks({ pathname }: { pathname: string }) {
-  return (
-    <nav aria-label="Main" className="hidden flex-1 items-center justify-center gap-0.5 md:flex">
-      {navLinks.map((l) => {
-        const active = isActiveHref(pathname, l.href)
-        return (
-          <Link
-            key={l.href}
-            href={l.href}
-            aria-current={active ? 'page' : undefined}
-            className={cn(linkBase, active ? linkActive : linkIdle)}
-          >
-            {l.label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
-}
-
-/**
- * Version pill, Discord, GitHub. Same markup in both variants. There is no
- * primary action in the header by design: the hero and the closing CTA carry
- * "Get Started", and a third copy in the chrome was noise on every page.
- */
-function DesktopActions() {
-  const ghost =
-    'shrink-0 rounded-lg px-2 py-1.5 text-[13px] font-medium text-on-surface-variant transition-colors hover:text-on-surface'
-  return (
-    <div className="hidden shrink-0 items-center gap-1 md:flex">
-      <VersionBadge className="mr-1 hidden lg:inline-flex" />
-      <a
-        href={DISCORD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={ghost}
-        onClick={() => trackEvent('discord_clicked', { source: 'nav_desktop' })}
-      >
-        Discord
-      </a>
-      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={ghost}>
-        GitHub
-      </a>
-    </div>
-  )
-}
-
-function MobileMenuContent({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
-  const row = 'rounded-lg px-3 py-2.5 text-[15px] transition-colors'
-  return (
-    <nav aria-label="Mobile" className="flex flex-col gap-0.5">
-      {navLinks.map((l) => {
-        const active = isActiveHref(pathname, l.href)
-        return (
-          <Link
-            key={l.href}
-            href={l.href}
-            onClick={onNavigate}
-            aria-current={active ? 'page' : undefined}
-            className={cn(row, active ? linkActive : linkIdle)}
-          >
-            {l.label}
-          </Link>
-        )
-      })}
-      <div className="my-1 px-1" onClick={onNavigate}>
-        <VersionBadge block />
-      </div>
-      <a
-        href={DISCORD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => {
-          trackEvent('discord_clicked', { source: 'nav_mobile' })
-          onNavigate()
-        }}
-        className={cn(row, linkIdle)}
-      >
-        Discord <span aria-hidden>↗</span>
-      </a>
-      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" onClick={onNavigate} className={cn(row, linkIdle)}>
-        GitHub <span aria-hidden>↗</span>
-      </a>
-    </nav>
-  )
-}
-
-function MenuToggle({ open, onToggle, circle }: { open: boolean; onToggle: () => void; circle?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label="Toggle menu"
-      aria-expanded={open}
-      className={cn(
-        'flex h-9 w-9 shrink-0 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-high hover:text-on-surface md:hidden',
-        circle ? 'rounded-full border border-outline-variant' : 'rounded-lg',
-      )}
-    >
-      {open ? <X size={18} /> : <Menu size={18} />}
-    </button>
-  )
-}
+const cell = 'flex items-center border-l border-outline-variant px-4 sm:px-5'
+const linkIdle = 'text-on-surface-variant hover:bg-on-surface hover:text-surface'
+const linkActive = 'bg-on-surface text-surface'
+const cta =
+  'flex items-center bg-on-surface px-5 text-surface no-underline transition-colors hover:bg-[#FF003C] hover:text-[#0E0E10]'
 
 /** Close on route change and on Escape. */
 function useMenuState(pathname: string) {
@@ -149,111 +43,140 @@ function useMenuState(pathname: string) {
   return [open, setOpen] as const
 }
 
-function FloatingNav({ pathname, overlap }: { pathname: string; overlap: boolean }) {
-  const [menuOpen, setMenuOpen] = useMenuState(pathname)
-  const [focusWithin, setFocusWithin] = useState(false)
-  const reduce = useReducedMotion()
-  const { hidden, compact } = useScrollDirection(120, 80)
-  const { scrollYProgress } = useScroll()
-
-  // Never hide while the mobile menu is open or focus is inside the pill.
-  const tucked = !reduce && hidden && !menuOpen && !focusWithin
-  const shrunk = !reduce && compact && !menuOpen
-
-  // --lv-progress drives the ::after filament as a scroll-progress bar; framer
-  // writes it straight to the element, no re-render. Omitted under reduced
-  // motion so the CSS fallback (a full, static filament) applies.
-  const navStyle = reduce ? undefined : ({ '--lv-progress': scrollYProgress, transformOrigin: '50% 0%' } as unknown as MotionStyle)
+/**
+ * The one site header: a sticky 52px strip of hairline cells (logo, links,
+ * theme, GitHub, primary action) with a full-width menu panel below lg.
+ */
+export function SiteNav({ stars = null, extras = true, cta: showCta = true }: SiteNavProps) {
+  const pathname = usePathname() ?? '/'
+  const [open, setOpen] = useMenuState(pathname)
+  const panelId = useId()
+  const close = () => setOpen(false)
+  const row = `flex items-center border-t border-outline-variant px-5 py-4 no-underline transition-colors ${label}`
 
   return (
-    // The pill's glass, filament and panel styling is scoped to `.landing-root`
-    // in globals.css / landing.css. `display: contents` lends that scope to
-    // routes outside the landing page without adding a box, so `position:
-    // sticky` still resolves against the page and not this wrapper.
-    <div className="landing-root" style={{ display: 'contents' }}>
-      <motion.div
-        className="lv-nav-shell"
-        style={overlap ? undefined : { marginBottom: 0 }}
-        animate={{ y: tucked ? '-140%' : '0%' }}
-        transition={{ duration: reduce ? 0 : 0.35, ease: EASE }}
-        onFocusCapture={() => setFocusWithin(true)}
-        onBlurCapture={() => setFocusWithin(false)}
-      >
-        <motion.nav
-          className="lv-nav"
-          data-open={menuOpen}
-          aria-label="Site"
-          style={navStyle}
-          animate={{ scale: shrunk ? 0.965 : 1 }}
-          transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
-        >
-          <div className="relative z-[1] flex min-h-[46px] items-center gap-2.5 py-[5px] pl-4 pr-1.5">
-            <Logo size={22} />
-            <span className="flex-1 md:hidden" />
-            <DesktopLinks pathname={pathname} />
-            <DesktopActions />
-            <MenuToggle open={menuOpen} onToggle={() => setMenuOpen((v) => !v)} circle />
-          </div>
+    <header className="sticky top-0 z-[60] w-full border-b border-outline-variant bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] backdrop-blur-md">
+      <nav aria-label="Primary" className="flex h-[52px] w-full items-stretch">
+        <div className="flex items-center px-4 sm:px-5">
+          <Logo />
+        </div>
 
-          <AnimatePresence>
-            {menuOpen && (
-              <motion.div
-                key="panel"
-                className="lv-nav-panel md:hidden"
-                initial={reduce ? false : { opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, y: -10 }}
-                transition={{ duration: reduce ? 0 : 0.22, ease: EASE }}
-                // Opaque: the stock panel is glass, and page text bleeds through a menu.
-                style={{ background: 'var(--color-surface-container)', borderTop: '1px solid var(--line2)', padding: '8px 12px 14px', zIndex: 1 }}
-              >
-                <MobileMenuContent pathname={pathname} onNavigate={() => setMenuOpen(false)} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.nav>
-      </motion.div>
-    </div>
-  )
-}
+        <ul className="m-0 hidden list-none items-stretch border-l border-outline-variant p-0 lg:flex">
+          {navLinks.map((l) => {
+            const active = isActiveHref(pathname, l.href)
+            return (
+              <li key={l.href} className="flex">
+                <Link
+                  href={l.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn('flex items-center px-4 no-underline transition-colors', label, active ? linkActive : linkIdle)}
+                >
+                  {l.label}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
 
-function BarNav({ pathname }: { pathname: string }) {
-  const [menuOpen, setMenuOpen] = useMenuState(pathname)
-  const reduce = useReducedMotion()
-
-  return (
-    <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
-        <Logo size={24} wordmarkSize={17} />
-        <span className="flex-1 md:hidden" />
-        <DesktopLinks pathname={pathname} />
-        <DesktopActions />
-        <MenuToggle open={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
-      </div>
-
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: reduce ? 0 : 0.15 }}
-            className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-b border-outline-variant bg-surface px-4 pb-4 pt-2 shadow-lg md:hidden"
+        <div className="ml-auto flex items-stretch">
+          {extras && <VersionBadge className={cn(cell, 'hidden xl:flex')} />}
+          {extras && (
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('discord_clicked', { source: 'nav_desktop' })}
+              className={cn(cell, 'hidden text-on-surface no-underline transition-colors hover:bg-surface-container xl:flex', label)}
+            >
+              Discord
+            </a>
+          )}
+          <ThemeToggle className={`${cell} justify-center text-on-surface transition-colors hover:bg-surface-container`} />
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={stars ? `elah on GitHub, ${stars} stars` : 'elah on GitHub'}
+            className={cn(cell, 'hidden gap-2 text-on-surface no-underline transition-colors hover:bg-surface-container sm:flex', label)}
           >
-            <MobileMenuContent pathname={pathname} onNavigate={() => setMenuOpen(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <Star size={12} strokeWidth={2} className="fill-[#FF003C] text-[#FF003C]" aria-hidden />
+            {stars ?? 'GitHub'}
+          </a>
+          {showCta && (
+            <Link href={GET_STARTED_URL} className={cn(cta, label)}>
+              Get started
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls={panelId}
+            className={cn(cell, 'justify-center text-on-surface transition-colors hover:bg-surface-container lg:hidden')}
+          >
+            {open ? <X size={16} aria-hidden /> : <Menu size={16} aria-hidden />}
+          </button>
+        </div>
+      </nav>
+
+      {open && (
+        <div
+          id={panelId}
+          className="absolute inset-x-0 top-full max-h-[calc(100dvh-52px)] overflow-y-auto border-b border-outline-variant bg-surface lg:hidden"
+        >
+          <nav aria-label="Mobile">
+            {navLinks.map((l) => {
+              const active = isActiveHref(pathname, l.href)
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={close}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(row, active ? linkActive : 'text-on-surface hover:bg-surface-container')}
+                >
+                  {l.label}
+                </Link>
+              )
+            })}
+            {extras && (
+              <div onClick={close}>
+                <VersionBadge block className={cn(row, 'text-on-surface')} />
+              </div>
+            )}
+            {extras && (
+              <a
+                href={DISCORD_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackEvent('discord_clicked', { source: 'nav_mobile' })
+                  close()
+                }}
+                className={cn(row, 'text-on-surface hover:bg-surface-container')}
+              >
+                Discord
+              </a>
+            )}
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={close}
+              className={cn(row, 'gap-2 text-on-surface hover:bg-surface-container')}
+            >
+              <Star size={12} strokeWidth={2} className="fill-[#FF003C] text-[#FF003C]" aria-hidden />
+              {stars ? `GitHub ${stars}` : 'GitHub'}
+            </a>
+            {showCta && (
+              <Link href={GET_STARTED_URL} onClick={close} className={cn(cta, 'border-t border-outline-variant py-4', label)}>
+                Get started
+              </Link>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   )
-}
-
-/**
- * The one site header. Link list, logo, active-route treatment, version pill
- * and Discord/GitHub are shared; only the chrome differs.
- */
-export function SiteNav({ variant, overlap = false }: SiteNavProps) {
-  const pathname = usePathname() ?? '/'
-  const resolved = variant ?? navVariantFor(pathname)
-  return resolved === 'bar' ? <BarNav pathname={pathname} /> : <FloatingNav pathname={pathname} overlap={overlap} />
 }

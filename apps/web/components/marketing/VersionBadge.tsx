@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { currentVersion } from '@/config/changelog'
+import { label } from '@/components/eb'
 
 interface VersionBadgeProps {
   className?: string
@@ -9,9 +10,9 @@ interface VersionBadgeProps {
 }
 
 /**
- * Compact version pill that links to the changelog. Shows the current published
- * package version (single source of truth in config/changelog.ts) so visitors
- * can see what the latest package update is at a glance.
+ * Version cell that links to the changelog: mono uppercase, hairline, with a
+ * red square dot. Shows the current published package version (single source
+ * of truth in config/changelog.ts).
  */
 export function VersionBadge({ className, block }: VersionBadgeProps) {
   return (
@@ -19,19 +20,15 @@ export function VersionBadge({ className, block }: VersionBadgeProps) {
       href="/changelog"
       title={`What's new in v${currentVersion}`}
       className={cn(
-        'group inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-low px-2.5 py-1 text-2xs font-medium text-on-surface-variant transition-colors hover:border-primary/40 hover:bg-surface-container hover:text-on-surface',
-        block && 'w-full justify-center',
-        className
+        'group inline-flex items-center gap-2 text-on-surface-variant no-underline transition-colors hover:bg-surface-container hover:text-on-surface',
+        label,
+        block && 'w-full',
+        className,
       )}
     >
-      <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-      </span>
-      <span className="font-mono tracking-tight">v{currentVersion}</span>
-      <span className="text-on-surface-variant opacity-90 group-hover:opacity-100">
-        What&apos;s new
-      </span>
+      <span aria-hidden className="inline-block h-[6px] w-[6px] shrink-0 bg-[#FF003C]" />
+      <span className="tabular-nums">v{currentVersion}</span>
+      <span>What&apos;s new</span>
     </Link>
   )
 }

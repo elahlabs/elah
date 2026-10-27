@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { label } from '@/components/eb'
 import { cn } from '@/lib/utils'
 
 interface TocItem {
@@ -46,12 +47,12 @@ export function DocsToc({ items }: DocsTocProps) {
           <a
             href={`#${item.id}`}
             className={cn(
-              'block rounded px-2 text-xs transition-colors',
+              'block border-l-2 px-3 text-xs transition-colors',
               size === 'touch' ? 'py-2' : 'py-1',
-              item.level === 3 && 'pl-4',
+              item.level === 3 && 'pl-6',
               activeId === item.id
-                ? 'text-primary font-medium'
-                : 'text-on-surface-variant hover:text-on-surface'
+                ? 'border-[#FF003C] text-on-surface font-medium'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'
             )}
           >
             {item.title}
@@ -65,8 +66,8 @@ export function DocsToc({ items }: DocsTocProps) {
     <>
       {/* Mobile + tablet: collapsible above the article. Native <details> so it
           works before hydration and needs no extra state. */}
-      <details className="order-first rounded-md border border-outline-variant bg-surface-low lg:hidden">
-        <summary className="label-mono cursor-pointer list-none px-4 py-3 text-2xs text-on-surface-variant">
+      <details className="order-first border border-outline-variant bg-surface-low lg:hidden">
+        <summary className={cn(label, 'cursor-pointer list-none px-4 py-3 text-on-surface-variant')}>
           On this page
         </summary>
         <nav className="border-t border-outline-variant px-2 py-2">{links('touch')}</nav>
@@ -75,7 +76,7 @@ export function DocsToc({ items }: DocsTocProps) {
       {/* Desktop rail */}
       <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-48 shrink-0 overflow-y-auto lg:block">
         <div className="py-6 pl-4 pr-2">
-          <h4 className="label-mono mb-3 text-2xs text-on-surface-variant opacity-70">
+          <h4 className={cn(label, 'mb-3 text-on-surface-variant')}>
             On this page
           </h4>
           <nav>{links('compact')}</nav>

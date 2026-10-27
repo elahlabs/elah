@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
+import { label } from '@/components/eb'
 import { cn } from '@/lib/utils'
 
 interface CodeBlockProps {
@@ -28,25 +29,25 @@ export function CodeBlock({
   }
 
   return (
-    <div className={cn('group relative rounded-md border border-outline-variant bg-surface-low overflow-hidden', className)}>
+    <div className={cn('group relative border border-outline-variant bg-surface-low overflow-hidden', className)}>
       {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container px-4 py-2">
+      <div className="flex items-center justify-between border-b border-outline-variant bg-surface-low pl-4">
         <div className="flex items-center gap-2">
           {filename ? (
-            <span className="font-mono text-xs text-on-surface-variant">{filename}</span>
+            <span className={`text-on-surface-variant ${label}`}>{filename}</span>
           ) : (
-            <span className="label-mono text-2xs text-on-surface-variant opacity-90">{language}</span>
+            <span className={`text-on-surface-variant ${label}`}>{language}</span>
           )}
         </div>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 rounded px-2 py-1 text-2xs text-on-surface-variant transition-colors hover:bg-surface-high hover:text-on-surface"
+          className={cn(label, 'flex items-center gap-1.5 border-l border-outline-variant px-3 py-2.5 text-on-surface-variant transition-colors hover:bg-on-surface hover:text-surface')}
           aria-label={copied ? 'Code copied' : 'Copy code'}
         >
           {copied ? (
             <>
-              <Check className="h-3 w-3 text-tertiary" />
-              <span className="text-tertiary">Copied</span>
+              <Check className="h-3 w-3" />
+              <span>Copied</span>
             </>
           ) : (
             <>
@@ -97,7 +98,7 @@ export function InlineCode({ children, className }: InlineCodeProps) {
   return (
     <code
       className={cn(
-        'rounded bg-surface-container px-1.5 py-0.5 text-xs text-on-surface break-words',
+        'bg-surface-container px-1.5 py-0.5 text-xs text-on-surface break-words',
         className
       )}
       style={{ fontFamily: 'var(--font-geist-mono), monospace' }}
