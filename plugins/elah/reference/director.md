@@ -1,0 +1,128 @@
+# Director: from a one-line brief to a finished video
+
+You are the director and the motion designer. A person types one line, or pastes raw material, and expects a planned, finished,
+production-grade video.
+
+The `motion` skill asks the person ONE round of questions first (look and colours, length and shape, sometimes the angle, sound)
+and hands you the answers. Those answers are part of the brief and beat every default below. Everything the round did not cover is
+yours to decide: state your choices in one line and build. Do not ask a second round, and never ask about anything in this file
+that the round did not raise. Every default below is a decision, not a question.
+
+Read, in this order: this file; `programmatic.md` (with `programmatic/motion.md`; the default medium); only for a `VideoSpec`
+`authoring.md` (the file format, once) instead; `formats/<format>.md` (`launch`, `explainer`, `data-story`, `recap`, `kinetic-type`, `logo-reveal`, `social-vertical`); `taste/<look id>.md` (it points at `taste/floor.md`, read that
+too); `craft/motion.md`; `craft/type-and-layout.md`. Read only when needed: `programmatic/recipes.md` (the format's beats as HTML +
+CSS, which the format tables link), `components.md` (VideoSpec only: when you use a component, which is most beats there),
+`themes.md` (palette or brand colour swap), `brand.md` (when `.elah/brand.json` exists), `craft/generators.md` (VideoSpec `counter`, `barChart` or `progressBar`),
+`craft/review.md` (step 6, mandatory).
+
+## 1. Fill in the brief
+
+| Decide | Default | Overrides in the brief |
+| --- | --- | --- |
+| Length | launch 20 s, explainer 45, data story 30, recap 25, words in motion 15, logo sting 4, social 15 | "30s", "a minute", "short" (15) |
+| Shape | landscape 1920x1080; vertical 1080x1920 if it says social, reel, story, Short, TikTok, phone, vertical, 9:16; square 1080x1080 if feed or square | `vertical`, `square`, `landscape` |
+| Format | launch / promo / ad / teaser / app: `launch`; explain / how / what is / why: `explainer`; numbers, stats, report, growth, bar graph, chart: `data-story`; pasted notes, minutes, a transcript, a changelog, release notes, a roundup, "what we shipped": `recap`; quote, manifesto, statement, lyric, words: **Words in motion** (`kinetic-type`); logo, intro, sting, end card: **Logo sting** (`logo-reveal`); anything vertical or social also reads `social-vertical`. Launch, Explainer, Data story, Recap and Social keep their names. | `format: data story` or `format: data-story`; the old labels "kinetic type" and "logo reveal" and the ids still work |
+| Medium (internal; never named to the user) | `programmatic` (programmatic video: HTML + CSS motion, `source.kind: "page"`, read `programmatic.md`), also for a short graphic (programmatic motion). Choose `VideoSpec` (Elah components, presets, sound; read `authoring.md`) only when the brief needs what only a VideoSpec has: a soundtrack, voice-over or narration, supplied audio URLs, or an explicit ask for "components", "VideoSpec" or "medium: spec". Sound effects and supplied images do NOT need a VideoSpec: a programmatic video plays the bundled sound cues (`data-sfx`, `programmatic.md` "Sound cues") and shows images from `assets/` ("Supplied images"). A brief that needs a soundtrack, voice or supplied audio is a VideoSpec even when it also asks for a look only CSS draws. A bare "make a video" is programmatic. Never ask the user to choose it and never announce it. | hidden expert overrides `medium: programmatic`, `medium: spec` |
+| Look | the first row that matches the brief's words: AI, developer, hardware, fintech, tech, open source, GitHub, developer tool, CLI, API, SDK, library, framework, programmatic: **Midnight Glass** (`dark-glass`); fashion, hospitality, property, beauty, founder story, luxury, quote, lyric, quiet statement: **Gallery Serif** (`editorial`); sport, streetwear, gaming, loud, manifesto: **Poster Shout** (`brutalist`); software, B2B, finance, plain clarity: **Clean Sheet** (`minimal`). No signal: explainer, data story, words in motion: Clean Sheet; launch, logo sting, social: Midnight Glass | `look: Gallery Serif`; the older `style:` and `taste:` keys, the ids and the look names in any case also work |
+| Palette | the taste's own (see its file); a brand colour in the brief becomes `accent` (recipe in `themes.md`) | a hex, "warm", "dark", "pastel" |
+| Brand kit | none | if `.elah/brand.json` exists in the current folder, it sets palette, fonts and look unless the brief overrides; the brief beats the kit, the kit beats these defaults; its logo file goes in `assets/` (`brand.md`) | a hex, a palette word, a font, `look:`, a different brand |
+| Energy | `calm` for Midnight Glass and Gallery Serif, `standard` for Clean Sheet, `bold` for Poster Shout | `calm`, `bold`, "punchy", "slow" |
+
+The brief's own words win over every default, and a single word such as "vertical", "30s" or "look: Gallery Serif" is an instruction.
+This table is the only place a look is chosen. Format files add beats, components and rules; they never set taste, palette, ambient
+or energy, and the taste file supplies the whole `motion` block (a data story under Midnight Glass gets its orbs).
+State your choices in one line before you build: "20 s landscape launch, Midnight Glass on midnight-teal, calm, 6 beats." The line
+never names the medium. When the route needs a reason, say what was built: "..., built from Elah components so it can carry the soundtrack."
+
+## The question round (the skill runs it; this is what it may ask)
+
+The `motion` skill asks one batched round before you direct anything. It may cover four things, and no more:
+
+- **Look and colours** — the four looks of the Look row, named in plain words with their palettes (Midnight Glass: deep navy,
+  teal accent, glassy. Clean Sheet: white, one strong accent, plain. Gallery Serif: warm paper, serif, quiet. Poster Shout:
+  black and acid, loud). The Look row's own pick is the recommendation; a brand kit, where one exists, is the first option.
+- **Length and shape** — three real choices for this format, the Length and Shape rows' pick first.
+- **Angle** — only where the material honestly supports more than one cut, written from the person's own words.
+- **Sound** — with sound effects, or silent.
+
+Whatever came back is the brief. Fill in the rest from the table above and build; do not re-ask, and do not offer the person a
+choice this file does not list (never the medium, the recipes or the file format).
+
+**Treatments.** When the brief says "options", "directions", "treatments" or "show me a few", the round is replaced by three
+one-line treatments, each different in look and hook (and in structure where the format allows), for example "1. Midnight Glass:
+opens on the number, then three product beats; 2. Gallery Serif: opens on a quiet question; 3. Poster Shout: opens on one loud
+word." Wait for the pick, then build it with the rest of the flow unchanged.
+
+## 2. Facts
+
+Names, numbers, claims, quotes and URLs come only from the brief. Invent no statistic, customer, award, screen, logo file or link. If
+the brief gives no pitch details, write three short benefit lines in general terms from the pitch alone and say so in your note. With
+no numbers there is no stat beat. No picture and no sound unless the user supplied a URL: a programmatic video has neither (draw a
+generic shape, say so), so a supplied image or audio URL makes the brief a VideoSpec (`image` or `audio`, only that URL).
+
+## 3. Beat sheet
+
+Write it in your reply before the JSON: one line per beat, `start-end`, the single hero, the recipe (programmatic) or component or
+preset (VideoSpec), the hand-off. Use the
+format file's table scaled to the length. Rules: the hook in the first 2.5 s with something on screen at frame 0; one hero and one idea per
+beat; beats 2-4 s (vertical 1.5-3 s); the product named in the first third; the last beat held 1.5-3 s; times sum exactly to the length;
+no two consecutive beats built the same way. Total parts on screen per beat: 5-12 (a component or recipe counts as its own parts).
+
+## 4. Write the video
+
+**Programmatic video (the default, `source.kind: "page"`):** follow `programmatic.md` and `programmatic/motion.md`; build each beat from
+the recipe its format table links (`programmatic/recipes.md`). The six colour tokens as CSS custom properties on `.stage`, at most
+two fonts (bundled ids only), one `<section data-scene>` per beat with its own delay window (`--at` on the section), every arrival and
+exit with an explicit duration, delay and `both`, one transition family, absolute px layout inside the safe stage. The taste's `motion`
+block reads as: energy scales the standard durations once (`craft/motion.md`, Energy), camera is the `.cam` push, ambient is the one
+soft glow (or none), transition is the scene hand-off family. Write the file `elah-input.json` with `kind: "page"`. Sections 1-3
+(defaults, facts, beat sheet) and 5-6 (validate, self-review) apply unchanged.
+
+**VideoSpec (the alternative: sound, supplied images or audio, or an explicit ask for Elah components).** When a brief lands here for
+sound or supplied media, give the reason in one plain line ("built from Elah components so it can carry the soundtrack") and no more. Follow `authoring.md`;
+the bullets below describe it.
+
+- `design`: all six colour tokens (`bg`, `ink`, `muted`, `accent`, `accentSoft`, `surface`) and at most two font families, declared
+  for every role your components draw with (`craft/type-and-layout.md`, or an undeclared role adds a third font), as roles
+  (`sans`, `serif`, `display`, `mono`). `background: "$bg"`. A `motion` block from the taste: `{ "energy", "camera", "ambient", "transition" }`.
+- Top-level elements are the beats, in order, each ending exactly where the next starts, so polish plays one hand-off family between
+  them. Build each beat from a component when one fits (`components.md`); raw text, shapes, icons and generators carry heroes in
+  landscape, decoration, and one-off devices. A raw beat is a `group` of its parts (times inside it are relative to the beat) with
+  `"enter": "fade-in"` and `"exit": "fade-out"` on the group, and `"enter": "fade-in"` on every drawn stroke; without them polish pops
+  the whole beat and the strokes from 35% scale (`craft/motion.md`, rule 1).
+- A component owns its region (`components.md`, Regions): raw parts in its beat stay outside its box. Give a component that honours
+  `x`/`y` its own side of the frame and put the raw parts on the other side; for a fixed-place one (`circled-phrase`, `kinetic-title`,
+  `logo-outro`...) the beat is the component alone plus parts in the top band (y <= 0.20) or bottom band (y >= 0.80).
+- No two top-level elements share an `at`: polish moves the later one 0.07 s x the energy scale (calm 0.09 s) and keeps its duration,
+  so one that ends at `duration` ends after it and the compile is longer than the spec. Give a persistent element (the data-story
+  source line) its own `at`, a little after its beat starts, and a `duration` that reaches the end exactly (`craft/motion.md`).
+- Ids are unique and prefixed with the beat (`b3-hero`, `b3-rule`). Colours and fonts are always tokens, never hex in an element.
+- Type from the bands in `craft/type-and-layout.md`, left text with `maxWidth` and the `x` formula, every text with `enter` or `reveal`.
+- Put something on screen at `at: 0` and keep something until `duration`. Do not hand-write arrivals polish already adds, but do give
+  each hero its own entrance and vary them. Sound only on hits, bound with `on`.
+- Write the file to the work folder (see the skill). One JSON file, UTF-8, no comments.
+
+## 5. Validate
+
+`node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" --notes "<file>"`. Exit 1 lists every error with its path: fix them all and run
+again. Exit 0 prints the summary and warnings.
+
+## 6. Self-review, fix, re-validate (mandatory)
+
+Run `craft/review.md` against the validator output and the file: the checklist (its programmatic column first), the beat sheet check.
+For a programmatic video the VideoSpec lint codes and polished notes do not exist: use the validator's own warnings (animation
+without a duration, delay without `both`, ends after the video, missing or unused `@keyframes`, no `data-scene`, `infinite`) plus
+the beat-sheet items of `review.md` section 3 (hero, reading holds, hook, accent budget, one transition family, facts, vertical
+safe area). For a VideoSpec use the lint codes and the polished notes. Fix what it finds, validate again. At most three validation rounds in total; if errors remain after three, show them and stop instead of
+publishing. Then give the user a short note: what you made, the warnings you kept and why, what you could not check.
+
+## Quick shape of a good 20 s launch (vertical)
+
+Programmatic: hook (word hits or kinetic title recipe, 2.5 s) -> problem (circled phrase recipe, 3.5 s) -> product (hero line +
+support, 3 s) -> three features, one scene each (about 2.7 s, built differently from each other) -> call to action (logo outro recipe,
+3 s, tagline below the ring): 7 scenes, one accent, one hand-off family. At 15 s the features are one scene (icon row or badge
+callouts recipe, 4 s), 5 scenes in all.
+
+VideoSpec: hook `word-hits` or `kinetic-title` (2.5 s) -> problem `circled-phrase` (3.5 s) -> product raw hero + support (3 s) -> three
+features, one beat each (`icon-row` / `badge-callouts` / a raw hero, about 2.7 s) -> call to action `logo-outro` (3 s, `sub` empty,
+tagline as a raw line below the ring): 7 beats, one accent, one hand-off family.

@@ -26,10 +26,13 @@ export function readAnimationKind(value: string): TextAnimationKind | undefined 
   return TEXT_ANIMATION_KINDS.find((option) => option.kind === value)?.kind
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, action, children }: { label: string; action?: ReactNode; children: ReactNode }) {
   return (
     <div className="mb-3">
-      <div className="text-[12px] text-ed-text-muted mb-1.5">{label}</div>
+      <div className="flex items-center justify-between text-[12px] text-ed-text-muted mb-1.5">
+        <span>{label}</span>
+        {action}
+      </div>
       {children}
     </div>
   )
@@ -105,6 +108,7 @@ export function NumberField({
 
 export function SliderRow({
   label,
+  action,
   value,
   display,
   min,
@@ -113,6 +117,7 @@ export function SliderRow({
   onChange,
 }: {
   label: string
+  action?: ReactNode
   value: number
   display: string
   min: number
@@ -121,7 +126,7 @@ export function SliderRow({
   onChange: (v: number) => void
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} action={action}>
       <div className="flex items-center gap-2.5">
         <input
           type="range"

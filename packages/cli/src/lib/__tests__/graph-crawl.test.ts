@@ -5,7 +5,9 @@ import { describe, it, expect } from 'vitest'
 import { existsSync } from 'node:fs'
 import { resolveModuleFile, startHarnessServer } from '../server'
 
-const IMPORT_RE = /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g
+// A specifier has no whitespace, which keeps string literals that merely
+// contain the word (`num(params, 'from', 0)`) from reading as imports.
+const IMPORT_RE = /\b(?:from|import)\s*\(?\s*['"]([^'"\s]+)['"]/g
 
 const coreDistBuilt = (() => {
   try {
@@ -40,6 +42,9 @@ describe.skipIf(!coreDistBuilt)('served module graph', () => {
       }
       if (!type?.includes('javascript')) failures.push(`BAD MIME ${type} ${path}`)
 
+      // Like a browser, resolve relative imports against the response URL:
+      // a directory request is redirected to its index.js.
+      const base = res.url || server.origin + path
       const source = await res.text()
       for (const match of source.matchAll(IMPORT_RE)) {
         const spec = match[1]
@@ -47,7 +52,7 @@ describe.skipIf(!coreDistBuilt)('served module graph', () => {
           failures.push(`UNREWRITTEN BARE '${spec}' in ${path}`)
           continue
         }
-        const resolved = new URL(spec, server.origin + path).pathname
+        const resolved = new URL(spec, base).pathname
         if (!seen.has(resolved)) queue.push(resolved)
       }
     }

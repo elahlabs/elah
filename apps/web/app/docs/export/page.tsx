@@ -61,8 +61,10 @@ export function ExportButton() {
     const project = engine.getProject()
 
     const options: ExportOptions = {
-      videoCodec: 'avc',       // 'avc' | 'vp9' | 'vp8' — default: 'avc'
+      videoCodec: 'avc',       // 'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8' — default 'avc'; the rest where the browser can encode them
       audioCodec: 'aac',       // 'aac' | 'opus'
+      // container: 'mp4',     // also 'webm' (transparent: true), 'gif' (gifFps) or 'png-sequence'
+      // range: 'inOut',       // export only the marked in/out range
       videoBitrate: 8_000_000, // 8 Mbps (default)
       audioBitrate: 192_000,
       outputHeight: 1080,      // optional: the stage's SHORT edge in px; default = native short edge

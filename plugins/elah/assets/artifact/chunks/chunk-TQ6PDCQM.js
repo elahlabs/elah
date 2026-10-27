@@ -1,0 +1,1 @@
+function t(e){return!!e.effects?.length||o(e.mask)||!!e.blend&&e.blend!=="normal"||!!e.matte}var r={none:0,alpha:1,luma:2},n={rect:0,ellipse:1,gradient:2,path:3};function o(e){return!e||!(e.kind in n)?!1:e.kind!=="path"||typeof e.path=="string"&&e.path.trim().length>0}export{t as a,r as b,n as c,o as d};

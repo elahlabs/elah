@@ -134,7 +134,7 @@ engine.updateClip(clip.id, trackId, {
 })`}
           />
           <P>
-            Motion applies to shape clips too. They carry the same structure on <C>Clip.shapeAnimation</C>. One caveat: neither shape renderer applies <C>transform.rotation</C>, so <C>spin</C> is offered for text only (see <C>appliesTo</C> in <C>TEXT_ANIMATION_KINDS</C>) and a rotation channel has no visible effect on a shape.
+            Motion applies to shape clips too. They carry the same structure on <C>Clip.shapeAnimation</C>. One caveat: <C>spin</C> is still offered for text only (see <C>appliesTo</C> in <C>TEXT_ANIMATION_KINDS</C>). Since 1.0.0 the shape painter does apply <C>transform.rotation</C>, so a rotation channel in a <C>MotionSpec</C> turns a shape.
           </P>
         </section>
 

@@ -96,8 +96,7 @@ controller.destroy() // stops all audio, detaches clock, closes context
 
 ## Hook abstractions
 
-All hooks below are exported from `@elah/react` (not `@elah/core` — `core` only
-ships `AudioPlaybackController` itself; the React wrappers live one layer up).
+All hooks are exported from `@elah/core`.
 
 ### `useAudioMixer(controller)`
 
@@ -131,7 +130,7 @@ Reads `project.masterVolume` and exposes `setMasterVolume(v)` which:
 ## Testing
 
 ```bash
-npm --workspace @elah/core run test
+npm run test
 ```
 
 Tests inject a mock `AudioContext` (no real Web Audio) and a fake `PlaybackEngine`. Covered scenarios:

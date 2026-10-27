@@ -47,7 +47,7 @@ export interface FrameCacheOptions {
 }
 
 /** RGBA byte estimate for ImageBitmap (width/height) or VideoFrame (codedWidth/codedHeight). */
-export function estimateFrameBytes(frame: unknown): number {
+function estimateFrameBytes(frame: unknown): number {
   const f = frame as { width?: number; height?: number; codedWidth?: number; codedHeight?: number }
   const w = f.width ?? f.codedWidth ?? 0
   const h = f.height ?? f.codedHeight ?? 0

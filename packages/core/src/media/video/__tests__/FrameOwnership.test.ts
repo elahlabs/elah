@@ -7,7 +7,6 @@
  *  - Frames emitted after dispose are immediately closed
  *
  * @see architecture.md § 10 (frame ownership)
- * @see EVOLUTION.md I10
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

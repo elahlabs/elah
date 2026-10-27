@@ -7,7 +7,90 @@
 
 ---
 
+## Measured size (1.0.0, 2026-10-23)
+
+`node scripts/measure-bundle.mjs` after `npm run build:packages`. esbuild, minified,
+gzipped; `react`, `react-dom`, `lucide-react` and `mediabunny` external (the app ships
+its own React and icons, and mediabunny is a lazy import a code-splitting bundler puts
+in its own chunk).
+
+### What a real app pays
+
+Each row is a one-line module importing only those names, so the bundler tree-shakes the
+rest. **The "editor app" row is the startup number to quote.**
+
+| App imports | gz | raw (min) | biggest contributors (minified) |
+|---|---|---|---|
+| **editor app**: `EditorProvider`, `Preview`, `Timeline` from `@elah/editor` | **112.0 KiB** | 369.3 KiB | renderer 92, resolver 56, timeline pkg 45, media 40, editor pkg 26, editor 20, elements 14 |
+| engine only: `TimelineEngine`, `resolveTimeline` from `@elah/core` | 44.7 KiB | 138.5 KiB | resolver 56, editor 20, effects 12, elements 12, renderer 10 |
+| render + export: `TimelineEngine`, `GpuRenderer`, `exportVideo` | 75.0 KiB | 243.2 KiB | renderer 92, resolver 30, media 29, export 21, editor 20 |
+| `@elah/core/spec` on its own (every export) | 71.0 KiB | 214.4 KiB | spec 122, vector 29, elements 20, icons 17, effects 11 |
+| `@elah/core/html` on its own (every export) | 44.3 KiB | 134.7 KiB | vector 87, elements 24, effects 11, resolver 7 |
+
+**What "startup" means here (CONV-8).** The script leaves every relative dynamic
+`import()` inside `@elah/core` out of the bundle, because a code-splitting bundler (Vite,
+webpack, Next) makes each one its own chunk that loads on first use. Before CONV-8 the
+same method read **130.5 KiB** for the editor app (133.0 KiB when those lazy imports were
+counted as if inlined, which is how CONV-7 printed it). The change moved effects, generators,
+sequence clips, roto masks and the audio Enhance denoiser behind `renderer/gpu/features.ts`:
+**130.5 to 112.0 KiB gz, 18.5 KiB saved**. The 105 KiB target was **not reached**; see
+below.
+
+**What loads on first use** (gz, from the bundle of a consumer that imports `GpuRenderer`):
+
+| Feature | Loads when | Chunk holds |
+|---|---|---|
+| effects | first clip with an effect, mask, matte, blend, an adjustment clip, a transition or a compound reaches the renderer | `EffectChain`, all 23 GPU effects, mask / blend shaders, GPU transitions (about 12.6 KiB gz) |
+| generators | first generator clip | `GeneratorLayer` and the generator painter |
+| sequences | first sequence clip | `SequenceLayer`, frame provider and reader |
+| roto masks | first video clip with a roto run | `RotoMaskLayer`, its frame provider |
+| Enhance | first clip with Enhance on, preview or export | the denoise worklet source (about 5 KiB min) |
+
+A frame that needs a feature still loading draws without it, and the renderer redraws its
+last scene by itself when the load finishes. `prepareFeatures(project)` loads everything a
+project needs up front. Export is unchanged: the export worker keeps static imports, and
+the main-thread mix awaits the Enhance chunk before the first clip.
+
+**Why 112 and not 105.** What is left is startup code that is not one of these features:
+`tailwind-merge` 20 KiB min and the timeline package 45 KiB min (editor and timeline
+packages, outside CONV-8), the resolver 56 KiB min (must stay synchronous), the audio
+player 11 KiB min, the video decode path (`StreamingFrameProducer`, `VideoDecoderManager`,
+`VideoFrameProvider`) about 20 KiB min, and the shape and text painters (about 24 KiB min,
+needed by almost every project). Further candidates that stay inside the renderer are the
+debug panel (3 KiB min), the probe layer (3 KiB min) and the adjustment layer (2 KiB min),
+about 3 KiB gz together, which would give about 109.
+
+**Startup grew from 0.6.0**: the engine plus React UI was 68 KiB gz at startup in 0.6.0 and
+the editor app is 112 KiB gz now (133 before CONV-8). The remaining growth is code the
+editor app needs on first paint: the renderer core (layers, shape and text painters, video
+decode), the resolver (keyframes, expressions, compounds) and media. It is **not** the
+experimental layers: `spec`, `html`, `ops` and `icons` contribute 0 bytes to the first
+three rows, because they are `sideEffects: false` and nothing in those apps imports them.
+
+### Worst case: everything exported
+
+The same bundler run on each package barrel, with every export kept (what `export *`
+defeats tree-shaking into). No real app pays this; it is here so the number is never
+mistaken for startup cost.
+
+| Package | own code, gz | with its small runtime deps, gz |
+|---|---|---|
+| `@elah/core` | 199.2 KiB | 202.2 KiB |
+| `@elah/react` | 1.5 KiB | 1.5 KiB |
+| `@elah/timeline` | 14.9 KiB | 21.6 KiB |
+| `@elah/editor` (layer only) | 18.0 KiB | 18.0 KiB |
+| **Full SDK, everything exported** (`editor` with `core` + `react` + `timeline`) | **154.8 KiB** | **164.5 KiB** |
+
+The `@elah/core` barrel includes the root only; the subpath entries are separate, so their
+code is not in that 199 KiB.
+
+---
+
 ## Measured size (0.6.0, 2026-10-02)
+
+> **These tables are the 0.6.0 measurement and do not describe 1.0.0.** They are kept as
+> the baseline the 1.0.0 numbers above are compared with; the packed tarball also grew
+> about elevenfold (see "What `npm pack` ships in 1.0.0" below).
 
 Reproduce with `node scripts/measure-bundle.mjs` after `npm run build:packages`.
 Two measurements are printed because they answer different questions, and the
@@ -68,7 +151,24 @@ the runtime cost, and it overstates the latter by roughly 60 percent.
 
 The 0.2.1 figures that used to live here (~41 / ~12 / ~10 / ~63 KiB) were this
 tarball measurement, presented in the badges as if they were a bundle size.
-They are retired; the badges now quote the bundled SDK.
+They are retired. (The README badges that quoted the 0.6.0 bundle were removed for
+1.0.0 rather than left stating a number that no longer holds.)
+
+### What `npm pack` ships in 1.0.0
+
+`npm pack --dry-run --json --workspace=packages/<name>`, 2026-10-22. Packed size is the
+tarball a consumer downloads; the fonts are woff2 and do not compress further.
+
+| Package | files | packed | unpacked |
+|---|---|---|---|
+| `@elah/core` | 735 | 1,158,481 B (about 1.2 MB) | 3,028,695 B (3.0 MB) |
+| `@elah/react` | 21 | 9,331 B | 29,817 B |
+| `@elah/timeline` | 56 | 35,442 B | 151,711 B |
+| `@elah/editor` | 42 | 41,961 B | 177,555 B |
+
+About 623 KB of `@elah/core` is the twelve bundled font families (`fonts/<id>/`, with each
+`OFL.txt`). A host loads them only if it serves them or opts in with `packageFontsBaseUrl()`.
+`@elah/core` was about 106 KB packed in 0.6.0.
 
 ---
 
@@ -141,7 +241,8 @@ new GpuRenderer({ demuxerFactory })
 
 `core` has no React. `react` is the only package that imports it for the store
 bridge. `timeline` and `editor` are React components. A consumer who wants the
-engine alone installs `core` and pays the 11 KiB startup in the table above.
+engine alone installs `core` and imports `@elah/core/engine`, which leaves out the
+renderer, the codec and the export worker.
 `ARCHITECTURE.md` § 9 (A6) is the rule against splitting further into
 micro-packages; these five exist because each has a real, separately adopted
 consumer.
@@ -183,9 +284,18 @@ sits beside the web UI packages: `core ← react ← react-native`.
 
 ## Future
 
-- Make `createDefaultDemuxerFactory` lazy so the quick-start path starts at
-  68 KiB instead of 227 KiB.
+- Make `createDefaultDemuxerFactory` lazy so the quick-start path no longer pulls the
+  codec (about 159 KiB gzipped) into the startup graph.
+- Trim what the editor app pays at startup further (112 KiB gz after CONV-8 loaded effects,
+  generators, sequence, roto and audio Enhance on first use, against 68 KiB in 0.6.0 and a
+  target of 105 KiB). What is left is outside those features; see "Why 112 and not 105"
+  above. The model-facing layers are already subpath entries (`@elah/core/spec`, `/html`,
+  `/ops`, `/icons`) and cost an app nothing unless imported, so they are not where the
+  startup goes.
 - Optional sub-path exports (for example `@elah/editor/export`) if apps want the
   timeline without the export worker in their module graph.
-- A formal `@public` API marking so internal symbols can change without a major
-  version bump.
+- A formal `@public` / `@experimental` marking in the type declarations. For 1.0.0 the
+  policy is by layer: the exported surface of `@elah/core` (root and `/engine`),
+  `@elah/react`, `@elah/timeline` and `@elah/editor` is a semver promise, while the
+  `@elah/core/spec`, `/html`, `/ops` and `/icons` entries are experimental and may change
+  in a minor release (see `CHANGELOG.md`).

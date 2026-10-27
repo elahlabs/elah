@@ -1,0 +1,37 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Notes AI launch promo",
+  "source": {
+    "kind": "spec",
+    "spec": {
+      "version": 1,
+      "title": "Notes AI launch promo",
+      "format": { "width": 1920, "height": 1080, "fps": 30 },
+      "duration": 9,
+      "background": "$bg",
+      "design": {
+        "colors": [
+          { "name": "bg", "value": "#0b0f1a" },
+          { "name": "ink", "value": "#f3f4f6" },
+          { "name": "muted", "value": "#8b93a7" },
+          { "name": "accent", "value": "#00c2ff" }
+        ],
+        "fonts": [
+          { "role": "sans", "font": "inter" },
+          { "role": "display", "font": "bebas-neue" }
+        ]
+      },
+      "elements": [
+        { "id": "glow", "kind": "shape", "shape": "circle", "at": 0, "duration": 9, "layer": -1, "w": 1100, "h": 1100, "fill": "$accent", "opacity": 0.1, "x": 0.5, "y": 0.55, "enter": "fade-in" },
+        { "id": "kicker", "kind": "text", "at": 0.2, "duration": 2.6, "text": "Meet Notes AI", "font": "$sans", "weight": 700, "size": 44, "color": "$accent", "x": 0.5, "y": 0.34, "enter": "fade-in", "exit": "fade-out" },
+        { "id": "headline", "kind": "text", "at": 0.5, "duration": 2.5, "text": "Your meetings, written for you.", "font": "$display", "size": 150, "color": "$ink", "x": 0.5, "y": 0.5, "reveal": { "preset": "word-rise", "stagger": 0.12, "duration": 0.45 }, "exit": "fade-out" },
+        { "id": "chip1", "kind": "text", "at": 3.4, "duration": 2.6, "text": "Live transcripts", "font": "$sans", "size": 46, "color": "#06212b", "pill": { "fill": "$accent", "radius": 40, "padding": 24 }, "x": 0.28, "y": 0.45, "enter": "slide-in-left", "exit": "fade-out" },
+        { "id": "chip2", "kind": "text", "at": 3.7, "duration": 2.3, "text": "Action items", "font": "$sans", "size": 46, "color": "$ink", "pill": { "stroke": "$ink", "strokeWidth": 3, "radius": 40, "padding": 24 }, "x": 0.5, "y": 0.55, "enter": "slide-in-up", "exit": "fade-out" },
+        { "id": "chip3", "kind": "text", "at": 4, "duration": 2, "text": "Searchable forever", "font": "$sans", "size": 46, "color": "#06212b", "pill": { "fill": "$accent", "radius": 40, "padding": 24 }, "x": 0.72, "y": 0.65, "enter": "slide-in-right", "exit": "fade-out" },
+        { "id": "icon", "kind": "icon", "icon": "zap", "at": 6.4, "duration": 2.6, "w": 120, "h": 120, "color": "$accent", "x": 0.5, "y": 0.4, "enter": "pop-in" },
+        { "id": "cta", "kind": "text", "at": 6.6, "duration": 2.4, "text": "Try it free today", "font": "$display", "size": 130, "color": "$ink", "x": 0.5, "y": 0.58, "enter": "fade-in" }
+      ]
+    }
+  }
+}

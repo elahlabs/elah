@@ -27,9 +27,10 @@ import type { ActiveImageClip } from '../../../resolver/scene'
 import { ShaderProgram } from '../ShaderProgram'
 import { QUAD_FRAG_SRC } from '../shaders/quad.frag'
 import { QUAD_VERT_SRC } from '../shaders/quad.vert'
-import { buildDrawTransformMatrix } from './drawRect'
+import { buildDrawTransformMatrix, resolveDrawRect } from './drawRect'
 import { loadCachedImage, type ImageLoader, type LoadedImage } from './imageCache'
 import type { Layer, LayerContext } from './types'
+import { needsChain } from '../compositing'
 
 export type { ImageLoader, LoadedImage } from './imageCache'
 
@@ -124,16 +125,54 @@ export class ImageLayer implements Layer<ActiveImageClip> {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, res.texture)
 
+    const cornerRadius = item.cornerRadius ?? 0
+    const crop = item.crop
+
+    // Effect stack: the chain draws the clip itself, or returns false and the
+    // plain draw below runs. Clips without effects never get here.
+    if (needsChain(item) && ctx.effectChain) {
+      const rect = resolveDrawRect(
+        item.transform,
+        ctx.stage.width,
+        ctx.stage.height,
+        res.image.width,
+        res.image.height,
+        crop,
+      )
+      const drawn = ctx.effectChain.draw(ctx, {
+        program: this._program,
+        vao: this._vao,
+        unit: 0,
+        contentWidth: res.image.width,
+        contentHeight: res.image.height,
+        ...(crop ? { crop } : {}),
+        cornerRadius,
+        rect,
+        opacity,
+        effects: item.effects ?? [],
+        ...(item.mask ? { mask: item.mask } : {}),
+        ...(item.blend ? { blend: item.blend } : {}),
+        ...(item.matte ? { matte: item.matte } : {}),
+      })
+      if (drawn) {
+        gl.bindTexture(gl.TEXTURE_2D, null)
+        gl.bindVertexArray(null)
+        return
+      }
+      this._program.use(gl)
+      gl.bindVertexArray(this._vao)
+      gl.activeTexture(gl.TEXTURE0)
+      gl.bindTexture(gl.TEXTURE_2D, res.texture)
+    }
+
     this._program.setUniform1i(gl, 'uTexture', 0)
     this._program.setUniform1f(gl, 'uOpacity', opacity)
     // Always set uRadius (0 when unset) — see VideoLayer's identical comment:
     // the uniform persists between draws within this program.
-    const cornerRadius = item.cornerRadius ?? 0
     this._program.setUniform2f(gl, 'uRadius', cornerRadius, cornerRadius)
     // Always set uCrop (zeros when unset) — the uniform persists in the GL
     // program between draws, so a clip without a crop must still clear
     // whatever the previously-drawn clip left behind.
-    const crop = item.crop
     this._program.setUniform4f(gl, 'uCrop', crop?.x ?? 0, crop?.y ?? 0, crop?.width ?? 0, crop?.height ?? 0)
     this._program.setUniformMatrix3fv(
       gl,

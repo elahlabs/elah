@@ -184,3 +184,26 @@ describe('TimelineEngine — protected tracks', () => {
     expect(audio.height).toBe(36)
   })
 })
+
+describe('TimelineEngine — zero-track projects (AVM-P6)', () => {
+  it('initialTracks: [] opens with no tracks and no clips', () => {
+    const engine = new TimelineEngine({ fps: 30, initialTracks: [] })
+    const project = engine.getProject()
+    expect(project.tracks).toEqual([])
+    expect(project.clips).toEqual({})
+  })
+
+  it('omitting initialTracks keeps the legacy single "Track 1" lane', () => {
+    const engine = new TimelineEngine({ fps: 30 })
+    const { tracks } = engine.getProject()
+    expect(tracks).toHaveLength(1)
+    expect(tracks[0]!.name).toBe('Track 1')
+    expect(tracks[0]!.kind).toBe('video')
+  })
+
+  it('addTrack works on an empty project', () => {
+    const engine = new TimelineEngine({ fps: 30, initialTracks: [] })
+    const track = engine.addTrack('audio')
+    expect(engine.getProject().tracks.map((t) => t.id)).toEqual([track.id])
+  })
+})

@@ -40,5 +40,18 @@ export function ClipProperties() {
   if (clip.type === 'video' || clip.type === 'image') return <VideoClipProperties clip={clip} />
   if (clip.type === 'audio') return <AudioClipProperties clip={clip} />
 
-  return null
+  // Clip types the playground has no panel for (freehand, and the adjustment,
+  // generator, compound and sequence clips a newer project can hold): they play,
+  // move and trim on the timeline, but are not edited here.
+  return (
+    <div className={cn(PANEL, 'overflow-hidden')}>
+      <PanelHeader />
+      <div
+        className="flex-1 flex items-center justify-center p-6 text-center text-xs text-ed-text-muted"
+        data-clip-properties-fallback={clip.type}
+      >
+        No properties to edit for this {clip.type} clip
+      </div>
+    </div>
+  )
 }

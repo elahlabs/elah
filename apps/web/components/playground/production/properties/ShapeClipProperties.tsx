@@ -9,6 +9,7 @@ import {
   type Clip,
   type TextAnimation,
 } from '@elah/editor'
+import type { BaselineContext } from '@elah/core'
 import { cn } from '@/lib/utils'
 import {
   inputCls,
@@ -17,10 +18,11 @@ import {
   SliderRow,
   PANEL,
   PanelHeader,
-  mergeTransform,
   clipTimecode,
   readAnimationKind,
 } from './propertiesShared'
+import { useKeyframeEditing } from './useKeyframeEditing'
+import { AnimatePanel, animatableChannels } from './AnimatePanel'
 
 /**
  * Shapes offer every kind except the text-only ones. `spin` is excluded because
@@ -84,10 +86,15 @@ export function ShapeClipProperties() {
 
   const fps = engine.getProject().fps
 
-  const tf = mergeTransform(effective)
-  const setTf = (patch: Partial<ReturnType<typeof mergeTransform>>) =>
-    setLocal((p) => ({ ...p, transform: { ...mergeTransform(effective), ...patch } }))
-  const commitTf = () => commit({ transform: mergeTransform(effective) })
+  // Keyframe-aware display and commit. A shape draws at the identity placement,
+  // so no baseline transform is needed.
+  const kfCtx: BaselineContext = { stage: engine.getProject().stage }
+  const { tf, setTf, commitTf, commitTfPatch, scalar, commitScalar, diamond } = useKeyframeEditing(
+    clip,
+    local,
+    setLocal,
+    kfCtx,
+  )
 
   return (
     <div className={cn(PANEL, 'overflow-hidden')}>
@@ -182,12 +189,13 @@ export function ShapeClipProperties() {
 
             <SliderRow
               label="Opacity"
-              value={effective.opacity ?? 1}
-              display={`${Math.round((effective.opacity ?? 1) * 100)}%`}
+              action={diamond('Opacity', ['opacity'], { opacity: scalar('opacity', 1) })}
+              value={scalar('opacity', 1)}
+              display={`${Math.round(scalar('opacity', 1) * 100)}%`}
               min={0}
               max={1}
               step={0.01}
-              onChange={(v) => commit({ opacity: v })}
+              onChange={(v) => commitScalar('opacity', v)}
             />
           </>
         )}
@@ -196,15 +204,17 @@ export function ShapeClipProperties() {
           <>
             <SliderRow
               label="Scale"
+              action={diamond('Scale', ['scale'], { scale: tf.scale })}
               value={tf.scale}
               display={`${Math.round(tf.scale * 100)}%`}
               min={0.05}
               max={4}
               step={0.01}
-              onChange={(v) => setTf({ scale: v })}
+              // A slider has no blur to defer to; commit each change.
+              onChange={(v) => commitTfPatch({ scale: v })}
             />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Position X">
+              <Field label="Position X" action={diamond('Position', ['x', 'y'], { x: tf.x, y: tf.y })}>
                 <NumberField
                   value={Math.round(tf.x * 100)}
                   step={1}
@@ -223,7 +233,7 @@ export function ShapeClipProperties() {
                 />
               </Field>
             </div>
-            <Field label="Rotate">
+            <Field label="Rotate" action={diamond('Rotation', ['rotation'], { rotation: tf.rotation })}>
               <NumberField
                 value={Math.round((tf.rotation * 180) / Math.PI)}
                 step={1}
@@ -236,6 +246,11 @@ export function ShapeClipProperties() {
         )}
 
         {tab === 'animate' && (
+          <AnimatePanel
+            clip={clip}
+            ctx={kfCtx}
+            channels={animatableChannels(clip)}
+            legacy={
           <>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Entry">
@@ -304,6 +319,8 @@ export function ShapeClipProperties() {
               </Field>
             )}
           </>
+            }
+          />
         )}
       </div>
     </div>

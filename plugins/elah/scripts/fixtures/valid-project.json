@@ -1,0 +1,5 @@
+{
+  "format": "elah-input", "version": 1, "title": "Empty project",
+  "source": { "kind": "project", "project": { "id": "p1", "fps": 30, "stage": { "width": 1920, "height": 1080 }, "version": 5,
+    "tracks": [ { "id": "t1", "kind": "elements", "name": "Elements" } ], "clips": { "t1": [] }, "transitions": [] } }
+}

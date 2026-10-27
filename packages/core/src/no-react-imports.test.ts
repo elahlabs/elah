@@ -3,11 +3,16 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * Guards the "core has zero React imports" rule (ARCHITECTURE.md §Layering).
- * @elah/core must load in non-React environments (Node, workers, Vue, Svelte),
- * so no source file may import 'react' or zustand's React entry point —
- * only 'zustand/vanilla' and 'zustand/middleware' are allowed.
- * React bindings belong in @elah/react. See issue #42.
+ * Guards the "core has zero React imports" rule.
+ *
+ * The core package must load in non-React environments (Node, Web Workers,
+ * the export pipeline, a CLI, Vue/Svelte hosts), so no source file may import
+ * 'react' or zustand's React entry point — only 'zustand/vanilla' and
+ * 'zustand/middleware' are allowed. React bindings belong in
+ * the separate React binding package.
+ *
+ * This test is the reason the split holds: without it, one `import { create }
+ * from 'zustand'` silently drags React back into every worker bundle.
  */
 
 const SRC_ROOT = join(__dirname)
@@ -52,7 +57,9 @@ describe('core stays React-free', () => {
 
   it("no file imports zustand's React entry (only zustand/vanilla and zustand/middleware)", () => {
     const offenders = files.filter((f) =>
-      importsOf(f).some((s) => s === 'zustand' || s === 'zustand/react' || s === 'zustand/traditional'),
+      importsOf(f).some(
+        (s) => s === 'zustand' || s === 'zustand/react' || s === 'zustand/traditional',
+      ),
     )
     expect(offenders).toEqual([])
   })

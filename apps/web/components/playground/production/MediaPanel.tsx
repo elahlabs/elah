@@ -42,7 +42,7 @@ import { isImageFile, needsJpegConversion, toJpegFile } from '@/lib/imageNormali
 import { PixabayResults } from './PixabayResults'
 import { PexelsResults } from './PexelsResults'
 import { FreesoundResults } from './FreesoundResults'
-import { ProgressBar } from './ai/ProgressBar'
+import { ProgressBar } from './ProgressBar'
 import { saveMediaBlob, deleteMediaBlob } from '@/lib/media-file-storage'
 
 export type PanelMode = 'stock' | 'photos' | 'audio'

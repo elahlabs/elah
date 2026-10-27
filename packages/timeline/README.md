@@ -5,7 +5,6 @@ React timeline UI for the Elah video engine. Renders tracks, clips, ruler, and p
 A consumer of `@elah/core`. Owns no project state — all state lives in the core stores.
 
 [![npm](https://img.shields.io/npm/v/@elah/timeline)](https://www.npmjs.com/package/@elah/timeline)
-[![gzip size](https://img.shields.io/badge/gzip-~15%20KiB-brightgreen)](../../BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
@@ -21,7 +20,9 @@ Peer dependencies: `react`, `react-dom` >= 18, `lucide-react` >= 0.400.0 (used d
 needs it). Engine/playback context (`EditorContext`, `useTimelineEngine`) comes from
 `@elah/react`, a runtime dependency pulled in automatically.
 
-**Bundle size:** ~15 KiB gzipped, minified and tree-shaken (~21 KiB with `clsx` and `tailwind-merge`). UI layer only — project state lives in `@elah/core`.
+**Bundle size:** UI layer only (project state lives in `@elah/core`); it adds `clsx` and `tailwind-merge`. The 1.0.0 figures are not published yet; [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) explains how they are measured.
+
+**Clip types (1.0.0):** the timeline draws every clip type in `@elah/core` — video, audio, text, image, shape, freehand, and the newer adjustment, generator, compound and sequence clips, which appear as labelled blocks. You can move, trim, split, copy and paste them (pasting uses `engine.cloneClip`). There is no editing UI for the newer types here yet.
 
 ---
 

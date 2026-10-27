@@ -165,3 +165,50 @@ describe('refreshMissingThumbnails', () => {
     expect(schedule).toHaveBeenNthCalledWith(2, 'b')
   })
 })
+
+describe('hydrateMediaLibrary remap (LM-P3)', () => {
+  const DEAD = 'blob:http://localhost/dead'
+  const FRESH = 'blob:http://localhost/fresh'
+  const media = { v: 1 as const, id: 'local:' + 'ab'.repeat(32), name: 'v.mp4', byteSize: 9, lastModified: 1, kind: 'video' as const }
+  const toFresh = (e: MediaAsset): MediaAsset => (e.media?.id === media.id ? { ...e, src: FRESH } : e)
+
+  it('restores an entry under the fresh src, keeping its id and thumbnails', () => {
+    const stored = asset({ id: 'v1', src: DEAD, media, thumbnailStrip: ['a'] })
+
+    const result = hydrateMediaLibrary([stored], { referencedSrcs: new Set([FRESH]), remap: toFresh })
+
+    expect(result.hydrated).toEqual(['v1'])
+    expect(library().getAsset('v1')?.src).toBe(FRESH)
+    expect(library().getAsset('v1')?.thumbnailStrip).toEqual(['a'])
+    expect(result.needsThumbnail).toEqual([])
+  })
+
+  it('matches referencedSrcs against the remapped src, not the stored one', () => {
+    const stored = asset({ id: 'v1', src: DEAD, media })
+
+    const result = hydrateMediaLibrary([stored], { referencedSrcs: new Set([DEAD]), remap: toFresh })
+
+    expect(result.hydrated).toEqual([])
+  })
+
+  it('leaves entries the remap does not touch as stored', () => {
+    const other = asset({ id: 'v2', src: 'blob:http://localhost/other' })
+
+    const result = hydrateMediaLibrary([other], { referencedSrcs: new Set([other.src]), remap: toFresh })
+
+    expect(library().getAsset('v2')?.src).toBe(other.src)
+    expect(result.hydrated).toEqual(['v2'])
+  })
+
+  it('still never overwrites an asset this session already has', () => {
+    add(asset({ id: 'v1', src: 'https://cdn.example.com/live.mp4', name: 'live' }))
+
+    hydrateMediaLibrary([asset({ id: 'v1', src: DEAD, media, name: 'stored' })], {
+      referencedSrcs: new Set([FRESH]),
+      remap: toFresh,
+    })
+
+    expect(library().getAsset('v1')?.name).toBe('live')
+    expect(library().getAsset('v1')?.src).toBe('https://cdn.example.com/live.mp4')
+  })
+})

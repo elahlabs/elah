@@ -1,0 +1,13 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Title card (HTML scene)",
+  "source": {
+    "kind": "html",
+    "durationSeconds": 4,
+    "fps": 30,
+    "stage": { "width": 1920, "height": 1080 },
+    "html": "<section id=\"tc\" data-scene=\"title-card\" data-at=\"0\" data-duration=\"4\"><div id=\"bar\" data-motion=\"in: slide-in-left 0.5s @0.1\"></div><h1 id=\"title\" data-motion=\"split: word 3f; each: y: 0.5 -> 0 0.5s quad-out; each: opacity: 0 -> 1 0.5s quad-out\">Quarterly results</h1><p id=\"sub\" data-motion=\"in: fade-in 0.6s @0.9\">Revenue up 24 percent on the year</p></section>",
+    "css": "#tc { position: relative; width: 1920px; height: 1080px; background-color: #0d1117; } #bar { position: absolute; left: 160px; top: 380px; width: 24px; height: 300px; background-color: #00c2ff; border-radius: 12px; } #title { position: absolute; left: 230px; top: 360px; width: 1500px; margin: 0; font-family: bebas-neue; font-size: 200px; line-height: 1; color: #ffffff; } #sub { position: absolute; left: 234px; top: 590px; width: 1400px; margin: 0; font-family: inter; font-size: 52px; color: #9ca3af; }"
+  }
+}

@@ -295,6 +295,16 @@ describe('isClipAllowedOnTrack', () => {
     expect(isClipAllowedOnTrack('shape', 'elements')).toBe(true)
     expect(isClipAllowedOnTrack('freehand', 'audio')).toBe(false)
   })
+
+  it('places the newer clip types like the timeline package does', () => {
+    for (const type of ['compound', 'adjustment', 'generator'] as const) {
+      expect(isClipAllowedOnTrack(type, 'video')).toBe(true)
+      expect(isClipAllowedOnTrack(type, 'elements')).toBe(true)
+      expect(isClipAllowedOnTrack(type, 'audio')).toBe(false)
+    }
+    expect(isClipAllowedOnTrack('sequence', 'video')).toBe(true)
+    expect(isClipAllowedOnTrack('sequence', 'elements')).toBe(false)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -320,6 +330,13 @@ const textClip = {
 }
 
 describe('isUnlimitedClipType / maxTrimDuration', () => {
+  it('treats the same types as unlimited as engine.trimClip does', () => {
+    for (const type of ['adjustment', 'generator', 'sequence'] as const) {
+      expect(isUnlimitedClipType(type)).toBe(true)
+    }
+    expect(isUnlimitedClipType('compound')).toBe(false)
+  })
+
   it('lets generated clips grow without bound', () => {
     expect(isUnlimitedClipType('text')).toBe(true)
     expect(isUnlimitedClipType('shape')).toBe(true)

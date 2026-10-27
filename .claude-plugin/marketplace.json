@@ -1,0 +1,25 @@
+{
+  "name": "elah",
+  "description": "Elah: browser-native video engine. Plugins for making videos from Claude Code.",
+  "owner": {
+    "name": "Elah"
+  },
+  "plugins": [
+    {
+      "name": "elah",
+      "source": "./plugins/elah",
+      "description": "Claude asks a few questions, drafts your video or motion graphic, and you preview it, edit it frame by frame and export an MP4 in your browser. Also scaffolds your own video editor app on the Elah libraries.",
+      "version": "0.2.0",
+      "homepage": "https://elah.dev",
+      "license": "Apache-2.0",
+      "keywords": [
+        "video",
+        "programmatic-video",
+        "motion-graphics",
+        "mp4",
+        "promo",
+        "video-editor"
+      ]
+    }
+  ]
+}

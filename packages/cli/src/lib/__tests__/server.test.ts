@@ -3,10 +3,14 @@ import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  defineNodeEnv,
+  isDirectoryIndex,
+  parseAudioMeta,
   resolveDistFile,
   resolveModuleFile,
   rewriteSpecifiers,
   startHarnessServer,
+  type EncodeSink,
   type HarnessServer,
 } from '../server'
 
@@ -35,6 +39,19 @@ describe('resolveDistFile', () => {
     expect(resolveDistFile(root, 'utils')).toBe(join(root, 'utils/index.js'))
   })
 
+  it('adds .js to a dotted module name (./shaders/quad.frag)', () => {
+    mkdirSync(join(root, 'shaders'), { recursive: true })
+    writeFileSync(join(root, 'shaders', 'quad.frag.js'), '// f')
+    expect(resolveDistFile(root, 'shaders/quad.frag')).toBe(join(root, 'shaders/quad.frag.js'))
+  })
+
+  it('tells a directory index apart from a file', () => {
+    const index = resolveDistFile(root, 'utils')!
+    expect(isDirectoryIndex(root, 'utils', index)).toBe(true)
+    const file = resolveDistFile(root, 'export/exportVideo')!
+    expect(isDirectoryIndex(root, 'export/exportVideo', file)).toBe(false)
+  })
+
   it('returns undefined for misses', () => {
     expect(resolveDistFile(root, 'nope/nothing')).toBeUndefined()
   })
@@ -42,6 +59,15 @@ describe('resolveDistFile', () => {
   it('blocks path traversal', () => {
     expect(resolveDistFile(root, '../secret')).toBeUndefined()
     expect(resolveDistFile(root, 'export/../../secret')).toBeUndefined()
+  })
+})
+
+describe('defineNodeEnv', () => {
+  it('inlines process.env.NODE_ENV and nothing else', () => {
+    expect(defineNodeEnv('if (process.env.NODE_ENV !== "production") warn()')).toBe(
+      'if ("production" !== "production") warn()'
+    )
+    expect(defineNodeEnv('const p = process.env.OTHER')).toBe('const p = process.env.OTHER')
   })
 })
 
@@ -155,6 +181,21 @@ describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
     expect(missing.status).toBe(404)
   })
 
+  it('redirects a core directory request to its index.js', async () => {
+    const res = await fetch(`${server.origin}/core/composition`, { redirect: 'manual' })
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('/core/composition/index.js')
+  })
+
+  it('serves vendor modules with process.env.NODE_ENV inlined (immer)', async () => {
+    const res = await fetch(`${server.origin}/vendor/immer/dist/immer.mjs`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('text/javascript')
+    const source = await res.text()
+    expect(source).not.toContain('process.env.NODE_ENV')
+    expect(source).toContain('"production" !== "production"')
+  })
+
   it("stubs mediabunny's browser:false node-only module with an empty module", async () => {
     const stub = await fetch(`${server.origin}/vendor/mediabunny/dist/modules/src/node.js`)
     expect(stub.status).toBe(200)
@@ -191,5 +232,100 @@ describe.skipIf(!coreDistBuilt)('startHarnessServer', () => {
     await fetch(`${s.origin}/cb/${TOKEN}/result`, { method: 'POST', body: bytes })
     expect(await s.result).toEqual(bytes)
     await s.close()
+  })
+})
+
+describe('parseAudioMeta', () => {
+  const params = (o: Record<string, string>) => new URLSearchParams(o)
+
+  it('accepts a query that matches the body size', () => {
+    expect(parseAudioMeta(params({ sampleRate: '48000', channels: '2', length: '10' }), 80)).toEqual({
+      sampleRate: 48000,
+      channels: 2,
+      length: 10,
+    })
+  })
+
+  it('rejects missing or non-integer fields', () => {
+    expect(() => parseAudioMeta(params({ channels: '2', length: '10' }), 80)).toThrow(/invalid sampleRate/)
+    expect(() => parseAudioMeta(params({ sampleRate: '48000', channels: '1.5', length: '10' }), 60)).toThrow(
+      /invalid channels/
+    )
+  })
+
+  it('rejects a body that does not hold channels x length Float32 samples', () => {
+    expect(() => parseAudioMeta(params({ sampleRate: '48000', channels: '2', length: '10' }), 79)).toThrow(
+      /expected 80/
+    )
+  })
+})
+
+describe.skipIf(!coreDistBuilt)('startHarnessServer encode routes', () => {
+  const TOKEN = 'encode-token'
+  const post = (s: HarnessServer, route: string, body: string | Buffer) =>
+    fetch(`${s.origin}/cb/${TOKEN}${route}`, { method: 'POST', body })
+
+  function recordingSink(overrides: Partial<EncodeSink> = {}) {
+    const calls: string[] = []
+    const sink: EncodeSink = {
+      audio: async (meta, pcm) => {
+        calls.push(`audio ${meta.channels}x${meta.length} ${pcm.length}B`)
+      },
+      frame: async (png) => {
+        calls.push(`frame ${png.toString()}`)
+      },
+      finish: async () => {
+        calls.push('finish')
+        return Buffer.from('mp4-bytes')
+      },
+      ...overrides,
+    }
+    return { sink, calls }
+  }
+
+  it('hands audio and frames to the sink in order and resolves with its output', async () => {
+    const { sink, calls } = recordingSink()
+    const s = await startHarnessServer({ token: TOKEN, media: new Map(), encodeSink: sink })
+    try {
+      const audio = await post(s, '/audio?sampleRate=48000&channels=1&length=2', Buffer.alloc(8))
+      expect(audio.status).toBe(204)
+      expect((await post(s, '/frame', 'png-0')).status).toBe(204)
+      expect((await post(s, '/frame', 'png-1')).status).toBe(204)
+      expect((await post(s, '/finish', '')).status).toBe(204)
+      expect((await s.result).toString()).toBe('mp4-bytes')
+      expect(calls).toEqual(['audio 1x2 8B', 'frame png-0', 'frame png-1', 'finish'])
+    } finally {
+      await s.close()
+    }
+  })
+
+  it("answers 500 and rejects the result with the sink's own error", async () => {
+    const { sink } = recordingSink({
+      frame: async () => {
+        throw new Error('ffmpeg exited with code 1')
+      },
+    })
+    const s = await startHarnessServer({ token: TOKEN, media: new Map(), encodeSink: sink })
+    s.result.catch(() => {})
+    try {
+      expect((await post(s, '/frame', 'png-0')).status).toBe(500)
+      await expect(s.result).rejects.toThrow('ffmpeg exited with code 1')
+    } finally {
+      await s.close()
+    }
+  })
+
+  it('404s the encode routes without a sink, and with a wrong token', async () => {
+    const { sink } = recordingSink()
+    const plain = await startHarnessServer({ token: TOKEN, media: new Map() })
+    const withSink = await startHarnessServer({ token: TOKEN, media: new Map(), encodeSink: sink })
+    try {
+      expect((await post(plain, '/frame', 'png')).status).toBe(404)
+      const forged = await fetch(`${withSink.origin}/cb/wrong-token/frame`, { method: 'POST', body: 'png' })
+      expect(forged.status).toBe(404)
+    } finally {
+      await plain.close()
+      await withSink.close()
+    }
   })
 })

@@ -1,0 +1,16 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Programmatic video: one camera, three scenes",
+  "source": {
+    "kind": "page",
+    "html": "<main class=\"stage\">\n  <div class=\"glow\"></div>\n  <div class=\"cam\">\n    <section class=\"scene\" data-scene=\"intro\">\n      <p class=\"eyebrow in1\">PROGRAMMATIC VIDEO</p>\n      <h1 class=\"head in2\">One camera move,<br>three scenes</h1>\n    </section>\n    <section class=\"scene\" data-scene=\"middle\">\n      <h2 class=\"head2 in3\">The headline stays editable</h2>\n      <p class=\"sub in4\">Click it in the editor and type.</p>\n    </section>\n    <section class=\"scene\" data-scene=\"close\">\n      <h1 class=\"head in5\">Edit it directly</h1>\n      <span class=\"rule in6\"></span>\n    </section>\n  </div>\n</main>",
+    "css": ".stage {\n  --bg: #0b0f14; --ink: #f4f6f8; --muted: #8a94a3; --accent: #5eead4; --accent-soft: #134e4a;\n  position: absolute; inset: 0; overflow: hidden; background: var(--bg); color: var(--ink);\n  font-family: inter, sans-serif; font-weight: 400;\n}\n.cam, .scene { position: absolute; inset: 0; }\n.cam { animation: push 12s cubic-bezier(0.65, 0, 0.35, 1) 0s both; }\n.glow {\n  position: absolute; left: 1010px; top: 90px; width: 900px; height: 900px; border-radius: 50%;\n  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 68%); opacity: 0.55;\n}\n.eyebrow, .sub { position: absolute; left: 200px; margin: 0; font-family: space-grotesk, sans-serif; letter-spacing: 6px; color: var(--muted); white-space: nowrap; }\n.eyebrow { top: 330px; font-size: 48px; }\n.sub { top: 600px; font-size: 64px; letter-spacing: 1px; }\n.head, .head2 { position: absolute; left: 200px; margin: 0; font-weight: 700; font-family: space-grotesk, sans-serif; }\n.head { top: 410px; font-size: 150px; line-height: 1.05; }\n.head2 { top: 420px; font-size: 110px; line-height: 1.1; }\n.rule { position: absolute; left: 200px; top: 700px; width: 420px; height: 6px; background: var(--accent); transform-origin: left center; }\n\n.in1 { animation: show 3.6s cubic-bezier(0.19, 1, 0.22, 1) 0.2s both; }\n.in2 { animation: show 3.6s cubic-bezier(0.19, 1, 0.22, 1) 0.35s both; }\n.in3 { animation: show 3.6s cubic-bezier(0.19, 1, 0.22, 1) 4.2s both; }\n.in4 { animation: show 3.4s cubic-bezier(0.19, 1, 0.22, 1) 4.6s both; }\n.in5 { animation: show 3.6s cubic-bezier(0.19, 1, 0.22, 1) 8.2s both; }\n.in6 { animation: bar 3.4s cubic-bezier(0.215, 0.61, 0.355, 1) 8.6s both; }\n\n@keyframes push { from { transform: scale(1); } to { transform: scale(1.04) translate(-24px, -10px); } }\n@keyframes show { 0% { opacity: 0; transform: translateY(36px); } 14% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }\n@keyframes bar { 0% { transform: scaleX(0); } 20% { transform: scaleX(1); } 100% { transform: scaleX(1); } }\n",
+    "durationSeconds": 12,
+    "stage": {
+      "width": 1920,
+      "height": 1080
+    },
+    "fps": 30
+  }
+}

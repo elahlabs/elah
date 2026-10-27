@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update && apt-get install -y --no-install-recommends \
       google-chrome-stable \
+      ffmpeg \
       fonts-liberation \
       fonts-noto-core \
       fonts-noto-color-emoji \
@@ -42,6 +43,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Deterministic browser selection — skips channel discovery.
 ENV ELAH_BROWSER=/usr/bin/google-chrome-stable
+# Debian bookworm's ffmpeg (5.1, libx264 + libvpx) encodes the MP4; Chrome still draws the frames.
+ENV ELAH_FFMPEG=/usr/bin/ffmpeg
 
 WORKDIR /app
 COPY --from=build /app/package.json /app/package-lock.json* /app/

@@ -1,6 +1,6 @@
 {
   "name": "@elah/core",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "Framework-agnostic video timeline engine — playback, frame resolution, WebGL2 renderer, and media management",
   "type": "module",
   "main": "./dist/index.js",
@@ -16,12 +16,34 @@
       "types": "./dist/engine.d.ts",
       "import": "./dist/engine.js",
       "default": "./dist/engine.js"
+    },
+    "./spec": {
+      "types": "./dist/spec/index.d.ts",
+      "import": "./dist/spec/index.js",
+      "default": "./dist/spec/index.js"
+    },
+    "./html": {
+      "types": "./dist/vector/html/index.d.ts",
+      "import": "./dist/vector/html/index.js",
+      "default": "./dist/vector/html/index.js"
+    },
+    "./ops": {
+      "types": "./dist/ops/index.d.ts",
+      "import": "./dist/ops/index.js",
+      "default": "./dist/ops/index.js"
+    },
+    "./icons": {
+      "types": "./dist/icons/index.d.ts",
+      "import": "./dist/icons/index.js",
+      "default": "./dist/icons/index.js"
     }
   },
   "files": [
     "dist",
+    "fonts",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -56,7 +78,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "immer": "^10.1.1",
-    "mediabunny": "^1.45.3",
+    "mediabunny": "^1.50.8",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

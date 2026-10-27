@@ -77,7 +77,7 @@ export interface TextStylePresetsActions {
 }
 
 /**
- * User-saved text looks (Ring 2). Vanilla; `@elah/react` binds it into
+ * User-saved text looks (Ring 2). Vanilla; the React binding binds it into
  * the `useTextStylePresetsStore` hook.
  */
 export const textStylePresetsStore = createStore<TextStylePresetsState & TextStylePresetsActions>()(

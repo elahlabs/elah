@@ -1,0 +1,20 @@
+{
+  "name": "elah",
+  "version": "0.2.0",
+  "description": "Claude asks a few questions, drafts your video or motion graphic, and you preview it, edit it frame by frame and export an MP4 in your browser. Also scaffolds your own video editor app on the Elah libraries.",
+  "author": {
+    "name": "Elah"
+  },
+  "homepage": "https://elah.dev",
+  "repository": "https://github.com/elahlabs/elah",
+  "license": "Apache-2.0",
+  "keywords": [
+    "video",
+    "programmatic-video",
+    "motion-graphics",
+    "elah",
+    "mp4",
+    "promo",
+    "video-editor"
+  ]
+}

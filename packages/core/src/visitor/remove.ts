@@ -42,5 +42,14 @@ export function removeTrack(draft: Draft<Project>, trackId: string): void {
   }
   delete draft.clips[trackId]
 
+  // A group naming a track that is gone would collapse into nothing (PV-T1).
+  if (draft.trackGroups) {
+    for (const group of draft.trackGroups) {
+      group.trackIds = group.trackIds.filter((id) => id !== trackId)
+    }
+    draft.trackGroups = draft.trackGroups.filter((g) => g.trackIds.length > 0)
+    if (draft.trackGroups.length === 0) delete draft.trackGroups
+  }
+
   pruneOrphanedTransitions(draft)
 }

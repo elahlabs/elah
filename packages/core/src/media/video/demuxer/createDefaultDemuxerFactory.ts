@@ -4,7 +4,7 @@
  * `createMediabunnyBackend` keeps the editor decoder-agnostic by taking the
  * mediabunny module as an argument, which means consumers normally have to both
  * install mediabunny *and* import it themselves. mediabunny is now a direct
- * dependency of `@elah/core`, so this helper does that wiring for you:
+ * dependency of the core package, so this helper does that wiring for you:
  *
  * ```ts
  * import { Preview, createDefaultDemuxerFactory } from '@elah/editor'

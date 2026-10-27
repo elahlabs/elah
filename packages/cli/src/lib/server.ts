@@ -12,6 +12,27 @@ export interface ProgressPayload {
   totalFrames: number
 }
 
+export interface AudioMixMeta {
+  sampleRate: number
+  channels: number
+  /** Frames per channel. */
+  length: number
+}
+
+/**
+ * Where an ffmpeg-encoded render sends its output. Present only when the page
+ * runs with `encoder: 'ffmpeg'`; the /audio, /frame and /finish routes 404
+ * without it.
+ */
+export interface EncodeSink {
+  /** The audio mix: planar Float32 channels, concatenated. Arrives before any frame. */
+  audio(meta: AudioMixMeta, planarPcm: Buffer): Promise<void>
+  /** One PNG frame, in order. The page is answered only once this resolves. */
+  frame(png: Buffer): Promise<void>
+  /** Every frame is written: finish the encode and return the file's bytes. */
+  finish(): Promise<Buffer>
+}
+
 export interface HarnessServerArgs {
   /** Per-run random secret protecting the callback and media routes. */
   token: string
@@ -19,6 +40,8 @@ export interface HarnessServerArgs {
   media: Map<string, string>
   onProgress?: (p: ProgressPayload) => void
   onAudioIssue?: (message: string, src?: string) => void
+  /** Set for ffmpeg-encoded renders; see EncodeSink. */
+  encodeSink?: EncodeSink
   log?: (line: string) => void
 }
 
@@ -154,6 +177,22 @@ export function rewriteSpecifiers(source: string, vendors: Map<string, VendorEnt
 }
 
 /**
+ * Inline `process.env.NODE_ENV` as `"production"`, as a bundler's `define`
+ * does. Served raw to the browser, a module that reads it (immer's ESM build,
+ * which the converged core's export graph imports) throws "process is not
+ * defined" before the export starts.
+ */
+export function defineNodeEnv(source: string): string {
+  return source.replace(/\bprocess\.env\.NODE_ENV\b/g, '"production"')
+}
+
+/** Served modules (as opposed to media or other assets). */
+function isScriptFile(file: string): boolean {
+  const ext = extname(file).toLowerCase()
+  return ext === '.js' || ext === '.mjs'
+}
+
+/**
  * Resolve a /core/* request against core's dist, tolerating the module-URL
  * quirks of tsc's bundler-resolution output: extensionless relative imports
  * and the literal `./ExportWorker.ts` worker URL that ships in dist.
@@ -168,8 +207,26 @@ export function resolveDistFile(distRoot: string, urlPath: string): string | und
     candidates.push(`${requested}.js`, join(requested, 'index.js'))
   } else if (requested.endsWith('.ts')) {
     candidates.push(requested.replace(/\.ts$/, '.js'))
+  } else if (!requested.endsWith('.js')) {
+    // A dotted module name compiled to `<name>.js` (`./shaders/quad.frag`).
+    candidates.push(`${requested}.js`)
   }
   return candidates.find((c) => existsSync(c) && statSync(c).isFile())
+}
+
+/**
+ * True when `resolveDistFile` answered `urlPath` with a directory's
+ * `index.js`. The browser must then be redirected to that file's own URL:
+ * a module's relative imports resolve against its response URL, so serving
+ * `effects/index.js` at `/core/x/effects` would send `./blur` to `/core/x/blur`.
+ */
+export function isDirectoryIndex(distRoot: string, urlPath: string, file: string): boolean {
+  return file === join(normalize(join(distRoot, urlPath)), 'index.js')
+}
+
+/** The URL of a directory request's `index.js`, keeping the query string. */
+function indexUrl(path: string, search: string): string {
+  return `${path.replace(/\/+$/, '')}/index.js${search}`
 }
 
 export async function startHarnessServer(args: HarnessServerArgs): Promise<HarnessServer> {
@@ -198,6 +255,14 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
 
     if (req.method === 'POST') {
       const body = await readBody(req)
+      if (args.encodeSink && path.startsWith(`/cb/${args.token}/`)) {
+        const handled = await handleEncodeRoute(args.encodeSink, path.slice(`/cb/${args.token}`.length), url, body)
+        if (handled !== undefined) {
+          res.writeHead(handled ? 204 : 500)
+          res.end()
+          return
+        }
+      }
       switch (path) {
         case `/cb/${args.token}/progress`:
           args.onProgress?.(JSON.parse(body.toString('utf8')) as ProgressPayload)
@@ -230,6 +295,13 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
       res.end(HARNESS_HTML)
       return
     }
+    if (path === '/blank') {
+      // An empty page on this origin, for the decode checks that run before
+      // the harness loads (WebCodecs needs a secure context; 127.0.0.1 is one).
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<!doctype html><meta charset="utf-8"><title>elah</title>')
+      return
+    }
     if (path === '/harness.js') {
       res.writeHead(200, { 'content-type': 'text/javascript' })
       res.end(harnessJs(args.token))
@@ -237,16 +309,22 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     }
 
     if (path.startsWith('/core/')) {
-      const file = resolveDistFile(coreDist, path.slice('/core/'.length))
+      const sub = path.slice('/core/'.length)
+      const file = resolveDistFile(coreDist, sub)
       if (!file) {
         log(`404 (core dist miss): ${path}`)
         res.writeHead(404)
         res.end()
         return
       }
+      if (isDirectoryIndex(coreDist, sub, file)) {
+        res.writeHead(302, { location: indexUrl(path, url.search) })
+        res.end()
+        return
+      }
       const source = readFileSync(file, 'utf8')
       res.writeHead(200, { 'content-type': 'text/javascript' })
-      res.end(rewriteSpecifiers(source, vendors))
+      res.end(defineNodeEnv(rewriteSpecifiers(source, vendors)))
       return
     }
 
@@ -268,6 +346,16 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
         res.end()
         return
       }
+      if (isDirectoryIndex(vendor.root, rel, file)) {
+        res.writeHead(302, { location: indexUrl(path, url.search) })
+        res.end()
+        return
+      }
+      if (isScriptFile(file)) {
+        res.writeHead(200, { 'content-type': 'text/javascript' })
+        res.end(defineNodeEnv(readFileSync(file, 'utf8')))
+        return
+      }
       serveLocalFile(req, res, file)
       return
     }
@@ -287,6 +375,37 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
     res.end()
   }
 
+  /**
+   * The ffmpeg-encode routes. Returns undefined for any other route, true on
+   * success, false when the sink failed — that failure also rejects `result`,
+   * so the export reports ffmpeg's own error rather than the page's 500.
+   */
+  async function handleEncodeRoute(
+    sink: EncodeSink,
+    route: string,
+    url: URL,
+    body: Buffer
+  ): Promise<boolean | undefined> {
+    try {
+      switch (route) {
+        case '/audio':
+          await sink.audio(parseAudioMeta(url.searchParams, body.length), body)
+          return true
+        case '/frame':
+          await sink.frame(body)
+          return true
+        case '/finish':
+          resolveResult(await sink.finish())
+          return true
+        default:
+          return undefined
+      }
+    } catch (err) {
+      rejectResult(err instanceof Error ? err : new CliError(String(err)))
+      return false
+    }
+  }
+
   await new Promise<void>((res) => server.listen(0, '127.0.0.1', res))
   const address = server.address()
   if (address === null || typeof address === 'string') {
@@ -303,6 +422,25 @@ export async function startHarnessServer(args: HarnessServerArgs): Promise<Harne
         server.close(() => res())
       }),
   }
+}
+
+/** Validate the /audio query against the body it describes (4 bytes per sample). */
+export function parseAudioMeta(params: URLSearchParams, bodyBytes: number): AudioMixMeta {
+  const read = (name: string): number => {
+    const value = Number(params.get(name))
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new CliError(`Audio mix from the browser has an invalid ${name}: ${params.get(name)}`)
+    }
+    return value
+  }
+  const meta = { sampleRate: read('sampleRate'), channels: read('channels'), length: read('length') }
+  if (bodyBytes !== meta.channels * meta.length * 4) {
+    throw new CliError(
+      `Audio mix from the browser is ${bodyBytes} bytes; expected ${meta.channels * meta.length * 4} ` +
+        `(${meta.channels} channels x ${meta.length} Float32 samples)`
+    )
+  }
+  return meta
 }
 
 function readBody(req: IncomingMessage): Promise<Buffer> {

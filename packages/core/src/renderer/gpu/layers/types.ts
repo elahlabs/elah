@@ -12,6 +12,10 @@
  *  - draw() is synchronous; async work happens out-of-band.
  */
 
+import type { ChainDrawRequest } from '../EffectChain'
+import type { RenderTarget } from '../FramebufferPool'
+import type { TransitionDirection, TransitionKind } from '../../../types'
+
 /** Rendering context threaded through every draw call. */
 export interface LayerContext {
   /** WebGL2 context. The context may be lost; layers must guard accordingly. */
@@ -24,6 +28,39 @@ export interface LayerContext {
   viewport: { width: number; height: number }
   /** Frames-per-second from the Scene, used for source-time calculations. */
   fps: number
+  /**
+   * Runs a clip's effect stack (EDX-P2). Layers call it only for items with
+   * `effects`; absent (tests, probe mode) means those items draw plain.
+   */
+  effectChain?: EffectChainLike
+  /**
+   * Namespace of EffectChain target keys for the graph drawing this item
+   * (PV-P1). Absent at the top level. A compound's nested graph gets
+   * `<parent prefix><compoundId>/`, so a nested clip's matte or transition
+   * target never collides with the parent's or a sibling compound's (two
+   * copies of one compound hold the same nested ids).
+   */
+  keyPrefix?: string
+}
+
+/** The slice of `EffectChain` a layer uses; see EffectChain.ts. */
+export interface EffectChainLike {
+  draw(ctx: LayerContext, req: ChainDrawRequest): boolean
+  /** Track mattes (EDX-P7): see EffectChain.renderMatte / endFrame. */
+  renderMatte?(ctx: LayerContext, clipId: string, draw: () => void): boolean
+  endFrame?(gl: WebGL2RenderingContext): void
+  /** GPU transitions (EDX-P9c): composite two rendered targets. See EffectChain.drawTransition. */
+  drawTransition?(ctx: LayerContext, fromKey: string, toKey: string, spec: TransitionSpec): boolean
+  /** A pooled render target of an exact size (PV-P1). See EffectChain.renderTarget. */
+  renderTarget?(ctx: LayerContext, key: string, draw: () => void, size?: { width: number; height: number }): RenderTarget | null
+  /** Release every target under a key prefix (PV-P1). See EffectChain.releaseTargets. */
+  releaseTargets?(gl: WebGL2RenderingContext, prefix: string): void
+}
+
+export interface TransitionSpec {
+  kind: TransitionKind
+  t: number
+  direction?: TransitionDirection
 }
 
 /**

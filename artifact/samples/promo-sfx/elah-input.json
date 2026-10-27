@@ -1,0 +1,24 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Sound cue check",
+  "source": {
+    "kind": "spec",
+    "spec": {
+      "version": 1,
+      "title": "Sound cue check",
+      "format": { "width": 1920, "height": 1080, "fps": 30 },
+      "duration": 5,
+      "background": "#0b0f1a",
+      "elements": [
+        { "id": "a", "kind": "text", "at": 0, "duration": 5, "text": "Whoosh", "font": "inter", "weight": 700, "size": 140, "color": "#f3f4f6", "x": 0.5, "y": 0.4, "enter": "fade-in" },
+        { "id": "b", "kind": "text", "at": 1.8, "duration": 3.2, "text": "Pop", "font": "inter", "weight": 700, "size": 140, "color": "#00c2ff", "x": 0.5, "y": 0.6, "enter": "pop-in" }
+      ],
+      "sfx": [
+        { "cue": "whoosh", "at": 0.3, "gain": 0.7 },
+        { "cue": "pop", "on": { "element": "b", "event": "arrive" } },
+        { "cue": "chime", "at": 3.6, "gain": 0.5 }
+      ]
+    }
+  }
+}

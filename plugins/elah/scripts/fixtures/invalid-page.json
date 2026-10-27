@@ -1,0 +1,13 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Refused sample",
+  "source": {
+    "kind": "page",
+    "html": "<main class=\"stage\" onclick=\"go()\"><section data-scene=\"a\"><h1 style=\"font-family: Georgia, serif; transition: opacity 1s\">Hi</h1><img src=\"https://example.com/a.png\"><iframe src=\"data:text/html,x\"></iframe><link rel=\"stylesheet\" href=\"a.css\"><video src=\"data:video/mp4;base64,AA\"></video><svg><animate attributeName=\"x\" to=\"4\" dur=\"1s\"/></svg></section><script>alert(1)</script></main>",
+    "css": "@import url('https://fonts.example.com/x.css');\n@font-face { font-family: Brand; src: url(brand.woff2); }\n.stage { font: 700 120px/1 inter; background: url(https://example.com/bg.png); }\n.a { transition: opacity 0.3s; animation-play-state: paused; font-family: 'Comic Sans MS', cursive; }\n.b { animation: fade 1s ease 0s paused; }\n@keyframes fade { from { opacity: 0 } to { opacity: 1 } }",
+    "durationSeconds": 6,
+    "stage": { "width": 1920, "height": 1080 },
+    "fps": 30
+  }
+}

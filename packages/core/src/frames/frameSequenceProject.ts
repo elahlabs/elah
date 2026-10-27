@@ -13,7 +13,6 @@ import type { Clip, Project, Track } from '../types'
 import { createImageClip } from '../elements/image'
 import { generateId } from '../utils/id'
 import type { FrameSequence } from './frameSequence'
-import { PROJECT_VERSION } from '../editor/projectDocument'
 
 export interface FrameSequenceToProjectOptions {
   /** Project fps. Defaults to the sequence's own fps. */
@@ -31,10 +30,6 @@ export interface FrameSequenceToProjectOptions {
   projectId?: string
 }
 
-// Landscape on purpose, and deliberately NOT TimelineEngine's portrait
-// 1080x1920 default: frame sequences (orbits, storyboards, generated sets) are
-// usually landscape, and this matches the CLI's spec default. Callers that want
-// a portrait stage pass `options.stage`.
 const DEFAULT_STAGE = { width: 1920, height: 1080 }
 
 /**
@@ -81,6 +76,6 @@ export function frameSequenceToProject(
     tracks: [track],
     clips: { [trackId]: clips },
     transitions: [],
-    version: PROJECT_VERSION,
+    version: 1,
   }
 }
