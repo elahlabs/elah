@@ -57,6 +57,8 @@ export interface VerifyTime {
   maxScale: number
   worst: VerifyRow[]
   worstScale: VerifyRow[]
+  /** Layers the browser shows (opacity above 0.004) that the project has no clip for at this time (HF-8: a clip trimmed to its visible window must still cover every frame it is seen). */
+  missing: string[]
 }
 
 interface Native {
@@ -145,11 +147,17 @@ export async function verifyConversion(input: VerifyInput, times: readonly numbe
       seekAnimations(anims, frame / input.page.fps)
       const native = nativeAt(input.project, frame)
       const rows: VerifyRow[] = []
+      const missing: string[] = []
       for (const n of input.nodes) {
         const nat = native.get(n.name)
-        if (!nat) continue
         const el = els[n.index]
         if (!el) continue
+        if (!nat) {
+          let seen = 1
+          for (let a: Element | null = el; a && index.has(a); a = a === main ? null : a.parentElement) seen *= parseFloat(getComputedStyle(a).opacity)
+          if (seen > 0.004) missing.push(n.name)
+          continue
+        }
         // The browser's answer: every ancestor's composite about its own origin, outermost first.
         let abs: Aff = [1, 0, 0, 1, 0, 0]
         let opacity = 1
@@ -183,6 +191,7 @@ export async function verifyConversion(input: VerifyInput, times: readonly numbe
         maxOpacity: Math.max(0, ...rows.map((r) => r.opacity)),
         maxScale: Math.max(0, ...scales),
         worst: rows.slice(0, worstCount),
+        missing,
         worstScale: [...rows].filter((r) => r.scale !== null).sort((a, b) => (b.scale ?? 0) - (a.scale ?? 0)).slice(0, worstCount),
       })
     }

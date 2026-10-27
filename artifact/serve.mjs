@@ -30,6 +30,11 @@ const TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
 }
 
 createServer((req, res) => {
@@ -40,11 +45,16 @@ createServer((req, res) => {
     sample = parts.shift()
   }
   const rel = parts.join('/') || 'index.html'
+  // assets/<name>: the images a sample supplies (TICKET-PF-11), published beside the page on claude.ai.
+  const sampleAssets = join(SAMPLES, sample, 'assets')
+  const isAsset = rel.startsWith('assets/')
   const file =
     rel === 'elah-input.json'
       ? join(SAMPLES, sample, 'elah-input.json')
-      : resolve(DIST, normalize(rel))
-  const inside = rel === 'elah-input.json' || file.startsWith(DIST + sep)
+      : isAsset
+        ? resolve(sampleAssets, normalize(rel.slice('assets/'.length)))
+        : resolve(DIST, normalize(rel))
+  const inside = rel === 'elah-input.json' || (isAsset ? file.startsWith(sampleAssets + sep) : file.startsWith(DIST + sep))
   if (!inside || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404, { 'content-type': 'text/plain' })
     res.end('not found')

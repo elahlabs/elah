@@ -11,10 +11,13 @@ export interface BuildArgs {
   out?: string
   export?: string
   // export passthrough
+  container?: string
   codec?: string
   height?: string
   videoBitrate?: string
   audioBitrate?: string
+  encoder?: string
+  ffmpeg?: string
   browser?: string
   headed: boolean
   timeoutSec?: string
@@ -36,7 +39,7 @@ export async function runBuild(args: BuildArgs): Promise<void> {
   }
   const specDir = dirname(specPath)
 
-  const { project, summary } = await buildProject({ spec: parsed, baseDir: specDir })
+  const { project, summary } = await buildProject({ spec: parsed, baseDir: specDir, ffmpegPath: args.ffmpeg })
   process.stderr.write(
     `built project: ${summary.tracks} tracks, ${summary.clips} clips, ` +
       `${summary.totalFrames} frames @ ${summary.fps}fps\n`
@@ -51,10 +54,13 @@ export async function runBuild(args: BuildArgs): Promise<void> {
   if (args.export) {
     await runExportForProject(project, specDir, {
       out: args.export,
+      container: args.container,
       codec: args.codec,
       height: args.height,
       videoBitrate: args.videoBitrate,
       audioBitrate: args.audioBitrate,
+      encoder: args.encoder,
+      ffmpeg: args.ffmpeg,
       browser: args.browser,
       headed: args.headed,
       timeoutSec: args.timeoutSec,

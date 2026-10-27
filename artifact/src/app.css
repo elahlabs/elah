@@ -189,12 +189,9 @@ button.crumb:hover { color: var(--a-text); background: var(--a-surface-2); }
 .status { padding: 6px 16px; font-size: 12px; color: var(--a-muted); border-top: 1px solid var(--a-border); background: var(--a-surface); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .status .bar { flex: 1 1 140px; max-width: 320px; height: 6px; border-radius: 3px; background: var(--a-border); overflow: hidden; }
 .status .bar i { display: block; height: 100%; background: var(--a-accent); }
-.btn.soon, .btn.soon:disabled { opacity: 1; color: var(--a-muted); cursor: not-allowed; background: var(--a-surface-2); border-style: dashed; }
-.btn.soon svg { opacity: 0.55; }
-.pill {
-  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--a-accent) 16%, transparent); color: var(--a-accent); border: 1px solid color-mix(in srgb, var(--a-accent) 40%, transparent);
-}
+a.btn { text-decoration: none; }
+.made-with { font-size: 12px; color: var(--a-muted); text-decoration: none; white-space: nowrap; align-self: center; }
+.made-with:hover { color: var(--a-accent); text-decoration: underline; }
 .lbl-narrow { display: none; }
 
 /* HTML-first page player (page/PagePlayer.tsx): the page is stage-sized and scaled by a transform on the host. */
@@ -231,3 +228,55 @@ button.crumb:hover { color: var(--a-text); background: var(--a-surface-2); }
   .hdr { padding: 8px 16px; }
   .hdr-actions { margin-left: 0; width: 100%; }
 }
+
+/* Follow-ups and "In Elah" rows under the player (TICKET-PF-10) */
+.below { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--a-border); background: var(--a-surface); }
+.followups, .inelah { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.row-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--a-muted); min-width: 110px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font: inherit; font-size: 12px; color: var(--a-text); background: transparent; border: 1px solid var(--a-border); border-radius: 999px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.chip:hover:not(:disabled) { border-color: var(--a-accent); color: var(--a-accent); }
+.chip:disabled { opacity: .5; cursor: default; }
+.pill-in { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--a-border); color: var(--a-muted); }
+.row-note { font-size: 12px; color: var(--a-muted); }
+@media (max-width: 640px) { .row-lbl { min-width: 0; width: 100%; } .below { padding: 8px 12px; } }
+
+/* Your own footage: drop overlay, reconnect list, Creator line (TICKET-PF-14) */
+.app { position: relative; }
+.drop-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: color-mix(in srgb, var(--a-bg) 78%, transparent); border: 2px dashed var(--a-accent); pointer-events: none; }
+.drop-overlay > div { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 20px; max-width: min(420px, calc(100vw - 32px)); text-align: center; border-radius: 12px; background: var(--a-surface); border: 1px solid var(--a-border); color: var(--a-text); }
+.drop-overlay span { font-size: 12px; color: var(--a-muted); }
+.reconnect { flex: 0 0 auto; padding: 8px 16px; border-top: 1px solid var(--a-border); background: var(--a-surface); font-size: 13px; }
+.reconnect-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.reconnect-head .btn.icon { margin-left: auto; width: 28px; min-height: 28px; }
+.reconnect ul { margin: 6px 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.reconnect li { display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+.reconnect .fname { font-family: ui-monospace, 'Roboto Mono', monospace; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.reconnect-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.nudge { flex: 0 0 auto; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 6px 16px; border-top: 1px solid var(--a-border); background: var(--a-surface); font-size: 12px; color: var(--a-muted); }
+.nudge .btn.icon { margin-left: auto; width: 28px; min-height: 28px; }
+@media (max-width: 640px) { .reconnect, .nudge { padding-left: 12px; padding-right: 12px; } }
+
+/* Save version (TICKET-PF-15): the dot marks unsaved changes; "Saved" reads as a state, not an action. */
+.btn.save { position: relative; }
+.btn.save.unsaved { border-color: var(--a-accent); }
+.btn.save.unsaved::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--a-accent); }
+.btn.save:disabled:not(.unsaved) { opacity: 0.6; }
+
+/* Comment on a moment (TICKET-PF-16): rendered only when the comments capability registered custom anchors.
+   The shell draws the pins and cards; the page only offers the entry point. */
+.comment-row { flex: none; display: flex; justify-content: flex-end; padding: 4px 12px; background: var(--a-surface-2); border-top: 1px solid var(--a-border); }
+.btn.comment-at { white-space: nowrap; }
+@media (max-width: 640px) { .btn.comment-at span { font-size: 12px; } }
+
+/* Ask Claude (TICKET-PF-17): rendered only where the sample capability can run page tools. */
+.ask { display: grid; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--a-border); }
+.ask-h { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--a-text); }
+.ask-h svg { color: var(--a-accent); }
+.ask-input { width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px; padding: 7px 9px; border-radius: 8px; font: inherit; font-size: 13px; line-height: 1.4; color: var(--a-text); background: var(--a-surface); border: 1px solid var(--a-border); }
+.ask-input:focus { outline: none; border-color: var(--a-accent); }
+.ask-input:disabled { opacity: 0.6; }
+.ask-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ask-note { font-size: 11px; color: var(--a-muted); flex: 1 1 120px; }
+.ask-out { margin: 0; font-size: 12px; line-height: 1.45; color: var(--a-text); overflow-wrap: anywhere; }
+.ask-meta { display: block; margin-top: 2px; font-size: 11px; color: var(--a-muted); }

@@ -9,6 +9,8 @@ keeps it so).
 
 - Copy the recipe's section into your `<main class="stage">` and its CSS into the `css` string, after the shared base below (once per
   video; do not copy a keyframe set twice).
+- **Sound**: each recipe names the one element that carries its cue (`programmatic.md`, "Sound cues"); add the `data-sfx`
+  attribute to that element when the video has sound, and leave it out in a silent one.
 - **Time lives in `--at`**: set `style="--at: 6s"` on the section and the whole recipe starts there; inside it every delay is
   `calc(var(--at) + ...)`. Scenes hand off with `scene-in` / `scene-out` on the section root as `programmatic.md` rule 3 says. The first
   scene's hook takes a small negative offset (`--at: -0.15s`) so frame 0 is never empty.
@@ -65,7 +67,8 @@ keyframes every recipe reuses. Put this first in the `css` string.
   font-family: var(--sans); font-weight: 400;
 }
 .scene { --at: 0s; position: absolute; inset: 0; }
-.scene > * { position: absolute; margin: 0; }
+.scene > *, .scene > .in > * { position: absolute; margin: 0; }
+.scene > .in { inset: 0; } /* a middle scene's fade-in wrapper (programmatic.md, rule 3); its children place like a scene's */
 .cap { left: 160px; width: 1000px; font-family: var(--display); font-size: 54px; letter-spacing: 6px; color: var(--muted); }
 .hero { left: 160px; width: 1500px; font-size: 200px; line-height: 1.05; letter-spacing: 3px; }
 .sub { left: 160px; width: 1300px; font-size: 86px; line-height: 1.1; }
@@ -86,6 +89,7 @@ keyframes every recipe reuses. Put this first in the `css` string.
 
 `kinetic-title`: the opening or any message beat; one emphasis word in the accent. Words blur in 0.1 s apart, a kicker slides in, a
 rule draws. Editorial taste: set `.t-line .em` to `font-family: var(--serif); font-style: italic`.
+Sound: `data-sfx="whoosh"` on `.t-line` (the headline arriving).
 
 ```html
 <section class="scene r-title" data-scene="title">
@@ -106,6 +110,7 @@ rule draws. Editorial taste: set `.t-line .em` to `font-family: var(--serif); fo
 
 `word-hits`: 3-8 single words punching in, one at a time, each 0.7 s; the last stays. One keyframe set holds a word and takes it out, so
 a word never has two animations on its opacity; the last word has its own set with no exit. Brutalist face: `anton`, capitals.
+Sound: `data-sfx="impact"` on the last `.hit` only; never one per word.
 
 ```html
 <section class="scene r-hits" data-scene="hits">
@@ -139,6 +144,7 @@ cannot convert it) that steps from 0 to 1 opacity; a space rides inside the lett
 only a space draws nothing and Edit reports it. `--i` is the index of the letter in the line, so the caret and the letters keep
 one rhythm. The caret is one element stepping across. A monospace face is 0.6 em wide, so the caret travels `letters x 0.6 x font-size` px
 (15 letters at 96 px: 864 px) in `steps(15)`. A nowrap line; keep it under 25 letters.
+Sound: `data-sfx="click"` on `.ty-line`, once as the typing starts; never one per letter.
 
 ```html
 <section class="scene r-type" data-scene="typewriter">
@@ -162,6 +168,7 @@ one rhythm. The caret is one element stepping across. A monospace face is 0.6 em
 converts). Size the ring from the phrase: width = letters x 0.55 x font-size + 80, height = line height + 110, and centre both on the
 same point. Underline variant: swap the ellipse for `<path d="M10 14 Q 265 2 520 12 T 1030 10" pathLength="1"/>` under the phrase.
 Marker variant: an `accent-soft` rectangle behind the phrase with `draw-x`.
+Sound: `data-sfx="swoosh"` on `.c-ring` (the ring drawing round the phrase).
 
 ```html
 <section class="scene r-circle" data-scene="circled">
@@ -182,6 +189,7 @@ Marker variant: an `accent-soft` rectangle behind the phrase with `draw-x`.
 
 `quote-card`: a testimonial or one line worth framing (only words the user supplied). A glass card (`glass-in` ends at 0.7 opacity, so
 the card never fights its own fade), a large serif quotation mark, the line, the attribution.
+Sound: `data-sfx="swoosh"` on `.q-card`.
 
 ```html
 <section class="scene r-quote" data-scene="quote">
@@ -204,6 +212,7 @@ the card never fights its own fade), a large serif quotation mark, the line, the
 
 `clock-sweep`: time, speed, deadlines. A dial pops in; one hand sweeps a full turn while an accent arc fills behind it in the same
 1.6 s `travel` run (the 60 ticks are one dashed circle); the caption rises after.
+Sound: `data-sfx="tick"` on `.cs-hand` (as the sweep starts).
 
 ```html
 <section class="scene r-clock" data-scene="clock">
@@ -233,8 +242,10 @@ the card never fights its own fade), a large serif quotation mark, the line, the
 ## Logo outro
 
 `logo-outro`: the closing beat, wordmark plus an accent ring plus a tagline; it holds, with no exit. There is no logo file: the
-wordmark is type. The ring draws first (something on screen at the start), the wordmark lands with an overshoot, the tagline rises
-0.75 s later in the caption band, under the ring (never inside it).
+wordmark is type. The ring draws first (something on screen at the start), the wordmark lands with an overshoot while the ring is
+still drawing, and the tagline rises 0.25 s after it in the caption band, under the ring (never inside it). Timed for a 3 s end card:
+the tagline has landed by +1.0 s and holds 2 s. A longer end card keeps these offsets and holds longer.
+Sound: `data-sfx="impact"` on `.lo-mark`, or `chime` when the outro is the call to action.
 
 ```html
 <section class="scene r-logo" data-scene="logo">
@@ -246,9 +257,9 @@ wordmark is type. The ring draws first (something on screen at the start), the w
 
 ```css
 .lo-ring { left: 660px; top: 240px; }
-.lo-ring circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-dasharray: 1; stroke-dashoffset: 1; transform: rotate(-90deg); transform-origin: 300px 300px; animation: draw-stroke 1s var(--draw) calc(var(--at) + 0.1s) both; }
-.lo-mark { left: 460px; top: 435px; width: 1000px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 200px; line-height: 1.05; letter-spacing: 4px; animation: pop 0.6s var(--pop) calc(var(--at) + 1.2s) both; }
-.lo-tag { left: 460px; top: 850px; width: 1000px; text-align: center; font-size: 64px; letter-spacing: 2px; animation: rise 0.5s var(--arrive) calc(var(--at) + 1.95s) both; }
+.lo-ring circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-dasharray: 1; stroke-dashoffset: 1; transform: rotate(-90deg); transform-origin: 300px 300px; animation: draw-stroke 1s var(--draw) var(--at) both; }
+.lo-mark { left: 460px; top: 435px; width: 1000px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 200px; line-height: 1.05; letter-spacing: 4px; animation: pop 0.6s var(--pop) calc(var(--at) + 0.25s) both; }
+.lo-tag { left: 460px; top: 850px; width: 1000px; text-align: center; font-size: 64px; letter-spacing: 2px; animation: rise 0.5s var(--arrive) calc(var(--at) + 0.5s) both; }
 ```
 
 ## Section break
@@ -256,6 +267,7 @@ wordmark is type. The ring draws first (something on screen at the start), the w
 `section-break`: a wipe between acts carrying one word. One accent bar sweeps across the frame, rests for 0.4 s with the word on it, and
 sweeps out; it is one `transform` animation, so Edit converts it. Place it on the seam: `--at` is the next scene's start minus 0.6 s.
 The word is in the headline band, in `--bg` on the accent.
+Sound: `data-sfx="whoosh"` on `.sb-bar`.
 
 ```html
 <section class="scene r-break" data-scene="break">
@@ -283,6 +295,7 @@ static glyph between columns, so **thousands separators survive** (an `@property
 Preview and Export, and Edit converts every column (it is plain `transform`). Layout is explicit px: a column is 0.62 x `--h` wide, a
 separator 0.3 x `--h`, columns start `--i` x 0.1 s apart. For another number, add or remove columns and set each column's `--d` to its
 digit (10 for 0) and `left` to the running width. Keep the label for after the figure lands (about 1.5 s).
+Sound: `data-sfx="tick"` on `.count` (once, as the reels start).
 
 ```html
 <section class="scene r-count" data-scene="count">
@@ -313,6 +326,7 @@ recipe's `.count` CSS; this one only resizes it with `--h`). The `%` is a static
 over a path that is already the right length: an SVG arc from the top, clockwise, through p x 360 degrees (p = 0.72 here), so it
 ends at x = 280 + 250 sin(p x 360), y = 280 - 250 cos(p x 360) = (34.4, 326.9), with the large-arc flag 1 when p is over 0.5. A
 dash shorter than the path or a keyframe set per value would make Edit sample it instead of reading it exactly.
+Sound: `data-sfx="tick"` on `.sr-arc` (as the arc starts to fill).
 
 ```html
 <section class="scene r-ring" data-scene="ring">
@@ -341,6 +355,7 @@ dash shorter than the path or a keyframe set per value would make Edit sample it
 
 `stat-bars`: a comparison of 2-6 values. Bars grow from the baseline (`scaleY` from the bottom, 0.2 s apart in a calm piece), one bar in
 the accent and the rest muted, values labelled directly above, no legend. Bar height in px = value / max x 440.
+Sound: `data-sfx="pop"` on the accent bar `.bar.hl` only.
 
 ```html
 <section class="scene r-bars" data-scene="bars">
@@ -371,6 +386,7 @@ the accent and the rest muted, values labelled directly above, no legend. Bar he
 
 `icon-row`: 3-7 capabilities as drawn icons, one highlighted. Inline SVG, a stroke style, a staggered rise 0.1 s apart. The three
 shapes here (arrow, layers, spark) are abstract on purpose; draw the icon that says the specific thing, never a stock cliche.
+Sound: `data-sfx="pop"` on the highlighted `.ir-item.hl` only.
 
 ```html
 <section class="scene r-icons" data-scene="icons">
@@ -402,6 +418,7 @@ shapes here (arrow, layers, spark) are abstract on purpose; draw the icon that s
 
 `badge-callouts`: 2-4 features with labels. A core shape on the left (draw the product's idea, never an invented screen), then one row
 per feature: a numbered badge pops, a rule draws out of it, the label slides in; rows 0.5 s apart so each is named as it arrives.
+Sound: `data-sfx="pop"` on the first `.bc-badge`; add one to a later badge only when rows are 0.5 s or more apart and each row is its own beat.
 
 ```html
 <section class="scene r-badges" data-scene="badges">
@@ -425,6 +442,7 @@ per feature: a numbered badge pops, a rule draws out of it, the label slides in;
 
 `chip-cloud`: 3-8 tags or keywords (the pains of the old way, the ingredients). Pills pop in a loose cluster, 0.1 s apart; set the
 positions by hand so no two touch. Filled chips use `--accent-soft`, outline chips a muted border.
+Sound: `data-sfx="pop"` on the first `.chip` only (the cloud is one beat).
 
 ```html
 <section class="scene r-chips" data-scene="chips">
@@ -446,6 +464,7 @@ positions by hand so no two touch. Filled chips use `--accent-soft`, outline chi
 
 `checklist`: 2-6 steps checked off, the last one emphasised. Each row: a ring, a check that draws itself 0.35 s after the line rises,
 rows 0.6 s apart.
+Sound: `data-sfx="tick"` on `.cl-row.last` (the emphasised step).
 
 ```html
 <section class="scene r-checks" data-scene="checks">
@@ -478,6 +497,7 @@ rows 0.6 s apart.
 
 `comparison`: before and after, us and them. Two glass cards: the left one muted (it fades to 0.55 so the eye goes right), the right one
 with an accent border arriving 0.45 s later. The left card alone is the "old way" beat of a launch.
+Sound: `data-sfx="swoosh"` on `.cmp-card.new` (the answer arriving).
 
 ```html
 <section class="scene r-compare" data-scene="compare">
@@ -507,6 +527,7 @@ with an accent border arriving 0.45 s later. The left card alone is the "old way
 
 `testimonial-cards`: social proof; only quotes and ratings the user supplied. Two cards (a third fits at 520 px wide), a star row
 drawn as paths, the quote, the name; cards rise 0.15 s apart.
+Sound: `data-sfx="swoosh"` on the first `.tc-card`.
 
 ```html
 <section class="scene r-proof" data-scene="proof">
@@ -548,6 +569,7 @@ drawn as paths, the quote, the name; cards rise 0.15 s apart.
 `arrange` system, and the "grow a diagram one part per beat" rule of `formats/explainer.md`: parts fly in from scattered offsets
 (`--dx`, `--dy`, `--r` on each) and settle into a grid, 0.15 s apart; stretch the gap to 1-1.5 s and a diagram grows one named part at a
 time. Opacity, translate and rotate only, so Edit converts it.
+Sound: `data-sfx="snap"` on the scene root (it plays as the parts start to fly in; one cue for the whole layout).
 
 ```html
 <section class="scene r-arrange" data-scene="arrange">
@@ -571,6 +593,7 @@ time. Opacity, translate and rotate only, so Edit converts it.
 `crossMorph` system and the numbered steps of `formats/explainer.md`: one ring, one number and one phrase stay in place while the
 content swaps, each step's number and phrase rising in and the old ones lifting out (4 s a step). The last step rises in and stays. One
 keyframe set carries the arrival, the hold and the exit, so nothing has two animations on one property.
+Sound: `data-sfx="tick"` on each `.st-num` (one per step, which is one per beat).
 
 ```html
 <section class="scene r-steps" data-scene="steps">

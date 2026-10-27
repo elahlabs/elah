@@ -1,0 +1,184 @@
+{
+  "format": "elah-sfx",
+  "version": 1,
+  "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+  "totalBytes": 235996,
+  "cues": {
+    "whoosh": [
+      {
+        "file": "whoosh-1.mp3",
+        "sourcePage": "https://freesound.org/people/ludvique/sounds/71851/",
+        "licence": "Creative Commons 0",
+        "title": "digital_whoosh_hard.wav",
+        "author": "ludvique",
+        "seconds": 0.652,
+        "bytes": 17585,
+        "sha256": "d4f7e636cbdfe26043ff47a8d9966bab105671fcc9745b36c8cf6aec2f9d07f3"
+      },
+      {
+        "file": "whoosh-2.mp3",
+        "sourcePage": "https://freesound.org/people/huw2k8/sounds/459941/",
+        "licence": "Creative Commons 0",
+        "title": "Whoosh.wav",
+        "author": "huw2k8",
+        "seconds": 1.915,
+        "bytes": 45994,
+        "sha256": "ba94f50b4e3d886904b8e795802095f4e7c9d33299eb7fcd92ab60bc7e65f2c1"
+      }
+    ],
+    "swoosh": [
+      {
+        "file": "swoosh-1.mp3",
+        "sourcePage": "https://freesound.org/people/lesaucisson/sounds/585257/",
+        "licence": "Creative Commons 0",
+        "title": "swoosh-1.mp3",
+        "author": "lesaucisson",
+        "seconds": 0.452,
+        "bytes": 13935,
+        "sha256": "e35d2c364ff8456e1cf205b80fc4c2e3c9811eab621abbfa9ccb5b16da433c70"
+      },
+      {
+        "file": "swoosh-2.mp3",
+        "sourcePage": "https://freesound.org/people/migoreng1/sounds/786514/",
+        "licence": "Creative Commons 0",
+        "title": "swoosh_v2",
+        "author": "migoreng1",
+        "seconds": 0.3,
+        "bytes": 3830,
+        "sha256": "b5459ce5c20d0cce683f7e28f0c60a5e2efcef57859c3d79dca2915f0c0d6335"
+      }
+    ],
+    "pop": [
+      {
+        "file": "pop-1.mp3",
+        "sourcePage": "https://freesound.org/people/quatricise/sounds/789793/",
+        "licence": "Creative Commons 0",
+        "title": "Pop 4",
+        "author": "quatricise",
+        "seconds": 0.219,
+        "bytes": 7514,
+        "sha256": "a05fb5873eb84842b64bbaa00b3f76a007293b23df74f992abe002616c8e9468"
+      },
+      {
+        "file": "pop-2.mp3",
+        "sourcePage": "https://freesound.org/people/deraj/sounds/202230/",
+        "licence": "Creative Commons 0",
+        "title": "Pop sound",
+        "author": "deraj",
+        "seconds": 0.65,
+        "bytes": 17011,
+        "sha256": "f710da77f4fcafb1dafb16b677b108469ee4127f03198738c3c0d3f39608aec7"
+      }
+    ],
+    "click": [
+      {
+        "file": "click-1.mp3",
+        "sourcePage": "https://freesound.org/people/budek/sounds/513481/",
+        "licence": "Creative Commons 0",
+        "title": "Click.wav",
+        "author": "budek",
+        "seconds": 0.42,
+        "bytes": 11856,
+        "sha256": "2d63790f6b03c6e16595233734953ca07266bc950c8aa895bf6d2e77158b4af8"
+      },
+      {
+        "file": "click-2.mp3",
+        "sourcePage": "https://freesound.org/people/Christopherderp/sounds/342200/",
+        "licence": "Creative Commons 0",
+        "title": "Videogame Menu BUTTON CLICK",
+        "author": "Christopherderp",
+        "seconds": 0.139,
+        "bytes": 5297,
+        "sha256": "04852588dee217852f1f0e93a1d863c86ec1ac792de535848cc037e943035ebb"
+      }
+    ],
+    "tick": [
+      {
+        "file": "tick-1.mp3",
+        "sourcePage": "https://freesound.org/people/DeltaCode/sounds/668355/",
+        "licence": "Creative Commons 0",
+        "title": "single-tick.wav",
+        "author": "DeltaCode",
+        "seconds": 0.079,
+        "bytes": 3840,
+        "sha256": "7096474f8a3d39b94c8368c978d9746c0ce1015ccc2302a87f012d1027719444"
+      },
+      {
+        "file": "tick-2.mp3",
+        "sourcePage": "https://freesound.org/people/Alexsani/sounds/117280/",
+        "licence": "Creative Commons 0",
+        "title": "front tick.wav",
+        "author": "Alexsani",
+        "seconds": 0.499,
+        "bytes": 14716,
+        "sha256": "257f84b33e99695f1da4c1bca3dd23c1a429d70c11d57af7d08485e1c17798e6"
+      }
+    ],
+    "snap": [
+      {
+        "file": "snap-1.mp3",
+        "sourcePage": "https://freesound.org/people/Baconation/sounds/592467/",
+        "licence": "Creative Commons 0",
+        "title": "Snap 11.mp3",
+        "author": "Baconation",
+        "seconds": 0.145,
+        "bytes": 5531,
+        "sha256": "64f4232d3010898633460887d9df5848d007a689a069ca8488cd73cbd99b71b7"
+      },
+      {
+        "file": "snap-2.mp3",
+        "sourcePage": "https://freesound.org/people/R_mac/sounds/241152/",
+        "licence": "Creative Commons 0",
+        "title": "Snap.aif",
+        "author": "R_mac",
+        "seconds": 0.25,
+        "bytes": 8924,
+        "sha256": "304a529b34aa01e8ccf1eade36d4c3fbbdceb3049a588f2891fbb5fcdf0b8905"
+      }
+    ],
+    "impact": [
+      {
+        "file": "impact-1.mp3",
+        "sourcePage": "https://freesound.org/people/Daftrio/sounds/816738/",
+        "licence": "Creative Commons 0",
+        "title": "Impact 2",
+        "author": "Daftrio",
+        "seconds": 0.328,
+        "bytes": 8139,
+        "sha256": "598caaf1bbce3de5fd5643e6d15563e2b1558a44eb87266152150950e26db09b"
+      },
+      {
+        "file": "impact-2.mp3",
+        "sourcePage": "https://freesound.org/people/MadPanCake/sounds/660770/",
+        "licence": "Creative Commons 0",
+        "title": "Hit Impact",
+        "author": "MadPanCake",
+        "seconds": 0.444,
+        "bytes": 9599,
+        "sha256": "88a1a1c9e3d38e4bad3cecc58edf8f2058fc484ac7f355bd8906897625304dd0"
+      }
+    ],
+    "chime": [
+      {
+        "file": "chime-1.mp3",
+        "sourcePage": "https://freesound.org/people/Asteroiderer/sounds/442923/",
+        "licence": "Creative Commons 0",
+        "title": "chime_ping.wav",
+        "author": "Asteroiderer",
+        "seconds": 1.241,
+        "bytes": 32273,
+        "sha256": "6825ee616945db4f92e202804c4342bbd4dbf225c837ce57a2fc122e8dbe1ad7"
+      },
+      {
+        "file": "chime-2.mp3",
+        "sourcePage": "https://freesound.org/people/Psykoosiossi/sounds/398661/",
+        "licence": "Creative Commons 0",
+        "title": "Chime.wav",
+        "author": "Psykoosiossi",
+        "seconds": 1.287,
+        "bytes": 29952,
+        "sha256": "8d2ab1c402642cb6025d2281ec117ef6e8f80ed7ac39456b39680f3a07aa48fb"
+      }
+    ]
+  }
+}

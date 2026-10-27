@@ -131,7 +131,7 @@ and `apps/web/config/changelog.ts`, pass the release gate, then publish by hand 
 order `@elah/core` → `@elah/react` → `@elah/timeline` → `@elah/editor` → `@elah/cli`, one
 `npm publish --workspace=packages/<pkg> --access public` at a time and **never**
 `npm publish --workspaces`. Tag `v<version>` for the four lockstep packages (`v0.6.0`) and
-`cli-v<version>` for the CLI (`cli-v0.1.2`).
+`cli-v<version>` for the CLI (`cli-v1.0.0`).
 
 ### PRs that won't be merged
 

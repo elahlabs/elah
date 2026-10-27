@@ -11,9 +11,12 @@
  *
  * Constraints from the 2026-09-25 spike (Chromium): the SVG must load from a `data:` URL (`blob:` and
  * `createImageBitmap(img)` taint the canvas) and the fonts are embedded as `data:` `@font-face` because
- * `document.fonts` does not reach into the image.
+ * `document.fonts` does not reach into the image. Supplied images (`assets/<name>`, TICKET-PF-11) are swapped for
+ * `data:` URLs the same way, once, before the first frame (assetsInline.ts).
  */
 
+import { assetBaseUrl } from '../input'
+import { collectAssetNames, inlineAssetsInTree, loadAssets, replaceCssAssets } from './assetsInline'
 import type { PagePlayerHandle } from './types'
 
 /** Thrown when this browser cannot draw the SVG image (decode failed or the canvas is tainted). */
@@ -40,6 +43,10 @@ export interface Rasterizer {
   readonly width: number
   readonly height: number
   readonly timings: RasterTimings
+  /** Resolves once the supplied images are inlined; `rasterFrame` waits for it, `svgFor` does not. */
+  readonly ready: Promise<void>
+  /** The supplied images embedded as data: URLs (name list and characters), filled once `ready` resolves. */
+  readonly assets: { names: string[]; bytes: number }
   /** Seek to `t` and paint the page onto `ctx` (full stage size). */
   rasterFrame(t: number, ctx: Ctx2D, nonce?: string): Promise<void>
   /** The SVG document string for `t` (debugging / probes). */
@@ -143,11 +150,30 @@ export function createRasterizer(player: PagePlayerHandle, opts: { fontCss: stri
   const inherited = INHERITED.map((p) => `${p}:${p === 'line-height' ? inheritedLineHeight(stageEl, hostCs.lineHeight) : hostCs.getPropertyValue(p)}`).join(';')
   const stageBg = getComputedStyle(stageEl).backgroundColor || '#000'
 
-  const head =
+  const headFor = (css: string): string =>
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
     `<foreignObject x="0" y="0" width="${width}" height="${height}">` +
     `<div xmlns="http://www.w3.org/1999/xhtml" style="${attr(`position:relative;width:${width}px;height:${height}px;overflow:hidden;${inherited}`)}">` +
-    `<style>${xmlText(staticCss)}</style>`
+    `<style>${xmlText(css)}</style>`
+  let head = headFor(staticCss)
+
+  // Supplied images: the SVG image loads nothing from outside itself, so every assets/<name> becomes a data: URL, in
+  // the static clone and in the page CSS, once. A baked value that resolved to the absolute URL is mapped per frame.
+  const base = assetBaseUrl()
+  let assetMap: ReadonlyMap<string, string> = new Map()
+  const assets = { names: [] as string[], bytes: 0 }
+  const names = collectAssetNames(stageEl, pageCss)
+  const ready: Promise<void> =
+    names.size === 0
+      ? Promise.resolve()
+      : loadAssets(names, base).then((loaded) => {
+          assetMap = loaded.map
+          assets.names = [...loaded.map.keys()]
+          assets.bytes = loaded.bytes
+          inlineAssetsInTree(clone, loaded.map)
+          head = headFor(`${opts.fontCss}\n${replaceCssAssets(pageCss, loaded.map)}\n${FREEZE_CSS}`)
+        })
+  ready.catch(() => undefined) // surfaced by rasterFrame
   const tail = '</div></foreignObject></svg>'
   const serializer = new XMLSerializer()
 
@@ -162,11 +188,12 @@ export function createRasterizer(player: PagePlayerHandle, opts: { fontCss: stri
         const style = (b.clone as HTMLElement).style
         for (const p of b.props) {
           const v = cs.getPropertyValue(p)
-          if (v) style.setProperty(p, v, 'important')
+          if (v) style.setProperty(p, assetMap.size && v.includes('url(') ? replaceCssAssets(v, assetMap, base) : v, 'important')
         }
       } else {
         const decls = b.props
           .map((p) => ({ p, v: cs.getPropertyValue(p) }))
+          .map((d) => (assetMap.size && d.v.includes('url(') ? { p: d.p, v: replaceCssAssets(d.v, assetMap, base) } : d))
           .filter((d) => d.v)
           .map((d) => `${d.p}:${d.v} !important`)
           .join(';')
@@ -177,6 +204,7 @@ export function createRasterizer(player: PagePlayerHandle, opts: { fontCss: stri
   }
 
   const rasterFrame = async (t: number, ctx: Ctx2D, nonce?: string): Promise<void> => {
+    await ready
     const t0 = performance.now()
     // `nonce` (probes only) makes the URL unique so the browser's decoded-image cache cannot answer for us.
     const svg = nonce ? `${svgFor(t)}<!--${nonce.replace(/-/g, '')}-->` : svgFor(t)
@@ -201,7 +229,7 @@ export function createRasterizer(player: PagePlayerHandle, opts: { fontCss: stri
     timings.drawMs += t3 - t2
   }
 
-  return { width, height, timings, rasterFrame, svgFor }
+  return { width, height, timings, ready, assets, rasterFrame, svgFor }
 }
 
 /** Throws `PageExportUnsupported` if the canvas cannot be read back (tainted by the SVG image). */

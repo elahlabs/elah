@@ -15,10 +15,12 @@ Headless command-line runtime for the Elah video engine. A thin consumer of
 npm install -g @elah/cli
 ```
 
-Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. The published 0.1.2 depends on `@elah/core@^0.6.0`; the next release depends on `@elah/core@^1.0.0` and exports version 5 projects (adjustment, generator, compound and sequence clips, the nine transitions). That release is not out yet: until then, use `0.1.2` with 0.6.x projects.
+Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. 1.0.0 depends on `@elah/core@^1.0.0` and exports version 5 projects (adjustment, generator, compound and sequence clips, the nine transitions). For a 0.6.x project, stay on `0.1.2`.
 `export`/`build --export`/`serve` additionally require a system Google Chrome
 (or `--browser <path>` / `ELAH_BROWSER`) — see [Serve mode](#serve-mode) and
-[Docker](#docker) for headless environments.
+[Docker](#docker) for headless environments. Installing **ffmpeg 4.4+** is
+recommended (`brew install ffmpeg`, `apt install ffmpeg`, `winget install ffmpeg`):
+when the CLI finds it, ffmpeg encodes the MP4 — see [Encoding](#encoding-ffmpeg-or-chrome).
 
 ---
 
@@ -27,13 +29,31 @@ Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. Th
 ```
 elah split  --project <in.json> --clip <clipId> --at <frame|timecode> [--out <out.json>]
 elah trim   --project <in.json> --clip <clipId> [--start <frame|timecode>] [--duration <frames|timecode>] [--out <out.json>]
-elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
-            [--video-bitrate <bps>] [--audio-bitrate <bps>] [--browser <path>] [--headed] [--timeout <s>]
-elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4>] [export options]
+elah export --project <in.json> --out <file.mp4|file.webm> [--container mp4|webm]
+            [--codec avc|hevc|av1|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
+            [--encoder auto|ffmpeg|chrome] [--ffmpeg <path>] [--browser <path>] [--headed] [--timeout <s>]
+elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4|file.webm>] [export options]
 elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>]
-            [--codec avc|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
-            [--browser <path>] [--timeout <s>] [--verbose]
+            [--container mp4|webm] [--codec avc|hevc|av1|vp9|vp8] [--height <N>] [--video-bitrate <bps>]
+            [--audio-bitrate <bps>] [--encoder auto|ffmpeg|chrome] [--ffmpeg <path>] [--browser <path>]
+            [--timeout <s>] [--verbose]
 ```
+
+### Containers and codecs
+
+The container is `--container`, else the output file's extension (`.webm` → WebM, `.mp4`/`.m4v`
+→ MP4), else MP4; `serve` uses `--container` (default MP4) and labels its responses to match.
+Codecs follow `@elah/core`'s own matrix, so the CLI rejects (exit `2`) exactly what the Editor's
+exporter would:
+
+| Container | `--codec` | Audio |
+| --- | --- | --- |
+| MP4 | `avc` (default), `hevc`, `av1` | AAC |
+| WebM | `vp9` (default), `vp8`, `av1` | Opus |
+
+`--codec vp9 --out clip.mp4` is an error that points you at `.webm`. With the Chrome encoder,
+`hevc` and `av1` also need Chrome's encoder for them on your machine; core reports it when it
+is missing.
 
 `--height` is the target for the stage's **short** edge (`1080` = 1920×1080 landscape or
 1080×1920 portrait); the other edge follows the stage's aspect ratio, rounded to an even number.
@@ -41,9 +61,64 @@ elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>
 `split`, `trim` and `build` run in plain Node against the engine. `export`
 launches the system Google Chrome headlessly (or `--browser <path>` /
 `ELAH_BROWSER`) and runs core's real `exportVideo` pipeline in it, so CLI
-output is identical to Editor output by construction. Exit codes: `0` success,
+frames are identical to Editor frames by construction. Exit codes: `0` success,
 `1` validation/runtime failure, `2` usage error. Diagnostics go to stderr;
 `split`/`trim` print the resulting project JSON to stdout unless `--out` is given.
+
+### Encoding: ffmpeg or Chrome
+
+Chrome always draws the frames, so the picture matches the Editor either way. What changes
+is who compresses them into the file:
+
+| `--encoder` | Behaviour |
+| --- | --- |
+| `auto` (default) | ffmpeg when it is found and can write the codec; otherwise Chrome's WebCodecs encoder, with one `encoding with Chrome instead of ffmpeg: …` warning saying why. |
+| `ffmpeg` | ffmpeg or fail. |
+| `chrome` | Chrome's encoder; ffmpeg is never looked up. |
+
+ffmpeg is found through `--ffmpeg <path>`, then `ELAH_FFMPEG`, then `ffmpeg` on `PATH`, and must
+be 4.4 or newer. It is a system binary, never an npm dependency (no GPL code in your install,
+and your platform's build keeps its hardware encoders). With ffmpeg, `avc` uses `libx264`,
+`hevc` `libx265` (tagged `hvc1` for Apple players), `av1` `libsvtav1` or else `libaom-av1`,
+`vp9` `libvpx-vp9` and `vp8` `libvpx`, at the same 8 Mbps / 128 kbps defaults as Chrome; audio
+is `aac` in MP4 and `libopus` (at 48 kHz) in WebM. If the ffmpeg build lacks the encoder,
+`auto` falls back to Chrome. The audio is core's own mix (the one the Editor plays). The output
+is tagged BT.709, limited range, like Chrome's.
+
+The finished line says which encoder ran: `wrote out.mp4 (5297250 bytes, encoded by ffmpeg (libx264))`.
+
+Today the ffmpeg path is slower than Chrome's encoder (8.8 s against 3.5 s for 5 s of 1080p30
+on the machine it was measured on): each frame is compressed to PNG in the page before ffmpeg
+sees it. ffmpeg's own encode was 1.3 s of that.
+
+### Sources Chrome cannot decode
+
+Before an export, the CLI asks the browser it is about to use whether it can decode each video
+and audio source, using the exact stream (WebCodecs `isConfigSupported` on the track's decoder
+config). When it cannot, and ffmpeg is installed, the source is converted first:
+
+| Source | Why Chrome fails | What ffmpeg does |
+| --- | --- | --- |
+| ProRes `.mov` | no ProRes decoder | re-encodes the video, converts PCM audio to AAC |
+| HEVC, where Chrome has no HEVC decoder (most Linux, Chromium) | no decoder | re-encodes the video, copies AAC |
+| AVI, WMV, FLV | container cannot be read | re-encodes everything |
+| `.mkv` with AC-3/DTS audio | no audio decoder | copies the video, converts the audio |
+| MPEG-TS (`.ts`) | Web Audio cannot read the container | remuxes (no re-encode) |
+
+```
+footage.mov: Chrome cannot decode prores video; converting to H.264/AAC MP4 with ffmpeg
+footage.mov: converted in 0.3s
+```
+
+The converted copy is H.264/AAC MP4 (`libx264 -crf 14`, a near-lossless scratch file), or
+VP9/Opus WebM for a browser without H.264. Frame timing is passed through untouched, and every
+stream is shifted so the first video frame is at 0 (MPEG-TS often starts at ~1.4 s). Copies live
+in a temporary directory until the export (or `elah serve`) ends; `serve` converts each source
+once. `build` also reads AVI/WMV/FLV durations through ffmpeg.
+
+Without ffmpeg, the CLI warns and hands the source to Chrome as before (an undecodable video
+fails the export; undecodable audio exports as silence). Not handled: HDR sources are converted
+to 8-bit SDR without tone mapping, and an alpha channel (ProRes 4444) is dropped.
 
 ---
 
@@ -178,9 +253,12 @@ A Dockerfile that installs branded Chrome + fonts and runs `elah serve` is at
 
 - `ELAH_E2E=1 npm test --workspace=packages/cli` additionally runs a browser
   end-to-end test (exports the no-media fixture through headless Chrome and
-  probes the MP4).
+  probes the MP4). Add `ELAH_FFMPEG=<path-to-ffmpeg>` to also run the ffmpeg
+  encoder suites (they generate their own test media with that ffmpeg).
 - `node packages/cli/scripts/parity-compare.mjs <editor.mp4> <cli.mp4>` compares
-  an editor UI export against a CLI export of the same project: stream params,
+  an editor UI export against a CLI export of the same project (export it with
+  `--encoder chrome`: the ffmpeg encoder draws the same frames but compresses
+  them differently, so its hashes never match the Editor's): stream params,
   decoded-video hashes (expected bit-identical), and the audio null-test
   residual (−91 dB = digital silence; a small residual is a systematic
   editor-page vs harness-page environment delta in the AAC encode stage —

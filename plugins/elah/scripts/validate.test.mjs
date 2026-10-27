@@ -220,3 +220,169 @@ test('--vocabulary lists the authored kinds, including component, system and vec
   assert.equal(v.stdout.split('\n').filter((l) => l.startsWith('KINDS')).length, 1)
   assert.match(line, /: page \(programmatic video, the default\), text, /, 'page leads the line as the programmatic video')
 })
+
+// ---- supplied images in assets/ (TICKET-PF-11) ------------------------------------------------------------------------
+
+import { mkdirSync } from 'node:fs'
+
+const assetsDoc = () => JSON.parse(readFileSync(fx('valid-page-assets/elah-input.json'), 'utf8'))
+const PNG_HEAD = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+/** A work folder with elah-input.json and assets/<name> files: `files` maps a name to its bytes. */
+const runWork = (doc, files) => {
+  const dir = mkdtempSync(join(tmpdir(), 'elah-assets-'))
+  mkdirSync(join(dir, 'assets'))
+  for (const [name, bytes] of Object.entries(files)) writeFileSync(join(dir, 'assets', name), bytes)
+  writeFileSync(join(dir, 'elah-input.json'), JSON.stringify(doc))
+  return run(join(dir, 'elah-input.json'))
+}
+const withImg = (doc, ...srcs) => ({ ...doc, source: { ...doc.source, html: doc.source.html.replace('</main>', `${srcs.map((s) => `<img src="${s}">`).join('')}</main>`) } })
+
+test('page assets: a PNG and an SVG in assets/ beside the input pass (src, ./src and css url())', () => {
+  const r = run(fx('valid-page-assets/elah-input.json'))
+  assert.equal(r.status, 0, r.stdout + r.stderr)
+  assert.match(r.stdout, /^OK: programmatic video "Logo sample", 1920x1080 @ 30 fps, 6 s, 2 scenes, 7 animations, 6 keyframe sets, 2 images in assets\/ \(\d+ KB\)\n$/)
+})
+
+test('page assets: a missing file is refused, resolved against the input folder', () => {
+  const r = run(fx('invalid-page-assets-missing.json'))
+  assert.equal(r.status, 1)
+  assert.match(r.stdout, /assets\/nope\.png does not exist: there is no file .*fixtures[\\/]assets[\\/]nope\.png/)
+  assert.match(r.stdout, /assets\/badge\.svg does not exist/) // resolved beside THIS input, not the valid fixture
+})
+
+test('page assets: escapes, other folders, absolute paths and network URLs are refused', () => {
+  const r = run(fx('invalid-page-assets-escape.json'))
+  assert.equal(r.status, 1)
+  const out = r.stdout
+  for (const ref of ['../assets/logo.png', '/etc/badge.svg', 'assets/sub/x.png', 'assets/../valid-page-assets/', 'C:\\logo.png']) {
+    assert.match(out, new RegExp(`src="${ref.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}[^"]*" is not a file in the assets/ folder`), ref)
+  }
+  assert.match(out, /url\(\.\.\/badge\.svg\) is not a file in the assets\/ folder/)
+  assert.match(out, /src="https:\/\/example\.com\/logo\.png" points outside the video \(no network\)/)
+  assert.doesNotMatch(out, /does not exist/) // nothing outside assets/ is ever looked up
+})
+
+test('page assets: over 15 MB each, over 40 MB in total, wrong type and wrong contents are refused', () => {
+  const doc = assetsDoc()
+  const big = Buffer.concat([PNG_HEAD, Buffer.alloc(15 * 1024 * 1024 + 1 - PNG_HEAD.length)])
+  const one = runWork(withImg(doc, 'assets/big.png'), { 'logo.png': PNG_HEAD, 'badge.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>', 'big.png': big })
+  assert.equal(one.status, 1)
+  assert.match(one.stdout, /assets\/big\.png is 15\.0 MB; one image may be at most 15 MB/)
+
+  const chunk = Buffer.concat([PNG_HEAD, Buffer.alloc(14 * 1024 * 1024 - PNG_HEAD.length)])
+  const total = runWork(withImg(doc, 'assets/a.png', 'assets/b.png', 'assets/c.png'), { 'logo.png': PNG_HEAD, 'badge.svg': '<svg/>', 'a.png': chunk, 'b.png': chunk, 'c.png': chunk })
+  assert.equal(total.status, 1)
+  assert.match(total.stdout, /the images add up to 42\.0 MB; together they may be at most 40 MB/)
+
+  const types = runWork(withImg(doc, 'assets/anim.gif', 'assets/fake.png', 'assets/photo.jpg', 'assets/shot.webp'), {
+    'logo.png': PNG_HEAD,
+    'badge.svg': '<svg/>',
+    'anim.gif': 'GIF89a',
+    'fake.png': 'not a png',
+    'photo.jpg': Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+    'shot.webp': Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP')]),
+  })
+  assert.equal(types.status, 1)
+  assert.match(types.stdout, /^FAILED: 2 errors/)
+  assert.match(types.stdout, /assets\/anim\.gif is not a supported image type \(png, jpg, jpeg, webp, svg\)/)
+  assert.match(types.stdout, /assets\/fake\.png is not a PNG file/)
+})
+
+// ---- sound cues: data-sfx (TICKET-PF-13) -------------------------------------------------------------------------------
+
+const sfxDoc = (patch = {}) => {
+  const base = JSON.parse(readFileSync(fx('valid-page-sfx.json'), 'utf8'))
+  return { ...base, source: { ...base.source, ...patch } }
+}
+
+test('page sfx: the sample with five cues is valid and the summary counts them', () => {
+  const r = run(fx('valid-page-sfx.json'))
+  assert.equal(r.status, 0, r.stdout + r.stderr)
+  assert.match(r.stdout, /^OK: programmatic video "Orbit 2 launch \(with sound\)", .*, 9 keyframe sets, 5 sound cues\n$/)
+})
+
+test('page sfx: an unknown cue word is an error that names the valid words; a synonym passes', () => {
+  const base = sfxDoc()
+  const bad = runDoc(sfxDoc({ html: base.source.html.replace('data-sfx="chime"', 'data-sfx="boom"') }))
+  assert.equal(bad.status, 1)
+  assert.match(bad.stdout, /error: source\.html <p\.sub\.u2> data-sfx="boom": "boom" is not a sound in the bundled pack \(use instead: one of whoosh, swoosh, pop, click, tick, snap, impact, chime, or a searched sound: node sfx-search\.mjs/)
+  const syn = runDoc(sfxDoc({ html: base.source.html.replace('data-sfx="chime"', 'data-sfx="Ding"') }))
+  assert.equal(syn.status, 0, syn.stdout)
+})
+
+test('page sfx: cues closer than 0.25 s warn, with calc(var(--at)) delays and scene cues read', () => {
+  const base = sfxDoc()
+  // the pop on .dot (3.3 s) next to a new cue on .l2 (3.25 s): 50 ms apart
+  const r = runDoc(sfxDoc({ html: base.source.html.replace('<p class="label l2">', '<p class="label l2" data-sfx="click">') }), '--json')
+  const out = JSON.parse(r.stdout)
+  assert.equal(r.status, 0)
+  const warns = out.issues.filter((i) => i.severity === 'warn')
+  assert.equal(warns.length, 1, JSON.stringify(warns))
+  assert.match(warns[0].path, /data-sfx="pop"/)
+  assert.match(warns[0].message, /plays at 3\.30 s, 50 ms after "click" at 3\.25 s/)
+  // the scene cue (swoosh at 3.0 s) and the calc(var(--at) + 1.2s) chime (4.2 s) are timed: moving the chime to 3.1 s warns
+  const css = base.source.css.replace('calc(var(--at) + 1.2s)', 'calc(var(--at) + 0.1s)')
+  const r2 = JSON.parse(runDoc(sfxDoc({ css }), '--json').stdout)
+  assert.ok(r2.issues.some((i) => i.severity === 'warn' && /data-sfx="chime"/.test(i.path) && /plays at 3\.10 s, 100 ms after "swoosh" at 3\.00 s/.test(i.message)), JSON.stringify(r2.issues))
+})
+
+test('page sfx: more than 24 cues warn; a bad gain and a cue with no animation warn', () => {
+  const base = sfxDoc()
+  const many = Array.from({ length: 25 }, (_, i) => `<i class="m" style="animation: rise 0.2s linear ${(i * 0.2).toFixed(1)}s both" data-sfx="tick"></i>`).join('')
+  const r = JSON.parse(runDoc(sfxDoc({ html: base.source.html.replace('</main>', `${many}</main>`), durationSeconds: 6 }), '--json').stdout)
+  assert.ok(r.issues.some((i) => i.severity === 'warn' && /30 sound cues; more than 24/.test(i.message)), JSON.stringify(r.issues.filter((i) => i.severity === 'warn')))
+  const odd = base.source.html.replace('data-sfx-gain="0.8"', 'data-sfx-gain="loud"').replace('</main>', '<i class="still" data-sfx="snap"></i></main>')
+  const r2 = JSON.parse(runDoc(sfxDoc({ html: odd }), '--json').stdout)
+  assert.ok(r2.issues.some((i) => i.severity === 'warn' && /data-sfx-gain="loud" is not a number from 0 to 1/.test(i.message)))
+  assert.ok(r2.issues.some((i) => i.severity === 'warn' && /<i\.still> data-sfx="snap"/.test(i.path) && /no animation, so the sound plays at 0 s/.test(i.message)))
+})
+
+// ---- searched sounds in assets/sfx/ (TICKET-PF-12b) -------------------------------------------------------------------
+
+const MP3_HEAD = Buffer.concat([Buffer.from('ID3\u0004\u0000\u0000\u0000\u0000\u0000\u0000', 'latin1'), Buffer.alloc(64)])
+/** A work folder with elah-input.json and assets/sfx/<name> files. */
+const runSfxWork = (doc, files) => {
+  const dir = mkdtempSync(join(tmpdir(), 'elah-sfx-'))
+  mkdirSync(join(dir, 'assets', 'sfx'), { recursive: true })
+  for (const [name, bytes] of Object.entries(files)) writeFileSync(join(dir, 'assets', 'sfx', name), bytes)
+  writeFileSync(join(dir, 'elah-input.json'), JSON.stringify(doc))
+  return run(join(dir, 'elah-input.json'))
+}
+const sfxPageDoc = (cue) => {
+  const doc = JSON.parse(readFileSync(fx('valid-page-sfx.json'), 'utf8'))
+  doc.source.html = doc.source.html.replace('data-sfx="pop"', `data-sfx="${cue}"`)
+  return doc
+}
+
+test('searched sound: assets/sfx/<name>.mp3 beside the input passes in a programmatic video, pack words still work', () => {
+  const r = runSfxWork(sfxPageDoc('assets/sfx/camera-shutter.mp3'), { 'camera-shutter.mp3': MP3_HEAD })
+  assert.equal(r.status, 0, r.stdout + r.stderr)
+  assert.match(r.stdout, /5 sound cues\n$/)
+})
+
+test('searched sound: a missing file, a path escape, another folder, a non-mp3 and a big file are refused', () => {
+  const missing = runSfxWork(sfxPageDoc('assets/sfx/nope.mp3'), {})
+  assert.equal(missing.status, 1)
+  assert.match(missing.stdout, /assets\/sfx\/nope\.mp3 does not exist/)
+  for (const cue of ['assets/sfx/../logo.mp3', '../assets/sfx/a.mp3', 'assets/sfx/sub/a.mp3', 'assets/a.mp3', '/etc/a.mp3', 'assets/sfx/a.wav']) {
+    const r = runSfxWork(sfxPageDoc(cue), { 'a.mp3': MP3_HEAD })
+    assert.equal(r.status, 1, cue)
+    assert.match(r.stdout, /is not a file in assets\/sfx\//, cue)
+  }
+  const wrong = runSfxWork(sfxPageDoc('assets/sfx/a.mp3'), { 'a.mp3': Buffer.from('RIFF....WAVE') })
+  assert.match(wrong.stdout, /is not an MP3 file/)
+  const big = runSfxWork(sfxPageDoc('assets/sfx/a.mp3'), { 'a.mp3': Buffer.concat([MP3_HEAD, Buffer.alloc(2 * 1048576)]) })
+  assert.match(big.stdout, /one sound may be at most 2 MB/)
+})
+
+test('searched sound: a VideoSpec sfx cue path is checked the same way', () => {
+  const doc = JSON.parse(readFileSync(fx('valid-spec.json'), 'utf8'))
+  doc.source.spec.sfx = [{ at: 1, cue: 'assets/sfx/camera-shutter.mp3' }, { at: 2, cue: 'whoosh' }]
+  const ok = runSfxWork(doc, { 'camera-shutter.mp3': MP3_HEAD })
+  assert.equal(ok.status, 0, ok.stdout + ok.stderr)
+  const missing = runSfxWork(doc, {})
+  assert.equal(missing.status, 1)
+  assert.match(missing.stdout, /assets\/sfx\/camera-shutter\.mp3 does not exist/)
+  doc.source.spec.sfx = [{ at: 1, cue: 'assets/sfx/../x.mp3' }]
+  assert.match(runSfxWork(doc, {}).stdout, /is not a file in assets\/sfx\//)
+})

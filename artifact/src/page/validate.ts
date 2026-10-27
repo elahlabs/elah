@@ -10,6 +10,7 @@
 import { FONT_REGISTRY } from '@elah/core'
 import type { Issue } from '../input'
 import type { PageSource } from './types'
+import { assetName } from './assetsInline'
 
 // --- fonts (a local copy of the nearest-name logic in @elah/core/html, which does not export it) -----------
 
@@ -70,6 +71,8 @@ const FORBIDDEN_TAGS: Record<string, string> = {
 }
 
 const URL_ATTRS = ['src', 'href', 'xlink:href', 'poster', 'srcset', 'action', 'formaction']
+/** The attributes that may name a supplied image as assets/<name>. */
+const LINK_ATTRS = new Set(['src', 'href', 'xlink:href'])
 
 // --- css -------------------------------------------------------------------------------------------------
 
@@ -97,10 +100,10 @@ export function checkCss(cssIn: string, where: string): Issue[] {
   const seenUrls = new Set<string>()
   for (const m of css.matchAll(/url\(\s*(['"]?)([^)'"]*)\1\s*\)/gi)) {
     const target = m[2].trim()
-    if (/^data:/i.test(target) || target.startsWith('#')) continue
+    if (/^data:/i.test(target) || target.startsWith('#') || assetName(target)) continue // assets/<name>: a supplied image
     if (seenUrls.has(target)) continue
     seenUrls.add(target)
-    out.push(refusal(`${where}: url(${snippet(target, 50)})`, 'Network references are not allowed (nothing is fetched).', 'a gradient, an inline SVG element, url(data:...) or a fragment url(#id).'))
+    out.push(refusal(`${where}: url(${snippet(target, 50)})`, 'Network references are not allowed (nothing is fetched).', 'a gradient, an inline SVG element, url(data:...), a fragment url(#id), or url(assets/<name>) for an image the person supplied.'))
   }
   if (/expression\s*\(|-moz-binding|behavior\s*:/i.test(css)) {
     out.push(refusal(`${where}: script-like css`, 'expression(), behavior and -moz-binding are refused.', 'plain declarations.'))
@@ -160,7 +163,8 @@ export function checkHtml(html: string): Issue[] {
         out.push(refusal(`${describe(el)} ${a.name}=`, 'Event-handler attributes are not allowed.', 'remove the attribute; nothing can be clicked in a video.'))
       } else if (URL_ATTRS.includes(name) && !/^(data:|#)/i.test(a.value.trim()) && a.value.trim() !== '' && el.localName !== 'script') {
         if (el.localName === 'link') continue // already refused as a tag
-        out.push(refusal(`${describe(el)} ${a.name}="${snippet(a.value, 40)}"`, 'Network references are not allowed (nothing is fetched).', 'inline SVG, a gradient or a data: URI.'))
+        if (LINK_ATTRS.has(name) && assetName(a.value)) continue // assets/<name>: a supplied image, published beside the page
+        out.push(refusal(`${describe(el)} ${a.name}="${snippet(a.value, 40)}"`, 'Network references are not allowed (nothing is fetched).', 'inline SVG, a gradient, a data: URI, or src="assets/<name>" for an image the person supplied.'))
       } else if (name === 'style') {
         out.push(...checkCss(`x{${a.value}}`, `${describe(el)} style=`))
       } else if (name === 'font-family') {

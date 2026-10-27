@@ -1,4 +1,4 @@
-# Format: logo reveal (sting, intro, end card)
+# Format: Logo sting (`logo-reveal`; sting, intro, end card)
 
 3-6 s (default 4). No cuts, one camera push, one effect on the mark. With no logo file the mark is the wordmark in type: never draw
 or imitate a logo, and use an `image` only when the user gave a URL (then it stays unmodified).

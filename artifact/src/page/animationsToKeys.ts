@@ -510,28 +510,54 @@ export function buildGroup(fps: number, frames: number, timings: readonly Timing
       let keys: Keyframe[] | null = null
       if (!nativeOk) reason = `more than ${MAX_BOUNDARIES} key boundaries (long loop)`
       else {
-        // A segment whose curve cannot be mapped is only acceptable while the channel is flat across it.
-        let blocked: string | undefined
+        // A segment whose curve cannot be mapped from the CSS (two animations overlap, jump-start, linear()) is
+        // fitted to what the browser showed for THIS channel (a bezier through the frames, else a straight line);
+        // the oracle below decides whether the channel's keys are good enough, otherwise it is sampled.
+        let fitted = false
         const built: Keyframe[] = []
+        const segErr = (fa: number, fb: number, ease: EaseSpec | null): number =>
+          worstError([makeKey(fa, c.series[fa]!, null), makeKey(fb, c.series[fb]!, ease)], c.series, fa, fb, c.clamp).err
+        // One segment of the browser's series as keys: a straight line if that is within tolerance, else the best
+        // bezier through its frames, else the segment is split in two and each half is fitted (a product of two
+        // eases, a camera move under a rise, is not one bezier but is close to two or three).
+        const fitPiece = (fa: number, fb: number, depth: number): Array<{ frame: number; ease: EaseSpec | null }> => {
+          const lin = segErr(fa, fb, null)
+          if (lin <= tol * 0.4) return [{ frame: fb, ease: null }]
+          let best: EaseSpec | null = null
+          let bestErr = lin
+          const va = c.series[fa]!
+          const vb = c.series[fb]!
+          if (Math.abs(vb - va) > tol && fb - fa >= 3) {
+            const pts: Array<{ s: number; p: number }> = []
+            for (let g = fa; g <= fb; g++) pts.push({ s: (g - fa) / (fb - fa), p: (c.series[g]! - va) / (vb - va) })
+            const fit = fitBezier(pts, [1 / 3, 1 / 3, 2 / 3, 2 / 3])
+            const e = segErr(fa, fb, { easingBezier: fit.bez })
+            if (e < bestErr) {
+              best = { easingBezier: fit.bez }
+              bestErr = e
+            }
+          }
+          if (bestErr <= tol * 0.4 || depth >= 3 || fb - fa < 8) return [{ frame: fb, ease: best }]
+          const mid = Math.floor((fa + fb) / 2)
+          return [...fitPiece(fa, mid, depth + 1), ...fitPiece(mid, fb, depth + 1)]
+        }
         for (let j = 0; j < chosen.length; j++) {
           const f = chosen[j]!
           const ease = chosenEase[j] ?? null
           if (j > 0 && ease === null) {
-            const flat = Math.abs(c.series[f]! - c.series[chosen[j - 1]!]!) <= tol
-            if (!flat) blocked = 'easing not representable (overlapping animations, jump-start or linear())'
+            fitted = true
+            for (const piece of fitPiece(chosen[j - 1]!, f, 0)) built.push(makeKey(piece.frame, c.series[piece.frame]!, piece.ease))
+            continue
           }
           built.push(makeKey(f, c.series[f]!, ease))
         }
-        if (blocked) reason = blocked
-        else {
-          const cand = prune(dedupe(built), c.series, tol * 0.7, c.clamp)
-          const w = worstError(cand, c.series, 0, c.series.length - 1, c.clamp)
-          if (w.err <= tol) {
-            planned.set(ci, { channel: c.channel, keys: cand, mode: 'native', maxErr: range > 0 ? w.err / range : 0 })
-            continue
-          }
-          reason = `oracle: worst ${(100 * (w.err / range)).toFixed(2)}% of range at frame ${w.frame}`
+        const cand = prune(dedupe(built), c.series, tol * 0.7, c.clamp)
+        const w = worstError(cand, c.series, 0, c.series.length - 1, c.clamp)
+        if (w.err <= tol) {
+          planned.set(ci, { channel: c.channel, keys: cand, mode: 'native', maxErr: range > 0 ? w.err / range : 0 })
+          continue
         }
+        reason = `${fitted ? 'easing not representable from the CSS (overlapping animations, jump-start or linear()); ' : ''}oracle: worst ${(100 * (w.err / range)).toFixed(2)}% of range at frame ${w.frame}`
       }
       keys = sampledKeys(c.series, range)
       const w = worstError(keys, c.series, 0, c.series.length - 1, c.clamp)

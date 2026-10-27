@@ -11,6 +11,7 @@ import { fontBaseUrl } from '../input'
 import { encodePage, makeCanvas, type EncodeStats } from './encode'
 import { inlineFonts } from './fontsInline'
 import { PageExportUnsupported, createRasterizer } from './raster'
+import { cuesFromPage } from './sfxCues'
 import type { PageExportContext, PagePlayerHandle } from './types'
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'elah-video'
@@ -38,7 +39,7 @@ export async function exportPage(ctx: PageExportContext): Promise<void> {
     const route = await saveFile(name, blob)
     const mb = (blob.size / 1048576).toFixed(2)
     setStatus({
-      text: `Exported ${name} (${mb} MB, rendered from the programmatic video, saved by ${route === 'capability' ? 'the artifact downloads capability' : 'a browser download'}).`,
+      text: `Exported ${name} (${mb} MB, rendered from the programmatic video${stats.cues ? `, ${stats.cues} sound cue${stats.cues === 1 ? '' : 's'} mixed in` : ''}, saved by ${route === 'capability' ? 'the artifact downloads capability' : 'a browser download'}).`,
     })
     ;(window as unknown as { __elahLastExport?: LastExport }).__elahLastExport = {
       size: blob.size,
@@ -130,6 +131,12 @@ const debug = {
     const { raster, canvas, ctx } = await prepare(player)
     await raster.rasterFrame(t, ctx)
     return canvas
+  },
+  /** The sound cues (data-sfx) the export would mix, with their times in seconds. */
+  cues() {
+    const player = (window as unknown as { __elahPage?: PagePlayerHandle }).__elahPage
+    if (!player) throw new Error('no __elahPage')
+    return cuesFromPage(player.stageEl, player.animations(), player.page.durationSeconds)
   },
   /** PNG data URL of the rasterised frame at `t`. */
   async frame(t: number): Promise<string> {

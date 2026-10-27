@@ -22,15 +22,18 @@ The last column is the programmatic video (the default medium); the column befor
   in the closing beat.
 - Name the product in the first third. Copy comes from the user: their product name, pitch, numbers, claims. With no numbers there is
   no stat beat; do not make one up. Three features at most, each starting with a verb or a result ("Capture in one tap").
-- Vary the arrival between beats (`blur-in`, `slide-in-up`, `pop-in`, a component) and keep ONE hand-off family in `motion.transition`.
-  3-5 distinct hand-offs in a 30 s piece, fewer in a 15 s one.
+- Vary the arrival between beats (`blur-in`, `slide-in-up`, `pop-in`, a component) and keep ONE hand-off family (VideoSpec:
+  `motion.transition`). The scene count follows the table: 5 scenes at 15 s (one features scene), 7 at 20 s, 8 at 30 s; every seam
+  uses that one family.
+- The name appears twice, with different jobs: the Product beat is the name plus the pitch (and a drawn idea of the product); the
+  Call to action is the mark plus the action. Never repeat the pitch line on the end card.
 - Show, not tell: where the product has an interface, draw its idea with shapes (a card, a toggle, a cursor) rather than describing
   it; never invent a screen, a dashboard or a logo file. No `image` unless the user supplied a URL.
 - Hold: every line 0.5 s + 0.3 s per word; the product name and call to action at least 1.5 s each; the end card 2-3 s.
 - Stat or proof beats: count up over 1.2-1.6 s then hold at least 1.5 s.
-- Sound is optional, and it decides the medium: a hit on the hook landing, a tick per feature, a chime on the end card, gain
-  0.25-0.35; none on plain cuts. A programmatic video is silent, so a promo that wants a soundtrack or sound effects is a VideoSpec
-  (`director.md`, Medium row; say why in one line).
+- Sound: a hit on the hook landing, a tick per feature, a chime on the end card, gain 0.25-0.35; none on plain cuts. Sound
+  effects do not change the medium (a programmatic video carries them as `data-sfx`); only a soundtrack, a voice-over or supplied
+  audio makes a promo a VideoSpec (`director.md`, Medium row; say why in one line).
 
 ## Shape
 

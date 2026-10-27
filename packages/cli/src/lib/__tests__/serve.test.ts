@@ -81,6 +81,14 @@ describe('createServeHandler', () => {
     })
   })
 
+  it('POST /render labels a WebM server response as video/webm', async () => {
+    await withServer(makeDeps({ mimeType: 'video/webm' }), async (origin) => {
+      const res = await fetch(`${origin}/render`, { method: 'POST', body: JSON.stringify({ clips: [] }) })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe('video/webm')
+    })
+  })
+
   it('400s on malformed JSON', async () => {
     await withServer(makeDeps(), async (origin) => {
       const res = await fetch(`${origin}/render`, { method: 'POST', body: 'not json' })

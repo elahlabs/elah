@@ -67,7 +67,8 @@ never overshoot, so a curve with a y above 1 serves `transform` (opacity is clam
 
 - Scene length 2-4 s landscape, 1.5-3 s vertical; a visible change every 2-4 s (1.5-3 s vertical). Hook inside 2.5 s, product named
   in the first third, last scene held 1.5-3 s. Scene times sum to `durationSeconds`.
-- One transition family for the piece, 3-5 hand-offs, hard cuts at most a third of the seams. Crossfade: outgoing scene
+- One transition family for the piece, used at every seam (the scene count comes from the format's beat table), hard cuts at most a
+  third of the seams. Crossfade: outgoing scene
   `scene-out 0.4s` and incoming `scene-in 0.4s` at the same delay (calm). Wipe: an accent bar `scaleX` 0 to 1 then 1 to 0 across
   the seam, 0.5 s. Zoom (tech reveal): outgoing `scale(1)` to `scale(1.15)` with opacity to 0, 0.4 s `cubic-in`; incoming from
   `scale(0.92)`, 0.5 s `expo-out`. Slide: outgoing translateX to -8%, incoming from +8%, 0.5 s `smooth`. Cut: delay = the boundary,

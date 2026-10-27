@@ -97,6 +97,32 @@ Rules:
 - Validator output: `node validate.mjs <file>` prints errors (fix every one) and warnings (`hard-cut`, `off-scale-type`, …; fix them or
   say why you keep them, see `craft/review.md`). `--notes` also prints what polish added; `--json` prints everything as JSON.
 
+## Sound effects (`sfx`)
+
+The artifact bundles a small CC0 pack, so `sfx` cues play in Preview (click the player first: browsers block autoplay) and are
+mixed into the exported MP4. A cue is `{ "cue": "pop", "at": 3.2, "gain": 0.6 }`, or event-bound `{ "cue": "pop", "on": { "element": "card", "event": "arrive" } }`.
+
+- Cue words with a sound: `whoosh`, `swoosh`, `pop`, `click`, `tick`, `snap`, `impact`, `chime` (`ding` = chime, `swish` = swoosh).
+  Each word plays its first bundled file (all 0.08 to 1.9 s). Gain defaults to 0.6; keep it at or under 0.7 so sound sits under the piece.
+- Any other word is not played: the Issues panel shows `unknown sound cue`. Use the eight words, or a searched sound's path (below).
+- Sound only real hits (a card landing, a wipe, a title arriving), not every element. A programmatic video (`kind: "page"`) uses the same eight words through `data-sfx` attributes instead (`programmatic.md`, "Sound cues").
+
+## Sounds beyond the pack
+
+For a sound the eight words do not cover ("rain", "crowd cheer", "typewriter"), search Openverse while building (never from the artifact):
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/sfx-search.mjs" "<query>" --out <work folder>            # five CC0 mp3 candidates, at most 3 s
+node "${CLAUDE_PLUGIN_ROOT}/scripts/sfx-search.mjs" "<query>" --out <work folder> --pick 0   # download one
+```
+
+The file lands in `<work folder>/assets/sfx/<name>.mp3` with its title, author, source page, licence, length, size and sha256 in
+`assets/sfx/credits.json`. Use the path as the cue: `{ "cue": "assets/sfx/camera-shutter.mp3", "at": 3.2 }`. It plays and exports exactly like a
+pack sound (a clip of up to 3 s on the "Sound effects" track; the sound ends where the file ends). Rules: the pack for its eight words; Openverse only
+for other sounds; CC0 only (the script refuses every other licence); at most 4 searched sounds per video; one file each at most 2 MB;
+the validator checks that the file exists, is an MP3 and sits directly in `assets/sfx/`; name each searched sound and its author in
+your closing note. The same path works as `data-sfx` in a programmatic video.
+
 ## HTML/CSS scene (only when layout is easier as CSS)
 
 A fragment plus one stylesheet, in a whitelisted subset. The validator refuses anything outside it and names the substitute.

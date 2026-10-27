@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { Download, ExternalLink, FileJson, Maximize2, PencilLine, Minimize2, Moon, Pause, Play, Redo2, Square, Sun, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { Download, FileJson, Maximize2, MessageSquarePlus, PencilLine, Minimize2, Moon, Pause, Play, Redo2, Save, Square, Sun, Undo2, X } from 'lucide-react'
 import {
   EditorProvider,
   Preview,
@@ -7,6 +7,7 @@ import {
   createDefaultDemuxerFactory,
   lazyExportVideo,
   serializeProject,
+  readProjectDocument,
   framesToTimecode,
   usePlaybackStore,
   useTimelineEngine,
@@ -32,17 +33,41 @@ import { ClipProperties } from '@/components/playground/production/properties/Cl
 import { CurveEditor } from '@/components/playground/production/curves/CurveEditor'
 import { TimelineControls } from '@/components/playground/shared/TimelineControls'
 import { saveFile } from './download'
+import { HeaderLinks, MadeWithElah } from './HeaderLinks'
+import { FollowUps } from './FollowUps'
+import { InElah } from './InElah'
+import { PreviewStrip } from './PreviewStrip'
+import { AskClaude } from './ask/AskClaude'
+import { clockLabel, composeAt, edgePoint, inside, requestPlace, setPinSurface, shownRect, startMomentComments, stripPoint, stripTime, useMomentComments, type Moment } from './comments'
 import { convert, fontBaseUrl, InputError, loadAllFonts, loadInput, preparePage, type Converted, type Issue } from './input'
 import { PagePlayer } from './page/PagePlayer'
-import { editPage, takePageConversion, type PageConversion } from './page/convert'
+import { convertPage, editPage, takePageConversion, type PageConversion } from './page/convert'
 import { ConversionReport } from './page/ConversionReport'
 import type { PageHooks, PagePlayerHandle, PageSource, PageStatus } from './page/types'
+import { AddFootageButton, CreatorNudge, ReconnectPrompt, STAYS_LOCAL, useFileDrop, useFilePicker } from './Footage'
+import {
+  CREATOR_NUDGE_SECONDS,
+  addFootage,
+  footageKey,
+  footageSeconds,
+  forgetSavedProject,
+  hasFootage,
+  missingFootage,
+  readSavedProject,
+  reconnectFootage,
+  refusedLine,
+  removeMissingFootage,
+  sortFiles,
+  writeSavedProject,
+  type MissingFile,
+} from './footageFiles'
+import { formatBytes, getArtifactCap, saveVersion, takeStash, type ArtifactCap, type Stash } from './save'
 
 type Load =
   | { status: 'loading' }
   | { status: 'failed'; message: string; issues: Issue[] }
-  | { status: 'ready'; converted: Converted }
-  | { status: 'page'; title: string; page: PageSource; issues: Issue[] }
+  | { status: 'ready'; converted: Converted; key: string; restored?: boolean }
+  | { status: 'page'; title: string; page: PageSource; issues: Issue[]; key: string }
 
 /**
  * HTML-first seam (PLAN-HTML-FIRST). A `page` input previews as HTML in `PageShell`; these two hooks are what
@@ -65,26 +90,45 @@ export function App() {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   // HF-3: a page converted by Edit; while set, the native editor shows it and "Revert to original" clears it.
   const [conv, setConv] = useState<PageConversion | null>(null)
+  // PF-14: files dropped on a programmatic video before Edit; the editor adds them once it is open.
+  const [pendingFootage, setPendingFootage] = useState<File[] | undefined>(undefined)
+  const onConverted = useCallback((c: PageConversion, files?: File[]) => {
+    setPendingFootage(files)
+    setConv(c)
+  }, [])
+
+  // PF-16: register comment custom anchors once at load (writes nothing; null outside claude.ai).
+  useEffect(() => {
+    void startMomentComments()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
         const input = await loadInput()
+        // PF-14: a project with footage on it is kept per viewer (localStorage) so a reload can ask for the files.
+        const key = footageKey(input)
+        const saved = readSavedProject(key)
         if (input.source.kind === 'page') {
           const prepared = preparePage(input)
           await loadAllFonts()
-          if (!cancelled) {
-            document.title = prepared.title
-            setLoad({ status: 'page', title: prepared.title, page: prepared.page, issues: prepared.issues })
+          if (cancelled) return
+          document.title = prepared.title
+          if (saved) {
+            const converted: Converted = { title: prepared.title, kind: 'page', project: saved, fps: saved.fps, stage: saved.stage ?? { width: 1920, height: 1080 }, issues: [] }
+            setLoad({ status: 'ready', converted, key, restored: true })
+          } else {
+            setLoad({ status: 'page', title: prepared.title, page: prepared.page, issues: prepared.issues, key })
           }
           return
         }
-        const converted = await convert(input)
+        const built = await convert(input)
+        const converted = saved ? { ...built, project: saved } : built
         await loadAllFonts()
         if (!cancelled) {
           document.title = converted.title
-          setLoad({ status: 'ready', converted })
+          setLoad({ status: 'ready', converted, key, restored: !!saved })
         }
       } catch (e) {
         if (cancelled) return
@@ -108,14 +152,21 @@ export function App() {
     )
   }
   if (load.status === 'page') {
-    if (conv) return <Editor converted={conv.converted} origin={{ report: conv.report, text: conv.text, onRevert: () => setConv(null) }} />
-    return <PageShell title={load.title} page={load.page} issues={load.issues} onConverted={setConv} />
+    if (conv) {
+      const onRevert = () => {
+        forgetSavedProject(load.key)
+        setPendingFootage(undefined)
+        setConv(null)
+      }
+      return <Editor converted={conv.converted} origin={{ report: conv.report, text: conv.text, onRevert }} footageKey={load.key} initialFootage={pendingFootage} />
+    }
+    return <PageShell title={load.title} page={load.page} issues={load.issues} onConverted={onConverted} />
   }
-  return <Editor converted={load.converted} />
+  return <Editor converted={load.converted} footageKey={load.key} startUnsaved={load.restored} />
 }
 
 /** Preview mode for a `page` input: the page runs as HTML; Export and Edit go through `pageHooks`. */
-function PageShell({ title, page, issues, onConverted }: { title: string; page: PageSource; issues: Issue[]; onConverted: (c: PageConversion) => void }) {
+function PageShell({ title, page, issues, onConverted }: { title: string; page: PageSource; issues: Issue[]; onConverted: (c: PageConversion, files?: File[]) => void }) {
   const [, toggleTheme] = useTheme()
   const [dark, setDark] = useState(true)
   const [status, setStatus] = useState<PageStatus>(null)
@@ -161,13 +212,13 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
   }, [page, title])
 
   const editing = useRef(false)
-  const onEdit = useCallback(async () => {
+  const onEdit = useCallback(async (footage?: File[]) => {
     if (editing.current) return
     editing.current = true
     try {
       await pageHooks.onEditPage({ page, title, player: handleRef.current, setStatus })
       const done = takePageConversion(page)
-      if (done) onConverted(done)
+      if (done) onConverted(done, footage)
     } catch (e) {
       setStatus({ text: `Edit failed: ${e instanceof Error ? e.message : String(e)}` })
     } finally {
@@ -175,10 +226,84 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
     }
   }, [page, title, onConverted])
 
+  // PF-14: footage needs the timeline, so adding it to a programmatic video runs Edit first and the editor adds
+  // the files once it opens. The picker opens on the click itself (a file dialog needs the user's gesture).
+  const onFootage = useCallback(
+    (files: File[]) => {
+      const { accepted, refused } = sortFiles(files)
+      if (accepted.length === 0) {
+        setStatus({ text: refusedLine(refused) })
+        return
+      }
+      setStatus({ text: 'Footage needs the timeline, so the video opens in the editor first.' })
+      void onEdit(accepted)
+    },
+    [onEdit],
+  )
+  const picker = useFilePicker(onFootage)
+  const drop = useFileDrop(onFootage)
+
+  // PF-16: comment pins for the programmatic video sit on its scrub strip, x by time.
+  const commenting = useMomentComments()
+  useEffect(() => {
+    const duration = page.durationSeconds
+    const track = () => shownRect(playerRef.current?.querySelector('[data-testid="page-timeline"] .pt-track'))
+    const strip = () => shownRect(playerRef.current?.querySelector('[data-testid="page-timeline"]'))
+    const stage = () => shownRect(playerRef.current?.querySelector('[data-testid="page-stage"]'))
+    return setPinSurface({
+      pointFor: (m) => {
+        const tr = track()
+        if (tr) return stripPoint(tr, m.t, duration)
+        const st = stage()
+        return st ? edgePoint(st, m.t, duration) : null
+      },
+      momentAt: (x, y) => {
+        const tr = track()
+        const sr = strip()
+        if (tr && sr && inside(sr, x, y)) return { t: stripTime(tr, x, duration) }
+        const st = stage()
+        return st && inside(st, x, y) ? { t: handleRef.current?.time() ?? 0 } : null
+      },
+      reveal: (m) => {
+        handleRef.current?.pause()
+        handleRef.current?.seek(m.t)
+        playerRef.current?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+      },
+    })
+  }, [page])
+
+  // Download project before Edit: run the same conversion Edit runs, serialise its project (what the editor's
+  // serializeProject writes: loadProject keeps the object as is), and leave the preview mounted and paused.
+  const saving = useRef(false)
+  const [savingProject, setSavingProject] = useState(false)
+  const onDownloadProject = useCallback(async () => {
+    if (saving.current) return
+    saving.current = true
+    setSavingProject(true)
+    const name = `${slug(title)}.elah.json`
+    try {
+      const player = handleRef.current
+      if (!player) throw new Error('The programmatic video is not loaded yet.')
+      setStatus({ text: 'Converting the programmatic video to a project...', progress: 0 })
+      const conv = await convertPage(page, title, player, (p, text) => setStatus({ text, progress: p }))
+      const json = JSON.stringify(conv.converted.project)
+      const route = await saveFile(name, new Blob([json], { type: 'application/json' }))
+      setStatus({ text: `Saved ${name} (${route === 'capability' ? 'artifact download' : 'browser download'}).` })
+      ;(window as unknown as { __elahLastProject?: { name: string; size: number; route: string } }).__elahLastProject = { name, size: json.length, route }
+    } catch (e) {
+      setStatus({ text: `Could not save ${name}: ${e instanceof Error ? e.message : String(e)}` })
+    } finally {
+      saving.current = false
+      setSavingProject(false)
+    }
+  }, [page, title])
+
   return (
-    <div className={`app elah-root${theater ? ' theater' : ''}`} data-mode="preview" data-kind="page" data-dark={dark ? '1' : '0'}>
+    <div className={`app elah-root${theater ? ' theater' : ''}`} data-mode="preview" data-kind="page" data-dark={dark ? '1' : '0'} {...drop.handlers}>
+      {drop.overlay}
+      {picker.input}
       <header className="hdr">
-        <span className="brand"><i aria-hidden />Elah</span>
+        <span className="brand"><i aria-hidden />Elah</span><MadeWithElah />
         <span className="title" title={title}>{title}</span>
         <div className="hdr-actions">
           <div className="seg" role="group" aria-label="Mode">
@@ -188,8 +313,10 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
           <button type="button" className="btn icon" aria-label="Toggle light and dark" title="Toggle light and dark" onClick={toggleTheme}>
             {dark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
-          <button type="button" className="btn soon" disabled aria-disabled="true" title="Coming soon" data-testid="open-in-elah">
-            <ExternalLink size={14} /> Open in Elah <span className="pill">Coming soon</span>
+          <AddFootageButton onClick={picker.open} title={`Add your own video or audio. This opens the editor first, because footage needs the timeline. ${STAYS_LOCAL}`} />
+          <HeaderLinks />
+          <button type="button" className="btn" onClick={() => void onDownloadProject()} disabled={savingProject} aria-busy={savingProject} title="Save the project as a .elah.json file" aria-label="Download project" data-testid="download-project">
+            <FileJson size={14} /> <span className="lbl-wide">{savingProject ? 'Saving...' : 'Download project'}</span><span className="lbl-narrow">{savingProject ? '...' : 'Project'}</span>
           </button>
           <button type="button" className="btn primary" onClick={() => void onExport()} data-testid="export">
             <Download size={14} /> {busy ? 'Cancel export' : 'Export MP4'}
@@ -200,8 +327,14 @@ function PageShell({ title, page, issues, onConverted }: { title: string; page: 
       <div className="main">
         <div className="player" ref={playerRef}>
           <PagePlayer page={page} fullscreen={fullscreen || theater} onToggleFullscreen={toggleFullscreen} onHandle={onHandle} onLayout={onLayout} />
+          {commenting && (
+            <div className="comment-row">
+              <PageCommentButton handleRef={handleRef} playerRef={playerRef} />
+            </div>
+          )}
         </div>
       </div>
+      {!theater && <div className="below"><FollowUps /><InElah /></div>}
 
       {status && (
         <div className="status" role="status">
@@ -265,20 +398,23 @@ function useTheme(): [string, () => void] {
 /** HF-3: set when the project came from converting a page; Revert goes back to the HTML page. */
 type PageOrigin = { report: PageConversion['report']; text: string; onRevert: () => void }
 
-function Editor({ converted, origin }: { converted: Converted; origin?: PageOrigin }) {
+/** `startUnsaved`: the project came from this viewer's local copy (PF-14), so it differs from the published version. */
+type EditorProps = { converted: Converted; origin?: PageOrigin; footageKey: string; initialFootage?: File[]; startUnsaved?: boolean }
+
+function Editor(props: EditorProps) {
   return (
     <EditorProvider
-      fps={converted.fps}
-      stage={converted.stage}
+      fps={props.converted.fps}
+      stage={props.converted.stage}
       defaultTrackHeight={36}
       initialTracks={[]}
     >
-      <Shell converted={converted} origin={origin} />
+      <Shell {...props} />
     </EditorProvider>
   )
 }
 
-function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigin }) {
+function Shell({ converted, origin, footageKey: storeKey, initialFootage, startUnsaved }: EditorProps) {
   const engine = useTimelineEngine()
   const timelineRef = useRef<TimelineRef>(null)
   const demuxerFactory = useRef(createDefaultDemuxerFactory())
@@ -292,12 +428,15 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
 
   // Hand the converted project to the fresh engine once (loadProject starts with an empty undo stack).
   const laid = useRef(false)
+  // Save version (PF-15): the project as published (or last saved by this view); '' = it differs from that.
+  const savedJson = useRef('')
   useEffect(() => {
     if (laid.current) return
     laid.current = true
     engine.loadProject(converted.project)
+    savedJson.current = startUnsaved ? '' : serializeProject(engine)
     ;(window as unknown as { __elah?: unknown }).__elah = { engine } // handle for browser checks
-  }, [engine, converted])
+  }, [engine, converted]) // eslint-disable-line react-hooks/exhaustive-deps
   // Revert disposes this engine: the probe handle must not keep pointing at it.
   useEffect(
     () => () => {
@@ -358,7 +497,9 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
     try {
       const json = serializeProject(engine)
       const route = await saveFile(name, new Blob([json], { type: 'application/json' }))
-      setStatus({ text: `Saved ${name} (${route === 'capability' ? 'artifact download' : 'browser download'}).` })
+      // Footage clips carry only each file's name and size (clip.media); the bytes are never in the project.
+      const footNote = hasFootage(engine.getProject()) ? ' Footage is saved by file name and size only: drop the same files again when you open it.' : ''
+      setStatus({ text: `Saved ${name} (${route === 'capability' ? 'artifact download' : 'browser download'}).${footNote}` })
       ;(window as unknown as { __elahLastProject?: { name: string; size: number; route: string } }).__elahLastProject = { name, size: json.length, route }
     } catch (e) {
       setStatus({ text: `Could not save ${name}: ${e instanceof Error ? e.message : String(e)}` })
@@ -381,6 +522,93 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
   const selectedCompound = compoundForClip(selectedClips[0])
 
   const seek = (frame: number) => usePlaybackStore.getState().setCurrentFrame(Math.max(0, Math.round(frame)))
+
+  // PF-16: comment pins. Preview: on the scene strip under the player. Edit: on the timeline at that x (on the
+  // clip's block for a `clip=` anchor), null when the time is scrolled out of view. Inside a compound the
+  // timeline's times are local, so no pins and no Comment button there.
+  const commenting = useMomentComments()
+  const timelineWrapRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const fps = converted.fps
+    const duration = () => Math.max(1, useTracksStore.getState().totalFrames) / fps
+    const now = () => usePlaybackStore.getState().currentFrame / fps
+    const stage = () => shownRect(playerRef.current?.querySelector('.stage'))
+    const strip = () => shownRect(playerRef.current?.querySelector('[data-testid="preview-strip"]'))
+    const track = () => shownRect(playerRef.current?.querySelector('[data-testid="preview-strip"] .pt-track'))
+    const root = () => timelineWrapRef.current?.querySelector<HTMLElement>('[data-elah-timeline-root]') ?? null
+    // The ruler's clip-lane box: its left edge is frame 0 minus the shared horizontal scroll.
+    const lane = () => {
+      const ruler = root()?.firstElementChild?.lastElementChild as HTMLElement | null | undefined
+      const r = shownRect(ruler)
+      return ruler && r ? { r, scroll: ruler.scrollLeft } : null
+    }
+    const laneX = (l: { r: DOMRect; scroll: number }, t: number) => l.r.left + t * fps * usePlaybackStore.getState().zoom - l.scroll
+    const laneT = (l: { r: DOMRect; scroll: number }, x: number) => Math.max(0, (x - l.r.left + l.scroll) / (fps * usePlaybackStore.getState().zoom))
+    const clipEl = (id: string) => {
+      try {
+        return timelineWrapRef.current?.querySelector(`[data-clip-id="${CSS.escape(id)}"]`) ?? null
+      } catch {
+        return null
+      }
+    }
+    const fallback = (t: number) => {
+      const st = stage()
+      return st ? edgePoint(st, t, duration()) : null
+    }
+    return setPinSurface({
+      pointFor: (m: Moment) => {
+        if (inCompound || m.t > duration() + 1e-3) return null
+        if (!edit) {
+          const tr = track()
+          return tr ? stripPoint(tr, m.t, duration()) : fallback(m.t)
+        }
+        const l = lane()
+        if (!l) return fallback(m.t)
+        const x = laneX(l, m.t)
+        if (x < l.r.left - 1 || x > l.r.right + 1) return null // scrolled out of view: the shell lists it
+        const cr = m.clip ? shownRect(clipEl(m.clip)) : null
+        const tl = shownRect(root())
+        if (cr && tl && cr.bottom > l.r.bottom && cr.top < tl.bottom) return { x: Math.min(cr.right - 4, Math.max(cr.left + 4, x)), y: cr.top + cr.height / 2 }
+        return { x, y: l.r.top + l.r.height / 2 }
+      },
+      momentAt: (x, y) => {
+        if (inCompound) return null
+        const st = stage()
+        if (st && inside(st, x, y)) {
+          const sel = [...useSelectionStore.getState().selectedClipIds]
+          return edit && sel.length === 1 ? { t: now(), clip: sel[0] } : { t: now() }
+        }
+        if (!edit) {
+          const tr = track()
+          const sr = strip()
+          return tr && sr && inside(sr, x, y) ? { t: Math.min(duration(), stripTime(tr, x, duration())) } : null
+        }
+        const l = lane()
+        const tl = shownRect(root())
+        if (!l || !tl || !inside(tl, x, y) || x < l.r.left) return null
+        const t = Math.min(duration(), laneT(l, x))
+        const hit = document.elementFromPoint(x, y)?.closest('[data-clip-id]')
+        const id = hit?.getAttribute('data-clip-id')
+        return id ? { t, clip: id } : { t }
+      },
+      reveal: (m: Moment) => {
+        usePlaybackStore.getState().pause()
+        seek(m.t * fps)
+        playerRef.current?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+      },
+    })
+  }, [converted.fps, edit, inCompound]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Seeks (the timeline follows the playhead), zoom and clip edits move the pins.
+  useEffect(() => {
+    if (!commenting) return
+    const a = usePlaybackStore.subscribe(requestPlace)
+    const b = useTracksStore.subscribe(requestPlace)
+    return () => {
+      a()
+      b()
+    }
+  }, [commenting])
+
   useEffect(() => {
     const w = window as unknown as { __elah?: Record<string, unknown> }
     if (w.__elah) w.__elah.seek = seek // handle for browser checks (frame -> playhead)
@@ -506,6 +734,199 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
     return () => engine.off('change', check)
   }, [nav, engine])
 
+  // --- Footage (PF-14) --------------------------------------------------------------------------------------
+  // Files stay in this tab: the engine's own import makes an object URL, and the clip keeps only the file's name
+  // and size. While footage is on the timeline the project is kept per viewer, so a reload lists the files again.
+  const [missing, setMissing] = useState<MissingFile[]>([])
+  const [reconnectHidden, setReconnectHidden] = useState(false)
+  const [footSecs, setFootSecs] = useState(0)
+  const [nudgeHidden, setNudgeHidden] = useState(false)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const read = () => {
+      // Inside a compound the engine holds a draft, not the root: neither listed nor saved until Done.
+      if (navRef.current) return
+      const project = engine.getProject()
+      setMissing(missingFootage(project))
+      setFootSecs(footageSeconds(project))
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (!navRef.current) writeSavedProject(storeKey, engine.getProject())
+      }, 400)
+    }
+    read()
+    engine.on('change', read)
+    return () => {
+      engine.off('change', read)
+      if (timer) clearTimeout(timer)
+    }
+  }, [engine, storeKey])
+
+  const adding = useRef(false)
+  const onFootage = useCallback(
+    async (files: File[], lead?: string) => {
+      if (navRef.current) {
+        setStatus({ text: 'Finish editing the compound first, then add footage.' })
+        return
+      }
+      if (adding.current) return
+      const { accepted, refused } = sortFiles(files)
+      const refusedText = refusedLine(refused)
+      if (accepted.length === 0) {
+        setStatus({ text: refusedText })
+        return
+      }
+      adding.current = true
+      usePlaybackStore.getState().pause()
+      const progress = (text: string, p: number) => (text ? setStatus({ text, progress: p }) : undefined)
+      try {
+        const lines: string[] = lead ? [lead] : []
+        let rest = accepted
+        if (missingFootage(engine.getProject()).length > 0) {
+          const r = await reconnectFootage(engine, accepted, progress)
+          rest = r.unmatched
+          if (r.reconnected.length) lines.push(`Reconnected ${r.reconnected.join(', ')}.`)
+        }
+        if (rest.length) {
+          const r = await addFootage(engine, rest, usePlaybackStore.getState().currentFrame, progress)
+          if (r.added) {
+            lines.push(`Added ${r.names.join(', ')} at the playhead, under the graphics.`)
+            if (r.hidBackground) lines.push('The background layer is hidden so the footage shows; turn it back on in the timeline.')
+            setMode('edit')
+          }
+        }
+        if (refusedText) lines.push(refusedText)
+        lines.push(STAYS_LOCAL)
+        setStatus({ text: lines.join(' ') })
+      } catch (e) {
+        setStatus({ text: `Could not add the footage: ${e instanceof Error ? e.message : String(e)}` })
+      } finally {
+        adding.current = false
+      }
+    },
+    [engine],
+  )
+  const picker = useFilePicker((files) => void onFootage(files))
+  const drop = useFileDrop((files) => void onFootage(files))
+
+  // Files dropped on the programmatic video before Edit arrive here once, after the project is laid.
+  const tookInitial = useRef(false)
+  useEffect(() => {
+    if (tookInitial.current || !initialFootage?.length) return
+    tookInitial.current = true
+    void onFootage(initialFootage, 'Footage needs the timeline, so the video is now open in the editor.')
+  }, [initialFootage, onFootage])
+
+  const onRemoveMissing = useCallback(() => {
+    const n = removeMissingFootage(engine)
+    setStatus({ text: `Removed ${n} clip${n === 1 ? '' : 's'} whose files were not reconnected (Undo brings them back).` })
+  }, [engine])
+
+  // --- Save version (PF-15) ---------------------------------------------------------------------------------
+  // Save publishes elah-input.json as { kind: 'project' } through the artifact capability's files form, on an
+  // explicit click only. Wherever the capability is null (locally, always) the button is not shown.
+  const [saveCap, setSaveCap] = useState<ArtifactCap | null>(null)
+  const [readOnly, setReadOnly] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [coolUntil, setCoolUntil] = useState(0)
+  const [unsaved, setUnsaved] = useState(!!startUnsaved)
+  const [savedOnce, setSavedOnce] = useState(false)
+  const shaRef = useRef<string | undefined>(undefined)
+  const [stashed, setStashed] = useState<Stash | null>(null)
+  useEffect(() => {
+    let live = true
+    void getArtifactCap().then((cap) => {
+      if (live) setSaveCap(cap)
+    })
+    // A conflict reloads the view to the newer version; the edits this tab was saving were stashed first.
+    const s = takeStash()
+    if (s && s.project !== savedJson.current) setStashed(s)
+    return () => {
+      live = false
+    }
+  }, [])
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const check = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (navRef.current) return // a compound draft is not the project; Done brings the change back here
+        setUnsaved(serializeProject(engine) !== savedJson.current)
+      }, 300)
+    }
+    engine.on('change', check)
+    return () => {
+      engine.off('change', check)
+      if (timer) clearTimeout(timer)
+    }
+  }, [engine])
+  useEffect(() => {
+    if (!coolUntil) return
+    const t = setTimeout(() => setCoolUntil(0), Math.max(0, coolUntil - Date.now()))
+    return () => clearTimeout(t)
+  }, [coolUntil])
+
+  const onSave = useCallback(async () => {
+    if (!saveCap || saving || navRef.current) return
+    setSaving(true)
+    usePlaybackStore.getState().pause()
+    setStatus({ text: 'Saving this version...' })
+    const json = serializeProject(engine)
+    const out = await saveVersion(saveCap, converted.title, json, shaRef.current)
+    setSaving(false)
+    switch (out.kind) {
+      case 'saved': {
+        savedJson.current = json
+        shaRef.current = out.sha
+        setUnsaved(serializeProject(engine) !== json)
+        setSavedOnce(true)
+        const lines = ['Saved. Everyone with the link now sees this version.']
+        if (origin) lines.push('Revert to original is no longer available: the saved version replaced the programmatic video.')
+        if (hasFootage(engine.getProject())) lines.push('Footage is saved by file name and size only, so other viewers are asked for the same files.')
+        setStatus({ text: lines.join(' ') })
+        break
+      }
+      case 'conflict':
+        setStatus({ text: 'A newer version was published; reloading. Your edits are kept in this tab.' })
+        break
+      case 'read-only':
+        setReadOnly(true)
+        setStatus({ text: 'This view is read-only. Use Download project to keep your edits.' })
+        break
+      case 'unavailable':
+        setReadOnly(true)
+        setStatus({ text: 'Saving is not available here. Use Download project.' })
+        break
+      case 'too-large':
+        setStatus({ text: `This project is ${formatBytes(out.bytes)}, over the artifact's size limit, so it was not saved. Use Download project.` })
+        break
+      case 'rate-limited':
+        setCoolUntil(Date.now() + 30_000)
+        setStatus({ text: 'Saved too often. Save is paused for 30 seconds.' })
+        break
+      case 'failed':
+        setStatus({ text: `Could not save: ${out.message}` })
+        break
+    }
+  }, [saveCap, saving, engine, converted.title, origin])
+
+  const onRestoreStash = useCallback(() => {
+    if (!stashed) return
+    try {
+      usePlaybackStore.getState().pause()
+      engine.loadProject(readProjectDocument(JSON.parse(stashed.project)))
+      setStatus({ text: 'Your edits from before the reload are back. Save publishes them over the newer version.' })
+    } catch (e) {
+      setStatus({ text: `Could not restore your edits: ${e instanceof Error ? e.message : String(e)}` })
+    }
+    setStashed(null)
+  }, [stashed, engine])
+
+  const showSave = saveCap !== null && !readOnly
+  const cooling = coolUntil > 0
+  const saveTitle = lockedTitle ?? (cooling ? 'Saved too often; try again in a few seconds' : unsaved ? "Publish this edit as the artifact's next version" : 'No unsaved changes')
+  const canRevert = !!origin && !savedOnce
+
   const issues = converted.issues
   const [confirmRevert, setConfirmRevert] = useState(false)
   const onRevertClick = () => {
@@ -517,9 +938,11 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
     origin.onRevert()
   }
   return (
-    <div className={`app elah-root${theater ? ' theater' : ''}`} data-mode={mode} data-dark={dark ? '1' : '0'}>
+    <div className={`app elah-root${theater ? ' theater' : ''}`} data-mode={mode} data-dark={dark ? '1' : '0'} {...drop.handlers}>
+      {drop.overlay}
+      {picker.input}
       <header className="hdr">
-        <span className="brand"><i aria-hidden />Elah</span>
+        <span className="brand"><i aria-hidden />Elah</span><MadeWithElah />
         <span className="title" title={converted.title}>{converted.title}</span>
         <div className="hdr-actions">
           <div className="seg" role="group" aria-label="Mode">
@@ -529,12 +952,16 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
           <button type="button" className="btn icon" aria-label="Toggle light and dark" title="Toggle light and dark" onClick={toggleTheme}>
             {dark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
-          <button type="button" className="btn soon" disabled aria-disabled="true" title="Coming soon" data-testid="open-in-elah">
-            <ExternalLink size={14} /> Open in Elah <span className="pill">Coming soon</span>
-          </button>
-          {origin && (
+          {canRevert && (
             <button type="button" className="btn" onClick={onRevertClick} disabled={inCompound} title={lockedTitle ?? 'Back to the original programmatic video (export comes from it again)'} data-testid="revert-header">
               <Undo2 size={14} /> {confirmRevert ? 'Discard edits?' : 'Revert to original'}
+            </button>
+          )}
+          <AddFootageButton onClick={picker.open} disabled={inCompound} title={lockedTitle} />
+          <HeaderLinks />
+          {showSave && (
+            <button type="button" className={`btn save${unsaved ? ' unsaved' : ''}`} onClick={() => void onSave()} disabled={inCompound || saving || cooling || !unsaved} aria-busy={saving} title={saveTitle} aria-label={unsaved ? 'Save, unsaved changes' : 'Saved'} data-testid="save-version">
+              <Save size={14} /> <span>{saving ? 'Saving...' : unsaved ? 'Save' : 'Saved'}</span>
             </button>
           )}
           <button type="button" className="btn" onClick={() => void onDownloadProject()} disabled={inCompound} title={lockedTitle ?? 'Save the project as a .elah.json file'} aria-label="Download project" data-testid="download-project">
@@ -562,21 +989,34 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
           <div className="stage" onDoubleClick={onStageDoubleClick}>
             <Preview demuxerFactory={demuxerFactory.current} style={{ width: '100%', height: '100%' }} />
           </div>
-          <Transport showHistory={edit} canUndo={canUndo} canRedo={canRedo} fps={converted.fps} fullscreen={fullscreen || theater} onToggleFullscreen={toggleFullscreen} />
+          {/* Preview shows the compact scene strip (the first-load look); Edit shows the full timeline below. */}
+          {!edit && <PreviewStrip />}
+          <Transport
+            showHistory={edit}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            fps={converted.fps}
+            fullscreen={fullscreen || theater}
+            onToggleFullscreen={toggleFullscreen}
+            extra={commenting && !inCompound ? <EditorCommentButton fps={converted.fps} edit={edit} playerRef={playerRef} timelineWrapRef={timelineWrapRef} /> : null}
+          />
         </div>
-        <div className="timeline-wrap">
+        {/* Kept mounted in Preview (hidden): the Timeline keeps the tracks store in sync with the engine. */}
+        <div className="timeline-wrap" hidden={!edit} ref={timelineWrapRef}>
           {edit && <TimelineControls timelineRef={timelineRef} compact={narrow} />}
           <Timeline
             ref={timelineRef}
             fps={converted.fps}
             sidebarWidth={narrow ? 48 : undefined}
             compactSidebar={narrow}
-            style={{ height: narrow ? 158 : edit ? 200 : 150, flexShrink: 0, minWidth: 0 }}
+            style={{ height: narrow ? 158 : 200, flexShrink: 0, minWidth: 0 }}
           />
           {edit && <CurveEditor />}
         </div>
         {edit && (
           <aside className="props" aria-label="Properties">
+            {/* PF-17: hidden unless `sample` can run page tools; inside a compound the engine holds a draft. */}
+            {!inCompound && <AskClaude title={converted.title} />}
             {selectedCompound && (
               <div className="props-head">
                 <button type="button" className="btn" onClick={enterSelected} data-testid="edit-contents" title="Open this compound and edit its parts on their own timeline">
@@ -589,13 +1029,25 @@ function Shell({ converted, origin }: { converted: Converted; origin?: PageOrigi
         )}
       </div>
 
+      {!theater && !nav && stashed && (
+        <div className="nudge" role="note" data-testid="save-stash">
+          <span>A newer version was published while you were saving. Your edits from before the reload were kept in this tab.</span>
+          <button type="button" className="btn" onClick={onRestoreStash}>Restore my edits</button>
+          <button type="button" className="btn icon" aria-label="Discard my edits" title="Discard my edits" onClick={() => setStashed(null)}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+      {!theater && !nav && !reconnectHidden && <ReconnectPrompt missing={missing} onPick={picker.open} onRemove={onRemoveMissing} onDismiss={() => setReconnectHidden(true)} />}
+      {!theater && !nudgeHidden && footSecs > CREATOR_NUDGE_SECONDS && <CreatorNudge onDismiss={() => setNudgeHidden(true)} />}
+      {!theater && !nav && <div className="below"><FollowUps /><InElah /></div>}
       {status && (
         <div className="status" role="status">
           <span>{status.text}</span>
           {status.progress !== undefined && <span className="bar"><i style={{ width: `${Math.round(status.progress * 100)}%` }} /></span>}
         </div>
       )}
-      {origin && <ConversionReport report={origin.report} text={origin.text} dirty={canUndo} onRevert={origin.onRevert} />}
+      {canRevert && origin && <ConversionReport report={origin.report} text={origin.text} dirty={canUndo} onRevert={origin.onRevert} />}
       <IssueList issues={issues} open={issues.some((i) => i.severity === 'error')} />
     </div>
   )
@@ -661,7 +1113,7 @@ function usePlayerFullscreen(playerRef: RefObject<HTMLDivElement | null>) {
   return { fullscreen, theater, toggleFullscreen }
 }
 
-function Transport({ showHistory, canUndo, canRedo, fps, fullscreen, onToggleFullscreen }: { showHistory: boolean; canUndo: boolean; canRedo: boolean; fps: number; fullscreen: boolean; onToggleFullscreen: () => void }) {
+function Transport({ showHistory, canUndo, canRedo, fps, fullscreen, onToggleFullscreen, extra }: { showHistory: boolean; canUndo: boolean; canRedo: boolean; fps: number; fullscreen: boolean; onToggleFullscreen: () => void; extra?: ReactNode }) {
   const engine = useTimelineEngine()
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const toggle = usePlaybackStore((s) => s.togglePlayPause)
@@ -689,6 +1141,7 @@ function Transport({ showHistory, canUndo, canRedo, fps, fullscreen, onToggleFul
       </button>
       <span className="time"><b ref={cur}>00:00:00:00</b> | {totalLabel}</span>
       <span className="spacer" />
+      {extra}
       <button type="button" className="btn icon" onClick={onToggleFullscreen} aria-label={fullscreen ? 'Exit full screen' : 'Full screen'} aria-pressed={fullscreen} title="Full screen (F)" data-testid="fullscreen">
         {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
       </button>
@@ -699,5 +1152,56 @@ function Transport({ showHistory, canUndo, canRedo, fps, fullscreen, onToggleFul
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * PF-16: "Comment at 0:12" in the editor's transport. With one clip selected in Edit the anchor names it
+ * (`t=12.40;clip=<id>`) and the composer opens at that clip's block; otherwise at the player. Gesture only.
+ */
+function EditorCommentButton({ fps, edit, playerRef, timelineWrapRef }: { fps: number; edit: boolean; playerRef: RefObject<HTMLDivElement | null>; timelineWrapRef: RefObject<HTMLDivElement | null> }) {
+  const engine = useTimelineEngine()
+  const [sec, setSec] = useState(() => Math.floor(usePlaybackStore.getState().currentFrame / fps))
+  useEffect(() => usePlaybackStore.subscribe((s) => setSec(Math.floor(s.currentFrame / fps))), [fps])
+  const onClick = () => {
+    const t = usePlaybackStore.getState().currentFrame / fps
+    const sel = edit ? [...useSelectionStore.getState().selectedClipIds] : []
+    const clip = sel.length === 1 ? engine.findClip(sel[0]!)?.clip : undefined
+    let at: Element | null = playerRef.current
+    if (clip) {
+      try {
+        const el = timelineWrapRef.current?.querySelector(`[data-clip-id="${CSS.escape(clip.id)}"]`)
+        if (el && shownRect(el)) at = el
+      } catch {
+        /* keep the player */
+      }
+    }
+    if (!at) return
+    const m: Moment = clip ? { t, clip: clip.id } : { t }
+    void composeAt(m, at, clip ? `At ${clockLabel(t)}, ${clip.name}` : `At ${clockLabel(t)}`)
+  }
+  return (
+    <button type="button" className="btn comment-at" onClick={onClick} title="Comment on this moment (Claude can change exactly this beat)" data-testid="comment-at">
+      <MessageSquarePlus size={14} /> <span>Comment at {clockLabel(sec)}</span>
+    </button>
+  )
+}
+
+/** PF-16: the same button for the programmatic video, under its transport. */
+function PageCommentButton({ handleRef, playerRef }: { handleRef: RefObject<PagePlayerHandle | null>; playerRef: RefObject<HTMLDivElement | null> }) {
+  const [sec, setSec] = useState(0)
+  useEffect(() => {
+    // The page player has no time subscription; a light poll keeps the label current.
+    const id = window.setInterval(() => setSec(Math.floor(handleRef.current?.time() ?? 0)), 250)
+    return () => window.clearInterval(id)
+  }, [handleRef])
+  const onClick = () => {
+    const t = handleRef.current?.time() ?? 0
+    if (playerRef.current) void composeAt({ t }, playerRef.current, `At ${clockLabel(t)}`)
+  }
+  return (
+    <button type="button" className="btn comment-at" onClick={onClick} title="Comment on this moment (Claude can change exactly this beat)" data-testid="comment-at">
+      <MessageSquarePlus size={14} /> <span>Comment at {clockLabel(sec)}</span>
+    </button>
   )
 }

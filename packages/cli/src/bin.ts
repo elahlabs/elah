@@ -11,14 +11,20 @@ Usage:
   elah split  --project <in.json> --clip <clipId> --at <frame|timecode> [--out <out.json>]
   elah trim   --project <in.json> --clip <clipId> [--start <frame|timecode>]
               [--duration <frames|timecode>] [--out <out.json>]
-  elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
-              [--video-bitrate <bps>] [--audio-bitrate <bps>] [--browser <path>] [--headed] [--timeout <s>]
-  elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4>] [export options]
+  elah export --project <in.json> --out <file.mp4|file.webm> [--container mp4|webm]
+              [--codec avc|hevc|av1|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
+              [--encoder auto|ffmpeg|chrome] [--ffmpeg <path>] [--browser <path>] [--headed] [--timeout <s>]
+  elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4|file.webm>] [export options]
   elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>]
-              [--codec avc|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
-              [--browser <path>] [--timeout <s>] [--verbose]
+              [--container mp4|webm] [--codec avc|hevc|av1|vp9|vp8] [--height <N>] [--video-bitrate <bps>]
+              [--audio-bitrate <bps>] [--encoder auto|ffmpeg|chrome] [--ffmpeg <path>] [--browser <path>]
+              [--timeout <s>] [--verbose]
 
 split/trim write the resulting project JSON to stdout unless --out is given.
+The container follows --container, else the output file's extension (.webm), else MP4.
+MP4 takes avc (default), hevc or av1 with AAC audio; WebM takes vp9 (default), vp8 or av1 with Opus.
+Export draws every frame in Chrome. --encoder auto (default) encodes with ffmpeg 4.4+ when found
+(--ffmpeg, ELAH_FFMPEG, then PATH) and falls back to Chrome's encoder with a warning.
 build consumes a seconds-based spec (assets map + clips) — see packages/cli/README.md
 for the schema; it probes media durations and constructs the project via the engine.
 Timecodes: SS:FF, MM:SS:FF or HH:MM:SS:FF at the project fps.
@@ -76,10 +82,13 @@ async function main(argv: string[]): Promise<void> {
       const { values } = parse(rest, {
         project: { type: 'string' },
         out: { type: 'string' },
+        container: { type: 'string' },
         codec: { type: 'string' },
         height: { type: 'string' },
         'video-bitrate': { type: 'string' },
         'audio-bitrate': { type: 'string' },
+        encoder: { type: 'string' },
+        ffmpeg: { type: 'string' },
         browser: { type: 'string' },
         headed: { type: 'boolean' },
         timeout: { type: 'string' },
@@ -90,10 +99,13 @@ async function main(argv: string[]): Promise<void> {
       await runExport({
         project: required(values.project, '--project'),
         out: required(values.out, '--out'),
+        container: values.container,
         codec: values.codec,
         height: values.height,
         videoBitrate: values['video-bitrate'],
         audioBitrate: values['audio-bitrate'],
+        encoder: values.encoder,
+        ffmpeg: values.ffmpeg,
         browser: values.browser,
         headed: values.headed ?? false,
         timeoutSec: values.timeout,
@@ -106,10 +118,13 @@ async function main(argv: string[]): Promise<void> {
         spec: { type: 'string' },
         out: { type: 'string' },
         export: { type: 'string' },
+        container: { type: 'string' },
         codec: { type: 'string' },
         height: { type: 'string' },
         'video-bitrate': { type: 'string' },
         'audio-bitrate': { type: 'string' },
+        encoder: { type: 'string' },
+        ffmpeg: { type: 'string' },
         browser: { type: 'string' },
         headed: { type: 'boolean' },
         timeout: { type: 'string' },
@@ -120,10 +135,13 @@ async function main(argv: string[]): Promise<void> {
         spec: required(values.spec, '--spec'),
         out: values.out,
         export: values.export,
+        container: values.container,
         codec: values.codec,
         height: values.height,
         videoBitrate: values['video-bitrate'],
         audioBitrate: values['audio-bitrate'],
+        encoder: values.encoder,
+        ffmpeg: values.ffmpeg,
         browser: values.browser,
         headed: values.headed ?? false,
         timeoutSec: values.timeout,
@@ -137,10 +155,13 @@ async function main(argv: string[]): Promise<void> {
         host: { type: 'string' },
         concurrency: { type: 'string' },
         'media-root': { type: 'string' },
+        container: { type: 'string' },
         codec: { type: 'string' },
         height: { type: 'string' },
         'video-bitrate': { type: 'string' },
         'audio-bitrate': { type: 'string' },
+        encoder: { type: 'string' },
+        ffmpeg: { type: 'string' },
         browser: { type: 'string' },
         timeout: { type: 'string' },
         verbose: { type: 'boolean' },
@@ -151,10 +172,13 @@ async function main(argv: string[]): Promise<void> {
         host: values.host,
         concurrency: values.concurrency,
         mediaRoot: values['media-root'],
+        container: values.container,
         codec: values.codec,
         height: values.height,
         videoBitrate: values['video-bitrate'],
         audioBitrate: values['audio-bitrate'],
+        encoder: values.encoder,
+        ffmpeg: values.ffmpeg,
         browser: values.browser,
         timeoutSec: values.timeout,
         verbose: values.verbose ?? false,

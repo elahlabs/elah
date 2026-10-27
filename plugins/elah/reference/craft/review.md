@@ -57,6 +57,8 @@ For each beat, read the file and answer yes or no; fix any no.
 - Palette: all six tokens declared, text colours all from tokens, one accent on about a tenth of the frame?
 - Fonts: at most two, all bundled, weights real?
 - One transition family, one stagger step, one signature curve? Arrivals varied between beats?
+- Programmatic: every element with a resting `opacity` or `transform` that also has an arrival animation ends that animation at the
+  resting value (`programmatic.md`, rule 3); the validator cannot see this.
 - Every number, name and claim from the brief; no invented statistic, customer, screen, logo or URL; no picture or sound file the user
   did not give?
 - Programmatic: one `data-scene` per beat, each recipe's raw parts clear of its neighbours (no overlapping boxes)? Nothing animated

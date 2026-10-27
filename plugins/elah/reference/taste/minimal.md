@@ -1,4 +1,4 @@
-# Taste: minimal
+# Look: Clean Sheet (`minimal`)
 
 Read `floor.md` too. Clarity first: software, finance, B2B, one number, a considered announcement, an explainer that must be easy to
 follow. Flat, sparse, mostly empty. Numbers are starting values; adapt them to the clip. The motion block and components below are

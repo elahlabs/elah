@@ -1,4 +1,4 @@
-# Taste: dark glass
+# Look: Midnight Glass (`dark-glass`)
 
 Read `floor.md` too. Quiet, high-end tech: AI, hardware, fintech, open source, GitHub, developer tools, CLI, API, SDK, library,
 framework, programmatic video, a product reveal, a logo sting. Near-black ground, one soft glow, hairline rules, wide light sans.
