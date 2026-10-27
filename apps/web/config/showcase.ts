@@ -4,7 +4,6 @@
  * do not add placeholders or "coming soon" cards.
  */
 
-import type { CardHeaderKind } from '@/components/landing/CardHeader'
 import { siteConfig } from '@/config/site'
 
 export type ShowcaseKind = 'app' | 'playground' | 'example' | 'server'
@@ -23,7 +22,6 @@ export interface ShowcaseEntry {
   external?: boolean
   status: ShowcaseStatus
   featured?: boolean
-  header: CardHeaderKind
 }
 
 export const kindLabel: Record<ShowcaseKind, string> = {
@@ -49,7 +47,6 @@ export const showcase: ShowcaseEntry[] = [
     external: true,
     status: 'live',
     featured: true,
-    header: 'editor',
   },
   {
     slug: 'full-editor-playground',
@@ -61,7 +58,6 @@ export const showcase: ShowcaseEntry[] = [
     href: '/playground/production',
     status: 'live',
     featured: true,
-    header: 'editor',
   },
   {
     slug: 'timeline-playground',
@@ -72,7 +68,6 @@ export const showcase: ShowcaseEntry[] = [
     tags: ['@elah/timeline', 'Integration'],
     href: '/playground/timeline',
     status: 'live',
-    header: 'timeline',
   },
   {
     slug: 'full-editor-demo',
@@ -83,7 +78,6 @@ export const showcase: ShowcaseEntry[] = [
     tags: ['Guided', 'Sample media'],
     href: '/playground/raw',
     status: 'preview',
-    header: 'demo',
   },
   {
     slug: 'example-minimal',
@@ -95,7 +89,6 @@ export const showcase: ShowcaseEntry[] = [
     href: exampleHref('minimal'),
     external: true,
     status: 'live',
-    header: 'core',
   },
   {
     slug: 'example-react',
@@ -107,7 +100,6 @@ export const showcase: ShowcaseEntry[] = [
     href: exampleHref('react'),
     external: true,
     status: 'live',
-    header: 'react',
   },
   {
     slug: 'example-next',
@@ -119,7 +111,6 @@ export const showcase: ShowcaseEntry[] = [
     href: exampleHref('next'),
     external: true,
     status: 'live',
-    header: 'react',
   },
   {
     slug: 'headless-render-server',
@@ -131,6 +122,5 @@ export const showcase: ShowcaseEntry[] = [
     href: '/docs/cli#serve',
     status: 'live',
     featured: true,
-    header: 'headless',
   },
 ]
