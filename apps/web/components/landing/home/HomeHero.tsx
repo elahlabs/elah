@@ -7,7 +7,7 @@ import posthog from 'posthog-js'
 import { LazyDemo } from '@/components/home/LazyDemo'
 import { CropMarks, Sel, btnLarge, btnPrimary, btnSecondary, container, display, label, lead } from '@/components/eb'
 
-const INSTALL = 'npm install @elah/core'
+const INSTALL = 'npm install @elah/editor'
 const CLAUDE = '/claude'
 const FPS = 30
 
