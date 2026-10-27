@@ -29,7 +29,7 @@ export const libraries: Library[] = [
   { pkg: '@elah/timeline', title: 'Timeline UI', subtitle: 'React timeline — tracks, clips, drag/trim/split, ruler, playhead.', href: '/playground/timeline', variant: 'timeline' },
   { pkg: '@elah/cli', title: 'Headless Rendering', subtitle: 'Server-side render pipeline — split/trim/build/export and an HTTP render server.', href: '/docs/cli', variant: 'headless', extraCmd: 'npx @elah/cli serve' },
   { pkg: '@elah/react', title: 'React Bindings', subtitle: 'React bindings — EditorContext, useEditor, store hooks, and the audio mixer hooks.', href: '/docs/react', variant: 'react' },
-  { pkg: '@elah/core', title: 'Media Runtime', subtitle: 'Framework-agnostic engine: resolver, WebGL2 renderer, WebCodecs decode, MP4 export. The motion layer is coming in 1.0.', href: '/docs/motion', variant: 'core' },
+  { pkg: '@elah/core', title: 'Media Runtime', subtitle: 'Framework-agnostic engine: resolver, WebGL2 renderer, WebCodecs decode, MP4 export, and the 1.0 motion layer: keyframes, springs, stagger, paths, effects.', href: '/docs/motion', variant: 'core' },
 ]
 
 export interface FlowLayer {
@@ -148,13 +148,13 @@ export const faq: FaqItem[] = [
   },
   {
     q: 'Can Claude or another model make videos with elah?',
-    a: 'A model can write a VideoSpec or an HTML scene, and the output stays editable. A Claude Code plugin and a claude.ai artifact are described on the Claude page. elah is an unofficial project, not made or endorsed by Anthropic.',
+    a: 'Yes. The elah plugin for Claude Code turns a short brief into a video: Claude writes it as HTML and CSS motion, the plugin validates it, and an artifact opens it for preview, editing and mp4 export. A standalone claude.ai artifact is coming soon. The plugin is unofficial, not made or endorsed by Anthropic.',
     href: '/claude',
     hrefLabel: 'See elah for Claude',
   },
   {
-    q: 'Is the motion layer on npm?',
-    a: 'It is coming in 1.0. Until @elah/core 1.0 is published, npm install gives you the previous release, so the playground and demos on this site run the 1.0 code from the repository.',
+    q: 'Is 1.0 on npm?',
+    a: 'Yes. It shipped in 1.0, so npm install @elah/core installs it. Keyframes, springs, stagger, motion paths, effects and transitions are in the root entry and follow semver. HTML scenes, VideoSpec and edit operations are experimental subpath entries.',
     href: '/changelog',
     hrefLabel: 'Read the changelog',
   },

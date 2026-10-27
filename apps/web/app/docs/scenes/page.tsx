@@ -56,7 +56,7 @@ export default function ScenesDocsPage() {
           }
           lede={
             <>
-              Two ways for you or a model to write a video that lands as ordinary, editable clips and keyframes. Both are experimental and may change in a minor release. Coming in 1.0.
+              Two ways for you or a model to write a video that lands as ordinary, editable clips and keyframes. Both shipped in 1.0 as experimental entries and may change in a minor release.
             </>
           }
         />

@@ -34,7 +34,7 @@ export function HomeLibraries() {
               <h3 className={cardTitle}>@elah/core subpaths</h3>
               <span className={`shrink-0 bg-[var(--lp-card)] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono} ${outline}`}>Experimental</span>
             </div>
-            <p className={cardBody}>Coming in 1.0. Separate entries, so an app that does not import them pays nothing.</p>
+            <p className={cardBody}>New in 1.0. Separate entries, so an app that does not import them pays nothing. They may change in a minor release.</p>
           </div>
           <ul className={`${panel} m-0 mt-auto flex list-none flex-col gap-2 p-4`}>
             {coreSubpaths.map((p) => (

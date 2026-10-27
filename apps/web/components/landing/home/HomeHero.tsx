@@ -82,7 +82,7 @@ export function HomeHero() {
           <div className="relative mt-10 flex flex-col gap-6 lg:mt-12 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-3">
               <p className={`${lead} max-w-[440px]`}>Open source. Renders in the browser.</p>
-              <p className={`m-0 text-[var(--lp-muted)] ${label}`}>The motion layer is coming in 1.0.</p>
+              <p className={`m-0 text-[var(--lp-muted)] ${label}`}>New in 1.0: the motion layer.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Link href={CLAUDE} className={`${btnPrimary} ${btnLarge}`}>
@@ -102,7 +102,7 @@ export function HomeHero() {
           href="/changelog"
           className={`flex items-center justify-between gap-4 border-y border-[var(--lp-line)] py-3 text-[var(--lp-ink)] no-underline transition-colors hover:bg-[var(--lp-paper2)] ${label}`}
         >
-          <span>Coming in 1.0: the motion and programmatic layer.</span>
+          <span>elah 1.0 is out: the motion and programmatic layer.</span>
           <span className="shrink-0">Read the changelog →</span>
         </Link>
 

@@ -9,7 +9,7 @@ import { GITHUB_URL } from '@/config/nav'
 export const metadata: Metadata = {
   title: 'Elah for Claude',
   description:
-    'A Claude Code plugin that writes, validates and opens videos on an Elah timeline, and a claude.ai artifact that is coming soon. Both use the open-source Elah engine.',
+    'The Elah plugin for Claude Code turns a brief into a video you can preview, edit and export as MP4 in the browser. A standalone claude.ai artifact is coming soon. Both use the open-source Elah engine.',
   alternates: { canonical: '/claude' },
 }
 
@@ -64,7 +64,7 @@ export default function ClaudePage() {
           {pluginLive ? (
             <Card title="Claude Code plugin" tag="Available">
               <p className="text-sm leading-relaxed text-on-surface-variant">
-                Make a video or motion graphic from Claude Code. Claude writes it as data, the plugin validates it with the Elah engine, and an Elah artifact opens it for preview, editing and MP4 export in the browser. The plugin never renders a video itself.
+                Make a video or motion graphic from Claude Code. Claude writes a programmatic video (HTML + CSS motion), the plugin validates it with the Elah engine, and an Elah artifact opens it for preview, editing and MP4 export in the browser. The plugin never renders a video itself.
               </p>
               <div className="flex flex-col gap-2">
                 {PLUGIN_INSTALL.map((c) => (
@@ -74,13 +74,16 @@ export default function ClaudePage() {
               <ul className="space-y-1.5 text-sm text-on-surface-variant">
                 <li>
                   <code className="bg-surface-container px-1.5 py-0.5 font-mono text-xs">/elah:video</code>{' '}
-                  plans the beats, writes a VideoSpec (or an HTML/CSS scene), validates it and publishes the artifact.
+                  plans the beats, writes the video as HTML + CSS motion (a VideoSpec of Elah components when the brief needs sound or supplied images and audio), validates it and publishes the artifact.
                 </li>
                 <li>
                   <code className="bg-surface-container px-1.5 py-0.5 font-mono text-xs">/elah:promo</code>{' '}
-                  runs the same flow with a fixed 15 to 30 second launch structure.
+                  runs the same flow with a fixed 15 to 30 second launch structure: hook, problem, product, three features, call to action.
                 </li>
               </ul>
+              <p className="text-sm leading-relaxed text-on-surface-variant">
+                In the artifact: Preview, Edit (keyframes and curves), and Export MP4, rendered in your browser. Run <code className="bg-surface-container px-1.5 py-0.5 font-mono text-xs">/reload-plugins</code> if the skills do not show up after installing.
+              </p>
               <p className="text-xs text-on-surface-variant">
                 An unofficial, open-source plugin from the Elah project. Not made or endorsed by Anthropic.
               </p>
@@ -111,7 +114,7 @@ export default function ClaudePage() {
                 href={GITHUB_URL}
                 className="border border-outline-variant px-5 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
               >
-                Watch on GitHub
+                View on GitHub
               </a>
               <a
                 href="/playground/motion"

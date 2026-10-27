@@ -25,7 +25,7 @@ const tiles: Tile[] = [
 /** Motion capabilities grid (brief section 5, item 5). Each tile is a 3 s loop rendered by the engine. */
 export function HomeCapabilities() {
   return (
-    <Section n={3} scene="Keys" kicker="Seven loops, rendered live" id="capabilities" title={<>Everything is a <Sel>key</Sel> you can read.</>} intro="Each loop below is rendered by the engine, not recorded. Coming in 1.0.">
+    <Section n={3} scene="Keys" kicker="Seven loops, rendered live" id="capabilities" title={<>Everything is a <Sel>key</Sel> you can read.</>} intro="Each loop below is rendered by the engine, not recorded. New in 1.0.">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
           <article key={t.demo} className={`${cardWhite} min-w-0 !p-5`}>

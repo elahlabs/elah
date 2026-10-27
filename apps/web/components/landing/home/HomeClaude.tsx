@@ -6,19 +6,22 @@ import { Sel } from './Sel'
 import { MiniLanes, TRACK } from './MiniLanes'
 import { btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline } from './ui'
 
+const PLUGIN_INSTALL = ['/plugin marketplace add elahlabs/elah', '/plugin install elah@elah']
+
 /**
- * elah in Claude teaser (brief section 5 item 6, section 7). "Coming soon"
- * until the flags in config/site.ts change. Copy comes from the plugin README
- * and the brief: no dates, no mocked chats, no logos.
+ * elah for Claude (brief section 5 item 6, section 7). Each card's state comes
+ * from the flags in config/site.ts. Copy comes from plugins/elah/README.md and
+ * the brief: no dates, no mocked chats, no logos.
  */
 export function HomeClaude() {
   const { plugin, artifact } = siteConfig.claude
-  const cards = [
+  const cards: { title: string; tag: string; body: string; install?: string[] }[] = [
     {
       title: 'Claude Code plugin',
+      install: plugin ? PLUGIN_INSTALL : undefined,
       tag: plugin ? 'Available' : 'Coming soon',
       body: plugin
-        ? 'Claude writes the video, the plugin validates it with the elah engine, and an artifact opens it for preview, editing and mp4 export.'
+        ? 'Run /elah:video or /elah:promo with a short brief. Claude writes the video, the plugin validates it with the elah engine, and an artifact opens it for preview, editing and mp4 export.'
         : 'Claude will write scenes and project files, check them, and open the result on a timeline.',
     },
     {
@@ -31,7 +34,7 @@ export function HomeClaude() {
     <Section
       n={4} scene="Claude" kicker="Claude Code · claude.ai"
       title={plugin ? <>Make a video from <Sel>Claude Code.</Sel></> : <>elah for Claude is coming <Sel>soon.</Sel></>}
-      intro="Claude writes the video as data. elah turns it into a normal project on a timeline that you can open, edit and export as mp4 in your own browser."
+      intro={plugin ? 'Install the plugin, describe the video, and Claude writes it as HTML and CSS motion. elah turns it into a normal project on a timeline that you can open, edit and export as mp4 in your own browser.' : 'Claude writes the video as data. elah turns it into a normal project on a timeline that you can open, edit and export as mp4 in your own browser.'}
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {cards.map((c) => (
@@ -43,6 +46,11 @@ export function HomeClaude() {
               </div>
               <p className={cardBody}>{c.body}</p>
             </div>
+            {c.install ? (
+              <pre className={`m-0 overflow-x-auto bg-[var(--lp-paper)] px-4 py-3 text-[12px] leading-[20px] text-[var(--lp-ink)] ${mono} ${outline}`}>
+                <code>{c.install.join('\n')}</code>
+              </pre>
+            ) : null}
             <MiniLanes
               playhead={38}
               lanes={[

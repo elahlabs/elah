@@ -48,7 +48,7 @@ export default function MotionDocsPage() {
           title="Motion"
           lede={
             <>
-              Animation is data on the clip. Every animated property is a channel with keys, and every key has an id, a frame, a value and an easing. Coming in 1.0.
+              Animation is data on the clip. Every animated property is a channel with keys, and every key has an id, a frame, a value and an easing. New in 1.0.
             </>
           }
         />

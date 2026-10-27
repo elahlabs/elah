@@ -17,7 +17,7 @@ export const siteConfig = {
    * artifact stays "coming soon" until it is verified inside claude.ai.
    */
   claude: {
-    plugin: false,
+    plugin: true,
     artifact: false,
   },
   keywords: [
