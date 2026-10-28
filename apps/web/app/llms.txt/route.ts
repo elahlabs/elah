@@ -41,7 +41,7 @@ const DOCS: DocLink[] = [
 
 const RESOURCES: DocLink[] = [
   { title: 'Motion', path: '/motion', description: 'Programmatic motion graphics that land as editable clips and keyframes.' },
-  { title: 'Elah for Claude', path: '/claude', description: 'The Claude Code plugin and the planned claude.ai artifact.' },
+  { title: 'Elah for Claude', path: '/claude', description: 'The Claude Code plugin and the claude.ai artifact.' },
   { title: 'Motion playground', path: '/playground/motion', description: 'Write a scene as code, convert it to clips and keyframes, export MP4 in the browser.' },
   { title: 'Playgrounds', path: '/playgrounds', description: 'Live, editable examples running the SDK in the browser.' },
   { title: 'Examples', path: '/examples', description: 'Focused code samples for common tasks.' },

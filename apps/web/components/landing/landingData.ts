@@ -148,7 +148,7 @@ export const faq: FaqItem[] = [
   },
   {
     q: 'Can Claude or another model make videos with elah?',
-    a: 'Yes. The elah plugin for Claude Code turns a short brief into a video: Claude writes it as HTML and CSS motion, the plugin validates it, and an artifact opens it for preview, editing and mp4 export. A standalone claude.ai artifact is coming soon. The plugin is unofficial, not made or endorsed by Anthropic.',
+    a: 'Yes. The elah plugin for Claude Code turns a short brief into a video: Claude writes it as HTML and CSS motion, the plugin validates it, and an artifact opens it for preview, editing and mp4 export. The standalone claude.ai artifact is live. The plugin is unofficial, not made or endorsed by Anthropic.',
     href: '/claude',
     hrefLabel: 'See elah for Claude',
   },

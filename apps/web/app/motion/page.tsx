@@ -156,8 +156,6 @@ export default function MotionPage() {
             <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-2">
               {[
                 'Export needs a Chromium browser (Chrome or Edge). Effects and the six newer transitions need WebGL2.',
-                'Keyframes are plain data: every key has an id you can read, write and diff. The open-source editor has no visual keyframe editor yet.',
-                'HTML scenes, VideoSpec and edit operations are experimental and may change in minor releases.',
                 '3D tilt works on media and groups, not on text or shapes.',
               ].map((t) => (
                 <li key={t} className={cardLight}>

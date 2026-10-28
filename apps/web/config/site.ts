@@ -14,11 +14,11 @@ export const siteConfig = {
   /**
    * Launch switches for /claude (brief section 10a). Launch day is a config
    * change: turn `plugin` on and the plugin card shows its launch state. The
-   * artifact stays "coming soon" until it is verified inside claude.ai.
+   * artifact was verified inside claude.ai and is live.
    */
   claude: {
     plugin: true,
-    artifact: false,
+    artifact: true,
   },
   keywords: [
     'video editor',
