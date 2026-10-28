@@ -238,7 +238,7 @@ export const docsHome: DocsHomeGroup[] = [
     title: 'Motion',
     cards: [
       { title: 'Motion', desc: 'Keyframes, easing, springs, expressions, text animators, stagger and motion paths. Every key is plain data.', href: '/docs/motion' },
-      { title: 'HTML scenes & VideoSpec', desc: 'Experimental: write a scene as code and convert it to native clips and keyframes.', href: '/docs/scenes' },
+      { title: 'HTML scenes & VideoSpec', desc: 'Live in 1.0: write a scene as code and convert it to native clips and keyframes.', href: '/docs/scenes' },
     ],
   },
   {

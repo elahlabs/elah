@@ -64,7 +64,7 @@ about 3 KiB gz together, which would give about 109.
 the editor app is 112 KiB gz now (133 before CONV-8). The remaining growth is code the
 editor app needs on first paint: the renderer core (layers, shape and text painters, video
 decode), the resolver (keyframes, expressions, compounds) and media. It is **not** the
-experimental layers: `spec`, `html`, `ops` and `icons` contribute 0 bytes to the first
+AI-facing layers: `spec`, `html`, `ops` and `icons` contribute 0 bytes to the first
 three rows, because they are `sideEffects: false` and nothing in those apps imports them.
 
 ### Worst case: everything exported
@@ -297,5 +297,5 @@ sits beside the web UI packages: `core ← react ← react-native`.
 - A formal `@public` / `@experimental` marking in the type declarations. For 1.0.0 the
   policy is by layer: the exported surface of `@elah/core` (root and `/engine`),
   `@elah/react`, `@elah/timeline` and `@elah/editor` is a semver promise, while the
-  `@elah/core/spec`, `/html`, `/ops` and `/icons` entries are experimental and may change
-  in a minor release (see `CHANGELOG.md`).
+  `@elah/core/spec`, `/html`, `/ops` and `/icons` entries are live in 1.0 and sit off the
+  root so the root stays small (see `CHANGELOG.md`).

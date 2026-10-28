@@ -4,7 +4,7 @@ import { coreSubpaths, libraries } from '../landingData'
 import { Section } from './Section'
 import { Sel, btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline, panel } from '@/components/eb'
 
-/** Libraries and install (brief section 5, item 8), with the experimental @elah/core subpaths. */
+/** Libraries and install (brief section 5, item 8), with the live @elah/core subpaths. */
 export function HomeLibraries() {
   return (
     <Section n={6} scene="Libraries" kicker="Five packages" id="libraries" title={<>Choose a <Sel>library.</Sel></>} intro="Five composable packages. Drop in the whole editor, or take only the layer you need.">
@@ -31,9 +31,9 @@ export function HomeLibraries() {
           <div className="flex flex-col gap-[10px]">
             <div className="flex items-center justify-between gap-3">
               <h3 className={cardTitle}>@elah/core subpaths</h3>
-              <span className={`shrink-0 bg-[var(--lp-card)] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono} ${outline}`}>Experimental</span>
+              <span className={`shrink-0 bg-[var(--lp-card)] px-3 py-[3px] text-[11px] uppercase tracking-[0.14em] text-[var(--lp-muted)] ${mono} ${outline}`}>Live</span>
             </div>
-            <p className={cardBody}>New in 1.0. Separate entries, so an app that does not import them pays nothing. They may change in a minor release.</p>
+            <p className={cardBody}>Live in 1.0. Separate entries, so an app that does not import them pays nothing.</p>
           </div>
           <ul className={`${panel} m-0 mt-auto flex list-none flex-col gap-2 p-4`}>
             {coreSubpaths.map((p) => (

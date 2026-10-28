@@ -88,8 +88,7 @@
   `sceneToClip` are pure, but `sceneToClip` takes a *measured* scene (boxes, line breaks,
   resolved styles) and this release ships no DOM measurer. You write one against a
   hidden, stage-sized DOM, or build the `MeasuredScene` yourself.
-- **The AI-facing layers are experimental.** `spec` (VideoSpec), `vector/html` and the
-  op vocabulary (`ops`) may change in a minor release. Two ops, `generateMedia` and
+- **Two ops do not call a provider.** In the op vocabulary (`ops`), `generateMedia` and
   `removeBackground`, only place a placeholder and return it as `deferred`: no provider
   call ships.
 - **`@elah/editor` does not re-export the new layers.** Import effects, generators,

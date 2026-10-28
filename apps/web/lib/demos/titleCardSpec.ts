@@ -1,7 +1,7 @@
 /**
  * The title-card starter, written as a VideoSpec instead of an HTML scene, for
- * the HTML / VideoSpec toggle in the binding explainer. VideoSpec is
- * experimental. `titleCardSpec.test.ts` builds it with `buildVideo` so the
+ * the HTML / VideoSpec toggle in the binding explainer. VideoSpec is live in
+ * 1.0. `titleCardSpec.test.ts` builds it with `buildVideo` so the
  * names it uses cannot drift out of the vocabulary.
  */
 export const titleCardSpec = {

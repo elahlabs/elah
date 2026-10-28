@@ -5,7 +5,7 @@
  * (or one clip, a library, a set of transitions) as bounded JSON, then sanitize
  * and apply a plan of ops to a live `TimelineEngine`.
  *
- * This is an experimental layer, not part of the stable `@elah/core` root. It
+ * This layer is live in 1.0 but is not part of the `@elah/core` root. It
  * is imported from its own subpath so that the root's semver promise stays
  * small and so that the root's "everything exported" bundle does not count it.
  * A bundler that tree-shakes already drops it from an app that never imports

@@ -17,9 +17,9 @@ React hooks are **not** in this package — they live in [`@elah/react`](https:/
 npm install @elah/core
 ```
 
-**Package size:** about 1.2 MB as an npm tarball (3.0 MB unpacked), of which roughly half is the bundled fonts, which load only if you opt in (see [Fonts](#fonts-and-loading-from-a-cdn)). The code is tree-shakeable (`sideEffects: false`); import `@elah/core/engine` if you do not need the renderer or the codec. Runtime deps: `immer`, `zustand` and `mediabunny` (`^1.50.8`), which the demuxer and export worker load lazily on first decode or export, except through `createDefaultDemuxerFactory`, which imports it statically. What a real app downloads (esbuild, minified, gzipped; React, lucide-react and mediabunny external): an editor app (`EditorProvider`, `Preview`, `Timeline` from `@elah/editor`) is about **112 KiB gz**, up from 68 KiB in 0.6.0 (it was 133 KiB before effects, generators, sequence clips, roto masks and audio Enhance became chunks that load on first use; `prepareFeatures(project)` loads a project's features up front). The engine alone (`TimelineEngine`, `resolveTimeline`) is about 45 KiB gz, and engine plus `GpuRenderer` and `exportVideo` about 75 KiB gz. The experimental layers below cost an app that does not import them nothing. [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) explains how bundle size is measured (`node scripts/measure-bundle.mjs`) and what is left in startup.
+**Package size:** about 1.2 MB as an npm tarball (3.0 MB unpacked), of which roughly half is the bundled fonts, which load only if you opt in (see [Fonts](#fonts-and-loading-from-a-cdn)). The code is tree-shakeable (`sideEffects: false`); import `@elah/core/engine` if you do not need the renderer or the codec. Runtime deps: `immer`, `zustand` and `mediabunny` (`^1.50.8`), which the demuxer and export worker load lazily on first decode or export, except through `createDefaultDemuxerFactory`, which imports it statically. What a real app downloads (esbuild, minified, gzipped; React, lucide-react and mediabunny external): an editor app (`EditorProvider`, `Preview`, `Timeline` from `@elah/editor`) is about **112 KiB gz**, up from 68 KiB in 0.6.0 (it was 133 KiB before effects, generators, sequence clips, roto masks and audio Enhance became chunks that load on first use; `prepareFeatures(project)` loads a project's features up front). The engine alone (`TimelineEngine`, `resolveTimeline`) is about 45 KiB gz, and engine plus `GpuRenderer` and `exportVideo` about 75 KiB gz. The AI-facing layers below cost an app that does not import them nothing. [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) explains how bundle size is measured (`node scripts/measure-bundle.mjs`) and what is left in startup.
 
-**Stability (1.0.0):** the exports of the root entry and of `@elah/core/engine` follow semver. Three AI-facing layers are **experimental** and may change in a minor release. They are not exported from the root; import them from their own entries: `@elah/core/spec` (VideoSpec, components, systems, `specVocabulary`), `@elah/core/html` (HTML/CSS scene conversion), `@elah/core/ops` (the op vocabulary and `describe*` helpers) and `@elah/core/icons` (the vendored icon set). Each is marked where it appears below. A project is written as document version 1 to 5 (see [Save and restore](#save-and-restore)); 0.6.x cannot open a document that uses the newer clip types.
+**Stability (1.0.0):** the exports of the root entry and of `@elah/core/engine` follow semver. Three AI-facing layers are **live** in 1.0 and follow semver too. They are not exported from the root; import them from their own entries: `@elah/core/spec` (VideoSpec, components, systems, `specVocabulary`), `@elah/core/html` (HTML/CSS scene conversion), `@elah/core/ops` (the op vocabulary and `describe*` helpers) and `@elah/core/icons` (the vendored icon set). Each is marked where it appears below. A project is written as document version 1 to 5 (see [Save and restore](#save-and-restore)); 0.6.x cannot open a document that uses the newer clip types.
 
 ---
 
@@ -58,9 +58,9 @@ npm install @elah/core
 | `createCompoundClip`, `nestClips`, `createSequenceClip` | Compound clips (a nested project as one clip) and sequence clips (animated image or numbered frames) |
 | `Clip.audio`, `clipAudioGain`, `enhancePlan` | Mute, boost, fades and Enhance; one envelope for preview and export |
 | `svgToProject`, `lottieToClip` | Import SVG and Lottie as editable clips and keys |
-| `validateScene`, `sceneToClip` (from `@elah/core/html`) | **Experimental.** HTML/CSS scene subset: validate, then convert a measured scene to one compound clip |
-| `compileVideoSpec`, `buildVideo`, `layProject`, `specVocabulary` (from `@elah/core/spec`) | **Experimental.** VideoSpec: a seconds-based JSON document a model writes, compiled to a `Project` |
-| `applyOps`, `sanitizeOps`, `EDITOR_OP_NAMES`, `describeProject` (from `@elah/core/ops`) | **Experimental.** 57 typed editor ops for a model to edit a project |
+| `validateScene`, `sceneToClip` (from `@elah/core/html`) | **Live.** HTML/CSS scene subset: validate, then convert a measured scene to one compound clip |
+| `compileVideoSpec`, `buildVideo`, `layProject`, `specVocabulary` (from `@elah/core/spec`) | **Live.** VideoSpec: a seconds-based JSON document a model writes, compiled to a `Project` |
+| `applyOps`, `sanitizeOps`, `EDITOR_OP_NAMES`, `describeProject` (from `@elah/core/ops`) | **Live.** 57 typed editor ops for a model to edit a project |
 | `packageFontsBaseUrl` | Where the package's own copies of the 12 bundled fonts live (opt-in) |
 
 These stores are **vanilla** (`zustand/vanilla`) — no React, subscribable from anywhere (`store.getState()`, `store.subscribe()`). They are also **module-level singletons**: one `tracksStore`, one `playbackStore`, etc. per JS realm. `@elah/editor`'s `<EditorProvider>` wires each `TimelineEngine`/`PlaybackEngine` instance it creates into these same shared stores, so only **one active project per page** is supported today — mounting two `<EditorProvider>` (or two manually-wired engines) at once will have them overwrite each other's state in the stores. Multiple independent editors on one page need separate tabs/iframes/windows until scoped stores land.
@@ -240,10 +240,10 @@ these clips; it has no editing UI for them yet.
 
 ---
 
-## Scenes and VideoSpec for models (experimental)
+## Scenes and VideoSpec for models (live in 1.0)
 
 Two ways for a model to write a video that lands as ordinary, editable clips. Both are
-**experimental**: the vocabulary may change in a minor release.
+**live** in 1.0, on their own entries so the root stays small.
 
 - **HTML/CSS scenes** (`import { validateScene, sceneToClip } from '@elah/core/html'`): the model writes an HTML fragment and a stylesheet in a whitelisted subset.
   `validateScene({ html, css })` returns violations that name the supported substitute.

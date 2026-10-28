@@ -26,7 +26,7 @@ const DOCS: DocLink[] = [
   { title: 'Clips & tracks', path: '/docs/clips', description: 'Multiple video tracks, Clip.speed, Clip.crop, Clip.cornerRadius, protected and pinned tracks, growClipToAssetDuration.' },
   { title: 'Text templates & motion', path: '/docs/text-templates-and-motion', description: 'Layered MotionSpec animation, easings, sampleTextAnimation, the 14 built-in text templates, applyTextTemplate, text style presets.' },
   { title: 'Motion', path: '/docs/motion', description: 'Keyframes on every transform channel, easing and springs, expressions, text animators, stagger, motion paths, motion presets. Keys are plain data with ids.' },
-  { title: 'HTML scenes & VideoSpec', path: '/docs/scenes', description: 'Experimental: HTML + CSS scenes (@elah/core/html) and VideoSpec JSON (@elah/core/spec) that convert to native clips and keyframes.' },
+  { title: 'HTML scenes & VideoSpec', path: '/docs/scenes', description: 'Live in 1.0: HTML + CSS scenes (@elah/core/html) and VideoSpec JSON (@elah/core/spec) that convert to native clips and keyframes.' },
   { title: 'Frame sequences', path: '/docs/frame-sequences', description: 'Ordered image sets (360 degree orbits, storyboards): createFrameSequence, FrameSequenceController, createFramePreloader, frameSequenceToProject.' },
   { title: 'Project documents', path: '/docs/project-documents', description: 'readProjectDocument, ProjectDocumentError, PROJECT_VERSION, relinkProjectMedia, loadProject options, media library snapshots.' },
   { title: 'Theming', path: '/docs/theming', description: 'The --elah-* design tokens, the elah-root scope, the three stylesheets, the classNames slot API.' },

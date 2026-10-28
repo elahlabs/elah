@@ -130,10 +130,10 @@ export default function MotionPage() {
         </section>
 
         <section className={`${container} ${sectionY}`} aria-labelledby="model">
-          <Slate n={3} label="Model" kicker="Experimental" />
+          <Slate n={3} label="Model" kicker="Live in 1.0" />
           <div className="pt-10">
             <SectionHead id="model" title="From a model">
-              A model writes a VideoSpec or an HTML scene. Because Elah converts it into ordinary clips and keyframes, the output stays editable: you can inspect, retime, split and diff it like any other data. Both layers are experimental. See{' '}
+              A model writes a VideoSpec or an HTML scene. Because Elah converts it into ordinary clips and keyframes, the output stays editable: you can inspect, retime, split and diff it like any other data. Both layers are live in 1.0. See{' '}
               <Link href="/docs/agents" className={textLink}>For AI agents</Link> and{' '}
               <Link href="/docs/scenes" className={textLink}>HTML scenes and VideoSpec</Link>.
             </SectionHead>

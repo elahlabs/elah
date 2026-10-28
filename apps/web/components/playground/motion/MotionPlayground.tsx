@@ -97,7 +97,7 @@ export default function MotionPlayground() {
               ))}
             </select>
             <span className="border border-outline-variant px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-on-surface-variant">
-              Experimental
+              Live
             </span>
             <div className="ml-auto flex gap-1" role="tablist" aria-label="Source">
               {(['html', 'css'] as const).map((t) => (

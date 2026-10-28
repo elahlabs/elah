@@ -16,7 +16,7 @@ export interface Library {
   extraCmd?: string
 }
 
-/** Experimental subpath entries of @elah/core (1.0). They are not exported from the root entry. */
+/** Live subpath entries of @elah/core (1.0). They are not exported from the root entry. */
 export const coreSubpaths = [
   { path: '@elah/core/spec', what: 'VideoSpec JSON to a project' },
   { path: '@elah/core/html', what: 'HTML + CSS scenes to clips and keys' },
@@ -62,12 +62,12 @@ export const badgeColors = { live: '#3ddc97', preview: '#e0b33c' } as const
 
 export const playgrounds: PlaygroundEntry[] = [
   {
-    badge: 'preview',
-    badgeColor: badgeColors.preview,
+    badge: 'live',
+    badgeColor: badgeColors.live,
     playhead: '30%',
     delay: '0s',
     title: 'Motion',
-    body: 'Write a scene as HTML and CSS, convert it to clips and keyframes, read the keys in a table, and export an MP4 in your browser. Experimental.',
+    body: 'Write a scene as HTML and CSS, convert it to clips and keyframes, read the keys in a table, and export an MP4 in your browser.',
     href: '/playground/motion',
     variant: 'timeline',
   },
@@ -141,8 +141,8 @@ export const faq: FaqItem[] = [
     a: 'Yes. Preview and export run the same pure resolver, resolveTimeline(frame, project) → Scene, and the same placement math, so the frame you scrub is the frame you ship.',
   },
   {
-    q: 'What is experimental?',
-    a: 'HTML scenes (@elah/core/html), VideoSpec JSON (@elah/core/spec) and edit operations (@elah/core/ops). They have their own subpath entries and may change in a minor release. The projects they produce are ordinary projects and stay readable.',
+    q: 'Are HTML scenes and VideoSpec stable?',
+    a: 'Yes, they are live in 1.0. HTML scenes (@elah/core/html), VideoSpec JSON (@elah/core/spec) and edit operations (@elah/core/ops) have their own subpath entries, so an app that never imports them pays nothing for them. The projects they produce are ordinary projects and stay readable.',
     href: '/docs/scenes',
     hrefLabel: 'Read about scenes and VideoSpec',
   },
@@ -154,7 +154,7 @@ export const faq: FaqItem[] = [
   },
   {
     q: 'Is 1.0 on npm?',
-    a: 'Yes. It shipped in 1.0, so npm install @elah/core installs it. Keyframes, springs, stagger, motion paths, effects and transitions are in the root entry and follow semver. HTML scenes, VideoSpec and edit operations are experimental subpath entries.',
+    a: 'Yes. It shipped in 1.0, so npm install @elah/core installs it. Keyframes, springs, stagger, motion paths, effects and transitions are in the root entry and follow semver. HTML scenes, VideoSpec and edit operations are live on their own subpath entries.',
     href: '/changelog',
     hrefLabel: 'Read the changelog',
   },

@@ -77,10 +77,10 @@ release.
 
 From 1.0.0 the exported API of `@elah/core` (the root entry and the browser-free
 `@elah/core/engine` entry), `@elah/react`, `@elah/timeline` and `@elah/editor`
-follows semver: a breaking change needs 2.0. Three AI-facing layers are the
-exception and are **experimental**; they may change in a minor release as the
-models that write them change. They are not exported from the `@elah/core` root:
-each has its own subpath entry, so the stable root stays small.
+follows semver: a breaking change needs 2.0. Three AI-facing layers are **live**
+in 1.0 and follow semver too. They are not exported from the `@elah/core` root:
+each has its own subpath entry, so the root stays small and an app that does not
+import them pays nothing for them.
 
 | Subpath | What it holds |
 | --- | --- |
@@ -124,19 +124,19 @@ re-export these layers: import them from the subpaths above.
   animators with their own tweens; scramble text; repeat and yoyo; skew; 3D tilt
   (`rotateX` / `rotateY`, on video, image, sequence and compound clips); expressions;
   36 motion presets.
-- **`@elah/core/html`: HTML/CSS scene conversion (experimental).**
+- **`@elah/core/html`: HTML/CSS scene conversion (live).**
   `validateScene({ html, css })` checks a scene against a whitelisted HTML/CSS subset and
   names the supported substitute for everything it refuses; `sceneToClip(measuredScene,
   { fps })` turns a measured scene into one compound clip of native shape, text and image
   clips with keys, from a one-line `data-motion` grammar. Measuring the scene in a browser
   is the host's step: this release ships no DOM measurer.
-- **`@elah/core/spec`: VideoSpec (experimental).** A seconds-based JSON document for
+- **`@elah/core/spec`: VideoSpec (live).** A seconds-based JSON document for
   models to write: `compileVideoSpec` compiles it to a `Project` and returns every problem as
   a path-addressed `SpecIssue` instead of throwing; `buildVideo` also expands 17 motion
   components and 6 motion systems and polishes the result; `layProject` lays a compiled
   project onto a live engine as one undo step; `specVocabulary()` renders the vocabulary
   block for a prompt.
-- **`@elah/core/ops`: editor ops (experimental).** 57 typed ops (`EDITOR_OP_NAMES`)
+- **`@elah/core/ops`: editor ops (live).** 57 typed ops (`EDITOR_OP_NAMES`)
   that add text, shapes, generators, captions, effects, transitions, keyframes and edits;
   `applyOps` runs a plan against an engine as one undo step, `sanitizeOps` repairs a model's
   plan, and the `describe*` helpers summarise a project for a prompt. Ops that need a
@@ -203,7 +203,7 @@ re-export these layers: import them from the subpaths above.
   the bundled fonts, which a host loads only if it opts in; the rest is the converged engine.
   Everything stays tree-shakeable (`sideEffects: false`), and the engine-only entry
   `@elah/core/engine` leaves out the renderer and the codec.
-- **Startup cost grew from 0.6.0, and the experimental layers are not why.** Measured with
+- **Startup cost grew from 0.6.0, and the AI-facing layers are not why.** Measured with
   `node scripts/measure-bundle.mjs` (esbuild, minified, gzipped; react, lucide-react and
   mediabunny external): an editor app (`EditorProvider`, `Preview`, `Timeline` from
   `@elah/editor`) was **133 KiB gz**, against 68 KiB gz in 0.6.0, and is **112 KiB gz** once

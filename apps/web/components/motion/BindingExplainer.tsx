@@ -65,7 +65,7 @@ export default function BindingExplainer() {
               </button>
             ))}
           </div>
-          <span className={`px-[10px] py-[3px] text-[11px] text-[var(--lp-muted)] ${mono} ${outline}`}>Experimental</span>
+          <span className={`px-[10px] py-[3px] text-[11px] text-[var(--lp-muted)] ${mono} ${outline}`}>Live</span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3">
           <div className="min-w-0 border-b border-[var(--lp-line)] lg:border-b-0 lg:border-r">

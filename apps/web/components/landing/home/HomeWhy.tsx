@@ -21,7 +21,7 @@ interface Row {
  */
 const rows: Row[] = [
   { label: 'Open-source licence', elah: 'Apache-2.0', remotion: 'Remotion License: free for individuals and for-profit organizations up to 3 employees; a Company License is required beyond that', hyperframes: 'Apache-2.0' },
-  { label: 'Motion written as code', elah: 'Yes: html scenes and VideoSpec (experimental)', remotion: 'Yes: React components', hyperframes: 'Yes: html with data attributes' },
+  { label: 'Motion written as code', elah: 'Yes: html scenes and VideoSpec', remotion: 'Yes: React components', hyperframes: 'Yes: html with data attributes' },
   { label: 'Renders in the browser with no server', elah: 'Yes, in Chrome or Edge', remotion: 'Experimental web renderer, a subset of html and css', hyperframes: 'Renders with headless Chrome and FFmpeg' },
 ]
 

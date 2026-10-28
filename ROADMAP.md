@@ -45,7 +45,7 @@ For the things that are known-incomplete today, see
 | **Clip audio** (1.0.0) | `Clip.audio`: mute, boost, fades and Enhance, one envelope for preview and export |
 | **Lottie and SVG import** (1.0.0) | `lottieToClip`, `svgToProject` |
 | **Export containers** (1.0.0) | MP4, WebM (transparent where supported), GIF, PNG sequence; `avc`, `hevc`, `av1`, `vp9`, `vp8` where the browser can encode; in/out range |
-| **VideoSpec, HTML/CSS scenes, editor ops** (1.0.0, experimental) | `compileVideoSpec` / `buildVideo` / `layProject`, `validateScene` / `sceneToClip`, 57 typed ops with `applyOps` / `sanitizeOps` |
+| **VideoSpec, HTML/CSS scenes, editor ops** (1.0.0, live) | `compileVideoSpec` / `buildVideo` / `layProject`, `validateScene` / `sceneToClip`, 57 typed ops with `applyOps` / `sanitizeOps` |
 | **Fonts in the package, CDN-safe workers, `@elah/core/engine`** (1.0.0) | 12 OFL fonts shipped (opt-in `packageFontsBaseUrl()`); workers start from a cross-origin URL; a browser-free engine entry for React Native and Node |
 
 ---
@@ -105,7 +105,7 @@ lookahead/hysteresis logic are shaped to grow into.
 | 2026-05 | Copy decoded frames to `ImageBitmap`, close immediately | Stop the decoder output pool from starving and freezing playback |
 | 2026-06 | Export reuses `resolveTimeline` + shared placement math | One rendering truth for preview and export; no export-specific scene system |
 | 2026-06-07 | Snapshot overlay for transitions (not GPU crossfade) | Avoids decoder contention; preview = CSS opacity on a frozen canvas snapshot; export = `globalAlpha=1-t` pass; adding new transition kinds requires only a CSS mapping, no resolver or shader change. **Superseded in 1.0.0** by one WebGL2 transition shader that composites both clips (see the next row) |
-| 2026-10 | Converge `@elah/core` with the engine our own editor runs on, release as 1.0.0 | One engine instead of two; the model-facing layers (`spec`, `vector/html`, `ops`) ship open but experimental, and the rest of the exported surface becomes a semver promise |
+| 2026-10 | Converge `@elah/core` with the engine our own editor runs on, release as 1.0.0 | One engine instead of two; the model-facing layers (`spec`, `vector/html`, `ops`) ship open and live on their own entries, and the exported surface becomes a semver promise |
 | 2026-06-07 | Standalone `MediaTransformOverlay` (not unified with `TextOverlay`) | Kept the proven text path untouched; gesture math is a copy; unification deferred until both overlays are stable and a shared hook is obviously better |
 
 See [`ARCHITECTURE.md` § anti-patterns](./ARCHITECTURE.md#9-what-this-architecture-rejects-anti-patterns)

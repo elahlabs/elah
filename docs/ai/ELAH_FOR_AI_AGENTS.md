@@ -1015,7 +1015,7 @@ Errors are path-addressed (`clips[2].duration must be ...`) so a model can corre
 
 Since 1.0.0 a model can also *author* a video: it writes a small document, the engine compiles it to
 ordinary, editable clips and keyframes, and a person can open the result on the timeline. There are
-two document formats. **Both are experimental** (they may change in a minor release); the project
+two document formats. **Both are live** in 1.0, on their own entries; the project
 they produce is an ordinary `Project` and stays readable.
 
 Import all of this from **`@elah/core`**, not from `@elah/editor`: the editor barrel does not

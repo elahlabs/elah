@@ -1106,7 +1106,7 @@ export { runCapabilityProbe } from './media/runCapabilityProbe'
 export type { CapabilityReport } from './media/runCapabilityProbe'
 
 // --- Subpath entries (CONV-7) ---
-// The experimental layers are NOT exported from this root. Import them from their
+// The AI-facing layers are NOT exported from this root. Import them from their
 // own entries: `/spec` (VideoSpec compiler, components, systems, vocabulary,
 // component instances), `/html` (HTML/CSS scene subset), `/ops` (project
 // describe and edit ops) and `/icons` (the vendored icon set).

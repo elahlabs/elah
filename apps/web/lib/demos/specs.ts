@@ -1,6 +1,6 @@
 /**
  * Specs for the homepage demos: the hero piece and the capability tiles.
- * Each is a VideoSpec (experimental layer) built with `buildVideo` into an
+ * Each is a VideoSpec (the 1.0 motion layer) built with `buildVideo` into an
  * ordinary project, so every animated value on screen is a key on a clip.
  * `scripts/build-demos.mjs` writes the built projects to `lib/demos/projects/`
  * so they are reviewable as plain JSON, and `demos.test.ts` fails if the

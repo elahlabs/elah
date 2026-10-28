@@ -8,7 +8,7 @@ import { label } from '@/components/eb'
 export const metadata: Metadata = {
   title: 'HTML scenes and VideoSpec',
   description:
-    'Experimental: write a scene as HTML and CSS or as VideoSpec JSON, and convert it to native clips and keyframes with @elah/core/html and @elah/core/spec.',
+    'Live in 1.0: write a scene as HTML and CSS or as VideoSpec JSON, and convert it to native clips and keyframes with @elah/core/html and @elah/core/spec.',
   alternates: { canonical: '/docs/scenes' },
 }
 
@@ -34,10 +34,10 @@ function P({ children }: { children: React.ReactNode }) {
   return <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">{children}</p>
 }
 
-function Experimental() {
+function Live() {
   return (
     <span className={`${label} ml-2 border border-outline-variant px-1.5 py-0.5 align-middle text-on-surface-variant`}>
-      Experimental
+      Live
     </span>
   )
 }
@@ -52,18 +52,18 @@ export default function ScenesDocsPage() {
           title={
             <>
               HTML scenes and VideoSpec
-              <Experimental />
+              <Live />
             </>
           }
           lede={
             <>
-              Two ways for you or a model to write a video that lands as ordinary, editable clips and keyframes. Both shipped in 1.0 as experimental entries and may change in a minor release.
+              Two ways for you or a model to write a video that lands as ordinary, editable clips and keyframes. Both are live in 1.0, on their own entries so an app that does not import them pays nothing.
             </>
           }
         />
 
         <section className="mb-10">
-          <H2 id="html">HTML scenes<Experimental /></H2>
+          <H2 id="html">HTML scenes<Live /></H2>
           <P>
             Write an HTML fragment and a stylesheet in a whitelisted subset. <C>validateScene(&#123; html, css &#125;)</C> returns violations that name the supported substitute for everything it refuses. <C>sceneToClip(measuredScene, &#123; fps &#125;)</C> turns a browser-measured scene into one compound clip of native shape, text and image clips with keys, from a one-line <C>data-motion</C> grammar.
           </P>
@@ -77,7 +77,7 @@ export default function ScenesDocsPage() {
         </section>
 
         <section className="mb-10">
-          <H2 id="videospec">VideoSpec<Experimental /></H2>
+          <H2 id="videospec">VideoSpec<Live /></H2>
           <P>
             A seconds-based JSON document. <C>compileVideoSpec(spec)</C> returns <C>&#123; project, issues &#125;</C> and never throws. <C>buildVideo(authoredSpec)</C> also expands components and polishes, and <C>layProject(engine, project)</C> lays the result onto a live engine as one undo step. <C>specVocabulary()</C> renders the vocabulary for a prompt.
           </P>
@@ -88,7 +88,7 @@ export default function ScenesDocsPage() {
         </section>
 
         <section className="mb-10">
-          <H2 id="ops">Edit operations<Experimental /></H2>
+          <H2 id="ops">Edit operations<Live /></H2>
           <P>
             Edits an AI can call go through typed ops from <C>@elah/core/ops</C>: <C>sanitizeOps(raw, project)</C> repairs a model&apos;s op list and <C>applyOps(engine, ops)</C> applies it as one undo step. See <Link href="/docs/agents" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">For AI agents</Link>.
           </P>

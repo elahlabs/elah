@@ -204,7 +204,7 @@ Five composable packages. Drop in the whole editor, or take only the layer you n
 | [`@elah/core`](https://www.npmjs.com/package/@elah/core) | **Media runtime.** Framework-agnostic engine: resolver, WebGL2 renderer, WebCodecs decode, MP4 export, and the 1.0 motion layer. No React. |
 | [`@elah/cli`](https://www.npmjs.com/package/@elah/cli) | **Headless rendering.** The `elah` command — split/trim/build/export, and an HTTP render server. |
 
-**`@elah/core` subpaths** — new in 1.0, separate entries, experimental and may change in a minor release:
+**`@elah/core` subpaths** — live in 1.0, on separate entries so an app that does not import them pays nothing:
 
 | Subpath | What |
 |---|---|
@@ -278,7 +278,7 @@ elah serve --port 8080          # warm-browser HTTP render server; POST /render 
 
 ### Versions and peers
 
-Every package above is at **1.0.0** and follows semver — a breaking change needs 2.0. The four UI/engine packages release in lockstep; `@elah/cli` keeps its own version line and `cli-v*` tag. The AI-facing subpaths (`/spec`, `/html`, `/ops`, `/icons`) are experimental, which is why they are off the root. The one exception is `@elah/react-native`, early at 0.x — see [`docs/react-native/`](./docs/react-native/README.md).
+Every package above is at **1.0.0** and follows semver — a breaking change needs 2.0. The four UI/engine packages release in lockstep; `@elah/cli` keeps its own version line and `cli-v*` tag. The AI-facing subpaths (`/spec`, `/html`, `/ops`, `/icons`) are live too; they sit off the root so the root stays small. The one exception is `@elah/react-native`, early at 0.x — see [`docs/react-native/`](./docs/react-native/README.md).
 
 Peers: `react`, `react-dom` >= 18; `lucide-react` for the UI packages. Export needs WebCodecs (Chromium).
 
@@ -291,7 +291,7 @@ Peers: `react`, `react-dom` >= 18; `lucide-react` for the UI packages. Export ne
 | | elah | Remotion | HyperFrames |
 |---|---|---|---|
 | **Open-source licence** | Apache-2.0 | Remotion License: free for individuals and for-profit organizations up to 3 employees; a Company License is required beyond that | Apache-2.0 |
-| **Motion written as code** | Yes: html scenes and VideoSpec (experimental) | Yes: React components | Yes: html with data attributes |
+| **Motion written as code** | Yes: html scenes and VideoSpec | Yes: React components | Yes: html with data attributes |
 | **Renders in the browser with no server** | Yes, in Chrome or Edge | Experimental web renderer, a subset of html and css | Renders with headless Chrome and FFmpeg |
 
 Sources: [Remotion license](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md), [Remotion web renderer](https://www.remotion.dev/docs/web-renderer/), [HyperFrames on GitHub](https://github.com/heygen-com/hyperframes). Checked against their public pages; check them for current terms.
@@ -352,9 +352,9 @@ Yes. Preview and export run the same pure resolver, `resolveTimeline(frame, proj
 </details>
 
 <details>
-<summary><b>What is experimental?</b></summary>
+<summary><b>Are HTML scenes and VideoSpec stable?</b></summary>
 
-HTML scenes (`@elah/core/html`), VideoSpec JSON (`@elah/core/spec`) and edit operations (`@elah/core/ops`). They have their own subpath entries and may change in a minor release. The projects they produce are ordinary projects and stay readable. [Read about scenes and VideoSpec](https://www.elah.dev/docs/scenes)
+Yes, they are live in 1.0. HTML scenes (`@elah/core/html`), VideoSpec JSON (`@elah/core/spec`) and edit operations (`@elah/core/ops`) have their own subpath entries, so an app that never imports them pays nothing for them. The projects they produce are ordinary projects and stay readable. [Read about scenes and VideoSpec](https://www.elah.dev/docs/scenes)
 </details>
 
 <details>
@@ -366,7 +366,7 @@ Yes. The elah plugin for Claude Code turns a short brief into a video: Claude wr
 <details>
 <summary><b>Is 1.0 on npm?</b></summary>
 
-Yes. It shipped in 1.0, so `npm install @elah/core` installs it. Keyframes, springs, stagger, motion paths, effects and transitions are in the root entry and follow semver. HTML scenes, VideoSpec and edit operations are experimental subpath entries. [Read the changelog](https://www.elah.dev/changelog)
+Yes. It shipped in 1.0, so `npm install @elah/core` installs it. Keyframes, springs, stagger, motion paths, effects and transitions are in the root entry and follow semver. HTML scenes, VideoSpec and edit operations are live on their own subpath entries. [Read the changelog](https://www.elah.dev/changelog)
 </details>
 
 <details>
