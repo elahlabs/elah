@@ -17,7 +17,15 @@ const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
 })
 
 function apply(theme: Theme) {
+  // Only some surfaces carry colour transitions, so flipping the class lets
+  // them blend while the rest snap, which reads as a flash. Suspend all
+  // transitions for the flip so every surface changes together.
+  const style = document.createElement('style')
+  style.textContent = '*,*::before,*::after{transition:none!important}'
+  document.head.appendChild(style)
   document.documentElement.classList.toggle('dark', theme === 'dark')
+  void window.getComputedStyle(document.body).opacity
+  requestAnimationFrame(() => requestAnimationFrame(() => style.remove()))
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
