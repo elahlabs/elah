@@ -77,20 +77,30 @@ export function ScrubBar() {
           </span>
         </div>
         <nav aria-label="Page sections" className="relative hidden flex-1 md:block">
-          {clips.map((c, i) => (
-            <button
-              key={c.name}
-              type="button"
-              onClick={() => c.el.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-              className={`absolute bottom-[8px] top-[8px] overflow-hidden whitespace-nowrap border-r border-[#0E0E10] px-2 text-left text-[10px] uppercase tracking-[0.1em] transition-colors ${mono} ${
-                i === active ? 'bg-[#FF003C] text-[#0E0E10]' : 'bg-[#242428] text-[#9A9993] hover:bg-[#2E2E33] hover:text-[#F0EFEA]'
-              }`}
-              style={{ left: `${c.start * 100}%`, width: `${(c.end - c.start) * 100}%` }}
-            >
-              <span aria-hidden className="absolute left-[3px] top-1/2 h-[6px] w-[6px] -translate-y-1/2 rotate-45 bg-current opacity-80" />
-              <span className="pl-3">{c.name}</span>
-            </button>
-          ))}
+          {clips.map((c, i) => {
+            // Too narrow for its label: keep the diamond, name it on hover and for screen readers.
+            const narrow = c.end - c.start < 0.04
+            return (
+              <button
+                key={c.name}
+                type="button"
+                aria-label={c.name}
+                title={c.name}
+                onClick={() => c.el.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className={`absolute bottom-[8px] top-[8px] overflow-hidden text-ellipsis whitespace-nowrap border-r border-[#0E0E10] px-2 text-left text-[10px] uppercase tracking-[0.1em] transition-colors ${mono} ${
+                  i === active ? 'bg-[#FF003C] text-[#0E0E10]' : 'bg-[#242428] text-[#9A9993] hover:bg-[#2E2E33] hover:text-[#F0EFEA]'
+                }`}
+                style={{ left: `${c.start * 100}%`, width: `${(c.end - c.start) * 100}%` }}
+              >
+                <span aria-hidden className="absolute left-[3px] top-1/2 h-[6px] w-[6px] -translate-y-1/2 rotate-45 bg-current opacity-80" />
+                {narrow ? null : (
+                  <span aria-hidden className="pl-3">
+                    {c.name}
+                  </span>
+                )}
+              </button>
+            )
+          })}
           <div aria-hidden className="pointer-events-none absolute bottom-0 top-0 w-[2px] bg-[#FF003C]" style={{ left: `${head * 100}%` }}>
             <span className="absolute -left-[4px] top-0 h-0 w-0 border-x-[5px] border-t-[6px] border-x-transparent border-t-[#FF003C]" />
           </div>
