@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import type { Project } from '@elah/core'
 import {
@@ -9,6 +9,7 @@ import {
   Timeline,
   createDefaultDemuxerFactory,
   selectionStore,
+  tracksStore,
   useKeySelectionStore,
   usePlaybackStore,
   useTimelineEngine,
@@ -137,7 +138,43 @@ function Inner({ project, preview = true, timeline = true, timelineHeight = 150,
     }
   }, [ready, reduced, loop, edited])
 
+  /**
+   * The editor's stores (clips, selection, playback) are global, one set per
+   * page, and every demo on the page writes its project into them as it loads:
+   * the last one to load wins. This timeline reads those stores, so when it is
+   * looked at again it re-publishes its own project, edits and undo included,
+   * if another demo has replaced it.
+   */
+  const reclaim = useCallback(() => {
+    if (!ready) return
+    const own = Object.values(engine.getProject().clips).flat()
+    const shown = new Set(
+      Object.values(tracksStore.getState().clips)
+        .flat()
+        .map((c) => c.id),
+    )
+    const selected = selectionStore.getState().selectedClipIds
+    const ours = own.length === shown.size && own.every((c) => shown.has(c.id))
+    if (ours && (!showKeys || own.every((c) => selected.has(c.id)))) return
+    engine.loadProject(engine.getProject(), { transport: 'keep', history: 'keep' })
+    if (showKeys) selectionStore.setState({ selectedClipIds: new Set(own.map((c) => c.id)) })
+    usePlaybackStore.setState({ loop })
+    requestAnimationFrame(() => timelineRef.current?.fitToWindow())
+  }, [ready, engine, showKeys, loop])
+
+  // Scrolling back to this demo takes the stores back.
+  useEffect(() => {
+    const el = root.current
+    if (!el || !ready || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver((entries) => {
+      if (entries[entries.length - 1]?.isIntersecting) reclaim()
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ready, reclaim])
+
   function grab() {
+    reclaim()
     if (!editableKeys) return
     usePlaybackStore.getState().pause()
     setEdited(true)
@@ -150,7 +187,7 @@ function Inner({ project, preview = true, timeline = true, timelineHeight = 150,
   }
 
   return (
-    <div ref={root} className="elah-root flex min-w-0 flex-col bg-[#170F10]" role="group" aria-label={label} style={stageVars}>
+    <div ref={root} onPointerEnter={reclaim} className="elah-root flex min-w-0 flex-col bg-[#170F10]" role="group" aria-label={label} style={stageVars}>
       {preview && (
         <div className="relative w-full bg-[#170F10]" style={{ aspectRatio: aspect ?? `${project.stage.width} / ${project.stage.height}` }}>
           <Preview demuxerFactory={demuxerFactory.current} style={{ width: '100%', height: '100%' }} />
