@@ -32,10 +32,10 @@ export default function InstallationPage() {
           lede={
             <>
               Add elah to your React application. The SDK is published to npm as{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/editor</code> — install it with your package manager and wire it into Next.js or Vite. It pulls in{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/core</code>,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/timeline</code>, and{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/react</code> automatically.
+            <code className="bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/editor</code> — install it with your package manager and wire it into Next.js or Vite. It pulls in{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/core</code>,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/timeline</code>, and{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/react</code> automatically.
             </>
           }
         />
@@ -45,7 +45,7 @@ export default function InstallationPage() {
           <h2 id="requirements" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
             Requirements
           </h2>
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {[
               { dep: 'React', version: '≥ 18.0', note: 'Concurrent mode required for Zustand subscription performance' },
               { dep: 'TypeScript', version: '≥ 5.0', note: 'Strict mode recommended' },
@@ -71,9 +71,9 @@ export default function InstallationPage() {
             Install
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> and{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code>. The decode/export
-            backend (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code>) ships bundled —
+            Install <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> and{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code>. The decode/export
+            backend (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code>) ships bundled —
             there&apos;s nothing else to add:
           </p>
           <CodeBlock
@@ -100,7 +100,7 @@ bun add @elah/editor lucide-react`}
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
             Want to render on a server instead of (or alongside) the browser? Install{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> — it runs
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> — it runs
             core&apos;s real export pipeline headlessly, so output is bit-identical to the editor:
           </p>
           <CodeBlock
@@ -110,7 +110,7 @@ bun add @elah/editor lucide-react`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
             See{' '}
-            <a href="/docs/cli" className="text-primary hover:underline">
+            <a href="/docs/cli" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">
               CLI &amp; Server
             </a>{' '}
             for commands, the build spec, and self-hosting a render server.
@@ -123,15 +123,15 @@ bun add @elah/editor lucide-react`}
             Peer Dependencies
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> expects your app to
-            provide <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">react</code>,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">react-dom</code>, and{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code> (the timeline uses it
-            for clip icons). <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>, and{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> are pulled in
-            transitively. A typical <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code>{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> expects your app to
+            provide <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">react</code>,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">react-dom</code>, and{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code> (the timeline uses it
+            for clip icons). <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>, and{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">mediabunny</code> are pulled in
+            transitively. A typical <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">package.json</code>{' '}
             looks like:
           </p>
           <CodeBlock
@@ -148,16 +148,16 @@ bun add @elah/editor lucide-react`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
             npm auto-installs peer dependencies, so omitting{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code> can appear to work —
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">lucide-react</code> can appear to work —
             pnpm and yarn do not, and neither do most AI hosting sandboxes. Always declare it.
           </p>
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
             The package ships ESM with bundled TypeScript declarations — no separate{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@types</code> install required.
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@types</code> install required.
           </p>
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Building custom UI on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor? Install{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly for the hooks (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useAudioMixer</code>, etc.) without pulling in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>&apos;s UI components.
+            Building custom UI on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor? Install{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly for the hooks (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useAudioMixer</code>, etc.) without pulling in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code>&apos;s UI components.
           </p>
         </section>
 
@@ -167,7 +167,7 @@ bun add @elah/editor lucide-react`}
             Next.js Setup
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Add the SDK packages to <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">transpilePackages</code> so the bundler can resolve the export Web Worker that <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> spawns via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">new URL('./ExportWorker.js', import.meta.url)</code>:
+            Add the SDK packages to <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">transpilePackages</code> so the bundler can resolve the export Web Worker that <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> spawns via <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">new URL('./ExportWorker.js', import.meta.url)</code>:
           </p>
           <CodeBlock
             language="javascript"
@@ -210,7 +210,7 @@ export default function Page() {
             Vite Setup
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Serve the SDK packages from their real files (instead of esbuild's pre-bundle) so the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">new URL(...)</code> worker reference inside <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> resolves correctly:
+            Serve the SDK packages from their real files (instead of esbuild's pre-bundle) so the <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">new URL(...)</code> worker reference inside <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> resolves correctly:
           </p>
           <CodeBlock
             language="typescript"
@@ -238,27 +238,27 @@ export default defineConfig({
         </section>
 
         {/* Working copies of everything above */}
-        <div className="mb-5 rounded-md border border-outline-variant bg-surface-low p-5">
+        <div className="mb-5 border border-outline-variant bg-surface-low p-5">
           <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Working code</div>
           <div className="text-sm font-medium text-on-surface mb-1">Runnable examples</div>
           <p className="text-xs leading-relaxed text-on-surface-variant mb-3">
             Every config on this page, applied and verified in three standalone apps that install{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">@elah/editor</code> from npm — a minimal
+            <code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">@elah/editor</code> from npm — a minimal
             starter, a full Vite editor, and the same on Next.js.
           </p>
-          <a href="/examples" className="text-xs font-medium text-primary hover:underline">
+          <a href="/examples" className="text-xs font-medium text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">
             Browse the examples →
           </a>
         </div>
 
         {/* Next */}
-        <div className="rounded-md border border-outline-variant bg-surface-low p-5">
+        <div className="border border-outline-variant bg-surface-low p-5">
           <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Up Next</div>
           <div className="text-sm font-medium text-on-surface mb-1">Quick Start</div>
           <p className="text-xs leading-relaxed text-on-surface-variant mb-3">
             Build the full editor in under 20 lines — wire your demuxer, mount Preview, and add the Timeline.
           </p>
-          <a href="/docs/getting-started" className="text-xs font-medium text-primary hover:underline">
+          <a href="/docs/getting-started" className="text-xs font-medium text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">
             Continue to Quick Start →
           </a>
         </div>

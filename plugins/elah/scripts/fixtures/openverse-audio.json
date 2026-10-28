@@ -1,0 +1,13 @@
+{
+  "result_count": 8,
+  "results": [
+    { "id": "a1", "title": "Long rain loop.wav", "creator": "alice", "license": "cc0", "filetype": "mp3", "duration": 12000, "url": "https://cdn.freesound.org/previews/1/1_1-hq.mp3", "foreign_landing_url": "https://freesound.org/people/alice/sounds/1/" },
+    { "id": "b2", "title": "Camera Shutter!", "creator": "bob", "license": "cc0", "filetype": "mp3", "duration": 2400, "url": "https://cdn.freesound.org/previews/2/2_2-hq.mp3", "foreign_landing_url": "https://freesound.org/people/bob/sounds/2/" },
+    { "id": "c3", "title": "Shutter click", "creator": "carol", "license": "cc0", "filetype": "mp3", "duration": 700, "url": "https://cdn.freesound.org/previews/3/3_3-hq.mp3", "foreign_landing_url": "https://freesound.org/people/carol/sounds/3/" },
+    { "id": "d4", "title": "Shutter by-licence", "creator": "dave", "license": "by", "filetype": "mp3", "duration": 600, "url": "https://cdn.freesound.org/previews/4/4_4-hq.mp3", "foreign_landing_url": "https://freesound.org/people/dave/sounds/4/" },
+    { "id": "e5", "title": "Shutter wav", "creator": "erin", "license": "cc0", "filetype": "wav", "duration": 600, "url": "https://cdn.freesound.org/previews/5/5_5-hq.wav", "foreign_landing_url": "https://freesound.org/people/erin/sounds/5/" },
+    { "id": "f6", "title": "Shutter http", "creator": "frank", "license": "cc0", "filetype": "mp3", "duration": 500, "url": "http://cdn.example.org/6.mp3", "foreign_landing_url": "https://example.org/6" },
+    { "id": "g7", "title": "Tiny shutter", "creator": "gina", "license": "cc0", "filetype": "mp3", "duration": 120, "url": "https://cdn.freesound.org/previews/7/7_7-hq.mp3", "foreign_landing_url": "https://freesound.org/people/gina/sounds/7/" },
+    { "id": "h8", "title": "No duration", "creator": "hal", "license": "cc0", "filetype": "mp3", "url": "https://cdn.freesound.org/previews/8/8_8-hq.mp3" }
+  ]
+}

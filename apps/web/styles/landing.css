@@ -222,3 +222,32 @@
     transform: none !important;
   }
 }
+
+/*
+ * Homepage "edit bay" aliases (components/landing/home/DESIGN.md §0). The
+ * paper/ink palette is the site-wide --color-* set (styles/globals.css);
+ * --lp-* are kept as aliases so the homepage classes keep working. Dark mode
+ * is the `.dark` class on <html>. Cyber red (#FF003C) stays literal.
+ */
+:root {
+  color-scheme: light;
+  --lp-paper: var(--color-surface);
+  --lp-paper2: var(--color-surface-container);
+  --lp-card: var(--color-surface-low);
+  --lp-ink: var(--color-on-surface);
+  --lp-muted: var(--color-on-surface-variant);
+  --lp-line: var(--color-outline-variant);
+  --lp-stage: #0e0e10;
+  --lp-stage-line: #0e0e10;
+}
+
+.dark {
+  color-scheme: dark;
+  --lp-stage: #141417;
+  --lp-stage-line: #2a2a2f;
+}
+
+/* --font-display is set on <body> (next/font), so alias it below that. */
+.lp {
+  --font-lp-display: var(--font-display);
+}

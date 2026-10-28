@@ -1,5 +1,5 @@
-export { EditorProvider } from './EditorProvider'
-export type { EditorProviderProps } from './EditorProvider'
+export { EditorProvider } from '@elah/react'
+export type { EditorProviderProps } from '@elah/react'
 export { AssetPanel } from './AssetPanel'
 export type { AssetPanelProps } from './AssetPanel'
 export { ElementsPanel } from './ElementsPanel'

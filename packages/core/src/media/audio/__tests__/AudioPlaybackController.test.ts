@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { AudioPlaybackController } from '../AudioPlaybackController'
 import type { PlaybackEngine, PlaybackSnapshot } from '../../../playback/PlaybackEngine'
 import type { Project } from '../../../types'
@@ -59,14 +59,28 @@ function makeMockAudioContext() {
     }
   }
 
+  /** Named so `gains` can be typed without referencing `makeGainParam`'s own
+   *  inferred return type, which is circular. */
+  interface GainParamStub {
+    value: number
+    cancelScheduledValues: ReturnType<typeof vi.fn>
+    setValueAtTime: ReturnType<typeof vi.fn>
+    /** Typed precisely so `mock.calls` stays `[target: number][]` for the
+     *  `([v]: [number])` assertions further down. */
+    linearRampToValueAtTime: Mock<(target: number) => void>
+  }
+
   function makeGain(initialValue = 1) {
-    function makeGainParam(v: number) {
-      const param = {
+    const gains: GainParamStub[] = []
+
+    function makeGainParam(v: number): GainParamStub {
+      const param: GainParamStub = {
         value: v,
         cancelScheduledValues: vi.fn(),
         setValueAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn((target: number) => { param.value = target }),
       }
+      gains.push(param)
       return param
     }
 
@@ -440,7 +454,7 @@ describe('AudioPlaybackController', () => {
 
     // Grab the statechange handler registered on the mock context.
     const stateChangeCall = raw.addEventListener.mock.calls.find(
-      (call: unknown[]) => call[0] === 'statechange',
+      (call) => call[0] === 'statechange',
     )
     expect(stateChangeCall).toBeDefined()
     const stateChangeHandler = stateChangeCall![1] as () => void
@@ -743,7 +757,8 @@ describe('AudioPlaybackController', () => {
     expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
   })
 
-  it('evicts the cache on fetch failure and retries on the next attempt', async () => {
+  it('remembers a fetch failure briefly, then retries', async () => {
+    vi.useFakeTimers()
     const { engine } = makeFakeEngine()
     const { ctx, raw } = makeMockAudioContext()
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -764,6 +779,14 @@ describe('AudioPlaybackController', () => {
     expect(warnSpy).toHaveBeenCalled()
     expect(raw.decodeAudioData).toHaveBeenCalledTimes(0)
 
+    // Inside the retry window the failure answers again — no new download.
+    // (Playback re-asks every frame, so this is what stops a dead src turning
+    // into a request per frame.)
+    controller.preloadProjectAudio()
+    await flush()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(5000)
     controller.preloadProjectAudio()
     await flush()
 
@@ -771,9 +794,11 @@ describe('AudioPlaybackController', () => {
     expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
 
     warnSpy.mockRestore()
+    vi.useRealTimers()
   })
 
-  it('play retries after a failed preload once the fetch succeeds', async () => {
+  it('play retries after a failed load once the retry window has passed', async () => {
+    vi.useFakeTimers()
     const { engine, emit } = makeFakeEngine()
     const { ctx, createdNodes } = makeMockAudioContext()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -791,10 +816,12 @@ describe('AudioPlaybackController', () => {
     await flush()
     expect(createdNodes).toHaveLength(0)
 
+    vi.advanceTimersByTime(5000)
     emit({ epoch: 2, isPlaying: true, currentFrame: 0 })
     await flush()
     expect(createdNodes).toHaveLength(1)
     expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 
   it('preloadProjectAudio() is a no-op before start()', async () => {
@@ -813,5 +840,129 @@ describe('AudioPlaybackController', () => {
     expect(warnSpy).not.toHaveBeenCalled()
 
     warnSpy.mockRestore()
+  })
+})
+
+describe('AudioPlaybackController — merged A/V clips (embeddedAudio)', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) })),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function makeMergedProject(clip: Record<string, unknown> = {}): Project {
+    return {
+      id: 'p1',
+      fps: 30,
+      stage: { width: 1920, height: 1080 },
+      tracks: [
+        {
+          id: 'v1',
+          name: 'Video',
+          kind: 'video',
+          order: 0,
+          height: 60,
+          locked: false,
+          disabled: false,
+          muted: false,
+          solo: false,
+        },
+      ],
+      clips: {
+        v1: [
+          {
+            id: 'm1',
+            trackId: 'v1',
+            type: 'video',
+            name: 'M',
+            startFrame: 0,
+            durationFrames: 120,
+            sourceStartFrame: 0,
+            sourceDurationFrames: 120,
+            src: 'video://movie',
+            embeddedAudio: true,
+            ...clip,
+          },
+        ],
+      },
+      transitions: [],
+      version: 1,
+    } as unknown as Project
+  }
+
+  it('schedules the synthetic #audio id and stops it when the clip leaves the scene', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, createdNodes } = makeMockAudioContext()
+    let project = makeMergedProject()
+    const controller = new AudioPlaybackController(engine, () => project, { audioContextFactory: () => ctx })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0 })
+    await flush()
+    expect(createdNodes).toHaveLength(1)
+    expect(createdNodes[0]!.start).toHaveBeenCalledTimes(1)
+    expect(createdNodes[0]!.stop).not.toHaveBeenCalled()
+    // The levels meter keys by the clip's own track.
+    expect(controller.getTrackLevels().has('v1')).toBe(true)
+
+    // Detached (flag false): the next snapshot stops the synthetic id.
+    project = makeMergedProject({ embeddedAudio: false })
+    emit({ epoch: 1, isPlaying: true, currentFrame: 1 })
+    await flush()
+    expect(createdNodes[0]!.stop).toHaveBeenCalledTimes(1)
+    expect(createdNodes).toHaveLength(1)
+  })
+
+  it('multiplies clip.speed into the node playbackRate', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, createdNodes } = makeMockAudioContext()
+    const project = makeMergedProject({ speed: 2 })
+    const controller = new AudioPlaybackController(engine, () => project, { audioContextFactory: () => ctx })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0, playbackRate: 1.5 })
+    await flush()
+
+    expect(createdNodes[0]!.playbackRate.value).toBe(3)
+  })
+
+  it('leaves the rate alone for a clip without speed', async () => {
+    const { engine, emit } = makeFakeEngine()
+    const { ctx, createdNodes } = makeMockAudioContext()
+    const project = makeMergedProject()
+    const controller = new AudioPlaybackController(engine, () => project, { audioContextFactory: () => ctx })
+    controller.start()
+
+    emit({ epoch: 1, isPlaying: true, currentFrame: 0, playbackRate: 2 })
+    await flush()
+
+    expect(createdNodes[0]!.playbackRate.value).toBe(2)
+  })
+
+  it('preloadProjectAudio() warms a merged clip but not a plain silent video', async () => {
+    const { engine } = makeFakeEngine()
+    const { ctx, raw } = makeMockAudioContext()
+    const merged = makeMergedProject()
+    const project: Project = {
+      ...merged,
+      clips: {
+        v1: [
+          ...merged.clips.v1!,
+          { ...merged.clips.v1![0]!, id: 'silent', src: 'video://silent', embeddedAudio: undefined },
+        ],
+      },
+    }
+    const controller = new AudioPlaybackController(engine, () => project, { audioContextFactory: () => ctx })
+    controller.start()
+
+    controller.preloadProjectAudio()
+    await flush()
+
+    expect(raw.decodeAudioData).toHaveBeenCalledTimes(1)
   })
 })

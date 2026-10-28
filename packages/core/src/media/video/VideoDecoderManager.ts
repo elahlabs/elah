@@ -23,6 +23,7 @@ import {
   MediabunnyDemuxer,
   type DemuxerFactory,
 } from './demuxer/MediabunnyDemuxer'
+import type { VideoRotation } from './rotation'
 
 export type DecoderState =
   | 'Idle'
@@ -67,6 +68,13 @@ export interface VideoDecoderManagerOptions {
   /** Invoked when a decode is dropped (non-cancellation failure). */
   onDroppedFrame?: (sourceFrameIdx: number) => void
   onError?: (error: Error) => void
+  /**
+   * Async capability probe used before configuring with `prefer-hardware`.
+   * Defaults to `VideoDecoder.isConfigSupported` when that exists; when neither
+   * is available the probe is skipped (configure() is attempted directly).
+   * A `false` result (or a rejection) selects `no-preference` up front.
+   */
+  isConfigSupported?: (config: VideoDecoderConfig) => Promise<boolean>
 }
 
 const DEFAULT_IDLE_TIMEOUT_MS = 5000
@@ -131,6 +139,7 @@ export class VideoDecoderManager {
   private _state: DecoderState = 'Idle'
   private _src: string | null = null
   private _demuxer: MediabunnyDemuxer | null = null
+  private _rotation: VideoRotation = 0
   private _decoder: VideoDecoderLike | null = null
   private _idleTimer: ReturnType<typeof setTimeout> | null = null
   private _idleCallback: (() => void) | null = null
@@ -155,6 +164,16 @@ export class VideoDecoderManager {
    */
   private _feedPendingRange: [number, number] | null = null
 
+  private readonly _isConfigSupported: ((config: VideoDecoderConfig) => Promise<boolean>) | null
+
+  /**
+   * Hardware preference for the next configure(). Starts at 'prefer-hardware';
+   * flips to 'no-preference' (once, permanently for this manager) when the
+   * hardware config is reported unsupported, configure() throws, or the decoder
+   * errors while hardware-preferred.
+   */
+  private _hardwareAcceleration: 'prefer-hardware' | 'no-preference' = 'prefer-hardware'
+
   constructor(options: VideoDecoderManagerOptions = {}) {
     this._demuxerFactory = options.demuxerFactory
     this._idleTimeoutMs = options.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS
@@ -162,6 +181,11 @@ export class VideoDecoderManager {
     this._onStateChange = options.onStateChange ?? null
     this._onDroppedFrame = options.onDroppedFrame ?? null
     this._onError = options.onError ?? null
+    this._isConfigSupported =
+      options.isConfigSupported ??
+      (typeof VideoDecoder !== 'undefined' && typeof VideoDecoder.isConfigSupported === 'function'
+        ? async (c) => (await VideoDecoder.isConfigSupported(c)).supported === true
+        : null)
 
     this._decoderFactory = options.decoderFactory ?? ((output, error) => {
       if (typeof VideoDecoder === 'undefined') {
@@ -174,6 +198,11 @@ export class VideoDecoderManager {
   /** Frames per second this manager is configured for. */
   get fps(): number {
     return this._fps
+  }
+
+  /** Clockwise source rotation of the opened clip; 0 until open() resolves. */
+  get rotation(): VideoRotation {
+    return this._rotation
   }
 
   get state(): DecoderState {
@@ -197,15 +226,14 @@ export class VideoDecoderManager {
     try {
       this._demuxer = new MediabunnyDemuxer(this._demuxerFactory)
       await this._demuxer.open(src)
+      this._rotation = this._demuxer.getRotation()
 
-      // optimizeForLatency tells the decoder to emit frames ASAP with minimal
-      // output buffering. Without it the decoder holds frames back for B-frame
-      // reordering, and a non-burst feed can leave it sitting on output — a key
-      // contributor to the mid-playback freeze. See frame-lifecycle-and-decode-stall.md.
-      const config: VideoDecoderConfig = {
-        ...this._demuxer.getConfig(),
-        optimizeForLatency: true,
-      }
+      // File playback decodes with optimizeForLatency FALSE: the decoder keeps
+      // its normal reorder depth, which lets hardware decoders pipeline and
+      // removes the periodic output stalls seen with 4K HEVC. Single-frame
+      // latency (paused scrub / backward seek) is requested per-reset() instead.
+      const baseConfig = this._demuxer.getConfig()
+      await this._chooseHardwareAcceleration(baseConfig)
       const usPerFrame = 1_000_000 / this._fps
       this._decoder = this._decoderFactory(
         (frame: VideoFrame) => {
@@ -230,10 +258,14 @@ export class VideoDecoderManager {
         },
         (error: DOMException) => {
           _vdmTrace('decoder.error', { message: error.message })
+          // Hardware decode failed: the next reopen() configures no-preference.
+          if (this._hardwareAcceleration === 'prefer-hardware') {
+            this._hardwareAcceleration = 'no-preference'
+          }
           this._handleError(error)
         },
       )
-      this._decoder.configure(config)
+      this._configureDecoder(this._decoder, baseConfig, false)
 
       this._transition('Ready')
     } catch (error) {
@@ -325,7 +357,7 @@ export class VideoDecoderManager {
    * Increments the feed-generation counter so any in-progress _feedAsync
    * loops abandon packet delivery. Called on discontinuity by the producer.
    */
-  async reset(toKeyframeUs: number): Promise<void> {
+  async reset(toKeyframeUs: number, opts?: { optimizeForLatency?: boolean }): Promise<void> {
     if (this._state === 'Disposed' || this._state === 'Errored') return
     if (this._state !== 'Ready') {
       throw new Error(`VideoDecoderManager: reset() invalid from state ${this._state}`)
@@ -342,10 +374,7 @@ export class VideoDecoderManager {
     try {
       await this._demuxer!.seekToKeyframe(toKeyframeUs)
       this._decoder!.reset()
-      this._decoder!.configure({
-        ...this._demuxer!.getConfig(),
-        optimizeForLatency: true,
-      })
+      this._configureDecoder(this._decoder!, this._demuxer!.getConfig(), opts?.optimizeForLatency === true)
       this._transition('Ready')
     } catch (error) {
       this._handleError(error)
@@ -415,6 +444,44 @@ export class VideoDecoderManager {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /** Pick prefer-hardware unless the capability probe says it is unsupported. */
+  private async _chooseHardwareAcceleration(base: VideoDecoderConfig): Promise<void> {
+    if (this._hardwareAcceleration !== 'prefer-hardware' || !this._isConfigSupported) return
+    try {
+      const ok = await this._isConfigSupported({
+        ...base,
+        hardwareAcceleration: 'prefer-hardware',
+        optimizeForLatency: false,
+      })
+      if (!ok) this._hardwareAcceleration = 'no-preference'
+    } catch {
+      this._hardwareAcceleration = 'no-preference'
+    }
+  }
+
+  /**
+   * configure() with the current hardware preference. If it throws while
+   * hardware-preferred, retry ONCE with no-preference (and stay there).
+   */
+  private _configureDecoder(
+    decoder: VideoDecoderLike,
+    base: VideoDecoderConfig,
+    optimizeForLatency: boolean,
+  ): void {
+    const build = (): VideoDecoderConfig => ({
+      ...base,
+      hardwareAcceleration: this._hardwareAcceleration,
+      optimizeForLatency,
+    })
+    try {
+      decoder.configure(build())
+    } catch (error) {
+      if (this._hardwareAcceleration !== 'prefer-hardware') throw error
+      this._hardwareAcceleration = 'no-preference'
+      decoder.configure(build())
+    }
+  }
 
   private async _feedAsync(timeRangeUs: [number, number], gen: number): Promise<void> {
     let packetCount = 0

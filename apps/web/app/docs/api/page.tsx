@@ -41,12 +41,12 @@ function ApiEntry({ name, signature, description, params }: {
   params?: { name: string; type: string; desc: string }[]
 }) {
   return (
-    <div className="mb-6 rounded-md border border-outline-variant bg-surface-low overflow-hidden">
+    <div className="mb-6 border border-outline-variant bg-surface-low overflow-hidden">
       <div className="border-b border-outline-variant bg-surface-low px-4 py-2.5">
         <span className="font-mono text-sm font-medium text-on-surface">{name}</span>
       </div>
       <div className="p-4">
-        <div className="mb-3 rounded border border-outline-variant bg-surface-container px-3 py-2">
+        <div className="mb-3 border border-outline-variant bg-surface-container px-3 py-2">
           <code className="font-mono text-xs text-on-surface">{signature}</code>
         </div>
         <p className="mb-3 text-sm text-on-surface-variant">{description}</p>
@@ -84,7 +84,7 @@ export default function ApiPage() {
         {/* TimelineEngine */}
         <Section id="timeline-engine" title="TimelineEngine">
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The single mutation funnel. All edits go through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. Backed by Immer for structural sharing; every commit produces a new Project snapshot.
+            The single mutation funnel. All edits go through <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. Backed by Immer for structural sharing; every commit produces a new Project snapshot.
           </p>
 
           <ApiEntry
@@ -93,11 +93,14 @@ export default function ApiPage() {
             description="Adds a new clip to a track. The clip is placed at startFrame and returns the created Clip object."
             params={[
               { name: 'trackId', type: 'string', desc: 'Target track ID' },
-              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'" },
+              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand' | 'adjustment' | 'generator' | 'compound' | 'sequence'" },
               { name: 'startFrame', type: 'number', desc: 'Position on the timeline (integer frames)' },
               { name: 'durationFrames', type: 'number', desc: 'Length of the clip (integer frames)' },
               { name: 'src', type: 'string?', desc: 'URL or blob ref for video/audio/image clips' },
               { name: 'text', type: 'TextClipMetadata?', desc: 'Content + style; required when type is \'text\'' },
+              { name: 'generator', type: 'ClipGenerator?', desc: 'Which generator and its params; required when type is \'generator\'' },
+              { name: 'compound', type: 'ClipCompound?', desc: 'The nested project; required when type is \'compound\'' },
+              { name: 'sequence', type: 'ClipSequence?', desc: 'An animated image or numbered frames; required when type is \'sequence\'' },
             ]}
           />
 
@@ -156,7 +159,7 @@ export default function ApiPage() {
               { name: 'fromClipId', type: 'string', desc: 'The outgoing clip' },
               { name: 'toClipId', type: 'string', desc: 'The incoming clip' },
               { name: 'trackId', type: 'string', desc: 'Track both clips live on (required)' },
-              { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe'" },
+              { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'" },
               { name: 'durationFrames', type: 'number', desc: 'How many frames the transition spans' },
               { name: 'easing', type: 'TransitionEasing?', desc: "'linear' | 'ease-in' | 'ease-out'" },
             ]}
@@ -190,7 +193,7 @@ export default function ApiPage() {
         {/* PlaybackEngine */}
         <Section id="playback-engine" title="PlaybackEngine">
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            Owns the RAF clock. Emits <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React consumes it via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>.
+            Owns the RAF clock. Emits <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React consumes it via <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>.
           </p>
           <CodeBlock
             language="typescript"
@@ -213,7 +216,7 @@ const unsub = engine.subscribe((snapshot) => {
         {/* resolveTimeline */}
         <Section id="resolve-timeline" title="resolveTimeline()">
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The pure, deterministic resolver. Consumes a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> and frame index; produces a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code>. No side effects, no imports, safe to call in tests, workers, and export pipelines.
+            The pure, deterministic resolver. Consumes a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> and frame index; produces a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code>. No side effects, no imports, safe to call in tests, workers, and export pipelines.
           </p>
           <CodeBlock
             language="typescript"
@@ -258,7 +261,7 @@ interface ActiveVideoClip extends ActiveClipBase {
         {/* GpuRenderer */}
         <Section id="gpu-renderer" title="GpuRenderer">
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The shipped WebGL2 renderer. Accepts a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> and draws sorted textured quads. Can be replaced with any <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Renderer</code>-conforming implementation.
+            The shipped WebGL2 renderer. Accepts a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> and draws sorted textured quads. Can be replaced with any <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Renderer</code>-conforming implementation.
           </p>
           <CodeBlock
             language="typescript"
@@ -291,7 +294,7 @@ renderer.dispose()               // cleanup on unmount`}
         {/* Hooks */}
         <Section id="hooks" title="Hooks">
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            All hooks below live in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> and are re-exported by <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> — install <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly if you&apos;re building custom UI on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor SDK. The <Link href="/docs/react" className="text-primary hover:underline">@elah/react page</Link> covers the context, the store hooks, the audio hooks and using the same stores without React in detail.
+            All hooks below live in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> and are re-exported by <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> — install <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly if you&apos;re building custom UI on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor SDK. The <Link href="/docs/react" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/react page</Link> covers the context, the store hooks, the audio hooks and using the same stores without React in detail.
           </p>
           <div className="space-y-4">
             {[
@@ -356,10 +359,10 @@ renderer.dispose()               // cleanup on unmount`}
                 desc: 'Polls per-track RMS levels on every animation frame, for building level meters.',
               },
             ].map(({ hook, returns, desc }) => (
-              <div key={hook} className="rounded-md border border-outline-variant bg-surface-low p-4">
+              <div key={hook} className="border border-outline-variant bg-surface-low p-4">
                 <div className="mb-1.5 flex flex-wrap items-start gap-x-3 gap-y-1.5">
                   <code className="font-mono text-sm font-medium text-on-surface">{hook}</code>
-                  <span className="mt-0.5 min-w-0 max-w-full break-words rounded bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface-variant">
+                  <span className="mt-0.5 min-w-0 max-w-full break-words bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface-variant">
                     → {returns}
                   </span>
                 </div>
@@ -372,7 +375,7 @@ renderer.dispose()               // cleanup on unmount`}
         {/* Types */}
         <Section id="types" title="Types">
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The clip and track fields added in 0.6.0 (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.speed</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.crop</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.cornerRadius</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track.protected</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track.pinned</code>) are explained on <Link href="/docs/clips" className="text-primary hover:underline">Clips &amp; Tracks</Link>. Layered text motion is on <Link href="/docs/text-templates-and-motion" className="text-primary hover:underline">Text Templates &amp; Motion</Link>.
+            The clip and track fields added in 0.6.0 (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.speed</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.crop</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.cornerRadius</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track.protected</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track.pinned</code>) are explained on <Link href="/docs/clips" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips &amp; Tracks</Link>. Layered text motion is on <Link href="/docs/text-templates-and-motion" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Text Templates &amp; Motion</Link>.
           </p>
           <CodeBlock
             language="typescript"
@@ -380,7 +383,9 @@ renderer.dispose()               // cleanup on unmount`}
             code={`// Time
 type FrameCount = number // always integer
 
-type ClipType = 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+type ClipType =
+  | 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+  | 'adjustment' | 'generator' | 'compound' | 'sequence'
 type TrackKind = 'video' | 'audio' | 'elements'
 
 // Core data types
@@ -479,6 +484,7 @@ interface MotionSpec {
 interface Transition {
   id: string
   kind: 'fade' | 'slide' | 'wipe'
+      | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   fromClipId: string
   toClipId: string
   trackId: string
@@ -490,12 +496,17 @@ interface Transition {
 
 // Export — fps is read from project.fps; the export worker uses
 // mediabunny directly, so there is no demuxerFactory here.
-type ExportVideoCodec = 'avc' | 'vp9' | 'vp8'
+type ExportVideoCodec = 'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8' // where the browser can encode it
 type ExportAudioCodec = 'aac' | 'opus'
+type ExportContainer = 'mp4' | 'webm' | 'png-sequence' | 'gif'
 
 interface ExportOptions {
   videoCodec?: ExportVideoCodec   // default 'avc'
   audioCodec?: ExportAudioCodec
+  container?: ExportContainer     // default 'mp4'
+  transparent?: boolean           // webm only, where the browser's own check passes
+  range?: 'all' | 'inOut'         // default 'all'
+  gifFps?: number                 // gif only, default 15
   videoBitrate?: number           // bits/s, default 8 Mbps
   audioBitrate?: number           // bits/s, default 128 kbps
   outputHeight?: number           // target SHORT edge in px (1080 = 1080p in either

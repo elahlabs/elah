@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Slate, Sel, display, lead, label, container } from '@/components/eb'
 
 export interface PageHeaderProps {
   /** Small mono label above the title (section or category). */
@@ -19,6 +20,8 @@ export interface PageHeaderProps {
   width?: 'wide' | 'narrow'
   /** Anchor id for the h1 (docs pages link to it from the sidebar). */
   id?: string
+  /** A word in a string `title` to show as a selected layer (`Sel`). */
+  selected?: string
 }
 
 /**
@@ -33,31 +36,44 @@ export function PageHeader({
   variant = 'page',
   width = 'wide',
   id,
+  selected,
 }: PageHeaderProps) {
   const isDoc = variant === 'doc'
 
+  let heading: ReactNode = title
+  if (selected && typeof title === 'string') {
+    const i = title.indexOf(selected)
+    if (i >= 0) {
+      heading = (
+        <>
+          {title.slice(0, i)}
+          <Sel>{selected}</Sel>
+          {title.slice(i + selected.length)}
+        </>
+      )
+    }
+  }
+
   const content = (
     <>
-      <div className="label-mono text-2xs text-primary" style={{ letterSpacing: '0.16em' }}>
-        {eyebrow}
-      </div>
+      {typeof eyebrow === 'string' ? (
+        <Slate label={eyebrow} />
+      ) : (
+        <div className={`border-t border-[var(--color-on-surface)] py-3 text-[var(--color-on-surface)] ${label}`}>
+          {eyebrow}
+        </div>
+      )}
       <h1
         id={id}
-        className={
+        className={`m-0 scroll-mt-24 font-extrabold text-[var(--color-on-surface)] text-balance ${display} ${
           isDoc
-            ? 'mb-3 mt-3 scroll-mt-24 text-[clamp(28px,3.6vw,40px)] font-semibold leading-[1.1] tracking-[-0.02em] text-on-surface'
-            : 'mb-3.5 mt-3.5 text-[clamp(32px,5.4vw,56px)] font-semibold leading-[1.08] tracking-[-0.025em] text-on-surface [text-wrap:balance]'
-        }
+            ? 'mb-4 mt-3 text-[40px] leading-[0.95] tracking-[-0.3px] sm:text-[48px]'
+            : 'mb-5 mt-4 text-[56px] leading-[0.92] tracking-[-0.5px] sm:text-[72px] lg:text-[88px]'
+        }`}
       >
-        {title}
+        {heading}
       </h1>
-      {lede ? (
-        <p
-          className={`m-0 max-w-[40rem] text-base leading-relaxed text-on-surface-variant [text-wrap:pretty]`}
-        >
-          {lede}
-        </p>
-      ) : null}
+      {lede ? <p className={`${lead} max-w-[40rem]`}>{lede}</p> : null}
       {children}
     </>
   )
@@ -69,7 +85,7 @@ export function PageHeader({
   return (
     <header className="pt-[clamp(32px,5vw,64px)]">
       <div
-        className={`mx-auto px-4 sm:px-6 ${width === 'narrow' ? 'max-w-3xl' : 'max-w-7xl'}`}
+        className={width === 'narrow' ? 'mx-auto w-full max-w-3xl px-4 sm:px-6' : container}
       >
         {content}
       </div>

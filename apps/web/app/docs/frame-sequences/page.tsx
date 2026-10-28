@@ -31,7 +31,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -210,7 +210,7 @@ engine.loadProject(project)`}
         <section className="mb-10">
           <H2 id="export">Export</H2>
           <P>
-            Because the result is a normal project, there is no special export path. Pass it to <C>exportVideo</C> (or <C>lazyExportVideo</C>) like any other composition, and see <Link href="/docs/export" className="text-primary hover:underline">the Export page</Link> for the options, including how <C>outputHeight</C> is the short edge.
+            Because the result is a normal project, there is no special export path. Pass it to <C>exportVideo</C> (or <C>lazyExportVideo</C>) like any other composition, and see <Link href="/docs/export" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">the Export page</Link> for the options, including how <C>outputHeight</C> is the short edge.
           </P>
           <CodeBlock
             language="typescript"
@@ -220,7 +220,7 @@ const project = frameSequenceToProject(orbit, { holdFrames: 2 })
 const blob = await exportVideo(project, { outputHeight: 1080 })`}
           />
           <P>
-            The same <C>Project</C> is plain data, so the headless runtime can render it too. <C>exportProject</C> in <Link href="/docs/cli#library-api" className="text-primary hover:underline">@elah/cli</Link> takes a <C>Project</C> directly.
+            The same <C>Project</C> is plain data, so the headless runtime can render it too. <C>exportProject</C> in <Link href="/docs/cli#library-api" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/cli</Link> takes a <C>Project</C> directly.
           </P>
         </section>
       </article>

@@ -58,4 +58,30 @@ describe('prepareMedia', () => {
       'not-a-real-media-src'
     )
   })
+
+  it("routes the media inside a compound clip's nested project", () => {
+    const project = loadFixture()
+    for (const clip of project.clips['track-video']) clip.src = 'https://cdn.example.com/a.mp4'
+    const inner = structuredClone(project)
+    for (const clip of inner.clips['track-video']) clip.src = 'https://cdn.example.com/inner.mp4'
+    const compound = {
+      ...project.clips['track-video'][0],
+      id: 'nest',
+      type: 'compound' as const,
+      src: undefined,
+      compound: { project: inner },
+      startFrame: 300,
+    }
+    project.clips['track-video'] = [...project.clips['track-video'], compound]
+
+    const { exportProject, media } = prepareMedia(project, '/proj', 'tok')
+    expect([...media.values()].sort()).toEqual([
+      'https://cdn.example.com/a.mp4',
+      'https://cdn.example.com/inner.mp4',
+    ])
+    const nested = exportProject.clips['track-video'].find((c) => c.id === 'nest')!.compound!.project
+    for (const clip of nested.clips['track-video']) expect(clip.src).toMatch(/^\/media\/tok\/\d$/)
+    // the input's nested project is untouched
+    expect(inner.clips['track-video'][0].src).toBe('https://cdn.example.com/inner.mp4')
+  })
 })

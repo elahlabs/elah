@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/site/PageHeader'
 export const metadata: Metadata = {
   title: 'Editor',
   description:
-    'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, interactive transforms with resize handles and crop, text overlays, fade, slide and wipe transitions, and stage aspect ratio.',
+    'The @elah/editor SDK: EditorProvider, Preview, AssetPanel, interactive transforms with resize handles and crop, text overlays, nine transitions, and stage aspect ratio.',
   alternates: { canonical: '/docs/editor' },
 }
 
@@ -42,7 +42,7 @@ export default function EditorPage() {
             EditorProvider
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> creates and wires the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code>, and all Zustand stores. It must wrap all components that use engine hooks.
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> creates and wires the <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code>, and all Zustand stores. It must wrap all components that use engine hooks.
           </p>
           <CodeBlock
             language="tsx"
@@ -65,7 +65,7 @@ function App() {
   )
 }`}
           />
-          <div className="mt-4 overflow-x-auto rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 overflow-x-auto border border-outline-variant bg-surface-low p-4">
             <table className="w-full min-w-[30rem] text-xs">
               <thead>
                 <tr className="border-b border-outline-variant">
@@ -97,7 +97,7 @@ function App() {
             Preview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<Preview>'}</code> mounts the WebGL2 renderer and drives the RAF playback loop. It reads resolved scenes from <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline</code> and composites video, image, and text layers. Transform overlays are painted on top automatically.
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<Preview>'}</code> mounts the WebGL2 renderer and drives the RAF playback loop. It reads resolved scenes from <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline</code> and composites video, image, and text layers. Transform overlays are painted on top automatically.
           </p>
           <CodeBlock
             language="tsx"
@@ -130,7 +130,7 @@ function MyPreview() {
 }`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            The canvas is letterboxed to the project stage aspect ratio. Off-aspect clips are <strong className="text-on-surface font-medium">contained</strong> (never stretched) within the frame using <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">object-fit: contain</code> semantics.
+            The canvas is letterboxed to the project stage aspect ratio. Off-aspect clips are <strong className="text-on-surface font-medium">contained</strong> (never stretched) within the frame using <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">object-fit: contain</code> semantics.
           </p>
         </section>
 
@@ -140,7 +140,7 @@ function MyPreview() {
             AssetPanel
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">AssetPanel</code> provides the media library UI. Features: file import via button or drag-drop, filmstrip thumbnail generation, audio waveform visualization, and drag-to-timeline for clip creation.
+            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">AssetPanel</code> provides the media library UI. Features: file import via button or drag-drop, filmstrip thumbnail generation, audio waveform visualization, and drag-to-timeline for clip creation.
           </p>
           <CodeBlock
             language="tsx"
@@ -179,7 +179,7 @@ function CustomLibrary() {
             Transforms
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Every clip has an optional <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">transform</code> property. The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">MediaTransformOverlay</code> is the interactive surface for video and image clips: click to select, drag to move, eight resize handles, and a Crop mode. It writes its result back to the engine as a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">transform</code> (or a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">crop</code>), so there is one renderer and one source of truth.
+            Every clip has an optional <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">transform</code> property. The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">MediaTransformOverlay</code> is the interactive surface for video and image clips: click to select, drag to move, eight resize handles, and a Crop mode. It writes its result back to the engine as a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">transform</code> (or a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">crop</code>), so there is one renderer and one source of truth.
           </p>
           <CodeBlock
             language="typescript"
@@ -204,22 +204,22 @@ engine.updateClip(clipId, trackId, {
           />
           <ul className="mt-4 mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
             <li>
-              <strong className="text-on-surface font-medium">Eight resize handles</strong>: four corners and four edges. Dragging a handle scales the clip on that axis (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">scaleX</code> and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">scaleY</code>), so a non-uniform stretch is the default. Hold <kbd className="rounded border border-outline-variant bg-surface-container px-1.5 py-0.5 font-mono text-2xs">Shift</kbd> to keep the aspect ratio. The opposite corner or edge stays fixed on screen while you drag.
+              <strong className="text-on-surface font-medium">Eight resize handles</strong>: four corners and four edges. Dragging a handle scales the clip on that axis (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">scaleX</code> and <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">scaleY</code>), so a non-uniform stretch is the default. Hold <kbd className="border border-outline-variant bg-surface-container px-1.5 py-0.5 font-mono text-2xs">Shift</kbd> to keep the aspect ratio. The opposite corner or edge stays fixed on screen while you drag.
             </li>
             <li>
-              <strong className="text-on-surface font-medium">Crop mode.</strong> A small Resize / Crop toggle floats above the selection box. In Crop mode the same eight handles resize the clip&apos;s <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">crop</code> window instead of its scale, and dragging inside the box pans the source underneath a fixed crop window. A fresh selection always starts in Resize. See <Link href="/docs/clips#crop" className="text-primary hover:underline">Clips &amp; Tracks</Link>.
+              <strong className="text-on-surface font-medium">Crop mode.</strong> A small Resize / Crop toggle floats above the selection box. In Crop mode the same eight handles resize the clip&apos;s <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">crop</code> window instead of its scale, and dragging inside the box pans the source underneath a fixed crop window. A fresh selection always starts in Resize. See <Link href="/docs/clips#crop" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips &amp; Tracks</Link>.
             </li>
             <li>
               <strong className="text-on-surface font-medium">One undo step per gesture.</strong> Move, resize and crop all write through the same preview-then-commit protocol, so each drag is a single undo entry, and preview and export honour the result identically.
             </li>
             <li>
-              <strong className="text-on-surface font-medium">A clip with no transform</strong> is drawn contained. On the first gesture the overlay bakes the contain-equivalent transform (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">transformFromContainRect</code>) as the baseline, so grabbing a clip never moves it.
+              <strong className="text-on-surface font-medium">A clip with no transform</strong> is drawn contained. On the first gesture the overlay bakes the contain-equivalent transform (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">transformFromContainRect</code>) as the baseline, so grabbing a clip never moves it.
             </li>
           </ul>
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Rotation</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">transform.rotation</code> flows through both renderers, and the media selection box tilts with the clip. <strong className="text-on-surface font-medium">Text clips have a rotate knob</strong> above the box (drag it; Shift snaps to 15 degree steps). <strong className="text-on-surface font-medium">Media clips do not have a rotate handle yet</strong>: set <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">rotation</code> on the transform through the engine, as above.
+              <code className="bg-surface-container px-1.5 py-0.5 font-mono">transform.rotation</code> flows through both renderers, and the media selection box tilts with the clip. <strong className="text-on-surface font-medium">Text clips have a rotate knob</strong> above the box (drag it; Shift snaps to 15 degree steps). <strong className="text-on-surface font-medium">Media clips do not have a rotate handle yet</strong>: set <code className="bg-surface-container px-1.5 py-0.5 font-mono">rotation</code> on the transform through the engine, as above.
             </p>
           </div>
         </section>
@@ -230,7 +230,7 @@ engine.updateClip(clipId, trackId, {
             Text Overlays
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Text clips are rendered via a 2D-canvas-to-texture pipeline (GPU <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TextLayer</code>). An interactive overlay (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TextOverlay</code>) handles drag, resize (re-rasterized to stay crisp), rotation by a knob above the box, and double-click inline-edit.
+            Text clips are rendered via a 2D-canvas-to-texture pipeline (GPU <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TextLayer</code>). An interactive overlay (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TextOverlay</code>) handles drag, resize (re-rasterized to stay crisp), rotation by a knob above the box, and double-click inline-edit.
           </p>
           <CodeBlock
             language="tsx"
@@ -266,7 +266,7 @@ engine.updateClip(clipId, textTrack.id, {
 })`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            One end of an animation can also drive several channels at once with a layered <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">MotionSpec</code>, and 14 built-in text templates bundle a look with its motion. Applying a template is one undoable <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.updateClip</code> call. See <Link href="/docs/text-templates-and-motion" className="text-primary hover:underline">Text Templates &amp; Motion</Link>.
+            One end of an animation can also drive several channels at once with a layered <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">MotionSpec</code>, and 14 built-in text templates bundle a look with its motion. Applying a template is one undoable <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.updateClip</code> call. See <Link href="/docs/text-templates-and-motion" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Text Templates &amp; Motion</Link>.
           </p>
         </section>
 
@@ -276,19 +276,25 @@ engine.updateClip(clipId, textTrack.id, {
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions use a snapshot-overlay architecture. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TransitionOverlay</code> captures a frozen snapshot of the outgoing clip and animates it away over the incoming clip with CSS, while the GPU renders only the incoming clip. Export mirrors the same three modes in the 2D canvas API. There are three kinds, and all three are implemented in preview and export:
+            The resolver keeps both clips in the scene for the length of a transition and lists it in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">scene.transitions</code> with its eased progress. The WebGL2 renderer draws each clip, with its effects, transform and blend, into its own target and composites the pair with one transition shader, so both clips keep playing through it. Export runs the same shader. There are nine kinds; a project that uses only the first three still exports where the worker has no WebGL2 (a 2D snapshot path, with a left-or-right slide), while any of the six after <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code> needs WebGL2 and fails the export without it:
           </p>
-          <div className="mb-4 overflow-hidden rounded-md border border-outline-variant">
+          <div className="mb-4 overflow-hidden border border-outline-variant">
             {[
-              ['fade', 'The outgoing snapshot fades out: opacity 1 to 0 (export: globalAlpha).'],
-              ['slide', 'The outgoing snapshot slides horizontally off the stage. direction: \'left\' slides it left; any other direction value slides it right. Up and down are not implemented.'],
-              ['wipe', 'The outgoing snapshot is clipped from the right edge, revealing the incoming clip. It is a horizontal wipe and ignores direction.'],
+              ['fade', 'Cross-fade: the outgoing clip fades out over the incoming one.'],
+              ['slide', 'The outgoing clip slides off the stage in the given direction (left, right, up or down; the default is right).'],
+              ['wipe', 'A hard edge sweeps across, revealing the incoming clip. It ignores direction.'],
+              ['zoom', 'Punch through into the next clip.'],
+              ['spin', 'Rotate out, rotate in.'],
+              ['whip', 'A fast blurred pan between clips; takes a direction.'],
+              ['glitchCut', 'A burst of digital glitch at the cut.'],
+              ['warpDissolve', 'A noisy, melting dissolve.'],
+              ['lumaWipe', 'Dark areas give way first.'],
             ].map(([kind, desc], i) => (
               <div
                 key={kind}
                 className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <code className="font-mono text-xs font-medium text-on-surface sm:w-16 sm:shrink-0">{kind}</code>
+                <code className="font-mono text-xs font-medium text-on-surface sm:w-28 sm:shrink-0">{kind}</code>
                 <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
               </div>
             ))}
@@ -302,10 +308,11 @@ engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
   trackId: track.id,
-  kind: 'fade',           // 'fade' | 'slide' | 'wipe'
+  kind: 'fade',           // 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
+                          // | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   durationFrames: 15,
   easing: 'ease-out',     // 'linear' | 'ease-in' | 'ease-out'
-  direction: 'left',      // optional: 'left' | 'right' | 'up' | 'down' (slide uses left vs. not-left)
+  direction: 'left',      // optional: 'left' | 'right' | 'up' | 'down' (slide and whip)
 })
 
 // Read transitions
@@ -322,7 +329,7 @@ engine.removeTransition(transitionId)`}
             Stage / Aspect Ratio
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The stage aspect ratio is set on the engine and changes the canvas viewport. All clips are letterboxed to the stage. The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">StageBorder</code> component shows a frame outline:
+            The stage aspect ratio is set on the engine and changes the canvas viewport. All clips are letterboxed to the stage. The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">StageBorder</code> component shows a frame outline:
           </p>
           <CodeBlock
             language="tsx"

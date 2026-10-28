@@ -105,8 +105,8 @@ describe('the toggle label', () => {
   // One source for the label and the tooltip, and it names the outcome, not
   // the current state.
   it('labels the toggle by what pressing it does', () => {
-    expect(editorPanelToggleLabel('left', true)).toBe('Expand AI workspace')
-    expect(editorPanelToggleLabel('left', false)).toBe('Collapse AI workspace')
+    expect(editorPanelToggleLabel('left', true)).toBe('Expand media panel')
+    expect(editorPanelToggleLabel('left', false)).toBe('Collapse media panel')
     expect(editorPanelToggleLabel('right', true)).toBe('Expand properties')
     expect(editorPanelToggleLabel('right', false)).toBe('Collapse properties')
   })

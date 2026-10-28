@@ -9,8 +9,9 @@ see [README.md](./README.md).
 1. **Thin consumer of `@elah/core`.** No rendering or timeline logic lives
    here. Edits go through a real `TimelineEngine`; exports run core's real
    `exportVideo` — in an actual browser, because it depends on WebCodecs.
-   CLI output is identical to Editor output *by construction*, not by
-   reimplementation.
+   CLI frames are identical to Editor frames *by construction*, not by
+   reimplementation. ffmpeg, when present, only compresses those frames
+   (see [Encoding with ffmpeg](#encoding-with-ffmpeg)); it never draws.
 2. **AI-first error contract.** Every user-facing failure is a `CliError`
    whose message is path-addressed (`clips[2].duration must be …`) so a
    generating model (or human) can self-correct without reading source.
@@ -36,14 +37,23 @@ bin.ts                       argv dispatch, usage, exit codes, lazy command impo
     ├── flags.ts timecode.ts small parsers (positive ints, SS:FF timecodes)
     ├── project-io.ts        read/validate/write Project JSON, media src resolution
     ├── spec.ts              build-spec validation + spec → Project via engine
-    ├── probe.ts             media duration/dimensions via mediabunny (pure Node)
+    ├── probe.ts             media duration/dimensions via mediabunny (pure Node); ffmpeg for AVI/WMV/FLV
     ├── build-project.ts     orchestrates: validate spec → probe assets → build
     ├── browser.ts           Chromium discovery + launch (playwright-core)
     ├── harness.ts           the in-page export harness (HTML/JS as strings)
     ├── server.ts            per-render harness HTTP server (modules, media, callbacks)
-    ├── render-session.ts    warm-browser session: one browser, N renders
+    ├── render-session.ts    warm-browser session: one browser, N renders; picks the encoder
     ├── export-project.ts    one-shot render: session → render → write file
-    └── serve.ts             HTTP render service: routes, semaphore, 4xx/5xx mapping
+    ├── serve.ts             HTTP render service: routes, semaphore, 4xx/5xx mapping
+    ├── format.ts            container + codec, validated against core's matrix
+    └── ffmpeg/              ffmpeg: encoder (ported from task-engine's media-export) + source conversion
+        ├── locate.ts        --ffmpeg → ELAH_FFMPEG → PATH, 4.4 floor, encoder list
+        ├── select.ts        auto | ffmpeg | chrome → a decision (pure)
+        ├── encoder.ts       PNG-on-stdin + f32le audio → MP4 process, backpressure
+        ├── sink.ts          the harness server's EncodeSink for one render
+        ├── transcode.ts     probe, decode-check JS, conversion plan + argv (pure)
+        ├── prepare.ts       per-session: check each source, convert, cache
+        └── spawn.ts         stderr tail
 ```
 
 Dependency direction is strictly downward: commands → lib → `@elah/core`.
@@ -155,7 +165,86 @@ the promise. The timeout wrapper is attached (with a no-op `catch`)
 *before* `page.goto` — the page can report an error before `goto` resolves,
 and an unhandled rejection there would crash the process past cleanup.
 
-### RenderSession: one browser, N renders
+#### Encoding with ffmpeg
+
+Chrome always composites; the encoder is a separate choice per render
+(`--encoder auto|ffmpeg|chrome`, default `auto`). First,
+[format.ts](./src/lib/format.ts) settles the container (flag, else output
+extension, else MP4) and checks the codec against core's own
+`resolveExportFormat` matrix, so both encoders accept exactly what the
+Editor's exporter accepts (MP4: avc/hevc/av1 + AAC; WebM: vp9/vp8/av1 + Opus).
+The session looks ffmpeg up once ([locate.ts](./src/lib/ffmpeg/locate.ts),
+failure remembered so serve mode doesn't re-spawn a missing binary per
+request), and [select.ts](./src/lib/ffmpeg/select.ts) decides: `auto` uses
+ffmpeg when its build has an encoder for the codec (`FFMPEG_VIDEO_ENCODERS`,
+first available wins: libsvtav1 before libaom-av1) and the container's audio
+encoder (aac or libopus), otherwise falls back to Chrome with one warning per
+distinct reason.
+
+With ffmpeg, the page encodes nothing:
+
+```
+page: renderAudioMix(project)     core's own mix (Web Audio, main thread)
+      → POST /cb/<token>/audio    planar Float32 + ?sampleRate&channels&length
+page: exportVideo(project, { container: 'png-sequence', frameSink })
+      frameSink.write → POST /cb/<token>/frame   (one PNG per frame)
+node:   EncodeSink.frame          first frame spawns ffmpeg with the audio
+                                  file as input 1; PNG → stdin, await drain
+      → 204 only after the write  so the page never runs ahead of ffmpeg
+page: POST /cb/<token>/finish
+node:   EncodeSink.finish         end stdin, await exit 0, read the MP4 →
+                                  resolves server.result
+```
+
+Backpressure is end to end: core's worker waits for each frame's ack, the
+ack waits for the POST, and the POST waits for ffmpeg's stdin to drain. A sink
+failure (ffmpeg died) answers 500 and rejects `server.result` with ffmpeg's
+argv and stderr tail. The scratch directory (audio + MP4) is removed in the
+render's `finally`.
+
+Why PNG, not raw pixels: core's only streaming frame output is the
+`png-sequence` FrameSink, so this needs no core change. The cost is the
+in-page PNG compression, which makes this path slower than Chrome's encoder
+today; a raw-RGBA sink in core would remove it.
+
+#### Converting sources Chrome cannot decode
+
+`prepareMedia` marks the routes video/audio clips read (`decodeRoutes`).
+Before the harness loads, the render opens `/blank` on the harness origin
+(WebCodecs needs a secure context) and the session's
+[SourcePreparer](./src/lib/ffmpeg/prepare.ts) settles each source:
+
+```
+probeSource (Node, mediabunny)   container, primary tracks, decoder configs,
+                                 first video timestamp; container null = unreadable
+page.evaluate(check JS)          VideoDecoder / AudioDecoder.isConfigSupported
+                                 on those exact configs
+planConversion (pure)            null → serve the source as it is; else which
+                                 streams to re-encode vs copy, and the rebase
+pickIntermediate (once)          H.264/AAC MP4 if this browser decodes it, else
+                                 VP9/Opus WebM; must also be writable by ffmpeg
+runTranscode                     ffmpeg to the session's scratch dir; the
+                                 server's media map now points the route at it
+```
+
+Two measured facts shape `planConversion`
+([transcode.ts](./src/lib/ffmpeg/transcode.ts)). Core decodes audio with
+Web Audio's `decodeAudioData` on the whole file, which cannot read MPEG-TS
+even when its AAC decodes, hence the container allowlist. And core's
+export reads source time as the container's absolute timestamps, while
+ffmpeg's default rebase moves the *earliest* stream to 0. A TS whose audio
+starts 21 ms before its video then converts one frame late, so a conversion
+with a known first video timestamp runs `-copyts -output_ts_offset -<start>
+-avoid_negative_ts disabled`: first frame at 0, audio shifted with it.
+
+Conversions are cached for the session by path + size + mtime (URL for
+remote sources). Concurrent renders share one in-flight conversion, a
+failure is not cached, and `session.close()` deletes the scratch dir. The
+render's timeout starts after preparation, so a long conversion is not
+counted against the export. With no ffmpeg, or no intermediate both sides
+can handle, the source is served unchanged with a warning.
+
+## RenderSession: one browser, N renders
 
 `createRenderSession()` is the unit of browser reuse. It memoizes a browser
 promise (`ensureBrowser` relaunches if disconnected), and each `render()`
@@ -234,7 +323,10 @@ they cannot be bundled away.
   import of core's `ExportWorker` through the harness server, catching
   dist-serving misses without launching a browser.
 - **End-to-end** — `e2e.test.ts` (gated behind `ELAH_E2E=1`) exports a
-  fixture through real headless Chrome and probes the MP4.
+  fixture through real headless Chrome and probes the MP4. With
+  `ELAH_FFMPEG` also set it exports a video + text + audio project through
+  both encoders and checks the ffmpeg fallback; `ffmpeg/__tests__` then also
+  runs a real encode through the sink.
 - **Parity** — `scripts/parity-compare.mjs` compares an Editor export
   against a CLI export of the same project (decoded-video hashes expected
   bit-identical; audio null-test residual).

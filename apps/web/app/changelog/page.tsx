@@ -5,8 +5,12 @@ import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { releases, currentVersion, type ChangeKind } from '@/config/changelog'
 import { siteConfig } from '@/config/site'
-import { formatDate, cn } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/site/PageHeader'
+import { container, display, label, mono, outline, sectionY } from '@/components/eb'
+
+const tag = `inline-flex items-center bg-surface-low px-2 py-[3px] ${label} ${outline}`
+const textLink = 'text-on-surface underline decoration-primary underline-offset-4 hover:bg-surface-container'
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -18,12 +22,6 @@ const kindLabel: Record<ChangeKind, string> = {
   added: 'Added',
   changed: 'Changed',
   fixed: 'Fixed',
-}
-
-const kindStyles: Record<ChangeKind, string> = {
-  added: 'bg-tertiary/10 text-tertiary border-tertiary/25',
-  changed: 'bg-secondary/10 text-secondary border-secondary/25',
-  fixed: 'bg-primary/10 text-primary border-primary/25',
 }
 
 export default function ChangelogPage() {
@@ -38,16 +36,16 @@ export default function ChangelogPage() {
           title="What&apos;s new in elah"
           lede={
             <>
-              Release notes for the published packages — <code className="font-mono text-xs">@elah/core</code>,{' '}
-              <code className="font-mono text-xs">@elah/timeline</code>, and{' '}
-              <code className="font-mono text-xs">@elah/editor</code> ship together and share a version.{' '}
-              <code className="font-mono text-xs">@elah/cli</code> is a separate package that versions independently.
+              Release notes for the published packages — <code className={`text-[13px] ${mono}`}>@elah/core</code>,{' '}
+              <code className={`text-[13px] ${mono}`}>@elah/timeline</code>, and{' '}
+              <code className={`text-[13px] ${mono}`}>@elah/editor</code> ship together and share a version.{' '}
+              <code className={`text-[13px] ${mono}`}>@elah/cli</code> is a separate package that versions independently.
             </>
           }
-          width="narrow"
+         
         >
           <div className="mt-5 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              <span className={`inline-flex items-center gap-1.5 bg-surface-low px-3 py-1 text-on-surface ${label} ${outline}`}>
                 <Package className="h-3.5 w-3.5" />
                 Latest: v{currentVersion}
               </span>
@@ -55,7 +53,7 @@ export default function ChangelogPage() {
                 href="https://www.npmjs.com/package/@elah/editor"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant transition-colors hover:text-on-surface"
+                className={`inline-flex items-center gap-1.5 ${label} ${textLink}`}
               >
                 View on npm
                 <ExternalLink className="h-3 w-3" />
@@ -64,7 +62,7 @@ export default function ChangelogPage() {
                 href="https://github.com/elahlabs/elah/blob/main/CHANGELOG.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant transition-colors hover:text-on-surface"
+                className={`inline-flex items-center gap-1.5 ${label} ${textLink}`}
               >
                 CHANGELOG.md
                 <ExternalLink className="h-3 w-3" />
@@ -73,8 +71,8 @@ export default function ChangelogPage() {
         </PageHeader>
 
         {/* Releases */}
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-          <div className="flex flex-col gap-14">
+        <div className={`${container} pt-12 ${sectionY}`}>
+          <div className="flex max-w-3xl flex-col gap-14">
             {releases.map((release) => (
               <section
                 key={release.version}
@@ -82,22 +80,20 @@ export default function ChangelogPage() {
                 className="scroll-mt-20"
               >
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h2
-                    className="text-xl font-semibold tracking-tight text-on-surface"
-                  >
-                    <span className="font-mono text-primary">v{release.version}</span>
+                  <h2 className={`m-0 text-[40px] leading-[0.95] font-extrabold tracking-[-0.3px] text-on-surface ${display}`}>
+                    v{release.version}
                   </h2>
                   {release.latest && (
-                    <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-2xs font-medium text-primary">
+                    <span className={tag}>
                       Latest
                     </span>
                   )}
-                  <time className="text-xs text-on-surface-variant opacity-70">
+                  <time className={`text-on-surface-variant ${label}`}>
                     {formatDate(release.date)}
                   </time>
                 </div>
 
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+                <p className="mt-3 max-w-2xl text-[15px] leading-[23px] text-on-surface-variant">
                   {release.summary}
                 </p>
 
@@ -105,16 +101,9 @@ export default function ChangelogPage() {
                   {release.groups.map((group, gi) => (
                     <div key={gi}>
                       <div className="mb-2.5 flex items-center gap-2">
-                        <span
-                          className={cn(
-                            'inline-flex items-center rounded border px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide',
-                            kindStyles[group.kind]
-                          )}
-                        >
-                          {kindLabel[group.kind]}
-                        </span>
+                        <span className={tag}>{kindLabel[group.kind]}</span>
                         {group.scope && (
-                          <code className="rounded bg-surface-low px-1.5 py-0.5 font-mono text-2xs text-on-surface-variant">
+                          <code className={`bg-surface-low px-2 py-[3px] text-on-surface-variant ${label} ${outline}`}>
                             {group.scope}
                           </code>
                         )}
@@ -123,7 +112,7 @@ export default function ChangelogPage() {
                         {group.items.map((item, ii) => (
                           <li
                             key={ii}
-                            className="text-sm leading-relaxed text-on-surface-variant"
+                            className="text-[15px] leading-[23px] text-on-surface-variant"
                           >
                             {item}
                           </li>
@@ -136,14 +125,14 @@ export default function ChangelogPage() {
             ))}
           </div>
 
-          <div className="mt-16 border-t border-outline-variant pt-6">
-            <p className="text-xs leading-relaxed text-on-surface-variant">
+          <div className="mt-16 max-w-3xl border-t border-outline-variant pt-6">
+            <p className="text-[13px] leading-[20px] text-on-surface-variant">
               Following{' '}
               <a
                 href="https://semver.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className={textLink}
               >
                 Semantic Versioning
               </a>
@@ -152,7 +141,7 @@ export default function ChangelogPage() {
                 href={siteConfig.links.discord}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className={textLink}
               >
                 Discord
               </a>

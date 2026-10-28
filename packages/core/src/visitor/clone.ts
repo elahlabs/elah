@@ -32,6 +32,8 @@ export function cloneClip(
     startFrame: newStartFrame,
     sourceStartFrame: original.sourceStartFrame,
   }
+  // A copy is a new clip, not a new member of the original's link group (PV-T1).
+  delete clone.linkId
 
   trackClips.push(clone as Draft<Clip>)
   trackClips.sort((a, b) => a.startFrame - b.startFrame)

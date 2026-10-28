@@ -22,7 +22,7 @@ export interface ClipLoadStoreActions {
 
 /**
  * Which clips the preview cannot draw yet (Ring 1, vanilla so core stays
- * React-free; `@elah/react` binds it as `useClipLoadStore`).
+ * React-free; the React binding binds it as `useClipLoadStore`).
  *
  * Deliberately NOT part of the project document or the tracks mirror: this is
  * renderer state, not composition state, and it must never reach undo history

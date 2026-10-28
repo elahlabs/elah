@@ -1,0 +1,75 @@
+{
+  "name": "@elah/react-native",
+  "version": "0.1.0",
+  "description": "React Native binding for the Elah video engine — the same Project document and TimelineEngine on iOS and Android. Timeline first; Skia preview, native decode and export follow.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json"
+  },
+  "keywords": [
+    "video-editor",
+    "timeline",
+    "react-native",
+    "expo",
+    "video-engine",
+    "frame-accurate",
+    "typescript"
+  ],
+  "homepage": "https://www.elah.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elahlabs/elah.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elahlabs/elah/issues"
+  },
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.79.0",
+    "react-native-gesture-handler": "^2.32.0",
+    "react-native-reanimated": "^4.0.0",
+    "react-native-worklets": ">=0.10.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native": {
+      "optional": true
+    },
+    "react-native-gesture-handler": {
+      "optional": true
+    },
+    "react-native-reanimated": {
+      "optional": true
+    },
+    "react-native-worklets": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@elah/core": "^1.0.0",
+    "@elah/react": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}

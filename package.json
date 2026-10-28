@@ -3,17 +3,18 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/web",
+    "apps/server"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
-    "build:packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/react && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor && npm run build --workspace=packages/cli",
+    "build:packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/react && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor && npm run build --workspace=packages/cli && npm run build --workspace=packages/react-native",
     "build:web-packages": "npm run build --workspace=packages/core && npm run build --workspace=packages/react && npm run build --workspace=packages/timeline && npm run build --workspace=packages/editor",
     "build": "npm run build --workspace=apps/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint:tokens": "node scripts/check-tokens.mjs",
     "verify:examples": "npm run build --prefix examples/minimal && npm run build --prefix examples/react && npm run build --prefix examples/next",
-    "test": "npm run test --workspace=packages/core --workspace=packages/react --workspace=packages/timeline --workspace=packages/editor --workspace=packages/cli --workspace=apps/web"
+    "test": "npm run test --workspace=packages/core --workspace=packages/react --workspace=packages/timeline --workspace=packages/editor --workspace=packages/cli --workspace=packages/react-native --workspace=apps/web"
   },
   "devDependencies": {
     "rollup-plugin-visualizer": "^7.0.1"
@@ -22,4 +23,3 @@
     "react-router-dom": "^7.17.0"
   }
 }
-

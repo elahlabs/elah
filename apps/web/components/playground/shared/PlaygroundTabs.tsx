@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const tabs = [
+  { label: 'Motion', href: '/playground/motion' },
   { label: 'Production', href: '/playground/production' },
   { label: 'Timeline', href: '/playground/timeline' },
   { label: 'Raw', href: '/playground/raw' },

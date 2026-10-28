@@ -1,7 +1,7 @@
 # GPU Renderer — Implementation Notes
 
 Architectural "why" decisions captured in one place.
-Cross-reference with `architecture.md` (diagrams) and `EVOLUTION.md` (history).
+Cross-reference with `architecture.md` (diagrams).
 
 ---
 

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 import { PageHeader } from '@/components/site/PageHeader'
+import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Project Documents',
@@ -32,7 +33,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -104,7 +105,27 @@ isReadableProjectDocument(stored)`}
         <section className="mb-10">
           <H2 id="versioning">Versioning</H2>
           <P>
-            <C>PROJECT_VERSION</C> is the schema version this build writes and reads, currently 1. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
+            <C>PROJECT_VERSION</C> is the newest schema version this build reads, currently 5. A saved project is stamped with the <strong className="text-on-surface font-medium">lowest</strong> version that can hold what it uses, so a project without the newer features stays readable by older builds. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
+          </P>
+          <div className="mb-4 overflow-hidden border border-outline-variant">
+            {[
+              ['1', 'The 0.6.x model: video, audio, text, image, shape and freehand clips, and the fade, slide and wipe transitions. A document with no version stamp reads as 1.'],
+              ['2', 'Adjustment clips (effects applied to everything beneath them).'],
+              ['3', 'Generator clips, shape draw-on, and the six newer transitions (zoom, spin, whip, glitchCut, warpDissolve, lumaWipe).'],
+              ['4', 'Compound clips (a nested project played as one clip).'],
+              ['5', 'Sequence clips (an animated image or a numbered frame set).'],
+            ].map(([v, desc], i) => (
+              <div
+                key={v}
+                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
+              >
+                <code className="font-mono text-xs font-medium text-on-surface sm:w-20 sm:shrink-0">version {v}</code>
+                <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
+              </div>
+            ))}
+          </div>
+          <P>
+            Everything else added since 0.6.x (keyframes, text animators, effects on a clip, audio settings, masks, motion paths) is an optional field that an older build ignores, so it does not raise the stamp. The stamp rises only when a document holds a clip type or transition kind an older build would refuse. A 0.6.x build opens version 1 only; a version 2 to 5 document throws <C>ProjectDocumentError</C> there. Every 0.6.x document opens unchanged in 1.0.0.
           </P>
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
             <li>
@@ -192,8 +213,8 @@ engine.on('project:loaded', ({ project, transport }) => {
           <P>
             Opening or reloading a document uses the defaults. The playhead belonged to a composition that is gone, so it should stop and return to frame 0, and the document that just arrived is the history&apos;s starting point, so ctrl+Z must not walk back into the empty timeline that existed before it. <C>PlaybackEngine</C> is a separate object that the engine deliberately does not know about, which is why <C>project:loaded</C> carries the <C>transport</C> instruction. <C>EditorProvider</C> subscribes to it and does the rewind for you. If you build your own composition layer, do the same.
           </P>
-          <div className="rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Why the relink pass uses history: &apos;keep&apos;</div>
+          <div className="border border-outline-variant bg-surface-low p-4">
+            <div className={`${label} mb-1 text-on-surface-variant`}>Why the relink pass uses history: &apos;keep&apos;</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
               The relink pass does not bring a new composition. It hands back the one already on screen with internal library references repaired, and it lands whenever the project&apos;s assets finish importing, which can be long after the open. By then the user may have trimmed a clip, added a title, or be mid-drag. Resetting history would throw away real undo steps to swap an internal reference, and an open drag still has a <C>commitInteraction()</C> coming. So pass <C>{"{ transport: 'keep', history: 'keep' }"}</C>: the playhead does not jump, and the undo stacks, the interaction snapshot and any open batch survive. Entries already on the stacks still hold the pre-repair references. Undoing past the repair costs a filmstrip, not work, and those ids are session-scoped anyway.
             </p>
@@ -246,15 +267,15 @@ refreshMissingThumbnails(needsThumbnail)`}
             </li>
           </ul>
           <P>
-            Related media-library helpers added in 0.6.0, covered with the clip workflow on the <Link href="/docs/clips#growing-clips" className="text-primary hover:underline">Clips page</Link>: <C>beginImportUrl(url, opts?)</C> registers a remote URL as a <C>status: &apos;pending&apos;</C> asset immediately and resolves it later. <C>probeHasAudio(src)</C> reads the container header (range requests for http sources, so not the media payload) and answers whether a video carries an audio track. <C>determineAssetHasAudio(assetId)</C> memoizes that per asset and writes <C>hasAudio</C> back to the library, and <C>hasAudioDetermined(assetId)</C> says whether the container probe has already answered, so weaker signals do not overwrite it (it is exported from <C>@elah/core</C> but not re-exported by the <C>@elah/editor</C> barrel). <C>beginImportUrl</C> starts the determination itself for video, so a caller that imports and inserts in one click gets a real answer rather than the placeholder.
+            Related media-library helpers added in 0.6.0, covered with the clip workflow on the <Link href="/docs/clips#growing-clips" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips page</Link>: <C>beginImportUrl(url, opts?)</C> registers a remote URL as a <C>status: &apos;pending&apos;</C> asset immediately and resolves it later. <C>probeHasAudio(src)</C> reads the container header (range requests for http sources, so not the media payload) and answers whether a video carries an audio track. <C>determineAssetHasAudio(assetId)</C> memoizes that per asset and writes <C>hasAudio</C> back to the library, and <C>hasAudioDetermined(assetId)</C> says whether the container probe has already answered, so weaker signals do not overwrite it (it is exported from <C>@elah/core</C> but not re-exported by the <C>@elah/editor</C> barrel). <C>beginImportUrl</C> starts the determination itself for video, so a caller that imports and inserts in one click gets a real answer rather than the placeholder.
           </P>
         </section>
 
         {/* Browser persistence */}
         <section className="mb-10">
           <H2 id="browser-persistence">Browser Persistence</H2>
-          <div className="mb-4 rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Not part of the packages</div>
+          <div className="mb-4 border border-outline-variant bg-surface-low p-4">
+            <div className={`${label} mb-1 text-on-surface-variant`}>Not part of the packages</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
               The IndexedDB persistence on elah.dev itself is <strong className="text-on-surface font-medium">application code</strong>, not part of <C>@elah/*</C>. The packages give you the snapshot and relink primitives above. They deliberately know nothing about IndexedDB, tenants or projects. You build the storage adapter.
             </p>

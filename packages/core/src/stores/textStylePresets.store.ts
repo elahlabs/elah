@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla'
+import { generateId } from '../utils/id'
 
 export interface TextStylePreset {
   id: string
@@ -76,7 +77,7 @@ export interface TextStylePresetsActions {
 }
 
 /**
- * User-saved text looks (Ring 2). Vanilla; `@elah/react` binds it into
+ * User-saved text looks (Ring 2). Vanilla; the React binding binds it into
  * the `useTextStylePresetsStore` hook.
  */
 export const textStylePresetsStore = createStore<TextStylePresetsState & TextStylePresetsActions>()(
@@ -84,7 +85,7 @@ export const textStylePresetsStore = createStore<TextStylePresetsState & TextSty
     presets: [],
 
     addPreset: (preset) =>
-      set((s) => ({ presets: [...s.presets, { ...preset, id: crypto.randomUUID() }] })),
+      set((s) => ({ presets: [...s.presets, { ...preset, id: generateId() }] })),
 
     removePreset: (id) =>
       set((s) => ({ presets: s.presets.filter((p) => p.id !== id) })),

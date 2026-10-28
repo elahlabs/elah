@@ -1,0 +1,16 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "Programmatic video: layout report check",
+  "source": {
+    "kind": "page",
+    "html": "<main class=\"stage\">\n  <section class=\"scene\" data-scene=\"collision\">\n    <h1 class=\"big one\">Overlap</h1>\n    <h1 class=\"big two\">Collision</h1>\n    <p class=\"tiny edge\">Too close to the left edge</p>\n  </section>\n  <section class=\"scene\" data-scene=\"clean\">\n    <h1 class=\"calm\">This scene is fine</h1>\n    <p class=\"low\">Near the bottom edge</p>\n  </section>\n</main>",
+    "css": ".stage { position: absolute; inset: 0; overflow: hidden; background: #0b0f14; color: #f4f6f8; font-family: inter, sans-serif; }\n.scene { position: absolute; inset: 0; }\n.big { position: absolute; margin: 0; font-size: 180px; font-weight: 700; line-height: 1; white-space: nowrap; }\n.one { left: 300px; top: 330px; }\n.two { left: 380px; top: 420px; color: #5eead4; }\n.tiny { position: absolute; margin: 0; left: 40px; top: 700px; font-size: 44px; color: #8a94a3; white-space: nowrap; }\n.calm { position: absolute; margin: 0; left: 160px; top: 300px; font-size: 140px; font-weight: 700; white-space: nowrap; }\n.low { position: absolute; margin: 0; left: 160px; top: 1000px; font-size: 44px; color: #8a94a3; white-space: nowrap; }\n.one, .two, .tiny { animation: a 3.6s ease 0.2s both; }\n.calm, .low { animation: a 3.6s ease 4.2s both; }\n@keyframes a { 0% { opacity: 0; } 15% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }\n",
+    "durationSeconds": 8,
+    "stage": {
+      "width": 1920,
+      "height": 1080
+    },
+    "fps": 30
+  }
+}

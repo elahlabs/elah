@@ -1,7 +1,8 @@
 import type { Draft } from 'immer'
-import type { Clip, Project } from '../types'
+import type { Clip, ClipKeyframes, Project } from '../types'
 import { generateId } from '../utils/id'
 import { toFrame } from '../utils/frames'
+import { splitKeyframes } from '../resolver/keyframes'
 
 /**
  * Split a clip at a given frame into two adjacent clips.
@@ -60,6 +61,32 @@ export function splitClip(
     // out to source frames beyond what was consumed at split time. Left as-is
     // here; only made speed-aware to match the existing convention.
     sourceDurationFrames: Math.round(rightDuration * speed),
+  }
+  // A link group is the clips that belong together (PV-T1). Splitting one of
+  // them does not make the new right half part of that group: it would drag
+  // the partner's whole length along with a piece of this clip. Splitting a
+  // group as a group is `splitLinked`, which relinks the right halves itself.
+  delete rightClip.linkId
+
+  // Keyframe frames are clip-relative, so the spread above would hand the right
+  // half keys still counted from the OLD start. Re-divide them at the cut with
+  // a boundary key on each side so the split is a visual no-op.
+  if (clip.keyframes) {
+    const halves = splitKeyframes(clip.keyframes as ClipKeyframes, leftDuration)
+    rightClip.keyframes = halves.right
+    clip.keyframes = halves.left as Draft<ClipKeyframes> | undefined
+  }
+
+  // Clip audio fades belong to the clip's outer ends: the left half keeps the
+  // fade-in, the right half the fade-out, and the cut itself stays seamless.
+  if (rightClip.audio) {
+    const { fadeInSec: _in, ...rightAudio } = rightClip.audio
+    if (Object.keys(rightAudio).length) rightClip.audio = rightAudio
+    else delete rightClip.audio
+  }
+  if (clip.audio?.fadeOutSec !== undefined) {
+    delete clip.audio.fadeOutSec
+    if (Object.keys(clip.audio).length === 0) delete clip.audio
   }
 
   // Mutate left clip in place (keeps its id)

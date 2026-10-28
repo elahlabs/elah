@@ -18,18 +18,42 @@ cd examples/react   && npm install && npm run dev
 cd examples/next    && npm install && npm run dev
 ```
 
-They track the latest published SDK — currently **`@elah/editor@^0.6.0`**.
+They target the **1.0.0** line of the SDK (`@elah/core`, `@elah/react`, `@elah/timeline` and
+`@elah/editor` 1.0.0, released 2026-10-28). The `@elah/editor` range in each app's
+`package.json` is currently **`^0.6.0`** in all three (`minimal/`, `react/`, `next/`). A caret
+range on a `0.x` version only matches `0.6.x`, so an install resolves 0.6.0, not 1.0.0. Widen
+the range to `^1.0.0` (`npm install @elah/editor@^1.0.0` in each app) to consume the 1.0 line.
 
-> **Verified against `@elah/editor@0.6.0` on 2026-10-02** — clean `npm install` from the
-> registry (resolving `@elah/core`, `@elah/react` and `@elah/timeline` 0.6.0), then `typecheck`,
-> `dev`, and `build` for all three, plus a full MP4 export in `react/` and `next/` under both
-> the dev server and the production build (`vite preview` / `next start`). The `react/` and
-> `next/` inspector was also exercised against the 0.6.0 text templates and animation kinds.
+> **Verification status.** The last full verification was on **`@elah/editor@0.6.0`, 2026-10-02**:
+> a clean `npm install` from the registry (resolving `@elah/core`, `@elah/react` and
+> `@elah/timeline` 0.6.0), then `typecheck`, `dev` and `build` for all three, plus a full MP4
+> export in `react/` and `next/` under both the dev server and the production build
+> (`vite preview` / `next start`). **It has not been repeated on 1.0.0 yet and is owed:** the
+> same install, typecheck, dev, build and MP4 export (dev and production) in `react/` and
+> `next/`, run against 1.0.0 from the registry once the dependency ranges are widened to the
+> 1.0 line. Until that is done, treat these apps as verified on 0.6.0 only.
+>
+> Re-check after any change with `npm run verify:examples` from the repo root. It runs
+> `npm run build` in `minimal/`, `react/` and `next/`, so it exercises the packages installed
+> in each app's `node_modules` (the published tarballs, not the monorepo `packages/`). It does
+> not run `dev` or an MP4 export; do those by hand.
 
 `react/` and `next/` render the same **production editor** composition (`ProductionEditor`):
 preview, timeline, asset/element panels, a text-properties inspector, and MP4 export.
 `minimal/` is deliberately tiny — the smallest thing that still imports media, scrubs, and
 plays.
+
+## What 1.0 adds
+
+The 1.0 SDK includes the motion layer: keyframes with the full ease set, springs, stagger,
+motion paths, text animators, expressions, 3D tilt, 23 GPU effects, 8 generators, 9
+transitions, compound and sequence clips, and Lottie / SVG import. These live in
+`@elah/core` and `@elah/editor`, so they are available to any app on 1.0. The example UIs
+are small compositions and do not expose a control for each of them.
+
+The `@elah/core` subpaths `/spec`, `/html`, `/ops` and `/icons` are live in 1.0 and follow
+semver like the root export. They are off the root entry only to keep it small; import from
+them directly when you need them.
 
 ## Pointing an AI at these
 

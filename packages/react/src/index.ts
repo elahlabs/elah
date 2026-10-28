@@ -5,9 +5,11 @@
  * layer over @elah/core, which stays framework-agnostic (zero React imports).
  */
 
-// --- Editor context (EditorProvider wiring lives in @elah/editor) ---
+// --- Editor context + the provider that wires engines to stores ---
 export { EditorContext, useEditor, useTimelineEngine, usePlaybackEngine } from './editor-context'
 export type { EditorContextValue } from './editor-context'
+export { EditorProvider } from './EditorProvider'
+export type { EditorProviderProps } from './EditorProvider'
 
 // --- Store hooks (React views over core's vanilla Zustand stores) ---
 export {

@@ -36,6 +36,9 @@ Three invariants hold everywhere. Do not violate them:
 | `apps/web` | The marketing + docs site (elah.dev). Docs pages are hand-written TSX, not MDX. |
 | `apps/server` | Render-server example built on `@elah/cli`. |
 | `examples/` | Standalone example apps that install from **npm**. Outside the root workspace on purpose — see [`examples/AGENTS.md`](examples/AGENTS.md). |
+| `packages/react-native` | `@elah/react-native` 0.1.0, pre-release, not published. Today: the platform-free timeline model (`src/timeline/model/`, Node tests, no React Native import allowed there). Versions independently, like the CLI. |
+| `apps/mobile` | Expo dev harness for `@elah/react-native`. **Not a root workspace member**: own `node_modules` and lockfile (Expo pins React 19.2; the root hoists React 18). Metro loads `@elah/*` from `packages/*/src` and refuses the root `@elah/core` (its `import.meta`). See its `README.md`. |
+| `docs/react-native/` | Hand-off docs for the React Native binding (audit, architecture, workstreams, and the contributor issue drafts in `issues/`). Start at its `README.md`. |
 
 ## Commands
 
@@ -116,8 +119,8 @@ npm publish --workspace=packages/core --access public
 check each package, and `@elah/cli` is released on its own version and schedule.
 
 Tag the release commit after the lockfile is committed: `v<version>` for the four
-lockstep packages (for 0.6.0, `v0.6.0`) and `cli-v<version>` for the CLI (for CLI 0.1.2,
-`cli-v0.1.2`).
+lockstep packages (for 1.0.0, `v1.0.0`) and `cli-v<version>` for the CLI (for CLI 1.0.0,
+`cli-v1.0.0`).
 
 ## Conventions
 

@@ -1,0 +1,277 @@
+{
+  "id": "dl6bmqss",
+  "fps": 30,
+  "stage": {
+    "width": 1280,
+    "height": 720
+  },
+  "tracks": [
+    {
+      "id": "fzqtk1bs",
+      "name": "Video 1",
+      "kind": "video",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "m4ib3l1x",
+      "name": "Video 2",
+      "kind": "video",
+      "order": 1,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "23p00rq1",
+      "name": "Elements",
+      "kind": "elements",
+      "order": 2,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    }
+  ],
+  "clips": {
+    "fzqtk1bs": [
+      {
+        "id": "5ehec69h",
+        "trackId": "fzqtk1bs",
+        "type": "generator",
+        "name": "Gradient",
+        "startFrame": 0,
+        "durationFrames": 60,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 60,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "generator": {
+          "kind": "gradientBackground",
+          "params": {
+            "colorA": "#1e3c72",
+            "colorB": "#e94e77",
+            "angle": 135,
+            "spin": 30
+          },
+          "seed": 1
+        }
+      },
+      {
+        "id": "wtxj3v4z",
+        "trackId": "fzqtk1bs",
+        "type": "compound",
+        "name": "Nested timeline",
+        "startFrame": 60,
+        "durationFrames": 120,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 120,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "compound": {
+          "project": {
+            "id": "3m8oj18n",
+            "fps": 30,
+            "stage": {
+              "width": 1280,
+              "height": 720
+            },
+            "tracks": [
+              {
+                "id": "zqqczwrn",
+                "name": "Inner",
+                "kind": "elements",
+                "order": 0,
+                "height": 64,
+                "locked": false,
+                "disabled": false,
+                "muted": false,
+                "solo": false,
+                "volume": 1,
+                "protected": false
+              }
+            ],
+            "clips": {
+              "zqqczwrn": [
+                {
+                  "id": "77nfi6vs",
+                  "trackId": "zqqczwrn",
+                  "type": "shape",
+                  "name": "Inner circle",
+                  "startFrame": 0,
+                  "durationFrames": 90,
+                  "sourceStartFrame": 0,
+                  "sourceDurationFrames": 90,
+                  "volume": 1,
+                  "opacity": 1,
+                  "locked": false,
+                  "disabled": false,
+                  "transform": {
+                    "x": 0.5,
+                    "y": 0.5,
+                    "scale": 0.6,
+                    "rotation": 0,
+                    "anchor": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "shapeKind": "circle",
+                  "shapeFill": "#ffd166"
+                },
+                {
+                  "id": "w5kquqwq",
+                  "trackId": "zqqczwrn",
+                  "type": "text",
+                  "name": "Inner title",
+                  "startFrame": 90,
+                  "durationFrames": 30,
+                  "sourceStartFrame": 0,
+                  "sourceDurationFrames": 30,
+                  "volume": 1,
+                  "opacity": 1,
+                  "locked": false,
+                  "disabled": false,
+                  "content": "Nested",
+                  "transformModel": "v2",
+                  "fontSize": 96,
+                  "color": "#ffffff"
+                }
+              ]
+            },
+            "transitions": [],
+            "version": 1
+          }
+        },
+        "assetFrames": 120
+      }
+    ],
+    "m4ib3l1x": [
+      {
+        "id": "2h6s6dv0",
+        "trackId": "m4ib3l1x",
+        "type": "sequence",
+        "name": "Logo frames",
+        "startFrame": 0,
+        "durationFrames": 45,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 45,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.85,
+          "y": 0.18,
+          "scale": 0.2,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "sequence": {
+          "kind": "frames",
+          "frameUrlTemplate": "/assets/cinematic-logo.png?f={frame}",
+          "frameCount": 15,
+          "fps": 15,
+          "loop": true
+        }
+      },
+      {
+        "id": "p0xjzdov",
+        "trackId": "m4ib3l1x",
+        "type": "adjustment",
+        "name": "Adjustment",
+        "startFrame": 120,
+        "durationFrames": 60,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 60,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false
+      }
+    ],
+    "23p00rq1": [
+      {
+        "id": "hc36thr8",
+        "trackId": "23p00rq1",
+        "type": "shape",
+        "name": "Skewed card",
+        "startFrame": 0,
+        "durationFrames": 180,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 180,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.3,
+          "y": 0.7,
+          "scale": 0.3,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "shapeKind": "rect",
+        "shapeFill": "#00c2ff",
+        "keyframes": {
+          "channels": {
+            "skewX": {
+              "source": {
+                "kind": "keyframes"
+              },
+              "keys": [
+                {
+                  "id": "7gl40090",
+                  "frame": 0,
+                  "value": 0,
+                  "easing": "linear"
+                },
+                {
+                  "id": "0pvivr67",
+                  "frame": 60,
+                  "value": 0.4,
+                  "easing": "linear"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "transitions": [
+    {
+      "id": "y3ogqer7",
+      "kind": "zoom",
+      "fromClipId": "5ehec69h",
+      "toClipId": "wtxj3v4z",
+      "trackId": "fzqtk1bs",
+      "startFrame": 50,
+      "durationFrames": 20
+    }
+  ],
+  "version": 5
+}

@@ -11,7 +11,7 @@
  * modifying this file.
  */
 
-import type { Scene } from '../../resolver/scene'
+import type { ActiveTransition, Scene } from '../../resolver/scene'
 import type { Layer, LayerContext } from './layers/types'
 import type { SceneDiff } from './types'
 
@@ -29,7 +29,28 @@ interface LayerRegistration<TItem> {
 interface RenderEntry<TItem> {
   layer: Layer<TItem>
   item: TItem
+  id: string
   zIndex: number
+}
+
+/** Ids of drawn items that another drawn item uses as its track matte. */
+function mattesInUse(drawList: ReadonlyArray<RenderEntry<unknown>>): ReadonlySet<string> {
+  let wanted: Set<string> | null = null
+  for (const entry of drawList) {
+    const matte = (entry.item as { matte?: { sourceClipId?: string } }).matte
+    if (matte?.sourceClipId) (wanted ??= new Set()).add(matte.sourceClipId)
+  }
+  if (!wanted) return EMPTY
+  const present = new Set<string>()
+  for (const entry of drawList) if (wanted.has(entry.id)) present.add(entry.id)
+  return present
+}
+
+const EMPTY: ReadonlySet<string> = new Set()
+
+/** Target key for one side of a transition; cannot collide with a clip id. */
+function transitionKey(side: 'from' | 'to', transitionId: string): string {
+  return `\u0000tr:${side}:${transitionId}`
 }
 
 export class RenderGraph {
@@ -87,10 +108,16 @@ export class RenderGraph {
         }
       }
 
-      for (const item of reg.activeItems.values()) {
+      // Iterate the Scene's own order (currentItems), not activeItems.values()
+      // — the Map's insertion order is *acquire* order (when a clip first
+      // entered the scene), so equal-zIndex ties would otherwise depend on
+      // playback direction/scrub history instead of the Scene's deterministic
+      // order, and could disagree with ExportWorker's tie-break.
+      for (const item of currentItems) {
         drawList.push({
           layer: reg.layer,
           item,
+          id: reg.getId(item),
           zIndex: reg.getZIndex(item),
         })
       }
@@ -99,9 +126,64 @@ export class RenderGraph {
     // Stable ascending sort: lower zIndex draws first (back), higher draws last (front).
     drawList.sort((a, b) => a.zIndex - b.zIndex)
 
+    // Track mattes (EDX-P7): any clip another clip uses as a matte this frame
+    // is drawn into an offscreen target first and hidden from the picture —
+    // Premiere's rule for a matte layer. Frames with no matte skip all of it.
+    const matteSources = mattesInUse(drawList)
+    const chain = ctx.effectChain
+    // A nested graph namespaces every target it renders, so two copies of one
+    // compound (which hold the same nested clip ids) never share a matte or a
+    // transition target. At the top level the prefix is empty and every key and
+    // every call is exactly what it was.
+    const prefix = ctx.keyPrefix ?? ''
+    if (matteSources.size > 0 && chain?.renderMatte) {
+      for (const entry of drawList) {
+        const id = entry.id
+        if (!matteSources.has(id)) continue
+        chain.renderMatte(ctx, prefix + id, () => entry.layer.draw(entry.item, ctx))
+      }
+    }
+
+    // Transitions (EDX-P9c): each clip of a transitioning pair is drawn into
+    // its own target — effects, mask, blend and all — and the pair is
+    // composited by the transition shader where the incoming clip sits in the
+    // stack. Needs the chain; without it the clips simply draw.
+    const trFrom = new Map<string, ActiveTransition>()
+    const trTo = new Map<string, ActiveTransition>()
+    if (scene.transitions?.length && chain?.renderMatte && chain.drawTransition) {
+      for (const tr of scene.transitions) {
+        const fromEntry = drawList.find((e) => e.id === tr.fromClipId)
+        const toEntry = drawList.find((e) => e.id === tr.toClipId)
+        if (!fromEntry || !toEntry || fromEntry === toEntry) continue
+        if (!chain.renderMatte(ctx, prefix + transitionKey('from', tr.id), () => fromEntry.layer.draw(fromEntry.item, ctx))) continue
+        if (!chain.renderMatte(ctx, prefix + transitionKey('to', tr.id), () => toEntry.layer.draw(toEntry.item, ctx))) continue
+        trFrom.set(fromEntry.id, tr)
+        trTo.set(toEntry.id, tr)
+      }
+    }
+
     for (const entry of drawList) {
+      if (matteSources.size > 0 && matteSources.has(entry.id)) continue
+      if (trFrom.has(entry.id)) continue
+      const tr = trTo.get(entry.id)
+      if (tr) {
+        const done = chain!.drawTransition!(ctx, prefix + transitionKey('from', tr.id), prefix + transitionKey('to', tr.id), {
+          kind: tr.kind,
+          t: tr.t,
+          ...(tr.direction ? { direction: tr.direction } : {}),
+        })
+        if (done) continue
+        // Shader unavailable: draw the pair plainly, outgoing first.
+        const fromEntry = drawList.find((e) => e.id === tr.fromClipId)
+        fromEntry?.layer.draw(fromEntry.item, ctx)
+      }
       entry.layer.draw(entry.item, ctx)
     }
+
+    // Only the top level ends the frame. A nested graph's targets belong to
+    // the compound that owns them, and its CompoundLayer releases them by
+    // prefix; ending the frame here would free the parent's mattes too.
+    if (!prefix && (matteSources.size > 0 || trTo.size > 0)) chain?.endFrame?.(ctx.gl)
   }
 
   /**
@@ -143,17 +225,34 @@ export class RenderGraph {
     const leaving: string[] = []
 
     for (const item of current) {
-      if (!active.has(getId(item))) {
+      const id = getId(item)
+      const previous = active.get(id)
+      if (previous === undefined) {
+        entering.push(item)
+      } else if (sourceOf(previous) !== sourceOf(item)) {
+        // Same clip, different source file: a reload re-points a local clip from
+        // the dead `blob:` URL of the previous page to the file it just reopened.
+        // Layers load their source on acquire, so a persisting item would keep
+        // drawing (or failing on) the old one forever. Release, then acquire.
+        leaving.push(id)
         entering.push(item)
       }
     }
 
     for (const id of active.keys()) {
-      if (!currentIds.has(id)) {
+      if (!currentIds.has(id) && !leaving.includes(id)) {
         leaving.push(id)
       }
     }
 
     return { entering, leaving }
   }
+}
+
+/**
+ * The media source an item draws from, when it has one. Only compared for
+ * equality, so items without a `src` (shapes, text, compounds) never differ.
+ */
+function sourceOf(item: unknown): unknown {
+  return typeof item === 'object' && item !== null ? (item as { src?: unknown }).src : undefined
 }

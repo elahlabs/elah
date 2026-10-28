@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { useConsent } from '@/components/ConsentProvider'
+import { bottomBar } from '@/components/eb/bottomBar'
 
 // Shown only until the visitor makes a choice, and never when Do-Not-Track is
 // set (that already resolves to denied). Fixed to the bottom, above content.
+// Styled by the shared bottom bar (components/eb/bottomBar.ts).
 export function ConsentBanner() {
   const { consent, dnt, resolved, accept, decline } = useConsent()
 
@@ -14,33 +16,24 @@ export function ConsentBanner() {
   if (!resolved || dnt || consent !== 'unset') return null
 
   return (
-    <div
-      role="dialog"
-      aria-label="Analytics consent"
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-outline-variant bg-surface-low/95 backdrop-blur-sm"
-    >
-      <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p className="text-sm leading-relaxed text-on-surface-variant">
-          We use privacy-friendly product analytics and a Reddit pixel to understand usage. Nothing is
-          loaded until you accept.{' '}
-          <Link href="/docs/analytics" className="text-primary underline underline-offset-2">
-            Learn more
-          </Link>
-          .
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={decline}
-            className="btn-ghost"
-          >
+    <div role="dialog" aria-label="Analytics consent" className={bottomBar.root}>
+      <div className={bottomBar.inner}>
+        <div className={bottomBar.message}>
+          <span aria-hidden className={bottomBar.marker} />
+          <p className={bottomBar.text}>
+            We use privacy-friendly product analytics and a Reddit pixel to understand usage. Nothing is loaded until
+            you accept.{' '}
+            <Link href="/docs/analytics" className={bottomBar.link}>
+              Learn more
+            </Link>
+            .
+          </p>
+        </div>
+        <div className={bottomBar.actions}>
+          <button type="button" onClick={decline} className={bottomBar.secondary}>
             Decline
           </button>
-          <button
-            type="button"
-            onClick={accept}
-            className="btn-primary"
-          >
+          <button type="button" onClick={accept} className={bottomBar.primary}>
             Accept
           </button>
         </div>

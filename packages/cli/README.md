@@ -15,10 +15,26 @@ Headless command-line runtime for the Elah video engine. A thin consumer of
 npm install -g @elah/cli
 ```
 
-Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. Version 0.1.2 depends on `@elah/core@^0.6.0`.
+Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17.
+
 `export`/`build --export`/`serve` additionally require a system Google Chrome
 (or `--browser <path>` / `ELAH_BROWSER`) — see [Serve mode](#serve-mode) and
-[Docker](#docker) for headless environments.
+[Docker](#docker) for headless environments. Installing **ffmpeg 4.4+** is
+recommended (`brew install ffmpeg`, `apt install ffmpeg`, `winget install ffmpeg`):
+when the CLI finds it, ffmpeg encodes the file — see [Encoding](#encoding-ffmpeg-or-chrome).
+
+## Versioning
+
+`@elah/cli` is **1.0.0**. Its command surface, build-spec format and Node API follow
+[semver](https://semver.org/spec/v2.0.0.html): a breaking change needs 2.0. It versions
+independently of the four lockstep packages (`@elah/core`, `@elah/react`, `@elah/timeline` and
+`@elah/editor`, all 1.0.0), and its releases carry their own `cli-v<version>` git tag. It depends
+on `@elah/core@^1.0.0`. Release notes are in [CHANGELOG.md](../../CHANGELOG.md).
+
+It exports **version 5** projects, compound clips and animated-image sequence clips included.
+One gap: a `frames` sequence whose template is a relative URL is not routed yet. Every 0.6.x
+project opens unchanged in 1.0.0; stay on `0.1.2` only if the rest of your toolchain is still on
+`@elah/core` 0.6.x.
 
 ---
 
@@ -27,13 +43,31 @@ Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. Ve
 ```
 elah split  --project <in.json> --clip <clipId> --at <frame|timecode> [--out <out.json>]
 elah trim   --project <in.json> --clip <clipId> [--start <frame|timecode>] [--duration <frames|timecode>] [--out <out.json>]
-elah export --project <in.json> --out <file.mp4> [--codec avc|vp9|vp8] [--height <N>]
-            [--video-bitrate <bps>] [--audio-bitrate <bps>] [--browser <path>] [--headed] [--timeout <s>]
-elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4>] [export options]
+elah export --project <in.json> --out <file.mp4|file.webm> [--container mp4|webm]
+            [--codec avc|hevc|av1|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
+            [--encoder auto|ffmpeg|chrome] [--ffmpeg <path>] [--browser <path>] [--headed] [--timeout <s>]
+elah build  --spec <spec.json> [--out <project.json>] [--export <file.mp4|file.webm>] [export options]
 elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>]
-            [--codec avc|vp9|vp8] [--height <N>] [--video-bitrate <bps>] [--audio-bitrate <bps>]
-            [--browser <path>] [--timeout <s>] [--verbose]
+            [--container mp4|webm] [--codec avc|hevc|av1|vp9|vp8] [--height <N>] [--video-bitrate <bps>]
+            [--audio-bitrate <bps>] [--encoder auto|ffmpeg|chrome] [--ffmpeg <path>] [--browser <path>]
+            [--timeout <s>] [--verbose]
 ```
+
+### Containers and codecs
+
+The container is `--container`, else the output file's extension (`.webm` → WebM, `.mp4`/`.m4v`
+→ MP4), else MP4; `serve` uses `--container` (default MP4) and labels its responses to match.
+Codecs follow `@elah/core`'s own matrix, so the CLI rejects (exit `2`) exactly what the Editor's
+exporter would:
+
+| Container | `--codec` | Audio |
+| --- | --- | --- |
+| MP4 | `avc` (default), `hevc`, `av1` | AAC |
+| WebM | `vp9` (default), `vp8`, `av1` | Opus |
+
+`--codec vp9 --out clip.mp4` is an error that points you at `.webm`. With the Chrome encoder,
+`hevc` and `av1` also need Chrome's encoder for them on your machine; core reports it when it
+is missing.
 
 `--height` is the target for the stage's **short** edge (`1080` = 1920×1080 landscape or
 1080×1920 portrait); the other edge follows the stage's aspect ratio, rounded to an even number.
@@ -41,9 +75,65 @@ elah serve  [--port <n>] [--host <addr>] [--concurrency <n>] [--media-root <dir>
 `split`, `trim` and `build` run in plain Node against the engine. `export`
 launches the system Google Chrome headlessly (or `--browser <path>` /
 `ELAH_BROWSER`) and runs core's real `exportVideo` pipeline in it, so CLI
-output is identical to Editor output by construction. Exit codes: `0` success,
+frames are identical to Editor frames by construction. Exit codes: `0` success,
 `1` validation/runtime failure, `2` usage error. Diagnostics go to stderr;
-`split`/`trim` print the resulting project JSON to stdout unless `--out` is given.
+`split`/`trim` print the resulting project JSON to stdout unless `--out` is given. `export`,
+`build` and `serve` also take `--verbose` (print the server and browser log lines).
+
+### Encoding: ffmpeg or Chrome
+
+Chrome always draws the frames, so the picture matches the Editor either way. What changes
+is who compresses them into the file:
+
+| `--encoder` | Behaviour |
+| --- | --- |
+| `auto` (default) | ffmpeg when it is found and can write the codec; otherwise Chrome's WebCodecs encoder, with one `encoding with Chrome instead of ffmpeg: …` warning saying why. |
+| `ffmpeg` | ffmpeg or fail. |
+| `chrome` | Chrome's encoder; ffmpeg is never looked up. |
+
+ffmpeg is found through `--ffmpeg <path>`, then `ELAH_FFMPEG`, then `ffmpeg` on `PATH`, and must
+be 4.4 or newer. It is a system binary, never an npm dependency (no GPL code in your install,
+and your platform's build keeps its hardware encoders). With ffmpeg, `avc` uses `libx264`,
+`hevc` `libx265` (tagged `hvc1` for Apple players), `av1` `libsvtav1` or else `libaom-av1`,
+`vp9` `libvpx-vp9` and `vp8` `libvpx`, at the same 8 Mbps / 128 kbps defaults as Chrome; audio
+is `aac` in MP4 and `libopus` (at 48 kHz) in WebM. If the ffmpeg build lacks the encoder,
+`auto` falls back to Chrome. The audio is core's own mix (the one the Editor plays). The output
+is tagged BT.709, limited range, like Chrome's.
+
+The finished line says which encoder ran: `wrote out.mp4 (5297250 bytes, encoded by ffmpeg (libx264))`.
+
+Today the ffmpeg path is slower than Chrome's encoder (8.8 s against 3.5 s for 5 s of 1080p30
+on the machine it was measured on): each frame is compressed to PNG in the page before ffmpeg
+sees it. ffmpeg's own encode was 1.3 s of that.
+
+### Sources Chrome cannot decode
+
+Before an export, the CLI asks the browser it is about to use whether it can decode each video
+and audio source, using the exact stream (WebCodecs `isConfigSupported` on the track's decoder
+config). When it cannot, and ffmpeg is installed, the source is converted first:
+
+| Source | Why Chrome fails | What ffmpeg does |
+| --- | --- | --- |
+| ProRes `.mov` | no ProRes decoder | re-encodes the video, converts PCM audio to AAC |
+| HEVC, where Chrome has no HEVC decoder (most Linux, Chromium) | no decoder | re-encodes the video, copies AAC |
+| AVI, WMV, FLV | container cannot be read | re-encodes everything |
+| `.mkv` with AC-3/DTS audio | no audio decoder | copies the video, converts the audio |
+| MPEG-TS (`.ts`) | Web Audio cannot read the container | remuxes (no re-encode) |
+
+```
+footage.mov: Chrome cannot decode prores video; converting to H.264/AAC MP4 with ffmpeg
+footage.mov: converted in 0.3s
+```
+
+The converted copy is H.264/AAC MP4 (`libx264 -crf 14`, a near-lossless scratch file), or
+VP9/Opus WebM for a browser without H.264. Frame timing is passed through untouched, and every
+stream is shifted so the first video frame is at 0 (MPEG-TS often starts at ~1.4 s). Copies live
+in a temporary directory until the export (or `elah serve`) ends; `serve` converts each source
+once. `build` also reads AVI/WMV/FLV durations through ffmpeg.
+
+Without ffmpeg, the CLI warns and hands the source to Chrome as before (an undecodable video
+fails the export; undecodable audio exports as silence). Not handled: HDR sources are converted
+to 8-bit SDR without tone mapping, and an alpha channel (ProRes 4444) is dropped.
 
 ---
 
@@ -134,10 +224,17 @@ Errors throw `CliError` (aliased `ElahError`) with a `.message` that is
 already the human-readable, path-addressed text (`clips[2].duration must be …`).
 
 Also exported: `validateSpec` / `specToProject` (the spec layer on its own), `probeMedia`,
-`startServe` (the `elah serve` server, with `Semaphore`), `CODECS`, and the types `BuildSpec`,
-`SpecClip`, `RenderSession`, `RenderJobOptions`, `ProgressPayload`, `ServeOptions` and `Project`.
-`exportProject` and `session.render` take `outputHeight` (short edge), `videoCodec`,
-`videoBitrate`, `audioBitrate` and `timeoutMs`.
+`startServe` (the `elah serve` server, with `Semaphore`), `CODECS`, `CONTAINERS`,
+`resolveOutputFormat`, `ENCODER_CHOICES`, `locateFfmpeg` and `MIN_FFMPEG_VERSION`, and the types
+`BuildSpec`, `SpecClip`, `RenderSession`, `RenderJobOptions`, `RenderCallbacks`, `EncoderChoice`,
+`FfmpegBinary`, `ProgressPayload`, `ServeOptions` and `Project`.
+`exportProject` and `session.render` take `container`, `outputHeight` (short edge), `videoCodec`,
+`videoBitrate`, `audioBitrate`, `encoder` (`'auto' | 'ffmpeg' | 'chrome'`, default `'auto'`) and
+`timeoutMs`. The ffmpeg path is `ffmpegPath` on `exportProject` and `build`, or on
+`createRenderSession({ ffmpegPath })` (`startServe` takes one too, but only to probe spec assets;
+encoding uses its session's); it falls back to `ELAH_FFMPEG`, then `PATH`. The
+`RenderCallbacks` (`onProgress`, `onWarning`, `onLog`, `onStatus`) include `onEncoder`, which
+reports the encoder that will run (`ffmpeg (libx264)` or `chrome`).
 
 ---
 
@@ -154,7 +251,7 @@ elah serve --port 8080 --concurrency 2 --media-root ./assets
 | Route | Behavior |
 |---|---|
 | `GET /healthz` | `200 { status, browser: "connected" \| "disconnected" }` |
-| `POST /render` | body = a build spec JSON document; blocks until the render finishes and returns the MP4 bytes. `422` on spec/asset validation errors, `503` + `Retry-After` when at capacity (`--concurrency`), `500` on render failure. |
+| `POST /render` | body = a build spec JSON document; blocks until the render finishes and returns the video bytes (`video/mp4`, or `video/webm` with `--container webm`). `422` on spec/asset validation errors, `503` + `Retry-After` when at capacity (`--concurrency`), `500` on render failure. |
 
 ```sh
 curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4
@@ -178,9 +275,12 @@ A Dockerfile that installs branded Chrome + fonts and runs `elah serve` is at
 
 - `ELAH_E2E=1 npm test --workspace=packages/cli` additionally runs a browser
   end-to-end test (exports the no-media fixture through headless Chrome and
-  probes the MP4).
+  probes the MP4). Add `ELAH_FFMPEG=<path-to-ffmpeg>` to also run the ffmpeg
+  encoder suites (they generate their own test media with that ffmpeg).
 - `node packages/cli/scripts/parity-compare.mjs <editor.mp4> <cli.mp4>` compares
-  an editor UI export against a CLI export of the same project: stream params,
+  an editor UI export against a CLI export of the same project (export it with
+  `--encoder chrome`: the ffmpeg encoder draws the same frames but compresses
+  them differently, so its hashes never match the Editor's): stream params,
   decoded-video hashes (expected bit-identical), and the audio null-test
   residual (−91 dB = digital silence; a small residual is a systematic
   editor-page vs harness-page environment delta in the AAC encode stage —
@@ -200,9 +300,10 @@ See `elah --help` for the full flag list.
 @elah/cli       — headless split/trim/build/export/serve on top of @elah/core (this package)
 ```
 
-`@elah/cli` depends only on `@elah/core` — it never touches `@elah/react`,
+`@elah/cli` depends only on `@elah/core` (`^1.0.0`) — it never touches `@elah/react`,
 `@elah/timeline`, or React at all, so it has no peer dependencies on React or
-`lucide-react`.
+`lucide-react`. The four packages above it release together at one version; `@elah/cli`
+keeps its own version line (see [Versioning](#versioning)).
 
 Use `@elah/cli` for automation, AI-generation pipelines, and server-side rendering.
 Use `@elah/editor` when you need an interactive, in-browser editing UI.

@@ -27,6 +27,10 @@ jobs:
 
       - run: npm ci
 
+      # @elah/react-native typechecks its components against the harness's
+      # React 19 / React Native types (packages/react-native/tsconfig.json).
+      - run: npm ci --prefix apps/mobile
+
       - run: npm run build:packages
 
       - run: npm run typecheck

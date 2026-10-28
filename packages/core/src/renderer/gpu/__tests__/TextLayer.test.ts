@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveTextClip } from '../../../resolver/scene'
 import type { LayerContext } from '../layers/types'
 import { TextLayer, type TextCanvasFactory } from '../layers/TextLayer'
+import { ensureFonts } from '../../../fonts/loader'
 
 // ---------------------------------------------------------------------------
 // Minimal WebGL2 mock (mirrors VideoLayer.test.ts, plus pixelStorei for the
@@ -271,5 +272,50 @@ describe('TextLayer', () => {
     for (const call of calls) {
       expect(Array.from(call[2] as Float32Array)).toEqual(FULL_STAGE)
     }
+  })
+
+  it('re-uploads once when a bundled face lands, with no clip change at all (PV-P4a-2)', async () => {
+    // The whole reason `fontsEpoch()` is in the key: a text clip is painted with
+    // FALLBACK metrics first, and the arrival of its real face changes the pixels
+    // without changing the clip by one byte. Without the epoch in the signature
+    // the layer would serve the first rasterisation until some other field moved.
+    const clip = makeClip({ fontId: 'anton' })
+    layer.acquire(clip, ctx)
+
+    layer.draw(clip, ctx)
+    layer.draw(clip, ctx)
+    expect(gl.texImage2D).toHaveBeenCalledTimes(1)
+
+    // A face that loads cleanly — the real FontFace/FontFaceSet are injected, so
+    // nothing here touches a font file.
+    class OkFace {
+      constructor(_family: string, _source: string, _descriptors: FontFaceDescriptors) {}
+      load(): Promise<this> {
+        return Promise.resolve(this)
+      }
+    }
+    const faces = new Set<unknown>()
+    const fakeSet = {
+      add: (f: unknown) => faces.add(f),
+      delete: (f: unknown) => faces.delete(f),
+      has: (f: unknown) => faces.has(f),
+      get size() {
+        return faces.size
+      },
+    }
+    await ensureFonts(['anton'], {
+      baseUrl: '/f/',
+      fonts: fakeSet as unknown as FontFaceSet,
+      FontFaceCtor: OkFace as unknown as typeof FontFace,
+    })
+    expect(faces.size).toBeGreaterThan(0)
+
+    // Same clip object, unchanged — the repaint is driven purely by the epoch.
+    layer.draw(clip, ctx)
+    expect(gl.texImage2D).toHaveBeenCalledTimes(2)
+
+    // And it settles: a further draw with nothing new re-uses the new texture.
+    layer.draw(clip, ctx)
+    expect(gl.texImage2D).toHaveBeenCalledTimes(2)
   })
 })

@@ -1,21 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
-import { framesToTimecode } from '@elah/core'
+import { computeRulerTicks } from '@elah/core'
 import { cn } from './cn'
 import { timelineContentWidth } from './contentWidth'
-
-/**
- * Ruler label from the shared timecode formatter, so it agrees with the rest of
- * the UI (a 90 s mark reads 01:30, not 00:90). Whole-second ticks drop the
- * frames segment; sub-second ticks keep it. The hours segment appears only once
- * it is non-zero — without that the one-hour mark renders as 00:00 and collides
- * with the start of the project.
- */
-export function formatRulerLabel(frame: number, fps: number, showFrames: boolean): string {
-  const full = framesToTimecode(frame, fps) // HH:MM:SS:FF
-  const hours = full.slice(0, 2)
-  const body = showFrames ? full.slice(3) : full.slice(3, 8)
-  return hours === '00' ? body : `${hours}:${body}`
-}
 
 interface RulerProps {
   fps: number
@@ -53,29 +39,10 @@ export const Ruler = memo(function Ruler({
   // the lanes' width formula or ticks and clips desync at low zoom.
   const contentWidth = timelineContentWidth(totalFrames, zoom)
 
-  const ticks = useMemo(() => {
-    const pixelsPerFrame = zoom
-    const pixelsPerSecond = fps * pixelsPerFrame
-
-    // Aim for a label every ~80px — pick the nearest clean interval
-    const rawSeconds = 80 / pixelsPerSecond
-    const intervals = [
-      1 / fps,  // every frame
-      0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800,
-    ]
-    const secondsPerTick =
-      intervals.find((i) => i >= rawSeconds) ?? intervals[intervals.length - 1]
-
-    const framesPerTick = Math.max(1, Math.round(secondsPerTick * fps))
-    const showFrames = framesPerTick < fps
-    const result: { frame: number; label: string }[] = []
-
-    for (let frame = 0; frame <= totalFrames + framesPerTick; frame += framesPerTick) {
-      result.push({ frame, label: formatRulerLabel(frame, fps, showFrames) })
-    }
-
-    return result
-  }, [fps, totalFrames, zoom])
+  // Tick placement and labels come from core (`computeRulerTicks`) so the
+  // React Native ruler lays its marks out identically. Aim for a label every
+  // ~80px; the helper picks the nearest clean interval.
+  const ticks = useMemo(() => computeRulerTicks(fps, totalFrames, zoom, 80), [fps, totalFrames, zoom])
 
   const activeGestureCleanup = useRef<(() => void) | null>(null)
 

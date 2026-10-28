@@ -43,7 +43,7 @@ export default function TimelinePage() {
             Overview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component reads state from <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code> and dispatches mutations through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. It is fully controlled by the Zustand stores — you can read or write those stores directly to drive the timeline from outside.
+            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component reads state from <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code> and dispatches mutations through <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. It is fully controlled by the Zustand stores — you can read or write those stores directly to drive the timeline from outside.
           </p>
           <CodeBlock
             language="tsx"
@@ -84,7 +84,7 @@ export default function TimelineOnlyDemo() {
             Tracks & Clips
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Each <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track</code> has a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">kind</code>: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">video</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">audio</code>, or <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> (text, shapes, and freehand live on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> tracks). A project can have any number of tracks of any kind, including several video tracks; <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">initialTracks</code> on <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> sets the starting layout. Clips are stored on the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> keyed by track id (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">project.clips[trackId]</code>).
+            Each <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track</code> has a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">kind</code>: <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">video</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">audio</code>, or <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> (text, shapes, and freehand live on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> tracks). A project can have any number of tracks of any kind, including several video tracks; <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">initialTracks</code> on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> sets the starting layout. Clips are stored on the <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> keyed by track id (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">project.clips[trackId]</code>).
           </p>
           <CodeBlock
             language="typescript"
@@ -108,6 +108,7 @@ interface Clip {
   id: string
   trackId: string
   type: 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+      | 'adjustment' | 'generator' | 'compound' | 'sequence'
   name: string
   src?: string                  // URL or blob ref for video/audio/image
   startFrame: number            // integer — position on the timeline
@@ -162,7 +163,7 @@ splitClipAtPlayhead(engine)`}
             Playback
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code> owns the RAF clock and publishes <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React reads playback state via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>:
+            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code> owns the RAF clock and publishes <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React reads playback state via <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>:
           </p>
           <CodeBlock
             language="tsx"
@@ -223,7 +224,7 @@ const snapPoints = buildSnapPoints(project.clips, excludeClipId)
 const snappedFrame = snapFrame(frame, snapPoints, threshold)`}
           />
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
-            For toolbar buttons and sliders, use the imperative handle rather than writing the zoom store directly. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">zoomAtAnchor(nextZoom)</code> sets the zoom in pixels per frame, clamped by the store, and keeps the view anchored: the playhead stays where it is on screen when it is visible, and the viewport centre does otherwise, so zooming never scrolls the playhead out of view. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">fitToWindow()</code> zooms so the whole timeline fits the visible track area.
+            For toolbar buttons and sliders, use the imperative handle rather than writing the zoom store directly. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">zoomAtAnchor(nextZoom)</code> sets the zoom in pixels per frame, clamped by the store, and keeps the view anchored: the playhead stays where it is on screen when it is visible, and the viewport centre does otherwise, so zooming never scrolls the playhead out of view. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">fitToWindow()</code> zooms so the whole timeline fits the visible track area.
           </p>
           <CodeBlock
             language="tsx"
@@ -243,7 +244,7 @@ ref.current?.fitToWindow()`}
             Multiple Video Tracks
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            As of 0.6.0 a project can have more than one video track. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.addTrack(&apos;video&apos;)</code> adds another lane instead of returning the existing one. Each lane is its own row in the timeline, and overlapping clips on separate video lanes layer instead of conflicting. Lanes composite in track order, so the topmost lane draws on top, and a new video track is placed directly below the last one. See <Link href="/docs/clips#multiple-video-tracks" className="text-primary hover:underline">Clips &amp; Tracks</Link> for placement, reordering, and the protected and pinned track options.
+            As of 0.6.0 a project can have more than one video track. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.addTrack(&apos;video&apos;)</code> adds another lane instead of returning the existing one. Each lane is its own row in the timeline, and overlapping clips on separate video lanes layer instead of conflicting. Lanes composite in track order, so the topmost lane draws on top, and a new video track is placed directly below the last one. See <Link href="/docs/clips#multiple-video-tracks" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips &amp; Tracks</Link> for placement, reordering, and the protected and pinned track options.
           </p>
         </section>
 
@@ -274,7 +275,7 @@ ref.current?.fitToWindow()`}
             Transitions
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions are defined on the <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> level and stored in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTransitionsStore</code>. All three kinds (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">fade</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">slide</code> and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code>) are implemented in the preview and in export; see <Link href="/docs/editor#transitions" className="text-primary hover:underline">Editor: Transitions</Link>.
+            Transitions are defined on the <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> level and stored in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTransitionsStore</code>. There are nine kinds (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">fade</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">slide</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">zoom</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">spin</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">whip</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">glitchCut</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">warpDissolve</code> and <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">lumaWipe</code>), all drawn by the WebGL2 renderer in the preview and in export; see <Link href="/docs/editor#transitions" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Editor: Transitions</Link>.
           </p>
           <CodeBlock
             language="tsx"
@@ -286,18 +287,16 @@ engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
   trackId: track.id,
-  kind: 'fade',        // 'fade' | 'slide' | 'wipe'
+  kind: 'fade',        // 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
+                       // | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   durationFrames: 15, // 0.5 seconds at 30fps
   easing: 'ease-out',  // 'linear' | 'ease-in' | 'ease-out'
 })
 
-// The resolver handles opacity automatically:
-// resolveTimeline(frame, project) → Scene
-// During transition: fromClip.opacity interpolated 1→0
-//                   toClip.opacity interpolated 0→1
-//
-// Preview: TransitionOverlay fades a CSS snapshot
-// Export: globalAlpha mirrors the opacity values`}
+// resolveTimeline(frame, project) → Scene lists the active transition in
+// scene.transitions with its eased progress t (0 → 1). Both clips stay in
+// the scene; the WebGL2 renderer composites them through the transition,
+// in preview and in export, with their effects intact.`}
           />
         </section>
 
@@ -306,7 +305,7 @@ engine.addTransition({
           <h2 id="shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
             Keyboard Shortcuts
           </h2>
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {[
               ['Space', 'Play / Pause'],
               ['S', 'Split selected clip at playhead'],
@@ -322,7 +321,7 @@ engine.addTransition({
                 key={key}
                 className={`flex flex-col items-start gap-1.5 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-center sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <kbd className="min-w-0 rounded border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
+                <kbd className="min-w-0 border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
                   {key}
                 </kbd>
                 <span className="text-sm text-on-surface-variant">{action}</span>

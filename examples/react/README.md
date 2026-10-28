@@ -19,7 +19,7 @@ npm run dev      # http://localhost:4002
 - `<Preview>` (WebGL2) driven by a mediabunny demuxer backend
 - `<Timeline>`, `<AssetPanel>`, `<ElementsPanel>`
 - A custom properties panel (`TextClipProperties`) using the editor's zustand stores,
-  with the 14 built-in text templates (`applyTextTemplate`) and every entry/exit animation kind
+  with the built-in text templates (`applyTextTemplate`) and every entry/exit animation kind
 - MP4 export via `lazyExportVideo` with a progress / cancel modal
 
 ## Key integration points
@@ -45,6 +45,15 @@ npm run dev      # http://localhost:4002
 - `vite.config.ts` sets `worker.format: 'es'` and excludes `@elah/*` + `mediabunny`
   from `optimizeDeps` so the export Web Worker (`new URL('./ExportWorker.js', import.meta.url)`
   inside `@elah/core`) resolves from the real module files. Both settings are required.
+
+- `package.json` currently declares `@elah/editor@^0.6.0`, which resolves 0.6.x, not the
+  1.0.0 release of 2026-10-28. Widen it to `^1.0.0` to use 1.0. The last full verification
+  (install, typecheck, dev, build, MP4 export under dev and production) was on 0.6.0 on
+  2026-10-02 and is owed again on 1.0.0; see [`../README.md`](../README.md).
+  `npm run verify:examples` from the repo root builds all three examples.
+- The 1.0 SDK includes the motion layer (keyframes, springs, stagger, motion paths, text
+  animators, expressions, 3D tilt, GPU effects, generators, transitions, compound and
+  sequence clips, Lottie / SVG import). This app's UI does not expose a control for each.
 
 ## Building a custom UI?
 

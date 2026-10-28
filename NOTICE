@@ -3,3 +3,25 @@ Copyright 2026 Elah Labs Private Limited
 
 This product includes software developed by Elah Labs Private Limited
 and its contributors.
+
+Third-party material
+--------------------
+
+@elah/core includes or is built from the following. Each item keeps its own
+licence and is not covered by the Apache-2.0 licence of this package. The full
+notices ship with the package in packages/core/THIRD_PARTY_NOTICES.md.
+
+Lucide icons (ISC License)
+  The icon path data in packages/core/src/icons/data.ts is a subset of Lucide
+  (lucide-react 0.511.0). Copyright (c) for portions of Lucide are held by
+  Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for
+  Lucide are held by Lucide Contributors 2022. The ISC notice also ships in
+  packages/core/src/icons/LICENSE; the Feather MIT notice is in
+  THIRD_PARTY_NOTICES.md.
+
+Bundled fonts (SIL Open Font License 1.1)
+  packages/core/fonts/<id>/ ships twelve font families (latin subset, woff2):
+  Inter, Montserrat, Poppins, Space Grotesk, Playfair Display, DM Serif
+  Display, Bebas Neue, Anton, Oswald, Archivo Black, Roboto Mono and Caveat.
+  Each family's copyright notice and licence text is in its own OFL.txt, next
+  to its font files. https://openfontlicense.org

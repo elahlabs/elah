@@ -23,6 +23,7 @@ import { FrameCache, type FrameCacheHooks } from './FrameCache'
 import { GpuDebugCounters } from '../../renderer/gpu/debug/GpuDebugCounters'
 import { VideoDecoderManager } from './VideoDecoderManager'
 import type { DemuxerFactory } from './demuxer/MediabunnyDemuxer'
+import type { VideoRotation } from './rotation'
 import type { VideoDecoderFactory } from './VideoDecoderManager'
 
 const DEFAULT_FPS = 30
@@ -67,11 +68,99 @@ function makeFallbackBitmap(frame: VideoFrame): ImageBitmap {
  * down. Flipping Y here during the copy cancels that out, matching the original
  * VideoFrame path exactly. See WebGLContext._initGLState.
  */
-const defaultFrameConverter: (frame: VideoFrame) => Promise<ImageBitmap> =
+const defaultFrameConverter: FrameConverter =
   typeof createImageBitmap !== 'undefined'
-    ? (frame) => createImageBitmap(frame, { imageOrientation: 'flipY' })
-    : (frame) => Promise.resolve(makeFallbackBitmap(frame))
+    ? (frame, resize) =>
+        createImageBitmap(frame, {
+          imageOrientation: 'flipY',
+          ...(resize ? { resizeWidth: resize.width, resizeHeight: resize.height, resizeQuality: 'medium' as const } : {}),
+        })
+    : (frame, resize) => {
+        const bmp = makeFallbackBitmap(frame)
+        if (resize) {
+          ;(bmp as unknown as { width: number; height: number }).width = resize.width
+          ;(bmp as unknown as { width: number; height: number }).height = resize.height
+        }
+        return Promise.resolve(bmp)
+      }
+
+/** Copies a decoded frame into an ImageBitmap, optionally resizing (coded aspect preserved). */
+export type FrameConverter = (
+  frame: VideoFrame,
+  resize?: { width: number; height: number },
+) => Promise<ImageBitmap>
+
+/**
+ * Default long-edge cap for preview bitmaps. 1080p is far more than a preview
+ * canvas needs, and a 4K RGBA bitmap (~33 MB) made the copy + upload + cache
+ * the playback bottleneck.
+ */
+export const DEFAULT_MAX_FRAME_LONG_EDGE = 1920
+
+/**
+ * Size to resize a coded frame to so its longer edge is at most `cap`, keeping
+ * the CODED aspect ratio (never swapped for rotation). Returns null when no
+ * resize is wanted: cap disabled (0 / non-finite / negative) or the frame
+ * already fits (never upscales).
+ */
+export function capFrameSize(
+  width: number,
+  height: number,
+  cap: number,
+): { width: number; height: number } | null {
+  if (!Number.isFinite(cap) || cap <= 0) return null
+  if (!(width > 0) || !(height > 0)) return null
+  const longEdge = Math.max(width, height)
+  if (longEdge <= cap) return null
+  const scale = cap / longEdge
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  }
+}
 const DEFAULT_IDLE_TIMEOUT_MS = 5_000
+
+/** Relative slack (of one project-frame period) when mapping timestamps to project frames. */
+const FRAME_MAP_TOLERANCE = 0.01
+/** The feed tops up once fewer than this fraction of the lookahead remains ahead of the playhead. */
+const FEED_LOW_WATER_FRACTION = 0.75
+
+/**
+ * Decide whether a decoded source frame can ever be shown, and under which
+ * project-frame index.
+ *
+ * A project frame k is displayed at time k*usPerFrame and shows the source frame
+ * that is current at that instant: the LATEST source frame with
+ * timestamp <= k*usPerFrame (the "hold" rule, same as a video player). So source
+ * frame [t, t+interval) represents project frame k iff t <= k*u < t+interval.
+ * When the source is faster than the project (interval < u) most frames contain
+ * no such k and are never shown; converting them is pure waste (60 fps on a
+ * 30 fps project wasted half the createImageBitmaps).
+ *
+ * - interval >= u (source slower or equal): every frame is kept with the
+ *   manager-supplied (rounded) index, exactly as before. 24 fps on 30 fps skips
+ *   nothing.
+ * - interval unknown (first frame after a reset, no duration): kept as before.
+ * - variable frame rate is handled per frame because the decision uses that
+ *   frame's own duration (or the gap since the previous output).
+ *
+ * Deterministic for scrubbing and playback: both go through the same rule, so a
+ * project frame always shows the same source frame.
+ */
+export function mapSourceFrame(
+  timestampUs: number,
+  intervalUs: number | null,
+  usPerFrame: number,
+  managerIdx: number,
+): { skip: boolean; idx: number } {
+  if (intervalUs === null || !(intervalUs > 0) || intervalUs >= usPerFrame * (1 - FRAME_MAP_TOLERANCE)) {
+    return { skip: false, idx: managerIdx }
+  }
+  const tol = usPerFrame * FRAME_MAP_TOLERANCE
+  const k = Math.ceil((timestampUs - tol) / usPerFrame) || 0
+  if (k * usPerFrame < timestampUs + intervalUs - tol) return { skip: false, idx: k }
+  return { skip: true, idx: k }
+}
 // A genuine decoder stall = no new decoded frame for this many consecutive
 // setPlayhead ticks while the playhead is past the highest decoded frame and we
 // have fed ahead of it. setPlayhead runs per RAF (~60/s), so ~45 ticks ≈ 0.75s
@@ -117,7 +206,13 @@ export interface StreamingFrameProducerOptions {
    * Defaults to `createImageBitmap` (with a jsdom stub fallback). Injectable so
    * tests can supply a deterministic copier.
    */
-  frameConverter?: (frame: VideoFrame) => Promise<ImageBitmap>
+  frameConverter?: FrameConverter
+  /**
+   * Longest edge, in pixels, of the bitmap cached per frame. Frames larger than
+   * this are downscaled during the copy (coded aspect kept, never upscaled).
+   * Default 1920 (preview). Pass 0 or Infinity for full resolution.
+   */
+  maxFrameLongEdge?: number
 }
 
 export class StreamingFrameProducer implements VideoFrameProvider {
@@ -126,7 +221,18 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   private readonly _lookaheadFrames: number
   private readonly _usPerFrame: number
   private readonly _cache: FrameCache<ImageBitmap>
-  private readonly _convert: (frame: VideoFrame) => Promise<ImageBitmap>
+  private readonly _convert: FrameConverter
+  private readonly _maxLongEdge: number
+  private readonly _maxFrames: number
+  private readonly _maxBytes: number
+  /** Bytes of the most recently cached bitmap (RGBA estimate); 0 until one is cached. */
+  private _bytesPerFrame = 0
+  /** Timestamp of the previous decoder output, for interval inference. Reset with the decoder. */
+  private _prevOutputTs: number | null = null
+  /** Frames evicted from the cache while ahead of the playhead; re-fed if still missing. */
+  private readonly _evictedAhead = new Set<number>()
+  /** Coded size of the source frames (before any downscale); null until a frame arrives. */
+  private _sourceSize: { width: number; height: number } | null = null
   private readonly _manager: VideoDecoderManager
 
   private _state: ProviderState = 'active'
@@ -181,11 +287,20 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     this._lookaheadFrames = opts.lookaheadFrames ?? DEFAULT_LOOKAHEAD_FRAMES
     this._usPerFrame = 1_000_000 / this._fps
     this._convert = opts.frameConverter ?? defaultFrameConverter
+    this._maxLongEdge = opts.maxFrameLongEdge ?? DEFAULT_MAX_FRAME_LONG_EDGE
 
+    this._maxFrames = opts.maxFrames ?? DEFAULT_MAX_FRAMES
+    this._maxBytes = DEFAULT_MAX_CACHE_BYTES
     this._cache = new FrameCache<ImageBitmap>({
-      maxFrames: opts.maxFrames ?? DEFAULT_MAX_FRAMES,
-      maxBytes: DEFAULT_MAX_CACHE_BYTES,
-      hooks: opts.cacheHooks,
+      maxFrames: this._maxFrames,
+      maxBytes: this._maxBytes,
+      hooks: {
+        ...opts.cacheHooks,
+        onEvict: (key) => {
+          if (this._latestPlayhead !== null && key > this._latestPlayhead) this._evictedAhead.add(key)
+          opts.cacheHooks?.onEvict?.(key)
+        },
+      },
     })
 
     this._manager = new VideoDecoderManager({
@@ -216,6 +331,8 @@ export class StreamingFrameProducer implements VideoFrameProvider {
         this._feedWatermark = -1
         this._highestDecodedFrame = -1
         this._ticksSinceDecodeAdvance = 0
+        this._prevOutputTs = null
+        this._evictedAhead.clear()
         this._cache.clear()
         GpuDebugCounters.cacheSize = 0
         _sfpTrace('manager error → reopen + bookkeeping reset', {
@@ -266,7 +383,28 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       }
       const timestampUs = frame.timestamp
 
-      void this._copyAndCache(frame, sourceFrameIdx, timestampUs)
+      // Skip source frames no project frame will ever show (see mapSourceFrame):
+      // close WITHOUT createImageBitmap. Decoder output is in presentation order,
+      // so the gap to the previous output stands in for the duration when the
+      // frame carries none.
+      const prevTs = this._prevOutputTs
+      this._prevOutputTs = timestampUs
+      const durationUs = (frame as { duration?: number | null }).duration
+      const intervalUs =
+        durationUs != null && durationUs > 0
+          ? durationUs
+          : prevTs !== null && timestampUs > prevTs
+            ? timestampUs - prevTs
+            : null
+      const mapped = mapSourceFrame(timestampUs, intervalUs, this._usPerFrame, sourceFrameIdx)
+      if (mapped.skip) {
+        // Still decode progress: keep the stall watchdog quiet.
+        this._ticksSinceDecodeAdvance = 0
+        frame.close()
+        return
+      }
+
+      void this._copyAndCache(frame, mapped.idx, timestampUs)
     }
 
     this._openPromise = this._manager.open(this._src).catch((err: Error) => {
@@ -375,7 +513,10 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       this._ticksSinceDecodeAdvance = 0
     }
 
-    const lookahead = opts?.lookaheadFrames ?? this._lookaheadFrames
+    const lookahead = Math.max(
+      1,
+      Math.min(opts?.lookaheadFrames ?? this._lookaheadFrames, this._maxLookaheadForCache()),
+    )
     // A delta of > lookahead means the cache can't cover the gap — genuine seek.
     // Otherwise we extend the feed window forward without resetting the decoder.
     //
@@ -411,11 +552,17 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     const goingBackward = this._lastPlayhead !== null && sourceFrame < this._lastPlayhead
     const backwardMiss = goingBackward && !this._cache.has(sourceFrame)
 
+    // A frame the cache evicted while it was still AHEAD of the playhead (and
+    // inside the lookahead we already fed past) will never be re-delivered by the
+    // watermark-driven feed; re-seek so the decoder produces it again.
+    const refeed = !goingBackward && this._lastPlayhead !== null && this._needsRefeed(sourceFrame, lookahead)
+
     const isDiscontinuity =
       this._lastPlayhead === null ||
       Math.abs(sourceFrame - this._lastPlayhead) > lookahead ||
       stalled ||
-      backwardMiss
+      backwardMiss ||
+      refeed
 
     // Only log when the frame advances, or when something interesting happens
     // (discontinuity, stall). Suppresses the 60fps steady-state spam.
@@ -436,7 +583,12 @@ export class StreamingFrameProducer implements VideoFrameProvider {
 
     if (isDiscontinuity) {
       this._resetInProgress = true
-      void this._handleDiscontinuity(sourceFrame, lookahead)
+      // Moving BACKWARD (a reverse scrub, or a reversed clip playing — EDX-P6)
+      // the frames after the target are the wrong side of the playhead: decode
+      // only up to it, so each backward seek costs keyframe→target and nothing
+      // more. Forward seeks and stalls keep the full lookahead.
+      const backwardOnly = backwardMiss && !stalled && this._lastPlayhead !== null
+      void this._handleDiscontinuity(sourceFrame, backwardOnly ? 1 : lookahead)
       return
     }
 
@@ -474,6 +626,19 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   // Test / diagnostic surface
   // ---------------------------------------------------------------------------
 
+  /** Source rotation of the clip (0 until the container has opened). */
+  get rotation(): VideoRotation {
+    return this._manager.rotation
+  }
+
+  /**
+   * Size of the decoded source picture (coded, unrotated), independent of the
+   * possibly-downscaled bitmaps in the cache. Null until the first frame.
+   */
+  get sourceSize(): { width: number; height: number } | null {
+    return this._sourceSize
+  }
+
   get state(): ProviderState {
     return this._state
   }
@@ -490,6 +655,11 @@ export class StreamingFrameProducer implements VideoFrameProvider {
 
   get cacheSize(): number {
     return this._cache.size
+  }
+
+  /** Estimated bytes pinned by cached bitmaps (their actual, possibly downscaled, size). */
+  get cacheBytes(): number {
+    return this._cache.totalBytes
   }
 
   get openError(): Error | null {
@@ -539,6 +709,8 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     }
 
     this._feedWatermark = -1
+    this._evictedAhead.clear()
+    this._prevOutputTs = null
 
     // The frame we actually sought to. Saved so _feedWindow starts from the
     // keyframe anchor, not from _latestPlayhead, even if the RAF advanced
@@ -547,7 +719,10 @@ export class StreamingFrameProducer implements VideoFrameProvider {
 
     try {
       const toKeyframeUs = Math.round(sourceFrame * this._usPerFrame)
-      await this._manager.reset(toKeyframeUs)
+      // Decode with optimizeForLatency only for tiny windows (paused scrub /
+      // backward seek, where the last frame must emerge without more input);
+      // continuous playback keeps the decoder's normal reorder pipeline.
+      await this._manager.reset(toKeyframeUs, { optimizeForLatency: lookahead <= 2 })
       this._lastPlayhead = this._latestPlayhead ?? sourceFrame
       // Honest baseline: nothing is decoded yet after a reset. (The old code
       // faked this to the playhead, which made the lag-based watchdog re-trip a
@@ -584,9 +759,10 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   /**
    * Burst-feed the manager so decode stays a buffer ahead of the playhead.
    *
-   * HYSTERESIS: do nothing until the fed buffer drains below a low-water line
-   * (N + lookahead/2); then feed a single BURST all the way up to the high-water
-   * line (N + lookahead). The previous design advanced the watermark by one
+   * TOP-UP: do nothing until the fed buffer drains below a low-water line
+   * (N + 3/4 lookahead); then feed up to the high-water line (N + lookahead).
+   * Bursts are therefore ~lookahead/4 frames (was lookahead/2): steady, small
+   * top-ups instead of large bursts that arrive as a copy/upload pile-up. The previous design advanced the watermark by one
    * frame every tick, so steady state fed ~1 packet per tick — too sparse to
    * push frames through the WebCodecs decoder's output buffer, so it silently
    * stopped emitting. Multi-packet bursts keep frames flowing. See
@@ -601,9 +777,9 @@ export class StreamingFrameProducer implements VideoFrameProvider {
     if (this._manager.state !== 'Ready') return
 
     const highWater = N + lookahead
-    const lowWater = N + Math.floor(lookahead / 2)
+    const lowWater = N + Math.ceil(lookahead * FEED_LOW_WATER_FRACTION)
 
-    // Buffer still above the low-water line — let it drain before the next burst.
+    // Buffer still above the low-water line — let it drain before the next top-up.
     if (this._feedWatermark >= lowWater) return
 
     // Pick up from where we left off (or from N on first call / after reset).
@@ -641,7 +817,13 @@ export class StreamingFrameProducer implements VideoFrameProvider {
   ): Promise<void> {
     let bitmap: ImageBitmap | null = null
     try {
-      bitmap = await this._convert(frame)
+      // Read the frame's size BEFORE the await/close. The cached bitmap may be
+      // smaller than the source, so remember the true size for consumers.
+      const srcW = frame.displayWidth || frame.codedWidth
+      const srcH = frame.displayHeight || frame.codedHeight
+      if (srcW > 0 && srcH > 0) this._sourceSize = { width: srcW, height: srcH }
+      const resize = capFrameSize(srcW, srcH, this._maxLongEdge)
+      bitmap = await (resize ? this._convert(frame, resize) : this._convert(frame))
     } catch (err) {
       _sfpTrace('onFrame convert FAILED', {
         sourceFrameIdx,
@@ -661,6 +843,8 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       return
     }
 
+    const bmpBytes = bitmap.width * bitmap.height * 4
+    if (bmpBytes > 0) this._bytesPerFrame = bmpBytes
     this._cache.put(sourceFrameIdx, bitmap)
     if (sourceFrameIdx > this._highestDecodedFrame) {
       this._highestDecodedFrame = sourceFrameIdx
@@ -674,6 +858,33 @@ export class StreamingFrameProducer implements VideoFrameProvider {
       cacheSize: this._cache.size,
       lastPlayhead: this._lastPlayhead,
     })
+  }
+
+  /**
+   * Largest lookahead the cache can actually hold: min(frame cap, byte cap /
+   * bytes-per-bitmap) minus 2 frames of headroom (the playhead frame plus one
+   * frame in flight). Without this, a lookahead bigger than the cache makes the
+   * burst evict its own head before the playhead reaches it.
+   */
+  private _maxLookaheadForCache(): number {
+    let capacity = this._maxFrames
+    if (this._bytesPerFrame > 0) {
+      capacity = Math.min(capacity, Math.floor(this._maxBytes / this._bytesPerFrame))
+    }
+    return Math.max(1, capacity - 2)
+  }
+
+  /** True when a fed frame ahead of the playhead was evicted and is still missing. */
+  private _needsRefeed(N: number, lookahead: number): boolean {
+    let need = false
+    for (const key of this._evictedAhead) {
+      if (key < N || this._cache.has(key)) {
+        this._evictedAhead.delete(key)
+      } else if (key <= N + lookahead && key <= this._feedWatermark) {
+        need = true
+      }
+    }
+    return need
   }
 
   private _clearIdleTimer(): void {

@@ -1,45 +1,75 @@
 import { createStore } from 'zustand/vanilla'
 
-/** UI-only selection (Ring 2); holds no engine truth, so ids here may name clips that have since been removed. */
 export interface SelectionState {
   selectedClipIds: Set<string>
   activeTrackId: string | null
+  /**
+   * The clip a Shift+click range extends from (PV-T1): the last clip clicked
+   * or added. Null when nothing is selected.
+   */
+  anchorClipId: string | null
 }
 
-/** Selection mutators; selectClip replaces the set, toggleClipSelection adds/removes within it for multi-select. */
 export interface SelectionActions {
   selectClip: (clipId: string) => void
   toggleClipSelection: (clipId: string) => void
   selectClips: (clipIds: string[]) => void
+  /** Add clips to the selection; the last one becomes the anchor (PV-T1). */
+  addClips: (clipIds: string[]) => void
+  /** Take clips out of the selection; the anchor clears if it was one of them (PV-T1). */
+  removeClips: (clipIds: string[]) => void
   clearSelection: () => void
   setActiveTrack: (trackId: string | null) => void
 }
 
-/** Vanilla store so core stays React-free; @elah/react wraps it as the `useSelectionStore` hook. */
+/**
+ * Selection / active-track state (Ring 2 — UI-only, never in project history).
+ * Vanilla; the React binding binds it into the `useSelectionStore` hook.
+ */
 export const selectionStore = createStore<SelectionState & SelectionActions>()(
   (set) => ({
     selectedClipIds: new Set(),
     activeTrackId: null,
+    anchorClipId: null,
 
     selectClip: (clipId) =>
-      set({ selectedClipIds: new Set([clipId]) }),
+      set({ selectedClipIds: new Set([clipId]), anchorClipId: clipId }),
 
     toggleClipSelection: (clipId) =>
       set((s) => {
         const next = new Set(s.selectedClipIds)
         if (next.has(clipId)) {
           next.delete(clipId)
-        } else {
-          next.add(clipId)
+          return { selectedClipIds: next, anchorClipId: s.anchorClipId === clipId ? null : s.anchorClipId }
         }
-        return { selectedClipIds: next }
+        next.add(clipId)
+        return { selectedClipIds: next, anchorClipId: clipId }
       }),
 
     selectClips: (clipIds) =>
-      set({ selectedClipIds: new Set(clipIds) }),
+      set({ selectedClipIds: new Set(clipIds), anchorClipId: clipIds[clipIds.length - 1] ?? null }),
+
+    addClips: (clipIds) =>
+      set((s) => {
+        if (clipIds.length === 0) return s
+        const next = new Set(s.selectedClipIds)
+        for (const id of clipIds) next.add(id)
+        return { selectedClipIds: next, anchorClipId: clipIds[clipIds.length - 1]! }
+      }),
+
+    removeClips: (clipIds) =>
+      set((s) => {
+        const drop = new Set(clipIds)
+        const next = new Set([...s.selectedClipIds].filter((id) => !drop.has(id)))
+        if (next.size === s.selectedClipIds.size) return s
+        return {
+          selectedClipIds: next,
+          anchorClipId: s.anchorClipId !== null && drop.has(s.anchorClipId) ? null : s.anchorClipId,
+        }
+      }),
 
     clearSelection: () =>
-      set({ selectedClipIds: new Set() }),
+      set({ selectedClipIds: new Set(), anchorClipId: null }),
 
     setActiveTrack: (trackId) =>
       set({ activeTrackId: trackId }),

@@ -252,6 +252,37 @@ export type { CropRect } from '@elah/core'
 // --- Snapping / overlap helpers (for custom drag and trim interactions) ---
 export { snapFrame, buildSnapPoints, resolveOverlapEdgeSnap, clipsOverlap, DEFAULT_OVERLAP_TOLERANCE } from '@elah/core'
 
+// --- Timeline geometry (pure; the math behind @elah/timeline and @elah/react-native) ---
+export {
+  TIMELINE_MIN_CONTENT_WIDTH,
+  timelineContentWidth,
+  pxToFrames,
+  xToFrame,
+  seekFrameAtX,
+  snapThresholdFrames,
+  ZOOM_MIN,
+  ZOOM_MAX,
+  clampZoom,
+  computeAnchoredScrollLeft,
+  resolveZoomAnchorX,
+  wheelZoomStep,
+  pinchZoom,
+  RULER_TICK_INTERVALS_SEC,
+  formatRulerLabel,
+  computeRulerTicks,
+  isCompatibleTrackKind,
+  isClipAllowedOnTrack,
+  TRIM_HANDLE_WIDTH_PX,
+  isUnlimitedClipType,
+  maxTrimDuration,
+  minTrimDuration,
+  minLeftTrimStart,
+  neighbourBounds,
+  clampLeftTrim,
+  clampRightTrim,
+} from '@elah/core'
+export type { RulerTick, TrimResult, TrimLimits } from '@elah/core'
+
 
 // --- Frame sequences (ordered image sets: 360° orbits, generated sets, storyboards) ---
 export {
@@ -300,6 +331,7 @@ export { useTimelineDrop } from '@elah/timeline'
 export type { TimelineDropState } from '@elah/timeline'
 export { insertMediaAsset, insertElement, growClipToAssetDuration } from '@elah/timeline'
 export { ELEMENT_DRAG_MIME } from '@elah/timeline'
+export { useKeySelectionStore } from '@elah/timeline'
 export type {
   DragElementPayload,
   ElementKind,
@@ -311,8 +343,8 @@ export type {
 } from '@elah/timeline'
 
 // --- Editor composition layer ---
-export { EditorProvider } from './editor/EditorProvider'
-export type { EditorProviderProps } from './editor/EditorProvider'
+export { EditorProvider } from '@elah/react'
+export type { EditorProviderProps } from '@elah/react'
 
 export { EditorContext, useEditor, useTimelineEngine, usePlaybackEngine } from '@elah/react'
 export type { EditorContextValue } from '@elah/react'

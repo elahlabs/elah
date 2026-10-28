@@ -19,6 +19,7 @@ import {
   type TextStylePreset,
   type TextTemplate,
 } from '@elah/editor'
+import type { BaselineContext } from '@elah/core'
 import { cn } from '@/lib/utils'
 import { useSelectedTextClip } from '../useSelectedTextClip'
 import {
@@ -28,10 +29,11 @@ import {
   SliderRow,
   PANEL,
   PanelHeader,
-  mergeTransform,
   clipTimecode,
   readAnimationKind,
 } from './propertiesShared'
+import { useKeyframeEditing } from './useKeyframeEditing'
+import { AnimatePanel, animatableChannels } from './AnimatePanel'
 
 const FONTS = [
   'sans-serif',
@@ -52,6 +54,16 @@ const FONTS = [
   'cursive',
   'fantasy',
 ]
+
+/**
+ * The two weights this panel and the preset store know. A clip's weight can
+ * be 100..900 since the core accepts bundled fonts; a number reads as bold
+ * from 600 up, so the select and a saved preset show the nearest keyword.
+ */
+function keywordWeight(weight: Clip['fontWeight']): 'normal' | 'bold' {
+  if (typeof weight === 'number') return weight >= 600 ? 'bold' : 'normal'
+  return weight ?? 'normal'
+}
 
 type Tab = 'style' | 'transform' | 'animate'
 const TABS: { id: Tab; label: string }[] = [
@@ -229,10 +241,15 @@ export function TextClipProperties() {
 
   const fps = engine.getProject().fps
 
-  const tf = mergeTransform(effective)
-  const setTf = (patch: Partial<ReturnType<typeof mergeTransform>>) =>
-    setLocal((p) => ({ ...p, transform: { ...mergeTransform(effective), ...patch } }))
-  const commitTf = () => commit({ transform: mergeTransform(effective) })
+  // Keyframe-aware display and commit. Text draws at the identity placement, so
+  // no baseline transform is needed.
+  const kfCtx: BaselineContext = { stage: engine.getProject().stage }
+  const { tf, setTf, commitTf, commitTfPatch, scalar, commitScalar, diamond } = useKeyframeEditing(
+    clip,
+    local,
+    setLocal,
+    kfCtx,
+  )
 
   return (
     <div className={cn(PANEL, 'overflow-hidden')}>
@@ -291,7 +308,7 @@ export function TextClipProperties() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="Weight">
                 <select
-                  value={effective.fontWeight ?? 'normal'}
+                  value={keywordWeight(effective.fontWeight)}
                   onChange={(e) => commit({ fontWeight: e.target.value as 'normal' | 'bold' })}
                   className={cn(inputCls, 'cursor-pointer')}
                 >
@@ -483,7 +500,7 @@ export function TextClipProperties() {
                     addPreset({
                       name: presetName.trim(),
                       fontFamily: effective.fontFamily ?? 'sans-serif',
-                      fontWeight: effective.fontWeight ?? 'normal',
+                      fontWeight: keywordWeight(effective.fontWeight),
                       fontSize: effective.fontSize ?? 48,
                       textAlign: effective.textAlign ?? 'center',
                       color: effective.color ?? '#ffffff',
@@ -521,12 +538,13 @@ export function TextClipProperties() {
 
             <SliderRow
               label="Opacity"
-              value={effective.opacity ?? 1}
-              display={`${Math.round((effective.opacity ?? 1) * 100)}%`}
+              action={diamond('Opacity', ['opacity'], { opacity: scalar('opacity', 1) })}
+              value={scalar('opacity', 1)}
+              display={`${Math.round(scalar('opacity', 1) * 100)}%`}
               min={0}
               max={1}
               step={0.01}
-              onChange={(v) => commit({ opacity: v })}
+              onChange={(v) => commitScalar('opacity', v)}
             />
           </>
         )}
@@ -535,15 +553,17 @@ export function TextClipProperties() {
           <>
             <SliderRow
               label="Scale"
+              action={diamond('Scale', ['scale'], { scale: tf.scale })}
               value={tf.scale}
               display={`${Math.round(tf.scale * 100)}%`}
               min={0.05}
               max={4}
               step={0.01}
-              onChange={(v) => setTf({ scale: v })}
+              // A slider has no blur to defer to; commit each change.
+              onChange={(v) => commitTfPatch({ scale: v })}
             />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Position X">
+              <Field label="Position X" action={diamond('Position', ['x', 'y'], { x: tf.x, y: tf.y })}>
                 <NumberField
                   value={Math.round(tf.x * 100)}
                   step={1}
@@ -562,7 +582,7 @@ export function TextClipProperties() {
                 />
               </Field>
             </div>
-            <Field label="Rotate">
+            <Field label="Rotate" action={diamond('Rotation', ['rotation'], { rotation: tf.rotation })}>
               <NumberField
                 value={Math.round((tf.rotation * 180) / Math.PI)}
                 step={1}
@@ -575,6 +595,11 @@ export function TextClipProperties() {
         )}
 
         {tab === 'animate' && (
+          <AnimatePanel
+            clip={clip}
+            ctx={kfCtx}
+            channels={animatableChannels(clip)}
+            legacy={
           <>
             <Field label="Templates">
               <div className="grid grid-cols-2 gap-1.5">
@@ -662,6 +687,8 @@ export function TextClipProperties() {
               </Field>
             )}
           </>
+            }
+          />
         )}
       </div>
     </div>

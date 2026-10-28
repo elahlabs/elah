@@ -47,7 +47,9 @@ project has no clips.
 
 ```
 exportVideo(project, options)            [main thread]
-  ├─ renderAudioMix(project)             OfflineAudioContext → planar PCM
+  ├─ renderAudioMix(project, resolver)   OfflineAudioContext → planar PCM
+  │    (PV-P10a: volume keyframes, track/master volume, solo, the range —
+  │    export/audioMix.ts)
   ├─ new Worker(ExportWorker, module)
   └─ postMessage({ project, options, audio, trace }, [audio buffers])  ← transfer
 

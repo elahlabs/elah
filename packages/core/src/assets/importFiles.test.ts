@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mediaLibraryStore } from './store'
+import { sourceBlobCache } from '../media/video/demuxer/sourceBlobCache'
 import {
+  beginImportUrl,
   computeWaveform,
   importBlob,
   importFiles,
@@ -11,8 +13,6 @@ import {
   probeAudio,
   probeImage,
   probeVideo,
-  releaseMediaElement,
-  resolveDuration,
 } from './importFiles'
 
 type MediaEventHandler = (() => void) | null
@@ -27,9 +27,6 @@ interface StubMediaElement {
   videoHeight: number
   currentTime: number
   readyState: number
-  pause: ReturnType<typeof vi.fn>
-  removeAttribute: ReturnType<typeof vi.fn>
-  load: ReturnType<typeof vi.fn>
   addEventListener: ReturnType<typeof vi.fn>
   removeEventListener: ReturnType<typeof vi.fn>
   _handlers: Record<string, MediaEventHandler>
@@ -71,9 +68,6 @@ function createStubMediaElement(tag: 'video' | 'audio'): StubMediaElement {
     videoHeight: 1080,
     currentTime: 0,
     readyState: 0,
-    pause: vi.fn(),
-    removeAttribute: vi.fn(),
-    load: vi.fn(),
     addEventListener: vi.fn((event: string, handler: () => void) => {
       handlers[event] = handler
     }),
@@ -350,6 +344,73 @@ describe('importFiles', () => {
     })
     expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(1)
   })
+
+  describe('animated-image probe (PV-P8d)', () => {
+    // `sourceBlobCache` is a module-level singleton keyed by `src`; the mock
+    // `URL.createObjectURL` counter resets to 1 every test, so without
+    // clearing it a blob resolved by an earlier test under the same
+    // `blob:mock-1` key would leak into this describe's own fetch mocks.
+    beforeEach(() => {
+      sourceBlobCache.clear()
+    })
+
+    /** Fake WebCodecs `ImageDecoder`: 4 frames of 100ms, 64x64 — like devGif's fixture. */
+    class FakeAnimatedDecoder {
+      static isTypeSupported = vi.fn(async () => true)
+      tracks = { ready: Promise.resolve(), selectedTrack: { animated: true, frameCount: 4 } }
+      completed = Promise.resolve()
+      constructor(_init: { data: ArrayBuffer; type: string }) {}
+      async decode() {
+        return {
+          image: {
+            duration: 100000,
+            displayWidth: 64,
+            displayHeight: 64,
+            close: () => {},
+          },
+        }
+      }
+      close() {}
+    }
+
+    it('imports a still image with no `animated` key and no fetch (no ImageDecoder in node)', async () => {
+      const fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const importPromise = importFiles([makeFile('photo.png', 'image/png')])
+      await Promise.resolve()
+      createdImages[0]!.onload?.()
+
+      const result = await importPromise
+      expect(result.imported).toHaveLength(1)
+      expect('animated' in result.imported[0]!).toBe(false)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('marks a GIF animated with the decoded fps/duration/size', async () => {
+      vi.stubGlobal('ImageDecoder', FakeAnimatedDecoder)
+      const gifBlob = { arrayBuffer: async () => new ArrayBuffer(4), type: 'image/gif' }
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({ ok: true, blob: async () => gifBlob })),
+      )
+
+      const importPromise = importBlob(gifBlob as unknown as Blob, { name: 'a.gif' })
+      await Promise.resolve()
+      await Promise.resolve()
+      createdImages[createdImages.length - 1]!.onload?.()
+
+      const result = await importPromise
+
+      expect(result).toMatchObject({
+        animated: true,
+        sourceFps: 10,
+        durationSec: 0.4,
+        width: 64,
+        height: 64,
+      })
+    })
+  })
 })
 
 describe('importUrl', () => {
@@ -458,6 +519,80 @@ describe('importUrl', () => {
       /Could not determine media kind/,
     )
     expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(0)
+  })
+})
+
+describe('beginImportUrl', () => {
+  let createdMedia: StubMediaElement[]
+
+  beforeEach(() => {
+    createdMedia = []
+    mediaLibraryStore.setState({ assets: {}, order: [] })
+
+    vi.stubGlobal('document', {
+      createElement: vi.fn((tag: string) => {
+        if (tag === 'video' || tag === 'audio') {
+          const el = createStubMediaElement(tag)
+          createdMedia.push(el)
+          return el
+        }
+        if (tag === 'canvas') return createStubCanvas()
+        throw new Error(`Unexpected createElement tag: ${tag}`)
+      }),
+    })
+    vi.stubGlobal('HTMLMediaElement', { HAVE_CURRENT_DATA: 2 })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('registers a pending asset immediately with a fallback duration, before metadata resolves', async () => {
+    const url = 'https://cdn.example.com/path/to/clip.mp4'
+
+    const asset = await beginImportUrl(url)
+
+    expect(asset).toMatchObject({ kind: 'video', src: url, status: 'pending', durationSec: 5 })
+    expect(mediaLibraryStore.getState().getAsset(asset.id)).toMatchObject({ status: 'pending' })
+  })
+
+  it('seeds width/height from opts.dimensions so the placeholder has the right aspect ratio', async () => {
+    const url = 'https://cdn.example.com/path/to/clip.mp4'
+
+    const asset = await beginImportUrl(url, { dimensions: { width: 640, height: 360 } })
+
+    expect(asset).toMatchObject({ width: 640, height: 360 })
+  })
+
+  it('patches in real metadata and flips status to ready once the probe resolves', async () => {
+    const url = 'https://cdn.example.com/path/to/clip.mp4'
+
+    const asset = await beginImportUrl(url)
+    await vi.waitFor(() => {
+      expect(createdMedia).toHaveLength(1)
+    })
+    createdMedia[0]._emit('loadedmetadata')
+    await vi.waitFor(() => {
+      expect(mediaLibraryStore.getState().getAsset(asset.id)?.status).toBe('ready')
+    })
+
+    expect(mediaLibraryStore.getState().getAsset(asset.id)).toMatchObject({
+      status: 'ready',
+      durationSec: 12.5,
+      width: 1920,
+      height: 1080,
+    })
+  })
+
+  it('dedupes on src, returning the existing (possibly still-pending) asset', async () => {
+    const url = 'https://cdn.example.com/path/to/clip.mp4'
+
+    const first = await beginImportUrl(url)
+    const second = await beginImportUrl(url)
+
+    expect(second).toBe(first)
+    expect(Object.keys(mediaLibraryStore.getState().assets)).toHaveLength(1)
   })
 })
 
@@ -616,203 +751,6 @@ describe('media probe helpers', () => {
     })
   })
 
-  describe('resolveDuration', () => {
-    it('resolves immediately when duration is finite', async () => {
-      const el = createStubMediaElement('audio')
-      el.duration = 18.4
-
-      const duration = await resolveDuration(el as unknown as HTMLMediaElement)
-      expect(duration).toBe(18.4)
-    })
-
-    it('seeks to 1e101 and waits for durationchange when duration is Infinity (Chromium fallback)', async () => {
-      const el = createStubMediaElement('audio')
-      el.duration = Infinity
-
-      const promise = resolveDuration(el as unknown as HTMLMediaElement)
-
-      // Workaround should seek past end to trigger Chromium container calculation
-      expect(el.currentTime).toBe(1e101)
-      expect(el.addEventListener).toHaveBeenCalledWith('durationchange', expect.any(Function))
-
-      // Simulate Chromium firing durationchange after computing stream duration
-      el.duration = 45.2
-      el._emit('durationchange')
-
-      const resolved = await promise
-      expect(resolved).toBe(45.2)
-      expect(el.currentTime).toBe(0) // Resets back to 0
-    })
-
-    it('falls back to 0 if duration remains Infinity after timeout', async () => {
-      vi.useFakeTimers()
-      try {
-        const el = createStubMediaElement('audio')
-        el.duration = Infinity
-
-        const promise = resolveDuration(el as unknown as HTMLMediaElement)
-        expect(el.currentTime).toBe(1e101)
-
-        // Advance past the 2s timeout
-        vi.advanceTimersByTime(2000)
-
-        const resolved = await promise
-        expect(resolved).toBe(0)
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('falls back to 0 if duration is NaN', async () => {
-      vi.useFakeTimers()
-      try {
-        const el = createStubMediaElement('audio')
-        el.duration = NaN
-
-        const promise = resolveDuration(el as unknown as HTMLMediaElement)
-
-        vi.advanceTimersByTime(2000)
-
-        const resolved = await promise
-        expect(resolved).toBe(0)
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('probeAudio resolves finite duration when el.duration is Infinity', async () => {
-      const el = createStubMediaElement('audio')
-      el.duration = Infinity
-
-      vi.stubGlobal('document', {
-        createElement: vi.fn(() => el),
-      })
-
-      const probePromise = probeAudio('blob:test-streamed-audio')
-      el._emit('loadedmetadata')
-      await Promise.resolve()
-
-      expect(el.currentTime).toBe(1e101)
-      el.duration = 60.5
-      el._emit('durationchange')
-
-      await expect(probePromise).resolves.toEqual({
-        durationSec: 60.5,
-      })
-    })
-
-    it('probeVideo resolves finite duration when el.duration is Infinity', async () => {
-      const el = createStubMediaElement('video')
-      el.duration = Infinity
-
-      vi.stubGlobal('document', {
-        createElement: vi.fn(() => el),
-      })
-
-      const probePromise = probeVideo('blob:test-webm-stream')
-      el._emit('loadedmetadata')
-      await Promise.resolve()
-
-      expect(el.currentTime).toBe(1e101)
-      el.duration = 120.0
-      el._emit('durationchange')
-
-      await expect(probePromise).resolves.toEqual({
-        durationSec: 120.0,
-        width: 1920,
-        height: 1080,
-        hasAudio: false,
-      })
-    })
-  })
-
-  describe('releaseMediaElement', () => {
-    it('pauses, removes src, and reloads the element to release hardware decoder', () => {
-      const el = createStubMediaElement('video')
-      el.src = 'blob:video-url'
-
-      releaseMediaElement(el as unknown as HTMLMediaElement)
-
-      expect(el.pause).toHaveBeenCalledTimes(1)
-      expect(el.removeAttribute).toHaveBeenCalledWith('src')
-      expect(el.load).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not throw when pause() or load() throws (best-effort teardown)', () => {
-      const el = createStubMediaElement('video')
-      el.pause.mockImplementation(() => {
-        throw new Error('Pause failed')
-      })
-      el.load.mockImplementation(() => {
-        throw new Error('Load failed')
-      })
-
-      expect(() => releaseMediaElement(el as unknown as HTMLMediaElement)).not.toThrow()
-    })
-
-    it('releases media element after probeVideo completes', async () => {
-      const el = createStubMediaElement('video')
-      vi.stubGlobal('document', { createElement: vi.fn(() => el) })
-
-      const probePromise = probeVideo('blob:video-to-probe')
-      el._emit('loadedmetadata')
-      await probePromise
-
-      expect(el.pause).toHaveBeenCalledTimes(1)
-      expect(el.removeAttribute).toHaveBeenCalledWith('src')
-      expect(el.load).toHaveBeenCalledTimes(1)
-    })
-
-    it('releases media element after probeAudio completes', async () => {
-      const el = createStubMediaElement('audio')
-      vi.stubGlobal('document', { createElement: vi.fn(() => el) })
-
-      const probePromise = probeAudio('blob:audio-to-probe')
-      el._emit('loadedmetadata')
-      await probePromise
-
-      expect(el.pause).toHaveBeenCalledTimes(1)
-      expect(el.removeAttribute).toHaveBeenCalledWith('src')
-      expect(el.load).toHaveBeenCalledTimes(1)
-    })
-
-    it('releases media element when loadMediaElement fails with error event', async () => {
-      const el = createStubMediaElement('video')
-      vi.stubGlobal('document', { createElement: vi.fn(() => el) })
-
-      const probePromise = probeVideo('blob:broken-video')
-      el._emit('error')
-
-      await expect(probePromise).rejects.toThrow('Failed to load video metadata')
-      expect(el.pause).toHaveBeenCalledTimes(1)
-      expect(el.removeAttribute).toHaveBeenCalledWith('src')
-      expect(el.load).toHaveBeenCalledTimes(1)
-    })
-
-    it('releases media element after multiple video imports sequentially', async () => {
-      const elements: StubMediaElement[] = []
-      vi.stubGlobal('document', {
-        createElement: vi.fn(() => {
-          const el = createStubMediaElement('video')
-          elements.push(el)
-          return el
-        }),
-      })
-
-      for (let i = 0; i < 5; i++) {
-        const probePromise = probeVideo(`blob:video-${i}`)
-        elements[i]._emit('loadedmetadata')
-        await probePromise
-
-        expect(elements[i].pause).toHaveBeenCalledTimes(1)
-        expect(elements[i].removeAttribute).toHaveBeenCalledWith('src')
-        expect(elements[i].load).toHaveBeenCalledTimes(1)
-      }
-
-      expect(elements).toHaveLength(5)
-    })
-  })
-
   it('probeImage resolves dimensions from onload', async () => {
     const img = createStubImage()
 
@@ -857,34 +795,6 @@ describe('thumbnail helpers', () => {
     el._emit('seeked')
 
     await expect(thumbPromise).resolves.toBe('data:image/jpeg;base64,thumb')
-    expect(el.pause).toHaveBeenCalledTimes(1)
-    expect(el.removeAttribute).toHaveBeenCalledWith('src')
-    expect(el.load).toHaveBeenCalledTimes(1)
-  })
-
-  it('makeVideoThumbnail releases media element even if seek fails', async () => {
-    const el = createStubMediaElement('video')
-
-    vi.stubGlobal('document', {
-      createElement: vi.fn((tag: string) => {
-        if (tag === 'video') return el
-        return createStubCanvas()
-      }),
-    })
-
-    vi.stubGlobal('HTMLMediaElement', {
-      HAVE_CURRENT_DATA: 2,
-    })
-
-    const thumbPromise = makeVideoThumbnail('blob:test-video', 240)
-    el._emit('loadedmetadata')
-    await Promise.resolve()
-    el._emit('error')
-
-    await expect(thumbPromise).rejects.toThrow('Failed to seek video for thumbnail')
-    expect(el.pause).toHaveBeenCalledTimes(1)
-    expect(el.removeAttribute).toHaveBeenCalledWith('src')
-    expect(el.load).toHaveBeenCalledTimes(1)
   })
 
   it('makeImageThumbnail draws a scaled image on load', async () => {
@@ -903,7 +813,7 @@ describe('thumbnail helpers', () => {
     await expect(thumbPromise).resolves.toBe('data:image/jpeg;base64,thumb')
   })
 
-  it('makeVideoThumbnailStrip decodes one frame per requested sample and releases element', async () => {
+  it('makeVideoThumbnailStrip decodes one frame per requested sample', async () => {
     const el = createStubMediaElement('video')
 
     vi.stubGlobal('document', {
@@ -927,31 +837,6 @@ describe('thumbnail helpers', () => {
       'data:image/jpeg;base64,thumb',
       'data:image/jpeg;base64,thumb',
     ])
-    expect(el.pause).toHaveBeenCalledTimes(1)
-    expect(el.removeAttribute).toHaveBeenCalledWith('src')
-    expect(el.load).toHaveBeenCalledTimes(1)
-  })
-
-  it('makeVideoThumbnailStrip releases media element even if seek fails', async () => {
-    const el = createStubMediaElement('video')
-
-    vi.stubGlobal('document', {
-      createElement: vi.fn((tag: string) => {
-        if (tag === 'video') return el
-        return createStubCanvas()
-      }),
-    })
-    vi.stubGlobal('HTMLMediaElement', { HAVE_CURRENT_DATA: 2 })
-
-    const stripPromise = makeVideoThumbnailStrip('blob:test-video', 3, 160)
-    el._emit('loadedmetadata')
-    await Promise.resolve()
-    el._emit('error')
-
-    await expect(stripPromise).rejects.toThrow('Failed to seek video for thumbnail strip')
-    expect(el.pause).toHaveBeenCalledTimes(1)
-    expect(el.removeAttribute).toHaveBeenCalledWith('src')
-    expect(el.load).toHaveBeenCalledTimes(1)
   })
 })
 

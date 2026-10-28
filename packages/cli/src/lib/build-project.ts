@@ -11,6 +11,8 @@ export interface BuildProjectArgs {
   spec: unknown
   /** Absolute dir that relative asset paths in the spec resolve against. */
   baseDir: string
+  /** ffmpeg used to probe containers mediabunny cannot read; otherwise ELAH_FFMPEG, then PATH. */
+  ffmpegPath?: string
 }
 
 export interface BuildSummary {
@@ -60,7 +62,7 @@ export async function buildProject(args: BuildProjectArgs): Promise<BuildProject
         return
       }
       try {
-        assets.set(name, { src, durationSec: (await probeMedia(src)).durationSec })
+        assets.set(name, { src, durationSec: (await probeMedia(src, { ffmpegPath: args.ffmpegPath })).durationSec })
       } catch (err) {
         const hint = looksLikeImage(src)
           ? " — this looks like a still image; use track: 'image' instead"

@@ -1,0 +1,176 @@
+{
+  "id": "av-s2gv5tao",
+  "fps": 30,
+  "stage": {
+    "width": 640,
+    "height": 360
+  },
+  "tracks": [
+    {
+      "id": "1xzbul91",
+      "name": "Background",
+      "kind": "elements",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "dlsg936z",
+      "name": "Layer 1",
+      "kind": "elements",
+      "order": 1,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "02zlvcqk",
+      "name": "Layer 2",
+      "kind": "elements",
+      "order": 2,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    }
+  ],
+  "clips": {
+    "1xzbul91": [
+      {
+        "id": "av-vs5d2dw1",
+        "trackId": "1xzbul91",
+        "type": "shape",
+        "name": "Background",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 1.7777777777777777,
+          "scaleY": 1
+        },
+        "shapeKind": "rect",
+        "shapeFill": "#170F10",
+        "shapeStrokeWidth": 0
+      }
+    ],
+    "dlsg936z": [
+      {
+        "id": "av-0bs9trzc",
+        "trackId": "dlsg936z",
+        "type": "shape",
+        "name": "circle",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.35,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 0.25,
+          "scaleY": 0.25
+        },
+        "shapeKind": "circle",
+        "shapeFill": "#FF003C",
+        "shapeFillPaint": {
+          "type": "solid",
+          "color": "#FF003C"
+        },
+        "keyframes": {
+          "channels": {
+            "y": {
+              "source": {
+                "kind": "expression",
+                "source": "wiggle(3, 0.06)"
+              },
+              "keys": []
+            }
+          }
+        },
+        "partId": "wob"
+      }
+    ],
+    "02zlvcqk": [
+      {
+        "id": "av-s5bil1dr",
+        "trackId": "02zlvcqk",
+        "type": "shape",
+        "name": "circle",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.65,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 0.25,
+          "scaleY": 0.25
+        },
+        "shapeKind": "circle",
+        "shapeFill": "#E0A33A",
+        "shapeFillPaint": {
+          "type": "solid",
+          "color": "#E0A33A"
+        },
+        "keyframes": {
+          "channels": {
+            "scale": {
+              "source": {
+                "kind": "expression",
+                "source": "1 + 0.25 * sin(t * 6)"
+              },
+              "keys": []
+            }
+          }
+        },
+        "partId": "pulse"
+      }
+    ]
+  },
+  "transitions": [],
+  "version": 1
+}

@@ -52,6 +52,11 @@ blank canvas or a dead timeline rather than an error message:
 
 - This app installs `@elah/editor` **from npm**, not from the monorepo. It sits outside
   the root `workspaces` globs on purpose, so it proves the published package works.
+- Its `package.json` currently declares `@elah/editor@^0.6.0`, which resolves 0.6.x. The
+  SDK is 1.0.0 as of 2026-10-28; widen the range to `^1.0.0` to use it. The last full
+  verification of this app was on 0.6.0 (2026-10-02) and is owed again on 1.0.0. See
+  [`../README.md`](../README.md). `npm run verify:examples` from the repo root builds all
+  three examples.
 - The editor is browser-only — Canvas, Web Audio, Web Workers, WebGL2, WebCodecs. It
   cannot server-render. In Next.js, mount it with
   `dynamic(() => import('./Editor'), { ssr: false })`; see [`../next`](../next).

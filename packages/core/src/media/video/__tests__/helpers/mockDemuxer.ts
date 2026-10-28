@@ -9,6 +9,8 @@ export interface MockDemuxerOptions {
   seekError?: Error
   packetsError?: Error
   chunks?: EncodedVideoChunk[]
+  /** When true, packets() yields only chunks whose timestamp is inside the requested [start, end) range (like a real demuxer). */
+  honorRange?: boolean
 }
 
 export function createMockDemuxerBackend(
@@ -26,9 +28,10 @@ export function createMockDemuxerBackend(
       options.src = src
     }),
     getConfig: vi.fn(() => config),
-    packets: vi.fn(async function* (_timeRange: [number, number]) {
+    packets: vi.fn(async function* (timeRange: [number, number]) {
       if (options.packetsError) throw options.packetsError
       for (const chunk of options.chunks ?? []) {
+        if (options.honorRange && (chunk.timestamp < timeRange[0] || chunk.timestamp >= timeRange[1])) continue
         yield chunk
       }
     }),

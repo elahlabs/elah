@@ -39,7 +39,7 @@ export default function ExportPage() {
             exportVideo()
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">exportVideo()</code> is the primary export entry point. It spins up the export worker, renders every frame to <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">OffscreenCanvas</code>, muxes the result, and resolves with an MP4 <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Blob</code>:
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">exportVideo()</code> is the primary export entry point. It spins up the export worker, renders every frame to <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">OffscreenCanvas</code>, muxes the result, and resolves with an MP4 <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Blob</code>:
           </p>
           <CodeBlock
             language="tsx"
@@ -61,8 +61,10 @@ export function ExportButton() {
     const project = engine.getProject()
 
     const options: ExportOptions = {
-      videoCodec: 'avc',       // 'avc' | 'vp9' | 'vp8' — default: 'avc'
+      videoCodec: 'avc',       // 'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8' — default 'avc'; the rest where the browser can encode them
       audioCodec: 'aac',       // 'aac' | 'opus'
+      // container: 'mp4',     // also 'webm' (transparent: true), 'gif' (gifFps) or 'png-sequence'
+      // range: 'inOut',       // export only the marked in/out range
       videoBitrate: 8_000_000, // 8 Mbps (default)
       audioBitrate: 192_000,
       outputHeight: 1080,      // optional: the stage's SHORT edge in px; default = native short edge
@@ -103,9 +105,9 @@ export function ExportButton() {
               outputHeight is the short edge
             </h3>
             <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-              <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">outputHeight</code> names the stage&apos;s <strong className="text-on-surface font-medium">short</strong> edge, the way &ldquo;1080p&rdquo; does: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">1080</code> means 1920&times;1080 for a landscape stage and 1080&times;1920 for a portrait one. The other edge is derived from the stage&apos;s aspect ratio and rounded to an even number, which most video codecs require. Omit it and the export uses the stage&apos;s native size.
+              <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">outputHeight</code> names the stage&apos;s <strong className="text-on-surface font-medium">short</strong> edge, the way &ldquo;1080p&rdquo; does: <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">1080</code> means 1920&times;1080 for a landscape stage and 1080&times;1920 for a portrait one. The other edge is derived from the stage&apos;s aspect ratio and  to an even number, which most video codecs require. Omit it and the export uses the stage&apos;s native size.
             </p>
-            <div className="mb-4 overflow-x-auto rounded-md border border-outline-variant bg-surface-low p-4">
+            <div className="mb-4 overflow-x-auto border border-outline-variant bg-surface-low p-4">
               <table className="w-full min-w-[26rem] text-xs">
                 <thead>
                   <tr className="border-b border-outline-variant">
@@ -132,10 +134,10 @@ export function ExportButton() {
                 </tbody>
               </table>
             </div>
-            <div className="rounded-md border border-outline-variant bg-surface-low p-4">
+            <div className="border border-outline-variant bg-surface-low p-4">
               <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Behaviour change in 0.6.0</div>
               <p className="text-xs leading-relaxed text-on-surface-variant">
-                The value used to be scaled against the stage height. That only holds for landscape stages, because on a portrait stage the height is the long edge. A 9:16 project asked for 1080 came out 608&times;1080 instead of 1080&times;1920. If you pass <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">outputHeight</code> for a portrait project, the encoded size changes when you upgrade. The headless CLI&apos;s <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">--height</code> flag is the same option.
+                The value used to be scaled against the stage height. That only holds for landscape stages, because on a portrait stage the height is the long edge. A 9:16 project asked for 1080 came out 608&times;1080 instead of 1080&times;1920. If you pass <code className="bg-surface-container px-1.5 py-0.5 font-mono">outputHeight</code> for a portrait project, the encoded size changes when you upgrade. The headless CLI&apos;s <code className="bg-surface-container px-1.5 py-0.5 font-mono">--height</code> flag is the same option.
               </p>
             </div>
           </div>
@@ -147,9 +149,9 @@ export function ExportButton() {
             Export Worker
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The export worker runs in a <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Web Worker</code> with an <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">OffscreenCanvas</code>. It uses the exact same <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline()</code> and placement math (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveDrawRect</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">computeTextLayout</code>) as the live renderer — so preview and export never drift.
+            The export worker runs in a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Web Worker</code> with an <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">OffscreenCanvas</code>. It uses the exact same <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline()</code> and placement math (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveDrawRect</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">computeTextLayout</code>) as the live renderer — so preview and export never drift.
           </p>
-          <div className="overflow-hidden rounded-md border border-outline-variant mb-4">
+          <div className="overflow-hidden border border-outline-variant mb-4">
             {[
               { step: '1', label: 'Serialize project', desc: 'Main thread transfers the Project snapshot and source blobs to the worker' },
               { step: '2', label: 'Frame loop', desc: 'Worker calls resolveTimeline(frame, project) for each frame and draws to OffscreenCanvas' },
@@ -161,14 +163,14 @@ export function ExportButton() {
                 key={row.step}
                 className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <span className="label-mono text-xs text-primary sm:w-4 sm:shrink-0">{row.step}</span>
+                <span className="label-mono text-xs text-on-surface sm:w-4 sm:shrink-0">{row.step}</span>
                 <div className="text-xs font-medium text-on-surface sm:w-32 sm:shrink-0">{row.label}</div>
                 <div className="text-xs text-on-surface-variant">{row.desc}</div>
               </div>
             ))}
           </div>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            To keep mediabunny out of your main bundle, use <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">lazyExportVideo()</code> — the same call and the same <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Promise&lt;Blob&gt;</code> result, but the export module (and mediabunny) is dynamically imported only when you first export, so bundlers code-split it out:
+            To keep mediabunny out of your main bundle, use <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">lazyExportVideo()</code> — the same call and the same <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Promise&lt;Blob&gt;</code> result, but the export module (and mediabunny) is dynamically imported only when you first export, so bundlers code-split it out:
           </p>
           <CodeBlock
             language="typescript"
@@ -185,14 +187,14 @@ const blob = await lazyExportVideo(project, options)`}
           <h2 id="audio" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
             Audio Pipeline
           </h2>
-          <div className="mb-4 rounded-md border border-outline-variant bg-amber-50 p-4">
-            <div className="label-mono mb-1 text-2xs text-amber-700">Important constraint</div>
-            <p className="text-xs leading-relaxed text-amber-800">
+          <div className="mb-4 border border-outline-variant bg-surface-low border-l-2 border-l-[#FF003C] p-4">
+            <div className="label-mono mb-1 text-2xs text-on-surface-variant">Important constraint</div>
+            <p className="text-xs leading-relaxed text-on-surface-variant">
               Web Audio API is not available in Web Workers. Audio is decoded and mixed on the <strong>main thread</strong> during export. For long projects this is acceptable; for very large projects consider chunking.
             </p>
           </div>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            During live playback, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">AudioPlaybackController</code> reads <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">scene.audios</code> and schedules Web Audio nodes beside the renderer on the same <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code> clock:
+            During live playback, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">AudioPlaybackController</code> reads <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">scene.audios</code> and schedules Web Audio nodes beside the renderer on the same <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code> clock:
           </p>
           <CodeBlock
             language="typescript"
@@ -238,7 +240,7 @@ const blob = await exportVideo(project, {
           <h2 id="limits" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
             Browser Limits
           </h2>
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {[
               { item: 'WebCodecs availability', detail: 'Chrome/Edge 108+. Firefox has partial support behind a flag. Safari: limited.' },
               { item: 'VideoEncoder hardware limits', detail: 'Simultaneous encoder count is hardware-dependent. Export creates one encoder per run.' },

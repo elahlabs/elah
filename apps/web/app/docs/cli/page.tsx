@@ -60,8 +60,8 @@ export default function CliPage() {
           lede={
             <>
               The same engine that powers the in-browser editor runs headlessly on your
-            server. <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/cli</code>{' '}
-            is a thin consumer of <code className="rounded bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/core</code>&apos;s
+            server. <code className="bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/cli</code>{' '}
+            is a thin consumer of <code className="bg-surface-container px-1.5 py-0.5 text-sm font-mono">@elah/core</code>&apos;s
             public APIs — build projects from JSON specs, export MP4s, or run a
             long-lived HTTP render server.
             </>
@@ -74,7 +74,7 @@ export default function CliPage() {
             Install
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Install globally, or run without installing via <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">npx</code>:
+            Install globally, or run without installing via <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">npx</code>:
           </p>
           <CodeBlock
             language="bash"
@@ -86,12 +86,12 @@ elah serve
 npx @elah/cli serve`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Requires Node.js ≥ 18. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">export</code> and{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">serve</code> also require a{' '}
+            Requires Node.js ≥ 18. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">export</code> and{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">serve</code> also require a{' '}
             branded Chrome or Edge on the host — Playwright&apos;s bundled Chromium
             lacks H.264/AAC codec support. Point at a specific browser with{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">--browser &lt;path&gt;</code> or the{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">ELAH_BROWSER</code> env var.
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">--browser &lt;path&gt;</code> or the{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">ELAH_BROWSER</code> env var.
           </p>
         </section>
 
@@ -100,14 +100,14 @@ npx @elah/cli serve`}
           <h2 id="commands" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
             Commands
           </h2>
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {commands.map((row, i) => (
               <div
                 key={row.cmd}
                 className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-mono text-xs font-medium text-primary">{row.cmd}</span>
+                  <span className="font-mono text-xs font-medium text-on-surface">{row.cmd}</span>
                   <span className="break-all font-mono text-xs text-on-surface-variant">{row.usage}</span>
                 </div>
                 <div className="text-xs text-on-surface-variant">{row.note}</div>
@@ -115,9 +115,9 @@ npx @elah/cli serve`}
             ))}
           </div>
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Exit codes: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">0</code> success,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">1</code> validation/runtime
-            failure, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">2</code> usage
+            Exit codes: <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">0</code> success,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">1</code> validation/runtime
+            failure, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">2</code> usage
             error. Diagnostics go to stderr.
           </p>
         </section>
@@ -128,11 +128,11 @@ npx @elah/cli serve`}
             The Build Spec
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah build</code> consumes a
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah build</code> consumes a
             seconds-based spec, probes each media asset&apos;s real duration, and constructs
-            the project through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>,
+            the project through <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>,
             so overlaps, track caps, and source bounds are all validated with precise,
-            path-addressed errors (<code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">clips[2].duration must be …</code>)
+            path-addressed errors (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">clips[2].duration must be …</code>)
             that a generating model can self-correct from.
           </p>
           <CodeBlock
@@ -160,9 +160,9 @@ npx @elah/cli serve`}
             Rules worth knowing:
           </p>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li><strong className="text-on-surface">Times are seconds</strong> (floats fine), converted to integer frames at <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">fps</code> (default 30). <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">stage</code> defaults to 1920×1080.</li>
-            <li><strong className="text-on-surface">assets</strong> maps names to paths relative to the spec file, or <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">http(s)</code> URLs.</li>
-            <li><strong className="text-on-surface">x</strong>/<strong className="text-on-surface">y</strong> are the normalized (0..1) stage position of the clip&apos;s center; <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">scale</code> is relative to native size.</li>
+            <li><strong className="text-on-surface">Times are seconds</strong> (floats fine), converted to integer frames at <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">fps</code> (default 30). <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">stage</code> defaults to 1920×1080.</li>
+            <li><strong className="text-on-surface">assets</strong> maps names to paths relative to the spec file, or <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">http(s)</code> URLs.</li>
+            <li><strong className="text-on-surface">x</strong>/<strong className="text-on-surface">y</strong> are the normalized (0..1) stage position of the clip&apos;s center; <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">scale</code> is relative to native size.</li>
             <li><strong className="text-on-surface">Overlaps</strong>: the spec places every video clip on one video track, so video clips must not overlap (the build errors; the engine itself supports more video tracks, the spec format does not); overlapping text/image/audio clips are automatically placed on additional tracks.</li>
           </ul>
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
@@ -180,7 +180,7 @@ npx @elah/cli serve`}
             Serve Mode
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah serve</code> runs a
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah serve</code> runs a
             long-lived HTTP render server with a warm browser, so each request only pays
             for a new browser tab instead of a fresh Chrome process:
           </p>
@@ -188,22 +188,22 @@ npx @elah/cli serve`}
             language="bash"
             code={`elah serve --port 8080 --concurrency 2 --media-root ./assets`}
           />
-          <div className="mt-4 overflow-hidden rounded-md border border-outline-variant">
+          <div className="mt-4 overflow-hidden border border-outline-variant">
             <div className="flex flex-col gap-1 border-b border-outline-variant bg-surface-low p-3 sm:flex-row sm:items-start sm:gap-4">
               <div className="font-mono text-xs font-medium text-on-surface sm:w-32 sm:shrink-0">GET /healthz</div>
               <div className="text-xs text-on-surface-variant">
-                <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">200 {'{'} status, browser: &quot;connected&quot; | &quot;disconnected&quot; {'}'}</code>
+                <code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">200 {'{'} status, browser: &quot;connected&quot; | &quot;disconnected&quot; {'}'}</code>
               </div>
             </div>
             <div className="flex flex-col gap-1 bg-surface-lowest p-3 sm:flex-row sm:items-start sm:gap-4">
               <div className="font-mono text-xs font-medium text-on-surface sm:w-32 sm:shrink-0">POST /render</div>
               <div className="text-xs text-on-surface-variant">
                 Body = a build spec JSON document; blocks until the render finishes and
-                returns the MP4 bytes. <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">422</code> on
-                validation errors, <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">503</code> +{' '}
-                <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">Retry-After</code> when at
-                capacity (<code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">--concurrency</code>),{' '}
-                <code className="rounded bg-surface-container px-1.5 py-0.5 text-2xs font-mono">500</code> on render
+                returns the MP4 bytes. <code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">422</code> on
+                validation errors, <code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">503</code> +{' '}
+                <code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">Retry-After</code> when at
+                capacity (<code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">--concurrency</code>),{' '}
+                <code className="bg-surface-container px-1.5 py-0.5 text-2xs font-mono">500</code> on render
                 failure.
               </div>
             </div>
@@ -223,10 +223,10 @@ npx @elah/cli serve`}
             How Rendering Works
           </h2>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">export</code> and{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">serve</code> launch a branded
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">export</code> and{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">serve</code> launch a branded
             Chrome headlessly (via Playwright) and run core&apos;s real{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">exportVideo</code> pipeline
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">exportVideo</code> pipeline
             inside it — the same worker + OffscreenCanvas code path the browser editor
             uses. Output is <strong className="text-on-surface">bit-identical to browser export by
             construction</strong>, not by approximation: there is no separate server-side
@@ -240,9 +240,9 @@ npx @elah/cli serve`}
             Docker &amp; Self-Hosting
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">packages/cli</code> repo
+            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">packages/cli</code> repo
             ships a Dockerfile that installs branded Chrome and fonts, then runs{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah serve</code>:
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah serve</code>:
           </p>
           <CodeBlock
             language="bash"
@@ -251,13 +251,13 @@ docker run -p 8080:8080 elah-render`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
             The render server ships with no built-in authentication — bind it to{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">127.0.0.1</code> or put it
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">127.0.0.1</code> or put it
             behind a proxy that handles auth. See{' '}
             <a
               href="https://github.com/elahlabs/elah/blob/main/docs/deploy-render-server.md"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2"
             >
               docs/deploy-render-server.md
             </a>{' '}
@@ -271,7 +271,7 @@ docker run -p 8080:8080 elah-render`}
             Library API
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> is also
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> is also
             importable — no shelling out, no stderr parsing:
           </p>
           <CodeBlock
@@ -286,9 +286,9 @@ const { bytes } = await exportProject(
 )`}
           />
           <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
-            For repeated renders, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">createRenderSession()</code> keeps
+            For repeated renders, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">createRenderSession()</code> keeps
             a browser warm across calls instead of launching Chrome per export — this is
-            what <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah serve</code> uses
+            what <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elah serve</code> uses
             internally:
           </p>
           <CodeBlock
@@ -302,23 +302,23 @@ const mp4 = await session.render(project, '/path/to/assets')
 await session.close()`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Also exported: <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">startServe</code>,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">validateSpec</code>,{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">probeMedia</code>. Errors
-            throw <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">CliError</code> with a{' '}
-            <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">.message</code> that is
+            Also exported: <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">startServe</code>,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">validateSpec</code>,{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">probeMedia</code>. Errors
+            throw <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">CliError</code> with a{' '}
+            <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">.message</code> that is
             already the human-readable, path-addressed text.
           </p>
         </section>
 
         {/* Next */}
-        <div className="rounded-md border border-outline-variant bg-surface-low p-5">
+        <div className="border border-outline-variant bg-surface-low p-5">
           <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Up Next</div>
           <div className="text-sm font-medium text-on-surface mb-1">API Reference</div>
           <p className="text-xs leading-relaxed text-on-surface-variant mb-3">
             See the full public API across @elah/core, @elah/timeline, and @elah/editor.
           </p>
-          <a href="/docs/api" className="text-xs font-medium text-primary hover:underline">
+          <a href="/docs/api" className="text-xs font-medium text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">
             Continue to API Reference →
           </a>
         </div>

@@ -2,10 +2,11 @@
 
 The full Elah video editor SDK for React. Combines the core engine, timeline UI, WebGL2 renderer, media library, and export pipeline into a single package.
 
-Ships `EditorProvider`, `Preview` (WebGL2 canvas + interactive transform overlays), `Timeline`, `AssetPanel`, `SourcePanel`, and `ElementsPanel`, and re-exports the public `@elah/core`, `@elah/react`, and `@elah/timeline` API — so most apps only ever import from `@elah/editor`. (Renderer and debug internals are the exception; import those from `@elah/core` directly.) Supports video, image, text, **shape**, and **freehand** clips, **multiple video tracks**, **multi-track audio**, and MP4 export.
+Ships `EditorProvider`, `Preview` (WebGL2 canvas + interactive transform overlays), `Timeline`, `AssetPanel`, `SourcePanel`, and `ElementsPanel`, and re-exports the public `@elah/core`, `@elah/react`, and `@elah/timeline` API — so most apps only ever import from `@elah/editor`. (Renderer and debug internals, and the 1.0.0 programmatic layer, are the exception; import those from `@elah/core` directly.) Supports video, image, text, **shape**, and **freehand** clips, **multiple video tracks**, **multi-track audio**, and export to MP4, WebM, GIF or a PNG sequence. Projects that use the newer **adjustment**, **generator**, **compound** and **sequence** clips, and the nine transitions, open, play, save and export; `@elah/editor` has no editing UI for those clip types yet. A selected clip does show its **keyframes** as diamonds on its bottom edge: click to seek and select, drag to retime with snapping as one undo step, Shift+click for multi-select (`<KeyframeLane>` from `@elah/timeline`, drawn automatically; `useKeySelectionStore` is re-exported here).
+
+**1.0.0:** the exports of this package follow semver. The 1.0.0 programmatic layer (effects, generators, motion helpers, VideoSpec, HTML scenes, editor ops, `packageFontsBaseUrl`) is **not** re-exported here: import it from `@elah/core`, which this package already depends on (list it in your own `package.json`). VideoSpec, HTML scenes and the op vocabulary are live in 1.0 and sit on their own entries, not the `@elah/core` root: `@elah/core/spec`, `@elah/core/html`, `@elah/core/ops` and `@elah/core/icons`; see [the changelog](../../CHANGELOG.md).
 
 [![npm](https://img.shields.io/npm/v/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
-[![gzip size](https://img.shields.io/badge/gzip-~64%20KiB%20SDK-brightgreen)](../../BUNDLE_STRATEGY.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/elahlabs/elah/blob/main/LICENSE)
 
 ---
@@ -20,7 +21,7 @@ Peer dependencies: `react`, `react-dom` >= 18, `lucide-react` >= 0.400.0 (used b
 bundled `@elah/timeline` UI for clip icons — install it alongside `react`/`react-dom`
 even though nothing in your own code imports it).
 
-**Bundle size:** ~19 KiB gzipped for the editor layer; an app using the full SDK (`core` + `react` + `timeline` + `editor`) starts at ~64 KiB gzipped with the demuxer injected or omitted, and ~227 KiB if it calls `createDefaultDemuxerFactory()`, which pulls `mediabunny` (159 KiB) into the startup graph. Measured with code splitting — see [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md).
+**Bundle size:** an editor app (`EditorProvider`, `Preview`, `Timeline`) is about **112 KiB gz** — esbuild, minified, gzipped, with `react`, `lucide-react` and `mediabunny` external — up from 68 KiB in 0.6.0, because effects, generators, sequence clips, roto masks and audio Enhance became chunks that load on first use (`prepareFeatures(project)` loads a project's features up front). [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) explains how the figures are measured (`node scripts/measure-bundle.mjs`). `@elah/core` grew substantially in 1.0.0 (it now carries the motion layer, effects and the model-facing layers); import `@elah/core/engine` directly if you need only the engine. `createDefaultDemuxerFactory()` imports `mediabunny` statically, so it pulls the codec into the startup graph; every other path loads it lazily.
 
 ---
 

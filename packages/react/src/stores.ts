@@ -8,7 +8,7 @@ import {
   textStylePresetsStore,
   mediaLibraryStore,
   clipLoadStore,
-} from '@elah/core'
+} from '@elah/core/engine'
 import type {
   TracksState,
   TracksActions,

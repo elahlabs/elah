@@ -10,5 +10,5 @@
     "noUnusedParameters": false
   },
   "include": ["src"],
-  "exclude": ["**/*.test.ts", "**/*.spec.ts", "src/**/__tests__"]
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "src/**/__tests__"]
 }

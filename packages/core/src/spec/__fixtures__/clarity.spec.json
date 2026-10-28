@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "title": "Clarity is leverage",
+  "format": { "width": 1080, "height": 1920, "fps": 30 },
+  "duration": 26,
+  "background": "$bg",
+  "design": {
+    "colors": [
+      { "name": "bg", "value": "#f7f7f5" },
+      { "name": "ink", "value": "#111111" },
+      { "name": "muted", "value": "#8a8a8a" },
+      { "name": "accent", "value": "#22c55e" }
+    ],
+    "fonts": [
+      { "role": "sans", "font": "inter" },
+      { "role": "serif", "font": "playfair-display" }
+    ]
+  },
+  "elements": [
+    { "id": "attention", "kind": "text", "at": 0, "duration": 2, "text": "Attention", "font": "$sans", "weight": 700, "size": 110, "color": "$ink", "x": 0.5, "y": 0.5, "enter": "fade-in", "exit": "fade-out" },
+
+    { "id": "because", "kind": "group", "at": 2, "duration": 3.3, "children": [
+      { "id": "because-line", "kind": "text", "at": 0, "duration": 3.3, "text": "Because", "font": "$sans", "size": 84, "color": "$ink", "x": 0.5, "y": 0.4, "reveal": { "preset": "word-rise", "stagger": 0.12, "duration": 0.4 } },
+      { "id": "every-second", "kind": "text", "at": 0.4, "duration": 2.9, "text": "every second", "font": "$serif", "italic": true, "size": 96, "color": "$accent", "layout": { "anchorTo": { "element": "because-line", "edge": "bottom", "gap": 12 } }, "enter": "pop-in" },
+      { "id": "because-sub", "kind": "text", "at": 0.8, "duration": 2.5, "text": "your audience decides if you're worth it", "font": "$sans", "size": 34, "color": "$muted", "x": 0.5, "y": 0.62, "enter": "fade-in" },
+      { "id": "clock-face", "kind": "shape", "shape": "arc", "at": 0, "duration": 3.3, "w": 120, "h": 120, "stroke": "$accent", "strokeWidth": 10, "cap": "round", "x": 0.82, "y": 0.15, "draw": { "duration": 1.6, "curve": "cubic-out" } },
+      { "id": "clock-hand", "kind": "shape", "shape": "rect", "at": 0, "duration": 3.3, "w": 50, "h": 6, "radius": 3, "fill": "$ink", "x": 0.82, "y": 0.15, "anchor": { "x": 0, "y": 0.5 }, "expressions": [ { "channel": "rotation", "source": "value + t * PI" } ] }
+    ] },
+
+    { "id": "spends", "kind": "text", "at": 5.3, "duration": 2.7, "text": "Your audience spends", "font": "$sans", "weight": 700, "size": 72, "color": "$ink", "x": 0.5, "y": 0.32, "enter": "slide-in-up" },
+    { "id": "u1", "kind": "icon", "icon": "user", "at": 5.5, "duration": 2.5, "w": 110, "h": 110, "color": "$accent", "x": 0.22, "y": 0.52, "enter": "pop-in" },
+    { "id": "u2", "kind": "icon", "icon": "user", "at": 5.6, "duration": 2.4, "w": 130, "h": 130, "color": "$accent", "x": 0.36, "y": 0.52, "enter": "pop-in" },
+    { "id": "u3", "kind": "icon", "icon": "user", "at": 5.7, "duration": 2.3, "w": 170, "h": 170, "color": "$ink", "x": 0.5, "y": 0.52, "enter": "pop-in" },
+    { "id": "u4", "kind": "icon", "icon": "user", "at": 5.8, "duration": 2.2, "w": 130, "h": 130, "color": "$accent", "x": 0.64, "y": 0.52, "enter": "pop-in" },
+    { "id": "u5", "kind": "icon", "icon": "user", "at": 5.9, "duration": 2.1, "w": 110, "h": 110, "color": "$accent", "x": 0.78, "y": 0.52, "enter": "pop-in" },
+    { "id": "brackets", "kind": "shape", "shape": "path", "at": 5.9, "duration": 2.1, "w": 240, "h": 240, "x": 0.5, "y": 0.52, "stroke": "$accent", "strokeWidth": 6, "cap": "round", "join": "round", "path": "M10 30 L10 10 L30 10 M70 90 L90 90 L90 70", "viewBox": { "x": 0, "y": 0, "width": 100, "height": 100 }, "draw": { "duration": 0.6, "curve": "cubic-out" } },
+
+    { "id": "trying", "kind": "text", "at": 8, "duration": 1.3, "text": "Trying to understand", "font": "$sans", "size": 60, "color": "$ink", "x": 0.5, "y": 0.38, "reveal": { "preset": "typewriter", "unit": "char", "stagger": 0.05, "duration": 0.1 } },
+    { "id": "ghost", "kind": "text", "at": 8, "duration": 1.5, "text": "???", "font": "$sans", "weight": 900, "size": 220, "color": "$muted", "opacity": 0.15, "layer": -1, "x": 0.5, "y": 0.38, "enter": "fade-in" },
+
+    { "id": "testimonials", "kind": "group", "at": 8.4, "duration": 2.8, "children": [
+      { "id": "card1-bg", "kind": "shape", "shape": "rect", "at": 0, "duration": 2.8, "layer": -1, "w": 280, "h": 170, "fill": "$bg", "stroke": "$ink", "strokeWidth": 2, "radius": 24, "x": 0.28, "y": 0.4, "enter": "pop-in" },
+      { "id": "card1-avatar", "kind": "icon", "icon": "user", "at": 0, "duration": 2.8, "w": 60, "h": 60, "color": "$ink", "x": 0.16, "y": 0.32, "enter": "pop-in" },
+      { "id": "card1-text", "kind": "text", "at": 0.05, "duration": 2.75, "text": "Amara T.\n\"They just get it.\"", "font": "$sans", "size": 26, "lineHeight": 1.3, "maxWidth": 220, "color": "$ink", "align": "left", "x": 0.3, "y": 0.4, "enter": "fade-in" },
+      { "id": "card1-star", "kind": "shape", "shape": "polygon", "sides": 5, "innerRatio": 0.45, "at": 0.1, "duration": 2.7, "w": 40, "h": 40, "fill": "$accent", "x": 0.16, "y": 0.44, "enter": "pop-in" },
+
+      { "id": "card2-bg", "kind": "shape", "shape": "rect", "at": 0.3, "duration": 2.5, "layer": -1, "w": 280, "h": 170, "fill": "$bg", "stroke": "$ink", "strokeWidth": 2, "radius": 24, "x": 0.74, "y": 0.55, "enter": "pop-in" },
+      { "id": "card2-avatar", "kind": "icon", "icon": "user", "at": 0.3, "duration": 2.5, "w": 60, "h": 60, "color": "$ink", "x": 0.62, "y": 0.47, "enter": "pop-in" },
+      { "id": "card2-text", "kind": "text", "at": 0.35, "duration": 2.45, "text": "Devon R.\n\"Finally, clarity.\"", "font": "$sans", "size": 26, "lineHeight": 1.3, "maxWidth": 220, "color": "$ink", "align": "left", "x": 0.76, "y": 0.55, "enter": "fade-in" },
+
+      { "id": "card3-bg", "kind": "shape", "shape": "rect", "at": 0.6, "duration": 2.2, "layer": -1, "w": 280, "h": 170, "fill": "$bg", "stroke": "$ink", "strokeWidth": 2, "radius": 24, "x": 0.5, "y": 0.75, "enter": "pop-in" },
+      { "id": "card3-avatar", "kind": "icon", "icon": "user", "at": 0.6, "duration": 2.2, "w": 60, "h": 60, "color": "$ink", "x": 0.38, "y": 0.67, "enter": "pop-in" },
+      { "id": "card3-text", "kind": "text", "at": 0.65, "duration": 2.15, "text": "Priya K.\n\"Effortless to follow.\"", "font": "$sans", "size": 26, "lineHeight": 1.3, "maxWidth": 220, "color": "$ink", "align": "left", "x": 0.52, "y": 0.75, "enter": "fade-in" }
+    ] },
+
+    { "id": "ring", "kind": "shape", "shape": "arc", "at": 11.2, "duration": 2.3, "w": 360, "h": 360, "stroke": "$accent", "strokeWidth": 18, "cap": "round", "x": 0.5, "y": 0.42, "draw": { "duration": 1.2, "curve": "cubic-out" } },
+    { "id": "ten", "kind": "generator", "generator": "counter", "at": 11.2, "duration": 2.3, "x": 0.5, "y": 0.42, "params": [ { "name": "from", "value": 0 }, { "name": "to", "value": 10 }, { "name": "prefix", "value": "" }, { "name": "suffix", "value": "" }, { "name": "fontSize", "value": 140 }, { "name": "color", "value": "#111111" } ] },
+    { "id": "is-a-second", "kind": "text", "at": 11.5, "duration": 1.8, "text": "Is a second", "font": "$sans", "size": 56, "color": "$ink", "x": 0.5, "y": 0.58, "reveal": { "preset": "typewriter", "unit": "char", "stagger": 0.05, "duration": 0.1 } },
+
+    { "id": "losses", "kind": "group", "at": 13.5, "duration": 3, "children": [
+      { "id": "hex1", "kind": "shape", "shape": "polygon", "sides": 6, "at": 0, "duration": 3, "w": 200, "h": 200, "fill": "$accent", "x": 0.3, "y": 0.4, "rotation": 30, "enter": "pop-in" },
+      { "id": "ic1", "kind": "icon", "icon": "target", "at": 0, "duration": 3, "w": 96, "h": 96, "color": "#ffffff", "x": 0.3, "y": 0.4, "enter": "pop-in" },
+      { "id": "callout1", "kind": "shape", "shape": "path", "at": 0.1, "duration": 2.9, "w": 60, "h": 60, "x": 0.3, "y": 0.22, "stroke": "$ink", "strokeWidth": 4, "cap": "round", "join": "round", "path": "M0 0 L0 20 L40 20", "viewBox": { "x": 0, "y": 0, "width": 40, "height": 40 }, "draw": { "duration": 0.6, "curve": "cubic-out" } },
+      { "id": "lb1", "kind": "text", "at": 0.15, "duration": 2.85, "text": "Losing prospects", "font": "$sans", "size": 34, "color": "$ink", "align": "center", "x": 0.3, "y": 0.14, "enter": "fade-in" },
+
+      { "id": "hex2", "kind": "shape", "shape": "polygon", "sides": 6, "at": 0.4, "duration": 2.6, "w": 200, "h": 200, "fill": "$accent", "x": 0.7, "y": 0.4, "rotation": 30, "enter": "pop-in" },
+      { "id": "ic2", "kind": "icon", "icon": "rocket", "at": 0.4, "duration": 2.6, "w": 96, "h": 96, "color": "#ffffff", "x": 0.7, "y": 0.4, "enter": "pop-in" },
+      { "id": "callout2", "kind": "shape", "shape": "path", "at": 0.5, "duration": 2.5, "w": 60, "h": 60, "x": 0.7, "y": 0.22, "stroke": "$ink", "strokeWidth": 4, "cap": "round", "join": "round", "path": "M0 0 L0 20 L40 20", "viewBox": { "x": 0, "y": 0, "width": 40, "height": 40 }, "draw": { "duration": 0.6, "curve": "cubic-out" } },
+      { "id": "lb2", "kind": "text", "at": 0.55, "duration": 2.45, "text": "Losing momentum", "font": "$sans", "size": 34, "color": "$ink", "align": "center", "x": 0.7, "y": 0.14, "enter": "fade-in" },
+
+      { "id": "hex3", "kind": "shape", "shape": "polygon", "sides": 6, "at": 0.8, "duration": 2.2, "w": 200, "h": 200, "fill": "$accent", "x": 0.5, "y": 0.62, "rotation": 30, "enter": "pop-in" },
+      { "id": "ic3", "kind": "icon", "icon": "banknote", "at": 0.8, "duration": 2.2, "w": 96, "h": 96, "color": "#ffffff", "x": 0.5, "y": 0.62, "enter": "pop-in" },
+      { "id": "callout3", "kind": "shape", "shape": "path", "at": 0.9, "duration": 2.1, "w": 60, "h": 60, "x": 0.5, "y": 0.8, "rotation": 180, "stroke": "$ink", "strokeWidth": 4, "cap": "round", "join": "round", "path": "M0 0 L0 20 L40 20", "viewBox": { "x": 0, "y": 0, "width": 40, "height": 40 }, "draw": { "duration": 0.6, "curve": "cubic-out" } },
+      { "id": "lb3", "kind": "text", "at": 0.95, "duration": 2.05, "text": "Losing opportunities", "font": "$sans", "size": 34, "color": "$ink", "align": "center", "x": 0.5, "y": 0.86, "enter": "fade-in" }
+    ] },
+
+    { "id": "word-brands", "kind": "text", "at": 16.5, "duration": 0.6, "text": "brands", "font": "$sans", "weight": 700, "size": 100, "color": "$ink", "x": 0.5, "y": 0.5, "enter": "pop-in" },
+    { "id": "word-market", "kind": "text", "at": 17, "duration": 0.6, "text": "market.", "font": "$sans", "weight": 700, "size": 100, "color": "$ink", "x": 0.5, "y": 0.5, "enter": "pop-in" },
+    { "id": "word-arent-louder", "kind": "text", "at": 17.5, "duration": 1, "text": "Aren't louder.", "font": "$serif", "italic": true, "size": 92, "color": "$ink", "x": 0.5, "y": 0.5, "enter": "pop-in" },
+
+    { "id": "cloud-ring", "kind": "shape", "shape": "circle", "at": 18.5, "duration": 3.5, "layer": -1, "w": 900, "h": 900, "fill": "$accent", "opacity": 0.12, "x": 0.5, "y": 0.5, "effects": [ { "kind": "gaussianBlur", "params": [ { "name": "radius", "value": 60 } ] } ], "enter": "fade-in" },
+    { "id": "chip1", "kind": "text", "at": 18.5, "duration": 3, "text": "They're clearer.", "font": "$sans", "size": 44, "color": "#ffffff", "pill": { "fill": "$accent", "radius": 40, "padding": 22 }, "y": 0.38, "keys": [ { "channel": "x", "at": 0, "value": 0.02 }, { "channel": "x", "at": 0.45, "value": 0.3, "curve": "spring:bouncy" } ] },
+    { "id": "chip2", "kind": "text", "at": 18.8, "duration": 2.9, "text": "Sharper", "font": "$sans", "size": 44, "color": "$ink", "pill": { "stroke": "$ink", "strokeWidth": 3, "radius": 40, "padding": 22 }, "x": 0.72, "y": 0.38, "enter": "slide-in-right" },
+    { "id": "chip3", "kind": "text", "at": 19.1, "duration": 2.8, "text": "More intentional", "font": "$sans", "size": 44, "color": "$ink", "pill": { "stroke": "$ink", "strokeWidth": 3, "radius": 40, "padding": 22 }, "x": 0.34, "y": 0.46, "enter": "slide-in-left" },
+    { "id": "chip4", "kind": "text", "at": 19.4, "duration": 2.6, "text": "They remove friction", "font": "$sans", "size": 44, "color": "#ffffff", "pill": { "fill": "$accent", "radius": 40, "padding": 22 }, "x": 0.62, "y": 0.54, "enter": "slide-in-right" },
+    { "id": "chip5", "kind": "text", "at": 19.7, "duration": 2.3, "text": "They accelerate understanding", "font": "$sans", "size": 36, "color": "$ink", "pill": { "stroke": "$ink", "strokeWidth": 3, "radius": 40, "padding": 22 }, "x": 0.3, "y": 0.62, "enter": "slide-in-left" },
+    { "id": "chip6", "kind": "text", "at": 20, "duration": 2, "text": "They make decisions feel effortless", "font": "$sans", "size": 34, "color": "#ffffff", "pill": { "fill": "$accent", "radius": 40, "padding": 22 }, "x": 0.6, "y": 0.7, "enter": "slide-in-right" },
+
+    { "id": "leverage", "kind": "text", "at": 22, "duration": 2.6, "text": "Because clarity isn't a advantage —\nIt's leverage.", "font": "$sans", "weight": 700, "size": 68, "lineHeight": 1.25, "align": "center", "color": "$ink", "x": 0.5, "y": 0.48, "enter": "fade-in" },
+    { "id": "circle-it", "kind": "shape", "shape": "path", "at": 22.9, "duration": 1.7, "path": "M 8 22 C 8 8, 50 4, 88 10 C 98 14, 96 30, 70 35 C 45 39, 12 36, 6 26 C 3 20, 10 14, 18 12", "viewBox": { "x": 0, "y": 0, "width": 100, "height": 42 }, "w": 900, "h": 380, "stroke": "$accent", "strokeWidth": 8, "cap": "round", "x": 0.5, "y": 0.56, "layer": 2, "draw": { "duration": 0.8, "curve": "cubic-out" } },
+
+    { "id": "logo-icon", "kind": "icon", "icon": "zap", "at": 24.6, "duration": 1.4, "w": 90, "h": 90, "color": "$accent", "x": 0.5, "y": 0.44, "enter": "pop-in" },
+    { "id": "logo-word", "kind": "text", "at": 24.9, "duration": 1.1, "text": "elah", "font": "$sans", "weight": 900, "size": 64, "color": "$ink", "x": 0.5, "y": 0.58, "enter": "fade-in" }
+  ],
+  "sfx": [
+    { "at": 0, "cue": "whoosh" },
+    { "at": 5.7, "cue": "pop" },
+    { "at": 22.4, "cue": "impact" }
+  ]
+}

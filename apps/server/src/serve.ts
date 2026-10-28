@@ -16,7 +16,7 @@ async function main(): Promise<void> {
     mediaRoot: assetsDir,
     session,
     render: {},
-    log: (line) => console.error(line),
+    log: (line: string) => console.error(line),
   })
 
   console.log(`listening on http://127.0.0.1:${handle.port} (media root ${assetsDir})`)

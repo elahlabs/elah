@@ -3,7 +3,7 @@ import { act, type ReactElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import type { TimelineEngine } from '@elah/core'
 import { useTimelineEngine, useSelectionStore } from '@elah/react'
-import { EditorProvider } from '../EditorProvider'
+import { EditorProvider } from '@elah/react'
 import { TextOverlay } from './TextOverlay'
 
 /**

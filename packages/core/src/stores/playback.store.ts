@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { toFrame } from '../utils/frames'
+import { clampZoom } from '../utils/timelineMath'
 
 export interface PlaybackState {
   /** Current playhead position in frames */
@@ -96,7 +97,7 @@ function readPersistedPrefs(): Partial<PersistedPrefs> {
 
 /**
  * Transport mirror (Ring 1). Vanilla so core stays React-free;
- * `@elah/react` binds it into the `usePlaybackStore` hook.
+ * the React binding binds it into the `usePlaybackStore` hook.
  *
  * Persistence is hand-rolled rather than zustand's `persist` middleware, and
  * that is a performance fix, not a style preference. The middleware wraps
@@ -143,7 +144,7 @@ export const playbackStore = createStore<PlaybackState & PlaybackActions>()((set
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   // Lower bound is deliberately tiny so long timelines (10+ min) can be
   // zoomed out far enough to fit on screen (e.g. 30min@30fps ≈ 54k frames).
-  setZoom: (zoom) => set({ zoom: Math.max(0.02, Math.min(50, zoom)) }),
+  setZoom: (zoom) => set({ zoom: clampZoom(zoom) }),
   toggleSnap: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
 }))
 

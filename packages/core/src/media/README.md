@@ -16,7 +16,7 @@ not composite or paint.
 > An image is loaded as an `ImageBitmap` at the layer; text is rasterized from
 > `computeTextLayout`. There is intentionally no `media/text/` or `media/image/`.
 
-## Import rules (enforced by [`__tests__/ImportBoundary.test.ts`](./__tests__/ImportBoundary.test.ts))
+## Import rules (kept by convention)
 
 - `core/media/**` must **not** import from `core/renderer/**` (one temporary
   exception: `GpuDebugCounters`, used for metrics) or `core/assets/**`.

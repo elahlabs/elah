@@ -1,3 +1,4 @@
+import { container } from '@/components/eb'
 import { SiteNav } from '@/components/site/SiteNav'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { DocsSidebar } from '@/components/docs/DocsSidebar'
@@ -10,7 +11,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
       <SiteNav variant="bar" />
       {/* Outside the max-w row so the sub-bar's border spans the full width. */}
       <DocsMobileNav />
-      <div className="mx-auto flex w-full max-w-7xl flex-1 px-4 sm:px-6">
+      <div className={`${container} flex flex-1`}>
         <DocsSidebar />
         <main id="main" className="min-w-0 flex-1 py-8 md:px-8 md:py-10">
           {children}

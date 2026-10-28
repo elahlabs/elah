@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useConsent } from '@/components/ConsentProvider'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 import { trackEventOnce } from '@/lib/analytics'
+import { bottomBar } from '@/components/eb/bottomBar'
 
 // Routes where a fixed bottom banner would sit on top of the editor's own
 // fixed mobile bottom bar (padded with env(safe-area-inset-bottom)).
@@ -43,21 +44,18 @@ export function InstallBanner() {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-label="Install elah"
-      className="fixed inset-x-0 bottom-0 z-[55] border-t border-outline-variant bg-surface-low/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm"
-    >
-      <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p className="text-sm leading-relaxed text-on-surface-variant">
-          Install elah for quicker access to your projects, right from your home screen or dock.
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <button type="button" onClick={handleDismiss} className="btn-ghost">
+    <div role="dialog" aria-label="Install elah" className={bottomBar.root}>
+      <div className={bottomBar.inner}>
+        <div className={bottomBar.message}>
+          <span aria-hidden className={bottomBar.marker} />
+          <p className={bottomBar.text}>Install elah for quicker access to your projects, right from your home screen or dock.</p>
+        </div>
+        <div className={bottomBar.actions}>
+          <button type="button" onClick={handleDismiss} className={bottomBar.secondary}>
             Not now
           </button>
-          <button type="button" onClick={handleInstall} className="btn-primary">
-            Install App
+          <button type="button" onClick={handleInstall} className={bottomBar.primary}>
+            Install app
           </button>
         </div>
       </div>

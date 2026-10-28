@@ -1,0 +1,16 @@
+{
+  "format": "elah-input",
+  "version": 1,
+  "title": "invalid-page-assets-escape",
+  "source": {
+    "kind": "page",
+    "html": "<main class=\"stage\">\n  <section class=\"scene s1\" data-scene=\"logo\">\n    <img class=\"logo\" src=\"../assets/logo.png\" alt=\"Logo\">\n    <h1 class=\"hero h1\">Your logo.</h1>\n  </section>\n  <section class=\"scene s2\" data-scene=\"badge\">\n    <div class=\"in\">\n      <img class=\"badge\" src=\"/etc/badge.svg\" alt=\"Badge\">\n      <p class=\"sub u2\">And an SVG, as supplied.</p>\n      <span class=\"chip\"></span>\n    </div>\n  </section>\n</main>\n<img src=\"assets/sub/x.png\"><img src=\"assets/../valid-page-assets/assets/logo.png\"><img src=\"C:\\logo.png\"><img src=\"https://example.com/logo.png\">",
+    "css": ".stage { position: absolute; inset: 0; background: #0f1020; color: #f4f1ea; font-family: inter, sans-serif;\n  --arrive: cubic-bezier(0.16, 1, 0.3, 1); }\n.scene { position: absolute; inset: 0; }\n.in { position: absolute; inset: 0; }\n.logo { position: absolute; left: 720px; top: 300px; width: 480px; height: 160px;\n  animation: logo-in 0.9s var(--arrive) -0.15s both; }\n.hero { position: absolute; left: 160px; top: 560px; width: 1600px; margin: 0; text-align: center;\n  font-size: 172px; font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;\n  animation: rise 0.7s var(--arrive) 0.5s both; }\n.s1 { animation: scene-out 0.4s ease-in 3s both; }\n.s2 .in { animation: scene-in 0.4s ease-out 3s both; }\n.badge { position: absolute; left: 840px; top: 250px; width: 240px; height: 240px;\n  animation: badge-in 0.9s var(--arrive) 3.1s both; }\n.sub { position: absolute; left: 160px; top: 600px; width: 1600px; margin: 0; text-align: center;\n  font-size: 96px; font-weight: 700; line-height: 1.1;\n  animation: rise 0.7s var(--arrive) 3.5s both; }\n.chip { position: absolute; left: 1700px; top: 900px; width: 80px; height: 80px;\n  background: url(../badge.svg) center / contain no-repeat;\n  animation: fade-in 0.5s ease-out 4s both; }\n@keyframes logo-in { from { opacity: 0; transform: translateY(40px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }\n@keyframes rise { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: translateY(0); } }\n@keyframes badge-in { from { opacity: 0; transform: rotate(-90deg) scale(0.6); } to { opacity: 1; transform: rotate(0deg) scale(1); } }\n@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }\n@keyframes scene-out { to { opacity: 0; } }\n@keyframes scene-in { from { opacity: 0; } to { opacity: 1; } }\n",
+    "durationSeconds": 6,
+    "stage": {
+      "width": 1920,
+      "height": 1080
+    },
+    "fps": 30
+  }
+}

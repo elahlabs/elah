@@ -6,6 +6,7 @@ import { ArrowRight, Github } from 'lucide-react'
 import Link from 'next/link'
 import { siteConfig } from '@/config/site'
 import { PageHeader } from '@/components/site/PageHeader'
+import { Slate, btnSecondary, btnSmall, cardBody, cardLight, cardTitle, container, h2, label, lead, mono, outline, sectionY } from '@/components/eb'
 
 const fullExamples = [
   {
@@ -318,12 +319,6 @@ export default function CustomRendererExample() {
   },
 ]
 
-const categoryColors: Record<string, string> = {
-  Integration: 'text-secondary bg-secondary/10 border-secondary/25',
-  Advanced: 'text-primary bg-primary/10 border-primary/25',
-  Export: 'text-tertiary bg-tertiary/10 border-tertiary/25',
-}
-
 export default function ExamplesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
@@ -342,46 +337,34 @@ export default function ExamplesPage() {
         />
 
         {/* Complete example apps */}
-        <div className="border-b border-outline-variant bg-surface-low py-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
-              Full apps
+        <section className={`${container} pt-12 ${sectionY}`}>
+          <Slate n={1} label="Full apps" />
+          <div className="flex flex-col gap-10 pt-10">
+            <div className="flex max-w-[900px] flex-col gap-5">
+              <h2 className={h2}>Complete production example</h2>
+              <p className={`${lead} max-w-[640px]`}>
+                Runnable, end-to-end editor apps consuming the published{' '}
+                <code className={`bg-surface px-1.5 py-0.5 text-[13px] text-on-surface ${mono} ${outline}`}>@elah/editor</code>{' '}
+                package. Clone, install, and run — or read the source on GitHub.
+              </p>
             </div>
-            <h2
-              className="text-xl font-semibold tracking-tight text-on-surface"
-            >
-              Complete production example
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-              Runnable, end-to-end editor apps consuming the published{' '}
-              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs">@elah/editor</code>{' '}
-              package. Clone, install, and run — or read the source on GitHub.
-            </p>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {fullExamples.map((ex) => (
                 <a
                   key={ex.framework}
                   href={ex.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex flex-col rounded-md border border-outline-variant bg-surface p-5 transition-colors hover:border-outline hover:bg-surface-container"
+                  className={`group ${cardLight} min-w-0 transition-colors hover:bg-surface-container`}
                 >
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <h3
-                      className="text-base font-semibold tracking-tight text-on-surface"
-                    >
-                      {ex.framework}
-                    </h3>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className={cardTitle}>{ex.framework}</h3>
                     <Github className="h-4 w-4 shrink-0 text-on-surface-variant transition-colors group-hover:text-on-surface" />
                   </div>
-                  <div className="label-mono mb-3 text-2xs text-on-surface-variant opacity-90">
-                    {ex.runtime}
-                  </div>
-                  <p className="flex-1 text-xs leading-relaxed text-on-surface-variant">
-                    {ex.description}
-                  </p>
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                  <div className={`text-on-surface-variant ${label}`}>{ex.runtime}</div>
+                  <p className={`${cardBody} flex-1`}>{ex.description}</p>
+                  <span className={`inline-flex items-center gap-2 text-on-surface underline decoration-primary underline-offset-4 ${label}`}>
                     View on GitHub
                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                   </span>
@@ -389,16 +372,17 @@ export default function ExamplesPage() {
               ))}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Quick links */}
-        <div className="border-b border-outline-variant bg-surface-low px-4 py-3 sm:px-6">
-          <div className="mx-auto flex max-w-7xl flex-wrap gap-2">
+        <div className={`${container} ${sectionY} !pb-8`}>
+          <Slate n={2} label="Snippets" />
+          <div className="flex flex-wrap gap-2 pt-6">
             {examples.map((ex) => (
               <a
                 key={ex.id}
                 href={`#${ex.id}`}
-                className="rounded border border-outline-variant px-3 py-1 text-xs text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                className={`bg-surface-low px-3 py-[6px] text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface ${label} ${outline}`}
               >
                 {ex.title}
               </a>
@@ -407,24 +391,18 @@ export default function ExamplesPage() {
         </div>
 
         {/* Example blocks */}
-        <div className="mx-auto max-w-7xl divide-y divide-outline-variant px-4 sm:px-6">
+        <div className={`${container} divide-y divide-outline-variant`}>
           {examples.map((ex) => (
             <section key={ex.id} id={ex.id} className="py-12 scroll-mt-16">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className={`rounded border px-2 py-0.5 text-2xs font-medium ${categoryColors[ex.category] ?? ''}`}>
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <span className={`inline-flex bg-surface-low px-2 py-[3px] text-on-surface ${label} ${outline}`}>
                       {ex.category}
                     </span>
                   </div>
-                  <h2
-                    className="text-xl font-semibold tracking-tight text-on-surface"
-                  >
-                    {ex.title}
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-                    {ex.description}
-                  </p>
+                  <h2 className={`${cardTitle} text-[40px]`}>{ex.title}</h2>
+                  <p className={`${cardBody} max-w-2xl`}>{ex.description}</p>
                 </div>
               </div>
               <CodeBlock
@@ -438,27 +416,23 @@ export default function ExamplesPage() {
         </div>
 
         {/* CTA */}
-        <div className="border-t border-outline-variant bg-surface-low py-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm font-medium text-on-surface">Need something more specific?</div>
-                <p className="mt-1 text-xs text-on-surface-variant">
-                  Check the API reference or open an issue on GitHub.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Link
-                  href="/docs/api"
-                  className="inline-flex items-center gap-2 rounded border border-outline-variant px-4 py-2 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
-                >
-                  API Reference
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
+        <section className={`${container} pt-12 ${sectionY}`}>
+          <Slate n={3} label="Next" />
+          <div className="flex flex-col gap-4 pt-10 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className={`text-on-surface ${label}`}>Need something more specific?</div>
+              <p className={`${cardBody} mt-2`}>
+                Check the API reference or open an issue on GitHub.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/docs/api" className={`${btnSecondary} ${btnSmall}`}>
+                API Reference
+                <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
       <Footer />

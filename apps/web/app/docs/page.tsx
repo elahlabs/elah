@@ -60,8 +60,8 @@ export default function DocsPage() {
               { n: '2', title: 'Renderer-agnostic core', desc: 'The data model and timeline resolver know nothing about DOM, Canvas, WebGL, or WebGPU. Swap rendering backends without touching state.' },
               { n: '3', title: 'Iteration speed', desc: 'Small surface area, no plugin systems, no over-engineered abstractions. You can read the entire core in one sitting.' },
             ].map((item) => (
-              <li key={item.n} className="flex gap-3 rounded-md border border-outline-variant bg-surface-low p-4">
-                <span className="label-mono mt-0.5 text-xs text-primary">{item.n}.</span>
+              <li key={item.n} className="flex gap-3 border border-outline-variant bg-surface-low p-4">
+                <span className="label-mono mt-0.5 text-xs text-on-surface">{item.n}.</span>
                 <div>
                   <div className="text-sm font-medium text-on-surface mb-0.5">{item.title}</div>
                   <div className="text-xs leading-relaxed text-on-surface-variant">{item.desc}</div>
@@ -80,16 +80,16 @@ export default function DocsPage() {
             Architecture
           </h2>
           <p className="text-sm leading-relaxed text-on-surface-variant mb-4">
-            A single immutable <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> tree owns all timeline data. The framework-agnostic <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code> is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events.
+            A single immutable <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> tree owns all timeline data. The framework-agnostic <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code> is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events.
           </p>
           <p className="text-sm leading-relaxed text-on-surface-variant mb-6">
-            A pure function <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline(frame, project) → Scene</code> determines what is visible and audible at any frame. This is the only thing renderers consume — the shipped renderer is a WebGL2 <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">GpuRenderer</code> that turns each <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> into sorted textured-quad draws.
+            A pure function <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline(frame, project) → Scene</code> determines what is visible and audible at any frame. This is the only thing renderers consume — the shipped renderer is a WebGL2 <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">GpuRenderer</code> that turns each <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> into sorted textured-quad draws.
           </p>
 
           {/* Architecture layers diagram */}
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {[
-              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays', 'TransitionOverlay'], bg: 'bg-surface-low' },
+              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays'], bg: 'bg-surface-low' },
               { label: 'Zustand Stores', items: ['useTracksStore', 'usePlaybackStore', 'useSelectionStore', 'useTransitionsStore'], bg: 'bg-surface-lowest' },
               { label: 'Engine Layer', items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'], bg: 'bg-surface-low' },
               { label: 'Pure Resolver', items: ['resolveTimeline(frame, project) → Scene'], bg: 'bg-surface-lowest' },
@@ -106,7 +106,7 @@ export default function DocsPage() {
                   {layer.items.map((item) => (
                     <span
                       key={item}
-                      className="rounded border border-outline-variant bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface"
+                      className="border border-outline-variant bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface"
                     >
                       {item}
                     </span>
@@ -126,7 +126,7 @@ export default function DocsPage() {
             Packages
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Five packages. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>, <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code> and <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> are released together and share a version. <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> versions independently.
+            Five packages. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code> and <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> are released together and share a version. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> versions independently.
           </p>
           <div className="space-y-3">
             {[
@@ -156,8 +156,8 @@ export default function DocsPage() {
                 icon: Terminal,
               },
             ].map(({ name, desc, icon: Icon }) => (
-              <div key={name} className="flex gap-3 rounded-md border border-outline-variant bg-surface-low p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-low">
+              <div key={name} className="flex gap-3 border border-outline-variant bg-surface-low p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-outline-variant bg-surface-low">
                   <Icon className="h-4 w-4 text-on-surface-variant" />
                 </div>
                 <div>
@@ -211,7 +211,7 @@ export default function DocsPage() {
                 <Link
                   key={href}
                   href={href}
-                  className="group flex items-start justify-between gap-2 rounded-md border border-outline-variant bg-surface-low p-4 no-underline transition-colors hover:border-outline"
+                  className="group flex items-start justify-between gap-2 border border-outline-variant bg-surface-low p-4 no-underline transition-colors hover:border-outline"
                 >
                   <div>
                     <div className="mb-1 text-sm font-medium text-on-surface">{title}</div>

@@ -52,6 +52,9 @@ export interface TimelineRef {
 /** Width of the track-label sidebar; the clip lanes begin after it. */
 const SIDEBAR_WIDTH = 184
 
+/** Clip types `buildPasteOptions` can rebuild through the clip factory. */
+const PASTE_REBUILDS: ReadonlySet<Clip['type']> = new Set(['text', 'video', 'audio', 'image'])
+
 function buildPasteOptions(clip: Clip, startFrame: number): CreateClipOptions {
   const base = {
     trackId: clip.trackId,
@@ -439,6 +442,15 @@ export const Timeline = memo(
           engine.batch(() => {
             for (const src of clips) {
               const offset = src.startFrame - minStart
+              if (!PASTE_REBUILDS.has(src.type)) {
+                // Shapes, drawings and the converged core's adjustment,
+                // generator, compound and sequence clips carry fields the
+                // factory cannot rebuild from a snapshot: copy the original
+                // clip instead. Skipped when it is gone or the spot is taken.
+                const cloneId = engine.cloneClip(src.id, src.trackId, pasteFrame + offset)
+                if (cloneId) newIds.push(cloneId)
+                continue
+              }
               const options = buildPasteOptions(src, pasteFrame + offset)
               const newClip = engine.addClip(options)
               // Preserve trim info (and speed) the factory doesn't carry through.

@@ -44,9 +44,8 @@
  * Two fields here describe something a single clip cannot express: breaking one
  * line of copy into several clips that enter one after another (`stagger`), and
  * faking letterspacing by respacing the characters (`tracking`). Both are read
- * by the host app that builds a timeline from a template — nothing in this repo
- * does; a host that wants either must implement it. Both are IGNORED by
- * `applyTextTemplate`, which patches
+ * by the caller that builds a timeline from a template — `lib/motion/overlay.ts`
+ * in the web app — and both are IGNORED by `applyTextTemplate`, which patches
  * exactly one clip and stays a pure restyle.
  *
  * That split is deliberate. Executing a stagger means knowing the stage height,
@@ -56,7 +55,7 @@
  * Brand Drop with its words arriving together is not a Brand Drop.
  */
 
-import type { Clip, MotionSpec, Transform } from '../types'
+import type { Clip, MotionSpec, TextOutline, TextShadow, Transform } from '../types'
 import { DEFAULT_TEXT_TRANSFORM } from '../resolver/textAnimation'
 
 // ---------------------------------------------------------------------------
@@ -105,6 +104,10 @@ export interface TextTemplateStyle {
   borderRadius?: number
   borderWidth?: number
   borderColor?: string
+  /** Glyph outline, drawn under the fill (the clip's own `textOutline`). */
+  outline?: TextOutline
+  /** Glyph shadow (the clip's own `textShadow`). */
+  shadow?: TextShadow
 }
 
 /**
@@ -541,6 +544,94 @@ export const BUILT_IN_TEXT_TEMPLATES: ReadonlyArray<TextTemplate> = [
     tracking: 'wide',
     placement: { x: 0.5, y: 0.5 },
   },
+
+  // -------------------------------------------------------------------------
+  // The caption set (AGN-P20).
+  //
+  // Four styles a caption can wear. They are STYLE plus entry/exit motion like
+  // every template above; how the words arrive (a reveal animator) and which
+  // are lit as they are spoken (a caption mode) are chosen separately and
+  // joined in `CAPTION_LOOKS` (elements/captions.ts). Sized for a 1080-wide
+  // stage and pinned low in frame, where captions live.
+  // -------------------------------------------------------------------------
+  {
+    id: 'caption-outline',
+    name: 'Outline Caps',
+    description: 'Heavy white caps with a thick black outline, low in frame. Readable on anything.',
+    style: {
+      fontFamily: 'Impact',
+      fontWeight: 'bold',
+      fontSize: 72,
+      textAlign: 'center',
+      color: '#ffffff',
+      outline: { color: '#000000', width: 7 },
+      shadow: { color: '#000000', blur: 6, offsetX: 0, offsetY: 4 },
+    },
+    animation: {
+      in: { opacity: 0, scale: 0.9, ease: 'back-out' },
+      out: { opacity: 0 },
+      rampFraction: 0.12,
+    },
+    placement: { x: 0.5, y: 0.78 },
+  },
+  {
+    id: 'caption-social',
+    name: 'Social Heavy',
+    description: 'Oversized yellow caps, fat stroke and a hard drop shadow. Short-form social.',
+    style: {
+      fontFamily: 'Impact',
+      fontWeight: 'bold',
+      fontSize: 88,
+      textAlign: 'center',
+      color: '#ffde59',
+      outline: { color: '#000000', width: 10 },
+      shadow: { color: '#000000', blur: 0, offsetX: 0, offsetY: 7 },
+    },
+    animation: {
+      in: { opacity: 0, scale: 0.7, rotation: -0.04, ease: 'elastic-out' },
+      out: { opacity: 0, scale: 1.1, ease: 'back-in' },
+      rampFraction: 0.14,
+    },
+    placement: { x: 0.5, y: 0.72 },
+  },
+  {
+    id: 'caption-editorial',
+    name: 'Editorial Line',
+    description: 'Serif caption with a soft shadow, no box and no stroke. Interviews, documentary.',
+    style: {
+      fontFamily: 'Georgia',
+      fontWeight: 'normal',
+      fontSize: 46,
+      textAlign: 'center',
+      color: '#ffffff',
+      shadow: { color: '#000000', blur: 14, offsetX: 0, offsetY: 2 },
+    },
+    animation: {
+      in: { opacity: 0, offsetY: 0.02, ease: 'expo-out' },
+      out: { opacity: 0, ease: 'quad-in' },
+      rampFraction: 0.18,
+    },
+    placement: { x: 0.5, y: 0.84 },
+  },
+  {
+    id: 'caption-quiet',
+    name: 'Quiet Line',
+    description: 'Small clean sans, fades in and out and never moves. Under dialogue.',
+    style: {
+      fontFamily: 'sans-serif',
+      fontWeight: 'normal',
+      fontSize: 32,
+      textAlign: 'center',
+      color: '#f1f1f1',
+      shadow: { color: '#000000', blur: 8, offsetX: 0, offsetY: 1 },
+    },
+    animation: {
+      in: { opacity: 0 },
+      out: { opacity: 0 },
+      rampFraction: 0.1,
+    },
+    placement: { x: 0.5, y: 0.9 },
+  },
 ]
 
 /** Look a template up by id. `undefined` for an id we do not ship. */
@@ -623,6 +714,16 @@ export function applyTextTemplate(template: TextTemplate, clip: Clip): Partial<C
     fontSize: style.fontSize,
     textAlign: style.textAlign,
     color: style.color,
+    // A template names a SYSTEM family, so applying one over a bundled font must
+    // drop the id — otherwise the bundled face keeps winning over the family the
+    // template just asked for, and the switch looks like it did nothing. Italic
+    // goes with it: a template's `fontWeight` is a keyword, and leaving a stored
+    // `fontStyle` behind would make the template's own styling partial (PV-P4b).
+    fontId: undefined,
+    fontStyle: undefined,
+    // PV-P4c-1: a gradient REPLACES the fill colour, so a template that sets
+    // `color` must drop it or the two fight and the gradient silently wins.
+    textFill: undefined,
 
     // Explicitly `undefined` when unused — see "switching templates is clean".
     backgroundColor: style.backgroundColor,
@@ -631,6 +732,10 @@ export function applyTextTemplate(template: TextTemplate, clip: Clip): Partial<C
     borderRadius: style.borderRadius,
     borderWidth: style.borderWidth,
     borderColor: style.borderColor,
+    // Same rule as the box fields: absent on the template means cleared on the
+    // clip, so a stroke from one look never survives into the next.
+    textOutline: style.outline,
+    textShadow: style.shadow,
 
     textAnimation: {
       inMotion: animation.in,

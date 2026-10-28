@@ -19,7 +19,7 @@ The editor `core/` namespace is split into three honest layers:
 
 | Layer | Role | Key modules |
 |---|---|---|
-| `core/assets/` | Asset/file manager — import, metadata, thumbnails | `mediaLibraryStore`, `importFiles`, `MediaAsset` (the `useMediaLibrary` hook is `@elah/react`) |
+| `core/assets/` | Asset/file manager — import, metadata, thumbnails | `useMediaLibrary`, `importFiles`, `MediaAsset` |
 | `core/media/` | Frame/sample producers — decode, caches, future audio/text/image | `core/media/video/` (`VideoFrameProvider`, `FrameCache`, demuxer) |
 | `core/renderer/` | Compositing only — imports `core/media/` **interfaces** via the public barrel | `GpuRenderer`, `VideoLayer`, `RenderGraph` |
 
@@ -34,8 +34,7 @@ flowchart TB
 
 ### Layer boundaries
 
-Import rules are enforced by
-[`core/media/__tests__/ImportBoundary.test.ts`](../media/__tests__/ImportBoundary.test.ts):
+Import rules, kept by convention:
 
 - `core/renderer/**` may import `core/media/video` only via the public barrel or `VideoFrameProvider` type module.
 - `core/media/**` must not import from `core/renderer/**` (temporary exception: `GpuDebugCounters` during Split-01).
@@ -54,17 +53,14 @@ flowchart LR
         Gpu[GpuRenderer ✓]
         Dom[DomRenderer ✗ future]
         C2d[Canvas2DRenderer ✗ future]
+        Exp[ExportRenderer ✗ future]
     end
 
     classDef done fill:#1f6f1f,stroke:#0a0,color:#fff
     classDef todo fill:#444,stroke:#888,color:#ccc,stroke-dasharray:4 3
     class Gpu done
-    class Dom,C2d todo
+    class Dom,C2d,Exp todo
 ```
-
-Export is deliberately **not** a `Renderer`: the export worker draws the same
-`Scene` to a 2D `OffscreenCanvas` using the shared placement helpers (see
-[`../export/Architecture.md`](../export/Architecture.md)).
 
 **Hard isolation rules** (every implementation must respect):
 
@@ -144,8 +140,6 @@ flowchart TB
         VL[VideoLayer]
         IL[ImageLayer]
         TXL[TextLayer]
-        SHL[ShapeLayer]
-        FHL[FreehandLayer]
         TL[TestLayer]
     end
 
@@ -155,7 +149,6 @@ flowchart TB
         VDM[VideoDecoderManager]
         DMX[MediabunnyDemuxer]
         SFP[StreamingFrameProducer]
-        SBC[sourceBlobCache]
     end
 
     subgraph compositing[Compositing — core/renderer/gpu/]
@@ -179,8 +172,6 @@ flowchart TB
     RG --> VL
     RG --> IL
     RG --> TXL
-    RG --> SHL
-    RG --> FHL
     RG --> TL
 
     VL --> VFP
@@ -195,7 +186,6 @@ flowchart TB
     SFP --> VDM
     SFP --> FC
     VDM --> DMX
-    DMX --> SBC
 
     Panel --> Cnt
     VFP --> Cnt
@@ -208,15 +198,6 @@ flowchart TB
 > `requestFrame` and per-frame `flush` are gone.
 > `SyntheticVideoFrameProvider` (browser dev) and `MockVideoFrameProvider` (jsdom)
 > remain for environments without a real demuxer.
-
-`GpuRenderer.mount` registers five layers with the `RenderGraph`, each with a
-selector over its own `Scene` array: `VideoLayer` (`scene.videos`), `ImageLayer`
-(`scene.images`), `TextLayer` (`scene.texts`), `ShapeLayer` (`scene.shapes`) and
-`FreehandLayer` (`scene.freehand`). `RenderGraph` merges every layer's draw
-entries into **one** list sorted by `zIndex`, so a text clip on an elements track
-and a video on a lower lane interleave correctly. `FrameProbeLayer` replaces
-`VideoLayer` only in the bisection mode (`probeLayer` option); `TestLayer` is for
-the debug renderer.
 
 ---
 
@@ -242,7 +223,6 @@ sequenceDiagram
     GR->>VL: new (pool, providerFactory)
     GR->>RG: new
     GR->>RG: registerLayer(VL, scene→scene.videos, id, zIndex)
-    Note over GR,RG: same for ImageLayer, TextLayer,<br/>ShapeLayer and FreehandLayer
     GR-->>App: mounted
 
     Note over App,RG: dispose() — reverse order
@@ -307,12 +287,6 @@ sequenceDiagram
     end
 ```
 
-The diagram follows the video layer. Every registered layer runs the same
-diff / acquire / release / draw cycle over its own `Scene` array. During a
-transition the resolver has already zeroed the outgoing clip's opacity, and the
-outgoing look is carried by the DOM-side `TransitionOverlay` snapshot in the
-preview (and a snapshot pass in export), not by a second GPU decode.
-
 Key invariants this enforces:
 
 - `render()` never awaits.
@@ -363,14 +337,7 @@ Cache rules (see [`FrameCache.ts`](../media/video/FrameCache.ts)):
 
 - `put` transfers ownership to the cache.
 - `get` returns a **borrowed** reference — callers must not close it.
-- The cache is bounded two ways: a frame count (default 30) and an optional byte
-  budget (`maxBytes`, an RGBA estimate of width × height × 4 per frame). The count
-  alone is resolution-blind, so `StreamingFrameProducer` passes a byte budget
-  (`DEFAULT_MAX_CACHE_BYTES`, 256 MiB per provider) and eviction runs until both
-  bounds hold.
-- When full, the entry furthest from the current pivot is evicted and closed. The
-  cache tracks scrub direction: forward play drops already-shown frames behind the
-  pivot, a backward scrub drops the lookahead ahead of it.
+- When full, the entry furthest from the current pivot is evicted and closed.
 - The cache is the **only** thing that closes a cached frame (on evict / clear /
   dispose). `VideoTexture.upload` borrows and never closes (§10). On the real
   decode path cached frames are `ImageBitmap` copies; the decoded `VideoFrame` is
@@ -446,14 +413,10 @@ sequenceDiagram
     CMB-->>VDM: backend opened
 ```
 
-The default `blobResolver` is `sourceBlobCache.resolve`: a shared whole-file `Blob`
-cache with one in-flight download per `src` and a small LRU (4 entries by default).
-The has-audio probe that runs at import, the demuxer, and a second demuxer for a
-copy-pasted clip all share that one download, so the probe doubles as a warm-up
-for the decoder (`warmVideoSrc` / `createSourceBlobCache` are exported for hosts
-that want to warm a source early). Override `blobResolver` in a custom
+Default `blobResolver` is `fetch(src).blob()`. Override it in a custom
 `DemuxerFactory` (the web app uses `createDefaultDemuxerFactory()`) to skip the
-fetch for freshly-imported local files by passing the `File` object directly.
+fetch round-trip for freshly-imported local files by passing the `File` object
+directly.
 
 ### 6.3 Playback lifecycle (import → pixels)
 
@@ -689,11 +652,8 @@ book, and just as safe below the GL-free line.
 
 ## 7. `VideoLayer` — provider & texture bookkeeping
 
-`VideoLayer` owns the provider and texture bookkeeping. Both maps are keyed by
-**clip `id`**, not by `src`: each clip gets its own `StreamingFrameProducer`, so
-two copy-pasted clips of one file never share a playhead and cannot cause
-backwards-seek stalls. What the clips *do* share is the downloaded bytes
-(`sourceBlobCache`, §6.2).
+`VideoLayer` is the only place that knows clips share decoders. Providers are
+keyed by `src` and ref-counted across clips; textures are keyed by clip `id`.
 
 ```mermaid
 flowchart TB
@@ -703,10 +663,9 @@ flowchart TB
         C3[clipC &nbsp; src=b.mp4]
     end
 
-    subgraph providers[_providers map &nbsp; key = clip id]
-        Pa[ProviderEntry clipA<br/>refCount = 1]
-        Pb[ProviderEntry clipB<br/>refCount = 1]
-        Pc[ProviderEntry clipC<br/>refCount = 1]
+    subgraph providers[_providers map &nbsp; key = src]
+        Pa[ProviderEntry a.mp4<br/>refCount = 2]
+        Pb[ProviderEntry b.mp4<br/>refCount = 1]
     end
 
     subgraph textures[_textures map &nbsp; key = clip id]
@@ -716,8 +675,8 @@ flowchart TB
     end
 
     C1 --> Pa
-    C2 --> Pb
-    C3 --> Pc
+    C2 --> Pa
+    C3 --> Pb
 
     C1 --> Ta
     C2 --> Tb
@@ -728,41 +687,9 @@ flowchart TB
     Tc --> Pool
 ```
 
-- `acquire(item)` → new `VideoTexture`; create the provider for the clip if there is
-  none, or reuse one `prewarm()` already opened. If the clip's `src` changed under an
-  existing entry, the old provider and texture are disposed and the replacement
-  **inherits the old reference count**, so a clip that is still being drawn is never
-  exposed to idle eviction or a prewarm seek (0.6.0 fix; the previous order read the
-  texture before replacing the provider and could upload into a disposed texture).
-- `release(id)`   → dispose the texture, decrement refCount, and at 0 leave the provider
-  idle (see below).
+- `acquire(item)` → new `VideoTexture`, bump or create the provider entry.
+- `release(id)`   → dispose the texture, decrement refCount, `markIdle()` at 0.
 - `draw(item)`    → see render-tick diagram above.
-- `prewarm(videos, ctx)` → `<Preview>` resolves a scene `PREWARM_HORIZON_FRAMES` ahead and
-  hands it to `GpuRenderer.prewarm(scene)`, which forwards its video clips here, so a cut
-  (or an image→video boundary) lands on an already-warm decoder.
-
-**Idle providers are bounded two ways.** A provider at refCount 0 stays warm for
-`idleDisposeMs` (default 20 s) and the layer retains at most `maxIdleProviders` (default
-4) of them, evicting the least recently released first. The cap is the burst valve: a fast
-scrub releases clips faster than any deadline, and each idle provider pins its whole
-`FrameCache`. The deadline only decides the case the cap cannot reach, where the user
-stops touching the timeline with fewer than four clips idle. Four is sized against the
-browser's practical concurrent-decoder ceiling and against the per-provider byte budget
-above; if the byte bound is ever removed the cap has to come down with it.
-
-**Holdover.** When a video clip leaves the scene, `VideoLayer` keeps its last textured frame
-as a single holdover. If the incoming clip has not yet received its first decoded frame
-and is within `HOLDOVER_MAX_FRAME_GAP` (5) timeline frames of the holdover's capture
-point, the holdover is drawn instead, which hides the one-to-two-tick gap on a direct
-video→video cut. A larger gap (an image between the clips, or a seek) discards it so
-stale content never ghosts into the new clip. The holdover is drawn fitted by **its own
-content dimensions**, not the incoming clip's (0.6.0 fix: before, a borrowed frame was
-stretched to the stage between clips).
-
-**Load state.** The layer reports `loading` / `error` per clip through `onClipLoad`; the
-preview's spinner reads it. A failure watcher is armed on the current provider, and
-disposing or replacing a provider always clears the clip's load state (0.6.0 fix for a
-spinner that could never clear after a failed re-open).
 
 ---
 
@@ -861,8 +788,7 @@ sequenceDiagram
 | `WebGLContext`        | yes (the context itself) | re-`getContext` on restore, re-run `_initGLState` |
 | `TexturePool`         | yes      | `handleContextLost()` clears handles, no deletes  |
 | `VideoTexture`        | yes      | `handleContextLost()` nulls `_entry`; re-acquires on next upload |
-| `VideoLayer`          | yes (program + VAO, holdover texture) | nulls them and drops the holdover; `_ensurePipeline()` rebuilds |
-| `ImageLayer`, `TextLayer`, `ShapeLayer`, `FreehandLayer` | yes (program, VAO, per-clip textures) | same pattern: handles dropped on loss, rebuilt on the next draw |
+| `VideoLayer`          | yes (program + VAO) | nulls them; `_ensurePipeline()` rebuilds         |
 | `RenderGraph`         | no       | releases all active items; next tick re-acquires  |
 | `FrameCache`          | no       | unchanged                                          |
 | `VideoDecoderManager` | no       | unchanged                                          |
@@ -910,14 +836,6 @@ eviction / clear / dispose — exactly once. `VideoTexture.upload` and
 
 Imported only when needed. Zero impact on production rendering.
 
-Beside the GPU counters there is `PerfSummary` (`core/debug/PerfSummary.ts`): a
-once-a-second reading of what the **whole render tick** costs (per-phase time such as
-resolve, render and prewarm; tick overruns against the frame budget; repeated work).
-It is silent unless the `PERF` trace channel is on (`__trace.on('PERF')`), and callers
-guard payload construction with `perf.active` so nothing is allocated when it is off.
-It reports measurements from a live session; it is not a benchmark suite and the repo
-publishes no benchmark numbers.
-
 ```mermaid
 flowchart LR
     PG[playground.ts<br/>loadDebugScenario A..E] --> DGR[DebugGpuRenderer]
@@ -962,20 +880,17 @@ graph LR
     end
 
     subgraph shipped2[Also shipped since]
-        S1[Image / Text / Shape / Freehand layers + shared placement helpers]
-        S2[AudioPlaybackController]
+        S1[ImageLayer + TextLayer + shared placement helpers]
+        S2[AudioPlaybackController - single track]
         S3[Export: worker + OffscreenCanvas + mediabunny mux]
-        S4[setDebug overlay wired into Preview via its debug prop]
-        S5[Transitions fade / slide / wipe via snapshot overlay]
-        S6[Multiple video tracks composited by lane order]
-        S7[Byte-budgeted FrameCache + idle-provider cap + holdover]
-        S8[sourceBlobCache + PerfSummary]
+        S4[setDebug overlay wired into playground]
     end
 
     subgraph next[Next]
         N1[Scheduler / predictive frame caching]
+        N2[Transitions on Scene.transitions]
         N3[WebGPU backend behind Renderer]
-        N5[GPU-side transitions]
+        N4[Multi-track compositing hardening]
     end
 
     done --> next
@@ -1004,8 +919,8 @@ graph LR
     class D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13 done
     class P1,P2,P3,P4,P5,P6 phase1
     class R1,R2,R3,R4,R5 pr02
-    class S1,S2,S3,S4,S5,S6,S7,S8 done
-    class N1,N3,N5 next
+    class S1,S2,S3,S4 done
+    class N1,N2,N3,N4 next
 ```
 
 ---
@@ -1021,9 +936,6 @@ graph LR
 | Texture allocator         | [`gpu/TexturePool.ts`](./gpu/TexturePool.ts)                         |
 | Shader helper             | [`gpu/ShaderProgram.ts`](./gpu/ShaderProgram.ts) + [`gpu/shaders/`](./gpu/shaders) |
 | Video layer               | [`gpu/layers/VideoLayer.ts`](./gpu/layers/VideoLayer.ts)             |
-| Image / text / shape / freehand layers | [`gpu/layers/`](./gpu/layers)                           |
-| Shared source download cache | [`../media/video/demuxer/sourceBlobCache.ts`](../media/video/demuxer/sourceBlobCache.ts) |
-| Render-loop cost summary  | [`../debug/PerfSummary.ts`](../debug/PerfSummary.ts)                 |
 | Per-clip GPU texture      | [`gpu/VideoTexture.ts`](./gpu/VideoTexture.ts)                       |
 | Frame access boundary     | [`../media/video/VideoFrameProvider.ts`](../media/video/VideoFrameProvider.ts) |
 | Decoded-frame cache       | [`../media/video/FrameCache.ts`](../media/video/FrameCache.ts)     |
@@ -1036,4 +948,3 @@ graph LR
 | Recording GL (test only)  | [`gpu/debug/RecordingGl.ts`](./gpu/debug/RecordingGl.ts)            |
 | Renderer tests            | [`gpu/__tests__/`](./gpu/__tests__)                                  |
 | Media/decode tests        | [`../media/video/__tests__/`](../media/video/__tests__)              |
-| Import boundary tests     | [`../media/__tests__/ImportBoundary.test.ts`](../media/__tests__/ImportBoundary.test.ts) |

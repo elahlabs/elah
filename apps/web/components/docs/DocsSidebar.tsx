@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { label } from '@/components/eb'
 import { docsNav } from '@/config/docs'
 
 interface DocsNavListProps {
@@ -28,7 +29,7 @@ export function DocsNavList({ onNavigate, dense = true }: DocsNavListProps) {
     <>
       {docsNav.map((section) => (
         <div key={section.title} className="mb-6">
-          <h3 className="label-mono mb-2 text-2xs text-on-surface-variant opacity-70">
+          <h3 className={cn(label, 'mb-2 text-on-surface-variant')}>
             {section.title}
           </h3>
           <ul className="space-y-0.5">
@@ -38,16 +39,16 @@ export function DocsNavList({ onNavigate, dense = true }: DocsNavListProps) {
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    'flex items-center justify-between rounded text-sm transition-colors',
-                    dense ? 'px-2.5 py-2' : 'px-3 py-2.5',
+                    'flex items-center justify-between border-l-2 text-sm transition-colors',
+                    dense ? 'px-3 py-1.5' : 'px-3 py-2.5',
                     isActive(item.href)
-                      ? 'bg-surface-high text-on-surface font-medium'
-                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                      ? 'border-[#FF003C] text-on-surface font-medium'
+                      : 'border-transparent text-on-surface-variant hover:text-on-surface'
                   )}
                 >
                   <span>{item.title}</span>
                   {item.label && (
-                    <span className="label-mono rounded bg-primary px-1.5 py-0.5 text-2xs text-on-primary">
+                    <span className={cn(label, 'bg-on-surface px-1.5 py-0.5 text-[10px] text-surface')}>
                       {item.label}
                     </span>
                   )}

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 import { PageHeader } from '@/components/site/PageHeader'
+import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Text Templates & Motion',
@@ -62,7 +63,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -134,7 +135,7 @@ engine.updateClip(clip.id, trackId, {
 })`}
           />
           <P>
-            Motion applies to shape clips too. They carry the same structure on <C>Clip.shapeAnimation</C>. One caveat: neither shape renderer applies <C>transform.rotation</C>, so <C>spin</C> is offered for text only (see <C>appliesTo</C> in <C>TEXT_ANIMATION_KINDS</C>) and a rotation channel has no visible effect on a shape.
+            Motion applies to shape clips too. They carry the same structure on <C>Clip.shapeAnimation</C>. One caveat: <C>spin</C> is still offered for text only (see <C>appliesTo</C> in <C>TEXT_ANIMATION_KINDS</C>). Since 1.0.0 the shape painter does apply <C>transform.rotation</C>, so a rotation channel in a <C>MotionSpec</C> turns a shape.
           </P>
         </section>
 
@@ -148,7 +149,7 @@ engine.updateClip(clip.id, trackId, {
             {EASINGS.map((name) => (
               <span
                 key={name}
-                className="rounded border border-outline-variant bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface"
+                className="border border-outline-variant bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface"
               >
                 {name}
               </span>
@@ -208,7 +209,7 @@ const placed = sample.transform ?? clip.transform`}
           <P>
             A text template is a named, applyable look: a style, a motion and sometimes a placement. <C>BUILT_IN_TEXT_TEMPLATES</C> holds 14, ordered as a picker should show them (general looks first, positional and decorative after). Look one up by id with <C>findTextTemplate(id)</C>, which returns <C>undefined</C> for an id the package does not ship.
           </P>
-          <div className="mb-4 overflow-hidden rounded-md border border-outline-variant">
+          <div className="mb-4 overflow-hidden border border-outline-variant">
             {TEMPLATES.map(([name, id, description], i) => (
               <div
                 key={id}
@@ -225,8 +226,8 @@ const placed = sample.transform ?? clip.transform`}
           <P>
             Each <C>TextTemplate</C> has an <C>id</C>, <C>name</C>, <C>description</C>, a <C>style</C> (<C>TextTemplateStyle</C>), an <C>animation</C> (<C>TextTemplateAnimation</C>) and optional <C>stagger</C>, <C>tracking</C> and <C>placement</C>. Templates describe their ramp as a fraction of the clip, <C>rampFraction</C>, and never touch <C>content</C>: applying one restyles the words, it does not rewrite them.
           </P>
-          <div className="rounded-md border border-outline-variant bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Stagger and tracking are descriptive</div>
+          <div className="border border-outline-variant bg-surface-low p-4">
+            <div className={`${label} mb-1 text-on-surface-variant`}>Stagger and tracking are descriptive</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
               <C>stagger</C> (break one line into several clips that enter in turn) and <C>tracking: &apos;wide&apos;</C> (fake letterspacing by respacing the characters) are part of what makes some looks what they are, but a single clip cannot express either. <C>applyTextTemplate</C> ignores both, and nothing in the packages executes them. A host that builds a timeline from a template has to implement them itself.
             </p>
@@ -278,7 +279,7 @@ if (template) {
               <C>textStylePresetsStore</C> holds the user-saved ones. It starts empty and has <C>addPreset(preset)</C>, which assigns the <C>id</C>, and <C>removePreset(id)</C>. It does no persistence of its own.
             </li>
             <li>
-              In React, use <C>useTextStylePresetsStore</C> from <Link href="/docs/react#load-and-presets" className="text-primary hover:underline">@elah/react</Link>.
+              In React, use <C>useTextStylePresetsStore</C> from <Link href="/docs/react#load-and-presets" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/react</Link>.
             </li>
           </ul>
           <CodeBlock
