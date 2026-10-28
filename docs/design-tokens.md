@@ -14,14 +14,14 @@ There are two variable families:
 
 | Family | Defined in | Used by |
 | --- | --- | --- |
-| `--color-*` | `apps/web/styles/globals.css` (`:root` / `.dark`) | the website's own chrome (marketing, docs) |
+| `--color-*` | `apps/web/styles/globals.css` (`:root` / `.dark`) | the website's own chrome (marketing, docs, playgrounds) |
 | `--elah-*` | `@elah/editor/styles/tokens.css` (standalone) **or** the `.elah-root` block in `globals.css` (this repo's app) | the editor + timeline packages |
 
 Whoever defines `--elah-*` decides the editor's look. There are three ways to do it:
 
 1. **This website (current):** the `.elah-root` block in `globals.css` pins
    `--elah-*` to a **fixed cool blue-gray scheme**, intentionally **decoupled**
-   from the site's warm `--color-*` light/dark theme — the editor reads as a dark
+   from the site's `--color-*` light/dark theme — the editor reads as a dark
    tool surface in both modes.
 2. **Standalone / vendor:** import `@elah/editor/styles/tokens.css`, which sets
    `.elah-root { --elah-*: <warm-charcoal dark defaults> }`. No design system
@@ -32,6 +32,36 @@ Whoever defines `--elah-*` decides the editor's look. There are three ways to do
    this before switching to mode 1.)
 
 In every case the components are identical; only the `--elah-*` values differ.
+
+### The site's `--color-*` palette
+
+The site chrome uses one edit-bay palette: neutral paper and ink, with cyber red
+(`#FF003C`) reserved for selection, record and the playhead — never body text
+(it fails contrast on paper). Light values sit on `:root`; the `.dark` class on
+`<html>` (toggled by the shared nav's theme toggle, stored in `localStorage` as
+`elah-theme`) swaps them. Cyber red is identical in both themes; text on red is
+always ink `#0E0E10`.
+
+| Token | Light | Dark | Role |
+| --- | --- | --- | --- |
+| `--color-surface` | `#F0EFEA` | `#0C0C0E` | Paper (page background) |
+| `--color-surface-dim` | `#DEDCD5` | `#0C0C0E` | Pressed surface |
+| `--color-surface-low` / `-lowest` | `#F7F6F2` / `#FBFAF7` | `#121215` / `#08080A` | Cards / deepest layer |
+| `--color-surface-container` / `-high` / `-highest` | `#E8E6E0` / `#E8E6E0` / `#DEDCD5` | `#18181B` / `#1E1E22` / `#26262B` | Hover bands / lifted panels |
+| `--color-surface-bright` | `#F7F6F2` | `#26262B` | Brightest step |
+| `--color-on-surface` | `#0E0E10` | `#EDECE7` | Ink text, primary button fill |
+| `--color-on-surface-variant` | `#5E5D58` | `#9C9B95` | Muted text (5.7:1 on paper) |
+| `--color-inverse-surface` / `-on-surface` | `#0E0E10` / `#F0EFEA` | `#EDECE7` / `#0C0C0E` | Inverted fills (toasts, chips) |
+| `--color-outline` | `#9A9993` | `#3A3A40` | Strong hairline / focus edge |
+| `--color-outline-variant` | `#D9D7D0` | `#2A2A2F` | Everyday hairline |
+| `--color-outline-subtle` | `#E4E2DC` | `#1E1E22` | Faint divider |
+| `--color-primary` / `-hover` / `-dim` | `#FF003C` / `#D10030` / `#FF003C` | `#FF003C` / `#FF335F` / `#FF6685` | Cyber red ramp |
+| `--color-on-primary` | `#0E0E10` | `#0E0E10` | Ink on red |
+| `--color-focus-ring` | `#FF003C` | `#FF003C` | Focus ring (red — the outline token is too faint for WCAG 1.4.11) |
+
+Full values and usage rules live in
+[`apps/web/components/landing/home/DESIGN.md` §0](../apps/web/components/landing/home/DESIGN.md)
+(the site-wide design system).
 
 Authoring happens in Tailwind. The repo-root `tailwind.preset.ts` maps token
 classes to these variables (`bg-ed-panel` → `var(--elah-bg-panel)`,

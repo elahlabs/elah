@@ -116,9 +116,9 @@ export default function ArchitecturePage() {
             State lives in three concentric rings. Ring 0 is the single source of truth — a plain TypeScript class with no framework dependencies. Ring 1 mirrors it into Zustand so React can subscribe. Ring 2 holds ephemeral UI state (selection, drag) that never persists to history.
           </p>
           <MermaidDiagram chart={ringStatesDiagram} />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine runs in Node, Web Workers, or headless Chrome with no changes — <a href="/docs/cli" className="text-primary hover:underline">@elah/cli</a> ships exactly this, driving the same export pipeline server-side. Tests import it directly without mounting any React tree.
+              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine runs in Node, Web Workers, or headless Chrome with no changes — <a href="/docs/cli" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/cli</a> ships exactly this, driving the same export pipeline server-side. Tests import it directly without mounting any React tree.
             </p>
           </div>
         </section>
@@ -129,12 +129,12 @@ export default function ArchitecturePage() {
             Timeline Engine
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            All project mutations — adding clips, trimming, splitting, undo/redo — go through one method: <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">commit()</code>. Immer applies the draft, records a history entry, and emits a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">&apos;change&apos;</code> event. Zustand listeners pick it up and React re-renders only the changed slices.
+            All project mutations — adding clips, trimming, splitting, undo/redo — go through one method: <code className="bg-surface-container px-1.5 py-0.5 font-mono">commit()</code>. Immer applies the draft, records a history entry, and emits a <code className="bg-surface-container px-1.5 py-0.5 font-mono">&apos;change&apos;</code> event. Zustand listeners pick it up and React re-renders only the changed slices.
           </p>
           <MermaidDiagram chart={timelineEngineDiagram} />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Single mutation funnel.</strong> There is no direct way to mutate the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Project</code> from outside the engine. Every edit automatically lands in the undo history and notifies all subscribers.
+              <strong className="text-on-surface font-medium">Single mutation funnel.</strong> There is no direct way to mutate the <code className="bg-surface-container px-1.5 py-0.5 font-mono">Project</code> from outside the engine. Every edit automatically lands in the undo history and notifies all subscribers.
             </p>
           </div>
         </section>
@@ -145,10 +145,10 @@ export default function ArchitecturePage() {
             Playback Engine & Clock
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The clock uses an <em>anchor-and-integrate</em> model rather than a counter. On every <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">play()</code> or <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">seek()</code>, it records the current frame and wall-clock time. Each RAF tick derives the current frame from that anchor — no accumulated drift, and rate changes are instantaneous.
+            The clock uses an <em>anchor-and-integrate</em> model rather than a counter. On every <code className="bg-surface-container px-1.5 py-0.5 font-mono">play()</code> or <code className="bg-surface-container px-1.5 py-0.5 font-mono">seek()</code>, it records the current frame and wall-clock time. Each RAF tick derives the current frame from that anchor — no accumulated drift, and rate changes are instantaneous.
           </p>
           <MermaidDiagram chart={playbackClockDiagram} />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
               <strong className="text-on-surface font-medium">Tab visibility.</strong> When the tab is hidden, the engine freezes the anchor frame so playback does not fast-forward on resume. Audio syncs to the same anchor so there is no A/V drift.
             </p>
@@ -161,12 +161,12 @@ export default function ArchitecturePage() {
             Rendering Engine
           </h2>
           <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The renderer receives a <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">Scene</code> — a plain list of active layers — and draws textured quads to a WebGL2 canvas. It knows nothing about the project, history, or React. Video frames are decoded asynchronously into a ring-buffer cache; the render call itself is synchronous and stays under 1 ms on the main thread.
+            The renderer receives a <code className="bg-surface-container px-1.5 py-0.5 font-mono">Scene</code> — a plain list of active layers — and draws textured quads to a WebGL2 canvas. It knows nothing about the project, history, or React. Video frames are decoded asynchronously into a ring-buffer cache; the render call itself is synchronous and stays under 1 ms on the main thread.
           </p>
           <MermaidDiagram chart={renderingEngineDiagram} />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Cache miss graceful degradation.</strong> On a seek or cold start the <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">FrameCache</code> may not have the target frame yet. The renderer shows the last cached frame while the async decoder catches up — no blank frames, no stalls.
+              <strong className="text-on-surface font-medium">Cache miss graceful degradation.</strong> On a seek or cold start the <code className="bg-surface-container px-1.5 py-0.5 font-mono">FrameCache</code> may not have the target frame yet. The renderer shows the last cached frame while the async decoder catches up — no blank frames, no stalls.
             </p>
           </div>
         </section>
@@ -180,7 +180,7 @@ export default function ArchitecturePage() {
             Six vertical layers. Each layer only talks to the one directly below it — the React UI never touches WebGL; the renderer never imports React.
           </p>
 
-          <div className="overflow-hidden rounded-md border border-outline-variant text-xs">
+          <div className="overflow-hidden border border-outline-variant text-xs">
             {[
               {
                 label: 'React UI',
@@ -257,8 +257,8 @@ export default function ArchitecturePage() {
                     />
                     <div className="hidden sm:flex items-center px-3 py-3">
                       <span
-                        className="label-mono text-2xs font-semibold"
-                        style={{ color: layer.color, writingMode: 'horizontal-tb' }}
+                        className="label-mono text-2xs font-semibold text-on-surface"
+                        style={{ writingMode: 'horizontal-tb' }}
                       >
                         {layer.label}
                       </span>
@@ -270,7 +270,7 @@ export default function ArchitecturePage() {
                       {layer.items.map((item) => (
                         <div
                           key={item.name}
-                          className="flex items-baseline gap-1 rounded border px-2 py-0.5"
+                          className="flex items-baseline gap-1 border px-2 py-0.5"
                           style={{ borderColor: tint(layer.color, 19), backgroundColor: tint(layer.color, 3) }}
                         >
                           <span className="font-mono text-xs text-on-surface">{item.name}</span>

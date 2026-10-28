@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { flow } from '../landingData'
 import { Section } from './Section'
-import { Sel } from './Sel'
-import { btnSecondary, btnSmall, chip, mono, outline } from './ui'
+import { Sel, btnSecondary, btnSmall, chip, mono, outline } from '@/components/eb'
 
 /** Architecture, condensed to one diagram (brief section 5, item 10). */
 export function HomeArchitecture() {

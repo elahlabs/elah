@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
 import { PageHeader } from '@/components/site/PageHeader'
+import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'HTML scenes and VideoSpec',
@@ -35,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Experimental() {
   return (
-    <span className="ml-2 border border-outline-variant px-1.5 py-0.5 align-middle text-2xs font-mono uppercase tracking-wider text-on-surface-variant">
+    <span className={`${label} ml-2 border border-outline-variant px-1.5 py-0.5 align-middle text-on-surface-variant`}>
       Experimental
     </span>
   )
@@ -89,7 +90,7 @@ export default function ScenesDocsPage() {
         <section className="mb-10">
           <H2 id="ops">Edit operations<Experimental /></H2>
           <P>
-            Edits an AI can call go through typed ops from <C>@elah/core/ops</C>: <C>sanitizeOps(raw, project)</C> repairs a model&apos;s op list and <C>applyOps(engine, ops)</C> applies it as one undo step. See <Link href="/docs/agents" className="text-primary hover:underline">For AI agents</Link>.
+            Edits an AI can call go through typed ops from <C>@elah/core/ops</C>: <C>sanitizeOps(raw, project)</C> repairs a model&apos;s op list and <C>applyOps(engine, ops)</C> applies it as one undo step. See <Link href="/docs/agents" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">For AI agents</Link>.
           </P>
         </section>
       </article>

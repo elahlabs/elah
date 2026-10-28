@@ -2,9 +2,8 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { siteConfig } from '@/config/site'
 import { Section } from './Section'
-import { Sel } from './Sel'
+import { Sel, btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline } from '@/components/eb'
 import { MiniLanes, TRACK } from './MiniLanes'
-import { btnSecondary, btnSmall, cardBody, cardLight, cardTitle, mono, outline } from './ui'
 
 const PLUGIN_INSTALL = ['/plugin marketplace add elahlabs/elah', '/plugin install elah@elah']
 

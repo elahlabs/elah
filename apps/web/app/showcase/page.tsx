@@ -2,13 +2,12 @@ import type { Metadata } from 'next'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { siteConfig } from '@/config/site'
 import { showcase } from '@/config/showcase'
-import { SiteNav } from '@/components/site/SiteNav'
-import { LandingFooter } from '@/components/landing/LandingFooter'
+import { Navbar } from '@/components/marketing/Navbar'
+import { Footer } from '@/components/marketing/Footer'
 import { ShowcaseCard } from '@/components/landing/ShowcaseCard'
 import { ArrowUpRight } from 'lucide-react'
 import { PageHeader } from '@/components/site/PageHeader'
-import { Stagger, StaggerItem } from '@/components/landing/motion/Stagger'
-import { Spotlight } from '@/components/landing/motion/Spotlight'
+import { Slate, btnSecondary, btnSmall, cardLight, container, h2, label, lead, sectionY } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Showcase',
@@ -38,77 +37,41 @@ const itemListJsonLd = {
 
 export default function ShowcasePage() {
   return (
-    <div className="landing-root" style={{ minHeight: '100vh' }}>
+    <div className="flex min-h-screen flex-col bg-surface">
       <JsonLd data={itemListJsonLd} />
-      <SiteNav variant="floating" />
-      <main>
+      <Navbar />
+      <main id="main" className="flex-1">
         <PageHeader
           eyebrow="Showcase"
           title="Built with elah."
           lede="A hosted product, reference editors, example apps, and a render server. Every card below opens something real."
         />
 
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(36px, 6vw, 56px) 24px clamp(60px, 9vw, 100px)' }}>
-          <Stagger
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px,100%),1fr))',
-              gap: 18,
-            }}
-          >
+        <section className={`${container} pt-12 ${sectionY}`}>
+          <Slate n={1} label="Showcase" kicker={`${showcase.length} projects`} />
+          <div className="grid grid-cols-1 gap-4 pt-10 md:grid-cols-2 lg:grid-cols-3">
             {showcase.map((entry) => (
-              <StaggerItem key={entry.slug} style={{ display: 'flex', flexDirection: 'column' }}>
-                <ShowcaseCard entry={entry} />
-              </StaggerItem>
+              <ShowcaseCard key={entry.slug} entry={entry} />
             ))}
-          </Stagger>
+          </div>
 
-          <Spotlight
-            style={{
-              marginTop: 48,
-              border: '1px solid var(--line)',
-              borderRadius: 12,
-              background: 'var(--card)',
-              padding: 'clamp(22px, 4vw, 32px)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
-            <div style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 11, letterSpacing: '.16em', color: 'var(--accent)' }}>
-              BUILT SOMETHING?
-            </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: 0, fontWeight: 600, letterSpacing: '-0.015em' }}>
-              Share your project
-            </h2>
-            <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.62, margin: 0, maxWidth: 560 }}>
+          <div className={`${cardLight} mt-12`}>
+            <div className={`text-on-surface-variant ${label}`}>Built something?</div>
+            <h2 className={h2}>Share your project</h2>
+            <p className={`${lead} max-w-[560px]`}>
               If you have built something with elah, open an issue on GitHub with a link and a line about what it does, and we will
               consider it for this page.
             </p>
-            <a
-              href={SUBMIT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="lv-launch"
-              style={{
-                marginTop: 4,
-                alignSelf: 'flex-start',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                color: 'var(--accent)',
-                fontWeight: 600,
-                fontSize: 13.5,
-                transition: 'gap .18s',
-              }}
-            >
-              Open an issue on GitHub
-              <ArrowUpRight size={15} aria-hidden />
-            </a>
-          </Spotlight>
+            <div>
+              <a href={SUBMIT_URL} target="_blank" rel="noopener noreferrer" className={`${btnSecondary} ${btnSmall}`}>
+                Open an issue on GitHub
+                <ArrowUpRight size={15} aria-hidden />
+              </a>
+            </div>
+          </div>
         </section>
       </main>
-      <LandingFooter />
+      <Footer />
     </div>
   )
 }

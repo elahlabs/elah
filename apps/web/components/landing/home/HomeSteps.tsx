@@ -9,8 +9,7 @@ import { getTitleCard } from '@/lib/motion/titleCard'
 import { STARTERS } from '@/lib/motion/starters'
 import type { Converted } from '@/lib/motion/convert'
 import { Section } from './Section'
-import { Sel } from './Sel'
-import { cardBody, cardTitle, cardWhite, mono, panel, sans } from './ui'
+import { Sel, cardBody, cardTitle, cardWhite, mono, panel, sans } from '@/components/eb'
 
 const TITLE_CARD = STARTERS[0]
 

@@ -1,9 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
-import { CardHeader } from './CardHeader'
-import { badgeColors } from './landingData'
-import { Spotlight } from './motion/Spotlight'
 import { kindLabel, type ShowcaseEntry, type ShowcaseKind } from '@/config/showcase'
+import { cardBody, cardLight, cardTitle, label, outline } from '@/components/eb'
 
 const ctaLabel: Record<ShowcaseKind, string> = {
   app: 'Visit site',
@@ -12,31 +10,14 @@ const ctaLabel: Record<ShowcaseKind, string> = {
   server: 'Read the docs',
 }
 
-const pill = {
-  fontFamily: 'var(--font-geist-mono)',
-  fontSize: 10.5,
-  borderRadius: 99,
-  padding: '2px 10px',
-  border: '1px solid var(--line)',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-} as const
+// Status dots are the one place the mint/amber status colours are allowed.
+const statusDot = { live: '#3DDC97', preview: '#E0A33A' } as const
 
-const ctaStyle = {
-  marginTop: 4,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  color: 'var(--accent)',
-  fontWeight: 600,
-  fontSize: 13.5,
-  transition: 'gap .18s',
-} as const
+const tagCls = `bg-surface px-2 py-[3px] text-on-surface-variant ${label} ${outline}`
+const ctaCls = `mt-1 inline-flex items-center gap-2 text-on-surface underline decoration-primary underline-offset-4 ${label}`
 
 /** One showcase card: shared by the /showcase grid and the landing teaser. */
 export function ShowcaseCard({ entry, showTags = true }: { entry: ShowcaseEntry; showTags?: boolean }) {
-  const color = badgeColors[entry.status]
   const cta = (
     <>
       {ctaLabel[entry.kind]}
@@ -44,65 +25,37 @@ export function ShowcaseCard({ entry, showTags = true }: { entry: ShowcaseEntry;
     </>
   )
   return (
-    <Spotlight
-      lift={4}
-      className="lv-pgcard"
-      style={{
-        height: '100%',
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        background: 'var(--card)',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'border-color .18s, box-shadow .18s',
-      }}
-    >
-      <CardHeader kind={entry.header} />
-      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ ...pill, color }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />
-            {entry.status}
-          </span>
-          <span style={{ ...pill, color: 'var(--muted)' }}>{kindLabel[entry.kind]}</span>
-        </div>
-        <h3 style={{ fontSize: 17, margin: 0, fontWeight: 600, letterSpacing: '-0.015em' }}>{entry.name}</h3>
-        {entry.by && (
-          <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 11, color: 'var(--faint)' }}>by {entry.by}</span>
-        )}
-        <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.62, margin: 0, flex: 1, textWrap: 'pretty' }}>
-          {entry.description}
-        </p>
-        {showTags && (
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            {entry.tags.map((t) => (
-              <span
-                key={t}
-                style={{
-                  fontFamily: 'var(--font-geist-mono)',
-                  fontSize: 10.5,
-                  color: 'var(--accent)',
-                  background: 'color-mix(in oklab, var(--accent) 9%, transparent)',
-                  borderRadius: 5,
-                  padding: '2px 8px',
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
-        {entry.external ? (
-          <a href={entry.href} target="_blank" rel="noopener noreferrer" className="lv-launch" style={ctaStyle}>
-            {cta}
-          </a>
-        ) : (
-          <Link href={entry.href} className="lv-launch" style={ctaStyle}>
-            {cta}
-          </Link>
-        )}
+    <article className={`${cardLight} h-full min-w-0 transition-colors hover:bg-surface-container`}>
+      <div className="flex flex-wrap gap-2">
+        <span className={`flex items-center gap-2 bg-surface px-2 py-[3px] text-on-surface ${label} ${outline}`}>
+          <span aria-hidden className="h-[6px] w-[6px]" style={{ backgroundColor: statusDot[entry.status] }} />
+          {entry.status}
+        </span>
+        <span className={tagCls}>{kindLabel[entry.kind]}</span>
       </div>
-    </Spotlight>
+      <div className="flex flex-1 flex-col gap-[10px]">
+        <h3 className={cardTitle}>{entry.name}</h3>
+        {entry.by && <span className={`text-on-surface-variant ${label}`}>by {entry.by}</span>}
+        <p className={`${cardBody} flex-1 text-pretty`}>{entry.description}</p>
+      </div>
+      {showTags && (
+        <div className="flex flex-wrap gap-2">
+          {entry.tags.map((t) => (
+            <span key={t} className={tagCls}>
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+      {entry.external ? (
+        <a href={entry.href} target="_blank" rel="noopener noreferrer" className={ctaCls}>
+          {cta}
+        </a>
+      ) : (
+        <Link href={entry.href} className={ctaCls}>
+          {cta}
+        </Link>
+      )}
+    </article>
   )
 }

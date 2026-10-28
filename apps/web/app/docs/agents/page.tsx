@@ -34,7 +34,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -78,7 +78,7 @@ export default function AgentsPage() {
         <section className="mb-10">
           <H2 id="agents-in-the-repo">Agents in the Repo</H2>
           <P>
-            For an agent working <em>inside</em> a checkout of the repository, rather than consuming the packages, the brief is <a href={AGENTS_MD_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">AGENTS.md</a> at the repo root. It states the three invariants that hold everywhere, the package layout, the build and test commands, the one build quirk worth knowing (apps resolve <C>@elah/*</C> to <C>dist/</C>, except the website, which resolves to source), the release steps, and what to update when the public API changes.
+            For an agent working <em>inside</em> a checkout of the repository, rather than consuming the packages, the brief is <a href={AGENTS_MD_URL} target="_blank" rel="noopener noreferrer" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">AGENTS.md</a> at the repo root. It states the three invariants that hold everywhere, the package layout, the build and test commands, the one build quirk worth knowing (apps resolve <C>@elah/*</C> to <C>dist/</C>, except the website, which resolves to source), the release steps, and what to update when the public API changes.
           </P>
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
             <li>
@@ -106,7 +106,7 @@ export default function AgentsPage() {
 curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4`}
           />
           <P>
-            The spec is friendly to generation because it uses seconds, not frames, and names assets rather than paths. Validation is where it helps a model most: overlaps, track limits and source bounds are checked by the real engine, and failures come back as path-addressed messages such as <C>clips[2].duration must be ...</C>. Over HTTP an invalid spec is a <C>422</C> with the message in a JSON <C>error</C> field, so a generating model can read the error, fix that one clip, and resubmit. The spec format, error contract and serve options are documented on <Link href="/docs/cli#build-spec" className="text-primary hover:underline">the CLI page</Link>.
+            The spec is friendly to generation because it uses seconds, not frames, and names assets rather than paths. Validation is where it helps a model most: overlaps, track limits and source bounds are checked by the real engine, and failures come back as path-addressed messages such as <C>clips[2].duration must be ...</C>. Over HTTP an invalid spec is a <C>422</C> with the message in a JSON <C>error</C> field, so a generating model can read the error, fix that one clip, and resubmit. The spec format, error contract and serve options are documented on <Link href="/docs/cli#build-spec" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">the CLI page</Link>.
           </P>
         </section>
 
@@ -118,10 +118,10 @@ curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4`}
           </P>
           <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
             <li>
-              <a href="/llms.txt" className="text-primary hover:underline"><C>/llms.txt</C></a> is a curated index of the docs, resources, blog posts and package links, with a one-line description of each. Retrieval agents can find the canonical pages without scraping HTML.
+              <a href="/llms.txt" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2"><C>/llms.txt</C></a> is a curated index of the docs, resources, blog posts and package links, with a one-line description of each. Retrieval agents can find the canonical pages without scraping HTML.
             </li>
             <li>
-              <a href="/llms-full.txt" className="text-primary hover:underline"><C>/llms-full.txt</C></a> concatenates the full markdown of every blog post so it can be ingested in a single fetch. Each post is also available alone at <C>/blog/&lt;slug&gt;/md</C>.
+              <a href="/llms-full.txt" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2"><C>/llms-full.txt</C></a> concatenates the full markdown of every blog post so it can be ingested in a single fetch. Each post is also available alone at <C>/blog/&lt;slug&gt;/md</C>.
             </li>
           </ul>
           <P>
@@ -133,8 +133,8 @@ curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4`}
         <section className="mb-10">
           <H2 id="webmcp">WebMCP</H2>
 
-          <div className="mb-6 rounded-md border border-primary/40 bg-surface-low p-4">
-            <div className="label-mono mb-1 text-2xs text-primary">Status</div>
+          <div className="mb-6 border border-outline-variant bg-surface-low p-4">
+            <div className="label-mono mb-1 text-2xs text-on-surface">Status</div>
             <p className="text-sm leading-relaxed text-on-surface">
               <strong className="font-medium">Planned. Coming soon, with ChatGPT and Claude Code as the target clients.</strong>
             </p>

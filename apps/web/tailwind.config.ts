@@ -19,6 +19,17 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Square corners site-wide (edit bay). `full` stays for true circles.
+      borderRadius: {
+        none: '0',
+        sm: '0',
+        DEFAULT: '0',
+        md: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
+      },
       typography: {
         DEFAULT: {
           css: {

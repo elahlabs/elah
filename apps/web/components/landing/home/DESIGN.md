@@ -1,78 +1,98 @@
-# elah.dev landing — design system
+# elah.dev — site design system
 
-The design language of the homepage (`app/page.tsx` → `components/landing/home/*`). Use it when
-adding a section, card, popup or button so new work looks like it was always there.
+The design language of the whole site (marketing, docs, playgrounds, blog). Use it when adding a
+page, section, card, popup or button so new work looks like it was always there.
 
-The landing is styled with Tailwind **arbitrary values** (`text-[15px]`, `bg-[#FF003C]`), not the
-`--elah-*` editor tokens. The values below are the vocabulary; reuse them exactly rather than
-inventing near-misses.
+The site is styled with Tailwind **arbitrary values** (`text-[15px]`, `bg-[#FF003C]`) over the
+site-wide `--color-*` CSS variables (`styles/globals.css`), not the `--elah-*` editor tokens.
+The values below are the vocabulary; reuse them exactly rather than inventing near-misses.
 
 ---
 
 ## 0. Edit bay (current, supersedes the sections below)
 
-The page is an edit bay: it reads like footage being cut. Where this section and the older
-sections disagree, this one wins. The older sections describe the blush/coral look and are
-kept for history.
+The whole site is an edit bay: pages read like footage being cut. Where this section and the
+older sections disagree, this one wins. Sections 1–10 describe the old blush/coral homepage look
+and are kept for history; see the homepage subsection at the end of §0 for what actually carries
+over.
 
-**Palette.** Neutral paper and ink. Cyber red is reserved for selection, record and the playhead,
-never for body text (it is 3.4:1 on paper).
+### Palette
 
-| Role | Hex |
-| --- | --- |
-| Paper (page) | `#F0EFEA` |
-| Paper 2 (hover) | `#E8E6E0` |
-| Card | `#F7F6F2` |
-| Ink (text, primary button, stage) | `#0E0E10` |
-| Muted text | `#5E5D58` (5.7:1 on paper) |
-| Hairline | `#D9D7D0` |
-| Cyber red | `#FF003C` |
-| On-ink muted | `#9A9993` |
-| On-ink hairline | `#2E2E33` |
+Neutral paper and ink, one site-wide palette. Cyber red is reserved for selection, record and the
+playhead, never for body text (it is 3.4:1 on paper).
 
-Light and dark. The neutrals are CSS variables (`--lp-paper`, `--lp-paper2`, `--lp-card`,
-`--lp-ink`, `--lp-muted`, `--lp-line`, `--lp-stage`, `--lp-stage-line`) defined in
-`styles/landing.css`. Light values sit on `:root`; `.lp[data-theme='dark']` swaps them on the
-homepage only. Write classes as `text-[var(--lp-ink)]`, never the raw hex. Cyber red, the
-scrub bar and the engine stage are the same in both themes. Text on red stays literal ink
-`#0E0E10` in both.
+The colours are the `--color-*` tokens in `styles/globals.css`, defined on `:root` (light) and
+`.dark` (dark). Dark mode is the `.dark` class on `<html>`, toggled by the shared
+`components/eb/ThemeToggle.tsx` — it stores the choice in `localStorage` (`elah-theme`, migrating
+the old homepage key `elah-lp-theme`) and follows the system until the user picks. An inline
+script at the top of `app/layout.tsx` applies the theme before first paint, so there is no flash.
 
-| Variable | Light | Dark |
-| --- | --- | --- |
-| `--lp-paper` | `#F0EFEA` | `#0C0C0E` |
-| `--lp-paper2` | `#E8E6E0` | `#18181B` |
-| `--lp-card` | `#F7F6F2` | `#121215` |
-| `--lp-ink` | `#0E0E10` | `#EDECE7` |
-| `--lp-muted` | `#5E5D58` | `#9C9B95` |
-| `--lp-line` | `#D9D7D0` | `#2A2A2F` |
-| `--lp-stage` | `#0E0E10` | `#141417` |
+| Token | Light | Dark | Role |
+| --- | --- | --- | --- |
+| `--color-surface` | `#F0EFEA` | `#0C0C0E` | Paper (page background) |
+| `--color-surface-container` | `#E8E6E0` | `#18181B` | Paper 2 (hover, banding) |
+| `--color-surface-low` | `#F7F6F2` | `#121215` | Card |
+| `--color-surface-highest` | `#DEDCD5` | `#26262B` | Pressed / deepest step |
+| `--color-on-surface` | `#0E0E10` | `#EDECE7` | Ink: text, primary button fill, stage |
+| `--color-on-surface-variant` | `#5E5D58` | `#9C9B95` | Muted text (5.7:1 on paper) |
+| `--color-outline-variant` | `#D9D7D0` | `#2A2A2F` | Hairline |
+| `--color-primary` | `#FF003C` | `#FF003C` | Cyber red: selection, record, playhead |
+| `--color-on-primary` | `#0E0E10` | `#0E0E10` | Ink on red, both themes |
+| `--color-focus-ring` | `#FF003C` | `#FF003C` | Focus ring (red, not the faint outline) |
 
-The toggle (`ThemeToggle.tsx`) sits in the nav. It stores the choice in `localStorage`
-(`elah-lp-theme`) and follows the system until the user picks. An inline script at the top of the
-`.lp` wrapper applies the theme before first paint.
+Cyber red is the same in both themes; text on red stays literal ink `#0E0E10`. Write classes as
+`text-[var(--color-on-surface)]` (or the `C` map from `components/eb/tokens.ts`), never the raw
+hex. The homepage's `--lp-*` variables (`styles/landing.css`) are aliases of these tokens kept so
+the homepage classes keep working.
 
-**Type.** Three voices:
-- *Display*: Big Shoulders 800, uppercase, tight leading (`display` in `ui.ts`). Headlines and card titles.
-- *Label*: Geist Mono 11px, uppercase, `tracking-[0.14em]` (`label`). Nav, buttons, slates, tags.
-- *Body*: Geist Sans, muted.
+### Shared components
 
-**Signature moves.**
-- *Selected word* (`<Sel>` in `Sel.tsx`): one word per headline wears a red selection box with four
-  square handles, like a layer selected in the editor. One per headline, never more.
+`components/eb/` is the kit every page composes from: `Card`, `Button`, `Slate`, `Sel`,
+`CropMarks`, `ThemeToggle`, plus `tokens.ts` — the shared class vocabulary (`C`, `sans`, `mono`,
+`display`, `label`, `container`, `outline`, `btn*`, `card*`, `h2`, `lead`). `landingData.ts`
+feeds the shared nav and footer, and `components/eb/`'s page header rules wrap docs, playground
+and marketing pages. Prefer composing these before writing new chrome.
+
+### Type
+
+Three voices, everywhere:
+- *Display*: Big Shoulders 800, uppercase, tight leading (`display` in `components/eb/tokens.ts`).
+  Headlines and card titles. The `!` prefix beats the global `:is(h1, h2, h3, h4)` display-font
+  rule where a page needs Geist instead.
+- *Label*: Geist Mono 11px, uppercase, `tracking-[0.14em]` (`label`). Nav, buttons, slates, tags,
+  table headers, file tabs.
+- *Body*: Geist Sans, muted (`--color-on-surface-variant`).
+
+### Shape
+
+Square corners everywhere. Frames are 1px hairlines (`--color-outline-variant`), not shadows. The
+hairline is drawn as an outline (`outline` in `tokens.ts`) so it takes no layout space.
+
+### Buttons
+
+Mono uppercase labels. Primary: ink fill, paper text, hover red fill with ink text. Secondary:
+1px ink border, hover ink fill. On an ink panel, primary is red with ink text.
+
+### Links
+
+Body links are ink (or muted) with a red underline, never red text — red fails contrast on light
+paper (3.4:1). Red appears in links only as the underline or a marker swatch.
+
+### Homepage specifics
+
+The homepage keeps its edit-bay scenography on top of the shared system:
 - *Slates*: every section opens with an ink rule and `SC 03 · BIND` left, a short kicker right
   (`Section` takes `n`, `scene`, `kicker`).
-- *Scrub bar* (`ScrubBar.tsx`): a transport bar fixed to the bottom. Every `[data-scene]` element is
-  a clip sized by its height, the red playhead tracks the reading line, timecode counts the page
-  as one minute at 30 fps, and clicking a clip jumps to it. New sections need `data-scene`.
+- *Scrub bar* (`ScrubBar.tsx`): a transport bar fixed to the bottom. Every `[data-scene]` element
+  is a clip sized by its height, the red playhead tracks the reading line, timecode counts the
+  page as one minute at 30 fps, and clicking a clip jumps to it. New sections need `data-scene`.
 - *Viewfinder*: crop marks (`CropMarks`) and a centre cross frame the hero; a REC timecode runs
   from page load (frozen under reduced motion).
-- *Program monitor*: the engine stage is ink with a header strip (`Program · hero.json`) and a caption strip.
+- *Program monitor*: the engine stage is ink with a header strip (`Program · hero.json`) and a
+  caption strip.
 - *End card*: the footer closes on the wordmark, letters spread across the column.
-
-**Shape.** Square corners everywhere. Frames are 1px hairlines, not shadows.
-
-**Buttons.** Mono uppercase labels. Primary: ink fill, paper text, hover red fill with ink text.
-Secondary: 1px ink border, hover ink fill. On the ink CTA, primary is red with ink text.
+- *Selected word* (`<Sel>` in `components/eb/Sel.tsx`): one word per headline wears a red
+  selection box with four square handles. One per headline, never more.
 
 ---
 

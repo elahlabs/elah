@@ -18,7 +18,7 @@ const toc = [
   { id: 'self-hosting', title: 'Self-hosting', level: 2 },
 ]
 
-const mono = 'rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono'
+const mono = 'bg-surface-container px-1.5 py-0.5 text-xs font-mono'
 
 export default function AnalyticsDocsPage() {
   return (

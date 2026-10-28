@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useConsent } from '@/components/ConsentProvider'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 import { trackEventOnce } from '@/lib/analytics'
-import { bottomBar } from '@/components/bottomBar'
+import { bottomBar } from '@/components/eb/bottomBar'
 
 // Routes where a fixed bottom banner would sit on top of the editor's own
 // fixed mobile bottom bar (padded with env(safe-area-inset-bottom)).

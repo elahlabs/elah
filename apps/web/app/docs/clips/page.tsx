@@ -32,7 +32,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function C({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -78,7 +78,7 @@ const rest = engine
 engine.reorderTracks([pip.id, ...rest])`}
           />
           <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            You can also start with several video lanes by listing them in <C>initialTracks</C>. The headless build spec in <Link href="/docs/cli#build-spec" className="text-primary hover:underline">the CLI docs</Link> is separate: it still places every video clip on one video track, even though the engine itself supports more.
+            You can also start with several video lanes by listing them in <C>initialTracks</C>. The headless build spec in <Link href="/docs/cli#build-spec" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">the CLI docs</Link> is separate: it still places every video clip on one video track, even though the engine itself supports more.
           </p>
         </section>
 
@@ -133,7 +133,7 @@ const safe = normalizeCrop({ x: 0.9, y: 0, width: 0.5, height: 1 })
 // -> { x: 0.5, y: 0, width: 0.5, height: 1 }`}
           />
           <P>
-            Cropping changes what is visible, not the clip&apos;s scale. The draw rect is sized from the cropped content, so a crop shrinks the box on stage while <C>transform.scale</C> stays as authored. The interactive crop mode in the preview is covered on the <Link href="/docs/editor#transforms" className="text-primary hover:underline">Editor page</Link>.
+            Cropping changes what is visible, not the clip&apos;s scale. The draw rect is sized from the cropped content, so a crop shrinks the box on stage while <C>transform.scale</C> stays as authored. The interactive crop mode in the preview is covered on the <Link href="/docs/editor#transforms" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Editor page</Link>.
           </P>
           <P>
             If you build your own placement UI, <C>transformFromContainRect(contentWidth, contentHeight, stageWidth, stageHeight)</C> returns the explicit <C>Transform</C> that is visually identical to the renderer&apos;s default contain placement. Bake it in before the first gesture and grabbing a clip that never had a transform does not make it jump. <C>transformFromCoverRect</C> takes the same arguments and fills the stage instead of letterboxing.

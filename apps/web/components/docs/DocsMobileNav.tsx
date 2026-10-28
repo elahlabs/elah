@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { label } from '@/components/eb'
 import { docsNav } from '@/config/docs'
 import { DocsNavList } from '@/components/docs/DocsSidebar'
 
@@ -64,17 +65,17 @@ export function DocsMobileNav() {
 
   return (
     <>
-      <div className="sticky top-14 z-40 flex h-12 items-center gap-2 border-b border-outline-variant bg-surface/95 px-4 backdrop-blur-sm md:hidden">
+      <div className="sticky top-14 z-40 flex h-12 items-center gap-2 border-b border-outline-variant bg-surface px-4 md:hidden">
         <button
           ref={triggerRef}
           onClick={() => setOpen(true)}
           aria-label="Open documentation navigation"
           aria-expanded={open}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+          className="flex h-9 w-9 shrink-0 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface"
         >
           <Menu className="h-4 w-4" />
         </button>
-        <span className="truncate text-sm text-on-surface-variant">
+        <span className={`truncate text-on-surface-variant ${label}`}>
           Docs <span className="opacity-50">/</span>{' '}
           <span className="text-on-surface">{title}</span>
         </span>
@@ -104,14 +105,14 @@ export function DocsMobileNav() {
                   className="fixed inset-y-0 left-0 z-[70] w-[min(20rem,85vw)] overflow-y-auto border-r border-outline-variant bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
                 >
                   <div className="sticky top-0 flex items-center justify-between border-b border-outline-variant bg-surface px-4 py-3">
-                    <span className="label-mono text-2xs text-on-surface-variant opacity-70">
+                    <span className={`text-on-surface-variant ${label}`}>
                       Documentation
                     </span>
                     <button
                       ref={closeRef}
                       onClick={close}
                       aria-label="Close documentation navigation"
-                      className="flex h-9 w-9 items-center justify-center rounded text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                      className="flex h-9 w-9 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface"
                     >
                       <X className="h-4 w-4" />
                     </button>

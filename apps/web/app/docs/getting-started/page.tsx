@@ -40,7 +40,7 @@ export default function GettingStartedPage() {
             Level 1: Timeline Only
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component is the most isolated piece. Wrap it in <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> and you get a fully functional NLE timeline — drag, trim, split, snap, undo/redo.
+            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component is the most isolated piece. Wrap it in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> and you get a fully functional NLE timeline — drag, trim, split, snap, undo/redo.
           </p>
           <CodeBlock
             language="tsx"
@@ -102,13 +102,13 @@ export default function TimelineOnly() {
   )
 }`}
           />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
               This is the same integration used in the live Timeline playground.
             </p>
             <Link
               href="/playground/timeline"
-              className="shrink-0 rounded border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
+              className="shrink-0 border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
             >
               Open Timeline →
             </Link>
@@ -121,7 +121,7 @@ export default function TimelineOnly() {
             Level 2: Timeline + Preview
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Add <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<Preview>'}</code> to mount the WebGL2 renderer and drive the RAF loop. You inject a <strong className="text-on-surface font-medium">demuxer factory</strong> so the SDK never hard-depends on a specific decode backend:
+            Add <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<Preview>'}</code> to mount the WebGL2 renderer and drive the RAF loop. You inject a <strong className="text-on-surface font-medium">demuxer factory</strong> so the SDK never hard-depends on a specific decode backend:
           </p>
           <CodeBlock
             language="tsx"
@@ -169,10 +169,10 @@ export default function App() {
   )
 }`}
           />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Note</div>
             <p className="text-xs leading-relaxed text-on-surface-variant">
-              <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">{'<Preview>'}</code> paints interactive transform overlays automatically — drag/resize for video and image clips, inline-edit for text clips. No additional wiring needed.
+              <code className="bg-surface-container px-1.5 py-0.5 font-mono">{'<Preview>'}</code> paints interactive transform overlays automatically — drag/resize for video and image clips, inline-edit for text clips. No additional wiring needed.
             </p>
           </div>
         </section>
@@ -183,7 +183,7 @@ export default function App() {
             Level 3: Full Editor
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Add <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<AssetPanel>'}</code> for the media library (drag-drop import, filmstrip thumbnails, waveform previews), a transport toolbar, and export:
+            Add <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{'<AssetPanel>'}</code> for the media library (drag-drop import, filmstrip thumbnails, waveform previews), a transport toolbar, and export:
           </p>
           <CodeBlock
             language="tsx"
@@ -278,13 +278,13 @@ export default function FullEditor() {
   )
 }`}
           />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4 flex items-center justify-between gap-4">
             <p className="text-xs leading-relaxed text-on-surface-variant">
               This is the same integration used in the live Production playground — asset panel, preview, timeline, transport, and export.
             </p>
             <Link
               href="/playground/production"
-              className="shrink-0 rounded border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
+              className="shrink-0 border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
             >
               Open Production →
             </Link>
@@ -299,7 +299,7 @@ export default function FullEditor() {
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
             The Timeline component handles these shortcuts automatically when it has focus:
           </p>
-          <div className="overflow-hidden rounded-md border border-outline-variant">
+          <div className="overflow-hidden border border-outline-variant">
             {[
               { key: 'Space', action: 'Play / Pause' },
               { key: 'S', action: 'Split selected clip at playhead' },
@@ -315,7 +315,7 @@ export default function FullEditor() {
                 key={row.key}
                 className={`flex flex-col items-start gap-1.5 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-center sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
               >
-                <kbd className="min-w-0 rounded border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
+                <kbd className="min-w-0 border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
                   {row.key}
                 </kbd>
                 <span className="text-sm text-on-surface-variant">{row.action}</span>
@@ -330,7 +330,7 @@ export default function FullEditor() {
             Adding Clips Programmatically
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Use <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTimelineEngine()</code> to access the engine from any child of <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code>. All mutations go through <code className="rounded bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.addClip()</code>:
+            Use <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTimelineEngine()</code> to access the engine from any child of <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code>. All mutations go through <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.addClip()</code>:
           </p>
           <CodeBlock
             language="tsx"
@@ -398,10 +398,10 @@ export function AddClipButton() {
   )
 }`}
           />
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Batch edits</div>
             <p className="mb-3 text-xs leading-relaxed text-on-surface-variant">
-              Wrap multiple mutations in <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">engine.batch()</code> to commit them as a single undo entry:
+              Wrap multiple mutations in <code className="bg-surface-container px-1.5 py-0.5 font-mono">engine.batch()</code> to commit them as a single undo entry:
             </p>
             <CodeBlock
               language="tsx"
@@ -411,10 +411,10 @@ export function AddClipButton() {
 }, 'Add video + audio')`}
             />
           </div>
-          <div className="mt-4 rounded-md border border-outline-variant bg-surface-low p-4">
+          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
             <div className="label-mono mb-1 text-2xs text-on-surface-variant opacity-90">Remote media: place it now, size it later</div>
             <p className="mb-3 text-xs leading-relaxed text-on-surface-variant">
-              A remote URL does not have a duration until it has been probed. <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">beginImportUrl</code> registers it as a pending asset immediately, so you can insert a clip with a fallback length right away, then call <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">growClipToAssetDuration</code> from <code className="rounded bg-surface-container px-1.5 py-0.5 font-mono">@elah/timeline</code> once the real duration is known. The clip shows a loading shimmer in between. Full walkthrough on <Link href="/docs/clips#growing-clips" className="text-primary hover:underline">Clips &amp; Tracks</Link>.
+              A remote URL does not have a duration until it has been probed. <code className="bg-surface-container px-1.5 py-0.5 font-mono">beginImportUrl</code> registers it as a pending asset immediately, so you can insert a clip with a fallback length right away, then call <code className="bg-surface-container px-1.5 py-0.5 font-mono">growClipToAssetDuration</code> from <code className="bg-surface-container px-1.5 py-0.5 font-mono">@elah/timeline</code> once the real duration is known. The clip shows a loading shimmer in between. Full walkthrough on <Link href="/docs/clips#growing-clips" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips &amp; Tracks</Link>.
             </p>
             <CodeBlock
               language="tsx"

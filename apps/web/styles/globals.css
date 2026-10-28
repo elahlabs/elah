@@ -10,86 +10,81 @@
     border-radius: 2px;
   }
 
-  /* ── Light theme (Precision Studio — warm neutral foundation) ─────────── */
+  /* ── Light theme (edit bay — paper and ink, cyber red accent) ─────────── */
   :root {
     --font-geist-sans: 'Geist', system-ui, sans-serif;
     --font-geist-mono: 'Geist Mono', 'JetBrains Mono', monospace;
     --font-inter: 'Inter', system-ui, sans-serif;
 
     /* Surface hierarchy — tonal layers, lightest at top */
-    --color-surface:             #fcf9f8;
-    --color-surface-dim:         #dcd9d9;
-    --color-surface-bright:      #fcf9f8;
-    --color-surface-lowest:      #ffffff;
-    --color-surface-low:         #f6f3f2;
-    --color-surface-container:   #f0eded;
-    --color-surface-high:        #eae7e7;
-    --color-surface-highest:     #e5e2e1;
+    --color-surface:             #F0EFEA;
+    --color-surface-dim:         #DEDCD5;
+    --color-surface-bright:      #F7F6F2;
+    --color-surface-lowest:      #FBFAF7;
+    --color-surface-low:         #F7F6F2;
+    --color-surface-container:   #E8E6E0;
+    --color-surface-high:        #E8E6E0;
+    --color-surface-highest:     #DEDCD5;
 
     /* Text */
-    --color-on-surface:          #1c1b1b;
-    --color-on-surface-variant:  #5b403f;
-    --color-inverse-surface:     #313030;
-    --color-inverse-on-surface:  #f3f0ef;
+    --color-on-surface:          #0E0E10;
+    --color-on-surface-variant:  #5E5D58;
+    --color-inverse-surface:     #0E0E10;
+    --color-inverse-on-surface:  #F0EFEA;
 
     /* Borders */
-    --color-outline:             #8f6f6e;
-    --color-outline-variant:     #e4bebc;
-    --color-outline-subtle:      #efd9d8; /* softer hairline than outline-variant */
-    --color-focus-ring:          var(--color-outline); /* WCAG 1.4.11: >= 3:1 */
+    --color-outline:             #9A9993;
+    --color-outline-variant:     #D9D7D0;
+    --color-outline-subtle:      #E4E2DC;
+    --color-focus-ring:          #FF003C;
 
-    /* Accent — Elah blue (unified with the editor/playground accent #00c2ff;
-       light theme uses a darker cyan so white text on the fill clears WCAG AA) */
-    --color-primary:             #0086c9;
-    --color-primary-hover:       #0072ad;
-    --color-primary-dim:         #0086c9; /* same as primary in light */
-    --color-on-primary:          #ffffff; /* foreground on a primary fill */
+    /* Accent — cyber red. Fill and selection only, never body text. */
+    --color-primary:             #FF003C;
+    --color-primary-hover:       #D10030;
+    --color-primary-dim:         #FF003C;
+    --color-on-primary:          #0E0E10;
 
     /* Supporting */
-    --color-secondary:           #485f84;
-    --color-tertiary:            #006860;
+    --color-secondary:           #5E5D58;
+    --color-tertiary:            #5E5D58;
   }
 
-  /* ── Dark theme (Precision Studio — the editor's cool near-black) ──────
-     The site wears the editor's palette (packages/editor/src/styles/tokens.css,
-     the --elah-* namespace) so chrome and the embedded editor share one scale:
-     no seam on /playground/*, no warm-to-cool flip between / and /docs.
-     The landing tokens (.landing-root) alias this block; change colours here. */
+  /* ── Dark theme (edit bay — near-black ink, same cyber red) ────────────
+     One palette for the whole site; the homepage --lp-* variables
+     (styles/landing.css) alias these. Change colours here. */
   .dark {
     /* Surface hierarchy — tonal lift via cool near-black steps */
-    --color-surface:             #06070a; /* main background (--elah-bg) */
-    --color-surface-dim:         #06070a;
-    --color-surface-bright:      #232938; /* --elah-border step */
-    --color-surface-lowest:      #040508; /* deepest — nav underlay, card-base */
-    --color-surface-low:         #0a0d14; /* panels, sidebars (--elah-bg-secondary) */
-    --color-surface-container:   #0d1017; /* cards, sections (--elah-bg-card) */
-    --color-surface-high:        #171d2b; /* modals, elevated menus (--elah-bg-elevated) */
-    --color-surface-highest:     #1e2433; /* chips, scrollbar thumb */
+    --color-surface:             #0C0C0E;
+    --color-surface-dim:         #0C0C0E;
+    --color-surface-bright:      #26262B;
+    --color-surface-lowest:      #08080A;
+    --color-surface-low:         #121215;
+    --color-surface-container:   #18181B;
+    --color-surface-high:        #1E1E22;
+    --color-surface-highest:     #26262B;
 
     /* Text */
-    --color-on-surface:          #f3f4f6; /* cool off-white (--elah-text) */
-    --color-on-surface-variant:  #9ca3af; /* cool mid-gray (--elah-text-muted) */
-    --color-inverse-surface:     #f3f4f6;
-    --color-inverse-on-surface:  #0d1017;
+    --color-on-surface:          #EDECE7;
+    --color-on-surface-variant:  #9C9B95;
+    --color-inverse-surface:     #EDECE7;
+    --color-inverse-on-surface:  #0C0C0E;
 
     /* Borders */
-    --color-outline:             #2d3548; /* interactive edges (--elah-outline) */
-    --color-outline-variant:     #232938; /* structural hairlines (--elah-border) */
-    --color-outline-subtle:      #1a1f2b; /* quietest hairline (--elah-border-subtle) */
-    /* --color-outline is 1.6:1 on the page: right for a border, too faint for a
-       focus ring (WCAG 1.4.11 needs 3:1), so the ring takes the accent. */
-    --color-focus-ring:          var(--color-primary);
+    --color-outline:             #3A3A40;
+    --color-outline-variant:     #2A2A2F;
+    --color-outline-subtle:      #1E1E22;
+    /* The ring is cyber red, not --color-outline (too faint, WCAG 1.4.11). */
+    --color-focus-ring:          #FF003C;
 
-    /* Accent — Elah blue (the editor's cyan #00c2ff; bright fill takes dark
-       text, matching the editor's --elah-accent-text) */
-    --color-primary:             #00c2ff;
-    --color-primary-hover:       #2bcbff;
-    --color-primary-dim:         #7adcff; /* soft glow for highlights */
-    --color-on-primary:          #06212b; /* dark ink on the bright cyan fill */
+    /* Accent — cyber red; ink text on the fill. */
+    --color-primary:             #FF003C;
+    --color-primary-hover:       #FF335F;
+    --color-primary-dim:         #FF6685;
+    --color-on-primary:          #0E0E10;
 
     /* Supporting */
-    --color-secondary:           #a7afbf; /* cool neutral, a step above on-surface-variant */
-    --color-tertiary:            #6ab0d0; /* already cool: hue 197deg vs accent 195deg */
+    --color-secondary:           #9C9B95;
+    --color-tertiary:            #9C9B95;
   }
 
   * {
@@ -103,6 +98,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Page scrolls as normal; the page-level scrollbar is hidden. */
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
   }
 
   body {
@@ -416,25 +417,6 @@
   font-family: var(--font-geist-mono);
   font-size: 0.8125rem;
   line-height: 1.7;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-surface-highest);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-outline);
 }
 
 /* Hero entrance animation — pure CSS so the hero paints and animates before

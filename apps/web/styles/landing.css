@@ -224,34 +224,30 @@
 }
 
 /*
- * Homepage "edit bay" palette (components/landing/home/DESIGN.md §0).
- * Light values sit on :root so the shared motion demos keep them on other
- * pages; `.lp[data-theme='dark']` swaps them on the homepage only. Cyber red
- * (#FF003C) and the stage stay put across themes.
+ * Homepage "edit bay" aliases (components/landing/home/DESIGN.md §0). The
+ * paper/ink palette is the site-wide --color-* set (styles/globals.css);
+ * --lp-* are kept as aliases so the homepage classes keep working. Dark mode
+ * is the `.dark` class on <html>. Cyber red (#FF003C) stays literal.
  */
 :root {
-  --lp-paper: #f0efea;
-  --lp-paper2: #e8e6e0;
-  --lp-card: #f7f6f2;
-  --lp-ink: #0e0e10;
-  --lp-muted: #5e5d58;
-  --lp-line: #d9d7d0;
+  color-scheme: light;
+  --lp-paper: var(--color-surface);
+  --lp-paper2: var(--color-surface-container);
+  --lp-card: var(--color-surface-low);
+  --lp-ink: var(--color-on-surface);
+  --lp-muted: var(--color-on-surface-variant);
+  --lp-line: var(--color-outline-variant);
   --lp-stage: #0e0e10;
   --lp-stage-line: #0e0e10;
 }
 
-.lp {
-  color-scheme: light;
-}
-
-.lp[data-theme='dark'] {
+.dark {
   color-scheme: dark;
-  --lp-paper: #0c0c0e;
-  --lp-paper2: #18181b;
-  --lp-card: #121215;
-  --lp-ink: #edece7;
-  --lp-muted: #9c9b95;
-  --lp-line: #2a2a2f;
   --lp-stage: #141417;
   --lp-stage-line: #2a2a2f;
+}
+
+/* --font-display is set on <body> (next/font), so alias it below that. */
+.lp {
+  --font-lp-display: var(--font-display);
 }

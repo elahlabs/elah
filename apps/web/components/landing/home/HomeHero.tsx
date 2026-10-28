@@ -5,10 +5,9 @@ import Link from 'next/link'
 import { ArrowRight, Check, Copy } from 'lucide-react'
 import posthog from 'posthog-js'
 import { LazyDemo } from '@/components/home/LazyDemo'
-import { CropMarks, Sel } from './Sel'
-import { btnLarge, btnPrimary, btnSecondary, container, display, label, lead } from './ui'
+import { CropMarks, Sel, btnLarge, btnPrimary, btnSecondary, container, display, label, lead } from '@/components/eb'
 
-const INSTALL = 'npm install @elah/core'
+const INSTALL = 'npm install @elah/editor'
 const CLAUDE = '/claude'
 const FPS = 30
 
@@ -114,7 +113,7 @@ export function HomeHero() {
             <span className="hidden sm:inline">{FPS} fps · 8.0 s loop</span>
           </div>
           <div className="mx-auto w-full max-w-[880px]">
-            <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={560} />
+            <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={600} editableKeys />
           </div>
           <figcaption className={`border-t border-[#2E2E33] px-4 py-3 text-[#9A9993] ${label}`}>
             Rendered by the engine. The diamonds are the keyframes, and the playhead is the timeline playing.

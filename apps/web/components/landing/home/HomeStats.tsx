@@ -1,6 +1,6 @@
 import { currentVersion } from '@/config/changelog'
 import type { SiteStatsDisplay } from '@/lib/stats'
-import { container, display, label } from './ui'
+import { container, display, label } from '@/components/eb'
 
 /** Live stats strip: big condensed numbers in hairline cells. The numbers arrive formatted from the server. */
 export function HomeStats({ stats }: { stats: SiteStatsDisplay }) {

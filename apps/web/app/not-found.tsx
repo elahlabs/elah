@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
+import { btnLarge, btnPrimary, btnSecondary, display, label, lead } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Page not found',
@@ -14,26 +15,18 @@ export default function NotFound() {
       <Navbar />
       <main className="flex flex-1 items-center justify-center px-4">
         <div className="text-center">
-          <div className="label-mono mb-4 text-2xs text-on-surface-variant opacity-90">404</div>
-          <h1
-            className="text-3xl font-semibold tracking-tight text-on-surface"
-          >
+          <div className={`mb-4 text-on-surface-variant ${label}`}>404</div>
+          <h1 className={`m-0 text-[56px] leading-[0.92] font-extrabold tracking-[-0.5px] text-on-surface sm:text-[72px] ${display}`}>
             Page not found
           </h1>
-          <p className="mt-3 text-sm text-on-surface-variant">
+          <p className={`${lead} mt-4`}>
             This page does not exist or has moved.
           </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <Link
-              href="/"
-              className="rounded bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
-            >
+          <div className="mt-8 flex justify-center gap-3">
+            <Link href="/" className={`${btnPrimary} ${btnLarge}`}>
               Go Home
             </Link>
-            <Link
-              href="/docs"
-              className="rounded border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
-            >
+            <Link href="/docs" className={`${btnSecondary} ${btnLarge}`}>
               Read Docs
             </Link>
           </div>
