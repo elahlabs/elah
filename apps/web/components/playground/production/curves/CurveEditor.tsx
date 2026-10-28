@@ -19,7 +19,7 @@ import {
   type Clip,
   type Keyframe,
 } from '@elah/core'
-import { useKeySelectionStore, usePlaybackStore } from '@elah/editor'
+import { useKeySelectionStore, usePlaybackStore, useTracksStore } from '@elah/editor'
 import { Square, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -84,17 +84,29 @@ const TIMELINE_SIDEBAR = 184
  * finds the timeline's single scroll container in the DOM: the second child of
  * `[data-elah-timeline-root]` (ruler row first, track area second).
  */
-function timelineScroller(): HTMLElement | null {
-  const root = document.querySelector('[data-elah-timeline-root]')
+function timelineScroller(scope?: HTMLElement | null): HTMLElement | null {
+  const root = (scope ?? document).querySelector('[data-elah-timeline-root]')
   const el = root?.children[1]
   return el instanceof HTMLElement ? el : null
 }
 
-export function CurveEditor() {
-  const open = useCurveDrawer((s) => s.open)
+export interface CurveEditorProps {
+  /** Show this clip instead of the first selected one (a host with its own clip picker). */
+  clipId?: string
+  /** Element containing the timeline to follow, for pages with more than one timeline. */
+  root?: HTMLElement | null
+  /** Always open, with no close button (the host owns visibility). */
+  pinned?: boolean
+}
+
+export function CurveEditor({ clipId, root, pinned = false }: CurveEditorProps = {}) {
+  const storeOpen = useCurveDrawer((s) => s.open)
+  const open = pinned || storeOpen
   const setOpen = useCurveDrawer((s) => s.setOpen)
   const { engine, clips } = useSelectedClips()
-  const clip = clips[0]
+  const clipsByTrack = useTracksStore((s) => s.clips)
+  const pinnedClip = clipId ? Object.values(clipsByTrack).flat().find((c) => c.id === clipId) : undefined
+  const clip = clipId ? pinnedClip : clips[0]
   const zoom = usePlaybackStore((s) => s.zoom)
   const currentFrame = usePlaybackStore((s) => s.currentFrame)
 
@@ -115,13 +127,13 @@ export function CurveEditor() {
   // Follow the timeline's horizontal scroll and sidebar width.
   useEffect(() => {
     if (!open) return
-    const scroller = timelineScroller()
+    const scroller = timelineScroller(root)
     if (!scroller) return
     const sync = () => setScrollLeft(scroller.scrollLeft)
     sync()
     scroller.addEventListener('scroll', sync, { passive: true })
     return () => scroller.removeEventListener('scroll', sync)
-  }, [open])
+  }, [open, root])
 
   useEffect(() => {
     const el = plotRef.current
@@ -315,14 +327,16 @@ export function CurveEditor() {
           </button>
         )}
         <span className="ml-auto hidden md:inline">Drag keys and handles · double-click adds a key · Shift locks time · Delete removes</span>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-label="Close curve editor"
-          className="flex h-5 w-5 items-center justify-center rounded hover:bg-ed-elevated hover:text-ed-text"
-        >
-          <X size={12} />
-        </button>
+        {!pinned && (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close curve editor"
+            className="flex h-5 w-5 items-center justify-center rounded hover:bg-ed-elevated hover:text-ed-text"
+          >
+            <X size={12} />
+          </button>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1">

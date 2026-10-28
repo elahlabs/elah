@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
 import type { Project } from '@elah/core'
 import {
@@ -9,12 +9,16 @@ import {
   Timeline,
   createDefaultDemuxerFactory,
   selectionStore,
+  useKeySelectionStore,
   usePlaybackStore,
   useTimelineEngine,
+  useTracksStore,
   type TimelineRef,
 } from '@elah/editor'
 import { loadAllFonts } from '@/lib/motion/convert'
 import { stageVars } from '@/components/landing/home/stageVars'
+import { drawerChannels } from '@/lib/editor/curves'
+import { CurveEditor } from '@/components/playground/production/curves/CurveEditor'
 
 export interface DemoPlayerProps {
   /** The project to play. */
@@ -37,6 +41,8 @@ export interface DemoPlayerProps {
    * Invite the visitor to retime the keys: a strip under the timeline says
    * "Drag a diamond to retime it". Grabbing anything on the timeline pauses the
    * loop (and stops autoplay from resuming it), and Reset reloads the original.
+   * Under it, the curve editor for one keyed clip at a time, picked by a row of
+   * tabs (or by clicking a diamond on that clip).
    */
   editableKeys?: boolean
 }
@@ -67,6 +73,24 @@ function Inner({ project, preview = true, timeline = true, timelineHeight = 150,
   /** The visitor has touched the timeline: keep it paused and offer Reset. */
   const [edited, setEdited] = useState(false)
   const [version, setVersion] = useState(0)
+  // The timeline's container, so the curve editor follows this timeline and not another on the page.
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null)
+  const clipsByTrack = useTracksStore((s) => s.clips)
+  const keyedClips = useMemo(
+    () =>
+      Object.values(clipsByTrack)
+        .flat()
+        .filter((c) => drawerChannels(c).length > 0)
+        .sort((a, b) => a.startFrame - b.startFrame),
+    [clipsByTrack],
+  )
+  const [curveClipId, setCurveClipId] = useState<string | null>(null)
+  const keyClipId = useKeySelectionStore((s) => s.clipId)
+  // Clicking a diamond on the timeline shows that clip's curves.
+  useEffect(() => {
+    if (keyClipId && keyedClips.some((c) => c.id === keyClipId)) setCurveClipId(keyClipId)
+  }, [keyClipId, keyedClips])
+  const curveClip = keyedClips.find((c) => c.id === curveClipId) ?? keyedClips[0]
 
   useEffect(() => {
     setReduced(matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -144,7 +168,7 @@ function Inner({ project, preview = true, timeline = true, timelineHeight = 150,
       )}
       {timeline && (
         // Capture phase, so the pause happens before the timeline's own drag starts.
-        <div onPointerDownCapture={grab} className="flex min-w-0 flex-col">
+        <div ref={setRootEl} onPointerDownCapture={grab} className="flex min-w-0 flex-col">
           <Timeline ref={timelineRef} fps={project.fps} style={{ height: timelineHeight, flexShrink: 0, minWidth: 0 }} />
         </div>
       )}
@@ -173,6 +197,28 @@ function Inner({ project, preview = true, timeline = true, timelineHeight = 150,
               Reset
             </button>
           </span>
+        </div>
+      )}
+      {timeline && editableKeys && curveClip && (
+        <div onPointerDownCapture={grab} className="flex min-w-0 flex-col border-t border-[#2E2E33]">
+          <div role="tablist" aria-label="Clip curves" className="flex min-w-0 items-stretch overflow-x-auto font-[family-name:var(--font-geist-mono),ui-monospace,monospace] text-[11px] uppercase tracking-[0.12em]">
+            {keyedClips.map((c) => {
+              const on = c.id === curveClip.id
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setCurveClipId(c.id)}
+                  className={`shrink-0 border-r border-[#2E2E33] px-4 py-2 uppercase tracking-[0.12em] transition-colors ${on ? 'bg-[#FF003C] text-[#0E0E10]' : 'text-[#9A9993] hover:bg-[#242428] hover:text-[#F0EFEA]'}`}
+                >
+                  {c.name ?? c.type}
+                </button>
+              )
+            })}
+          </div>
+          <CurveEditor clipId={curveClip.id} root={rootEl} pinned />
         </div>
       )}
     </div>
