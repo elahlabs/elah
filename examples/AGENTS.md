@@ -69,7 +69,8 @@ you break one, the failure is silent or looks like an SDK bug.
 - Add these apps to the root `workspaces` globs, or point them at `packages/*` via
   `file:`/`workspace:`. Consuming the published tarball is the entire point of this directory.
 - Commit a `package-lock.json` here — they are gitignored so every clone resolves the newest
-  matching `^0.6.x` (the range the apps' `package.json` files declare).
+  matching range the apps' `package.json` files declare (still `^0.6.x`: widen to `^1.0.0` once
+  1.0.0 is on the registry).
 - Reach into `@elah/core` internals for something the `@elah/editor` barrel already re-exports.
 
 ## Patterns the SDK expects
@@ -84,6 +85,10 @@ you break one, the failure is silent or looks like an SDK bug.
   render body.
 
 ## Verified
+
+**On 0.6.0 only — a 1.0.0 pass is owed** (the four lockstep packages went to 1.0.0 on
+2026-10-28; these apps still declare `^0.6.0`, so an install resolves 0.6.x until the range
+is widened).
 
 `@elah/editor@0.6.0`, 2026-10-02 — clean registry install, then `typecheck` + `dev` + `build`
 for all three, and a full MP4 export in `react/` and `next/` under both the dev server and the

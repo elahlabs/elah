@@ -1,7 +1,7 @@
 # Elah artifact app
 
 One page that previews, edits and exports an Elah video. It is the page a Claude Code plugin publishes as a
-claude.ai artifact, and it also runs from any static host. Contract and layout: `docs/plans/PLAN-CLAUDE-PLUGIN-ARTIFACT.md`
+claude.ai artifact — live since 2026-10-28 — and it also runs from any static host. Contract and layout: `docs/plans/PLAN-CLAUDE-PLUGIN-ARTIFACT.md`
 in the workspace (sections 3 and 4).
 
 ```

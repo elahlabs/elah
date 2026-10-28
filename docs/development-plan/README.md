@@ -4,7 +4,8 @@
 > workstream another developer can pick up. Written against the codebase as of
 > branch `dev` (June 2026); only the "engine honesty" constraint below has been
 > updated since, for the 0.6.0 multi-track change — the workstream docs themselves
-> have not been re-audited.
+> have not been re-audited, and all of it predates the 1.0.0 release (2026-10-28).
+> For what shipped, read [`ROADMAP.md`](../../ROADMAP.md) and [`docs/STATUS.md`](../STATUS.md).
 
 This wave is about turning a working engine + first-pass panels into a **coherent,
 composable editor SDK**. The engine layer (decode, render, export, resolve) is

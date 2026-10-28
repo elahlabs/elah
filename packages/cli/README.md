@@ -15,12 +15,26 @@ Headless command-line runtime for the Elah video engine. A thin consumer of
 npm install -g @elah/cli
 ```
 
-Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17. 1.0.0 depends on `@elah/core@^1.0.0` and exports version 5 projects (adjustment, generator, compound and sequence clips, the nine transitions). For a 0.6.x project, stay on `0.1.2`.
+Or without installing, via `npx @elah/cli <command>`. Requires Node >= 18.17.
+
 `export`/`build --export`/`serve` additionally require a system Google Chrome
 (or `--browser <path>` / `ELAH_BROWSER`) — see [Serve mode](#serve-mode) and
 [Docker](#docker) for headless environments. Installing **ffmpeg 4.4+** is
 recommended (`brew install ffmpeg`, `apt install ffmpeg`, `winget install ffmpeg`):
-when the CLI finds it, ffmpeg encodes the MP4 — see [Encoding](#encoding-ffmpeg-or-chrome).
+when the CLI finds it, ffmpeg encodes the file — see [Encoding](#encoding-ffmpeg-or-chrome).
+
+## Versioning
+
+`@elah/cli` is **1.0.0**. Its command surface, build-spec format and Node API follow
+[semver](https://semver.org/spec/v2.0.0.html): a breaking change needs 2.0. It versions
+independently of the four lockstep packages (`@elah/core`, `@elah/react`, `@elah/timeline` and
+`@elah/editor`, all 1.0.0), and its releases carry their own `cli-v<version>` git tag. It depends
+on `@elah/core@^1.0.0`. Release notes are in [CHANGELOG.md](../../CHANGELOG.md).
+
+It exports **version 5** projects, compound clips and animated-image sequence clips included.
+One gap: a `frames` sequence whose template is a relative URL is not routed yet. Every 0.6.x
+project opens unchanged in 1.0.0; stay on `0.1.2` only if the rest of your toolchain is still on
+`@elah/core` 0.6.x.
 
 ---
 
@@ -63,7 +77,8 @@ launches the system Google Chrome headlessly (or `--browser <path>` /
 `ELAH_BROWSER`) and runs core's real `exportVideo` pipeline in it, so CLI
 frames are identical to Editor frames by construction. Exit codes: `0` success,
 `1` validation/runtime failure, `2` usage error. Diagnostics go to stderr;
-`split`/`trim` print the resulting project JSON to stdout unless `--out` is given.
+`split`/`trim` print the resulting project JSON to stdout unless `--out` is given. `export`,
+`build` and `serve` also take `--verbose` (print the server and browser log lines).
 
 ### Encoding: ffmpeg or Chrome
 
@@ -209,10 +224,17 @@ Errors throw `CliError` (aliased `ElahError`) with a `.message` that is
 already the human-readable, path-addressed text (`clips[2].duration must be …`).
 
 Also exported: `validateSpec` / `specToProject` (the spec layer on its own), `probeMedia`,
-`startServe` (the `elah serve` server, with `Semaphore`), `CODECS`, and the types `BuildSpec`,
-`SpecClip`, `RenderSession`, `RenderJobOptions`, `ProgressPayload`, `ServeOptions` and `Project`.
-`exportProject` and `session.render` take `outputHeight` (short edge), `videoCodec`,
-`videoBitrate`, `audioBitrate` and `timeoutMs`.
+`startServe` (the `elah serve` server, with `Semaphore`), `CODECS`, `CONTAINERS`,
+`resolveOutputFormat`, `ENCODER_CHOICES`, `locateFfmpeg` and `MIN_FFMPEG_VERSION`, and the types
+`BuildSpec`, `SpecClip`, `RenderSession`, `RenderJobOptions`, `RenderCallbacks`, `EncoderChoice`,
+`FfmpegBinary`, `ProgressPayload`, `ServeOptions` and `Project`.
+`exportProject` and `session.render` take `container`, `outputHeight` (short edge), `videoCodec`,
+`videoBitrate`, `audioBitrate`, `encoder` (`'auto' | 'ffmpeg' | 'chrome'`, default `'auto'`) and
+`timeoutMs`. The ffmpeg path is `ffmpegPath` on `exportProject` and `build`, or on
+`createRenderSession({ ffmpegPath })` (`startServe` takes one too, but only to probe spec assets;
+encoding uses its session's); it falls back to `ELAH_FFMPEG`, then `PATH`. The
+`RenderCallbacks` (`onProgress`, `onWarning`, `onLog`, `onStatus`) include `onEncoder`, which
+reports the encoder that will run (`ffmpeg (libx264)` or `chrome`).
 
 ---
 
@@ -229,7 +251,7 @@ elah serve --port 8080 --concurrency 2 --media-root ./assets
 | Route | Behavior |
 |---|---|
 | `GET /healthz` | `200 { status, browser: "connected" \| "disconnected" }` |
-| `POST /render` | body = a build spec JSON document; blocks until the render finishes and returns the MP4 bytes. `422` on spec/asset validation errors, `503` + `Retry-After` when at capacity (`--concurrency`), `500` on render failure. |
+| `POST /render` | body = a build spec JSON document; blocks until the render finishes and returns the video bytes (`video/mp4`, or `video/webm` with `--container webm`). `422` on spec/asset validation errors, `503` + `Retry-After` when at capacity (`--concurrency`), `500` on render failure. |
 
 ```sh
 curl -X POST --data-binary @spec.json http://127.0.0.1:8080/render -o out.mp4
@@ -278,9 +300,10 @@ See `elah --help` for the full flag list.
 @elah/cli       — headless split/trim/build/export/serve on top of @elah/core (this package)
 ```
 
-`@elah/cli` depends only on `@elah/core` — it never touches `@elah/react`,
+`@elah/cli` depends only on `@elah/core` (`^1.0.0`) — it never touches `@elah/react`,
 `@elah/timeline`, or React at all, so it has no peer dependencies on React or
-`lucide-react`.
+`lucide-react`. The four packages above it release together at one version; `@elah/cli`
+keeps its own version line (see [Versioning](#versioning)).
 
 Use `@elah/cli` for automation, AI-generation pipelines, and server-side rendering.
 Use `@elah/editor` when you need an interactive, in-browser editing UI.

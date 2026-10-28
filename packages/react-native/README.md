@@ -3,7 +3,8 @@
 React Native binding for the Elah video engine: the same `Project` document, the same
 `TimelineEngine` and the same `@elah/react` hooks as the web, on iOS and Android.
 
-> **Status: pre-release, not on npm.** The timeline is being built first. The engine, the shared
+> **Status: pre-release, not on npm** (the rest of the family is at 1.0.0; this package stays
+> 0.x until the timeline lands). The timeline is being built first. The engine, the shared
 > `EditorProvider` and the timeline model bundle for Hermes and run in the dev harness
 > ([`apps/mobile`](../../apps/mobile/README.md)), verified on its web target so far; the first
 > run on a phone is owed. The `<Timeline>` component has lanes, a ruler and a playhead; gestures on the lanes are next. Contributor

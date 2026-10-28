@@ -18,11 +18,33 @@ npm install @elah/timeline @elah/core @elah/react lucide-react
 Peer dependencies: `react`, `react-dom` >= 18, `lucide-react` >= 0.400.0 (used directly by
 `TrackRow`/`ClipBlock` for clip icons — install it even if nothing else in your app
 needs it). Engine/playback context (`EditorContext`, `useTimelineEngine`) comes from
-`@elah/react`, a runtime dependency pulled in automatically.
+`@elah/react`, a runtime dependency pulled in automatically (`@elah/timeline` depends on
+`@elah/core@^1.0.0` and `@elah/react@^1.0.0`).
 
-**Bundle size:** UI layer only (project state lives in `@elah/core`); it adds `clsx` and `tailwind-merge`. The 1.0.0 figures are not published yet; [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md) explains how they are measured.
+**Version and stability:** 1.0.0. The exported API follows semver, and `@elah/timeline` is
+released in lockstep with `@elah/core`, `@elah/react` and `@elah/editor` (all 1.0.0), so keep
+the four on the same version. The AI-facing `@elah/core` entries (`@elah/core/spec`, `/html`,
+`/ops`, `/icons`) are live in 1.0 and follow semver too; they sit off the `@elah/core` root only so
+the root stays small. This package does not import them. See the Stability section of
+[CHANGELOG.md](../../CHANGELOG.md).
 
-**Clip types (1.0.0):** the timeline draws every clip type in `@elah/core` — video, audio, text, image, shape, freehand, and the newer adjustment, generator, compound and sequence clips, which appear as labelled blocks. You can move, trim, split, copy and paste them (pasting uses `engine.cloneClip`). There is no editing UI for the newer types here yet.
+**Bundle size:** UI layer only (project state lives in `@elah/core`); it adds `clsx` and
+`tailwind-merge`. Measured at 1.0.0 with `node scripts/measure-bundle.mjs` (esbuild, minified,
+gzipped; `react`, `react-dom`, `lucide-react` and `mediabunny` external):
+
+| App imports | gz |
+|---|---|
+| Editor app: `EditorProvider`, `Preview`, `Timeline` from `@elah/editor` | 112.0 KiB |
+| `@elah/core` engine only (`TimelineEngine`, `resolveTimeline`) | 44.7 KiB |
+| `@elah/core` engine + `GpuRenderer` + `exportVideo` | 75.0 KiB |
+| `@elah/timeline` barrel with every export kept, plus `clsx` and `tailwind-merge` | 21.6 KiB (14.9 KiB own code) |
+
+The first three are what a real app pays at startup; the last is a worst case no app reaches.
+Optional renderer features (effects, generators, sequence clips, roto masks, audio Enhance) load
+on first use and are not in those numbers. [BUNDLE_STRATEGY.md](../../BUNDLE_STRATEGY.md)
+explains the method and what each row includes.
+
+**Clip types (1.0.0):** the timeline draws every clip type in `@elah/core` — video, audio, text, image, shape, freehand, and the newer adjustment, generator, compound and sequence clips, which appear as labelled blocks. You can move, trim, split, copy and paste them (pasting uses `engine.cloneClip`). A selected clip of any type shows its keyframes in a [keyframe lane](#keyframe-lane). `@elah/editor` still has no editing UI for the newer clip types (no inspector, curve editor, effect stack or compound editor): drive them through the engine, ops or VideoSpec. See [CURRENT_LIMITATIONS.md](../../CURRENT_LIMITATIONS.md).
 
 ---
 
@@ -30,7 +52,8 @@ needs it). Engine/playback context (`EditorContext`, `useTimelineEngine`) comes 
 
 | Component | Description |
 |---|---|
-| `Timeline` | The one exported component — tracks, ruler, playhead, gesture wiring. Drag to move, edge-drag to trim, click or drag the ruler to scrub |
+| `Timeline` | The main component — tracks, ruler, playhead, gesture wiring. Drag to move, edge-drag to trim, click or drag the ruler to scrub |
+| `KeyframeLane` | The keyframe diamonds along the bottom edge of a selected clip. `Timeline` mounts it for you; see [Keyframe lane](#keyframe-lane) |
 
 The ruler, track rows, clip blocks and playhead are internals of `Timeline`: they are not exported. Restyle them with the `classNames` prop and `--elah-*` variables (below).
 
@@ -127,6 +150,54 @@ Slots: `root`, `ruler`, `rulerTick`, `rulerLabel`, `track`, `trackLabel`, `lane`
 
 ---
 
+## Keyframe lane
+
+A selected clip shows its keyframes as diamonds on its bottom edge. This is the open-source
+editor's visual keyframe editing; `Timeline` renders it inside the selected `ClipBlock`, so
+there is nothing to wire up.
+
+- **Click** a diamond to select it and seek the playhead to it.
+- **Drag** to retime it. The grabbed key snaps to the other keys, the clip's first and last
+  frame and the playhead when `playbackStore.snapEnabled` is on. The whole drag commits as one
+  undo step (`Move keyframes`); **Esc** cancels it.
+- **Shift+click** adds a diamond to the selection or takes it out. Dragging a selected diamond
+  moves every selected key by the same amount. A plain click on a key that is not selected
+  selects it alone.
+- A hold keyframe draws as a square; a key a left trim pushed outside the clip draws dimmed at
+  the clip edge and cannot be dragged; at a far zoom, keys closer than a few pixels fold into
+  one cluster marker (click seeks to its first key, it is not draggable until you zoom in).
+- On a locked track you can still select and seek, but not move.
+
+`KeyframeLane` is exported for hosts that lay out their own clip UI. It needs the
+`EditorContext` provider and an absolutely positioned parent (it fills the parent's bottom
+`KEYFRAME_LANE_HEIGHT` pixels, 14).
+
+```ts
+import { KeyframeLane, KEYFRAME_LANE_HEIGHT, type KeyframeLaneProps } from '@elah/timeline'
+```
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `clip` | `Clip` | The clip whose keys to draw. `Keyframe.frame` is clip-relative, so `left = frame * zoom` |
+| `zoom` | `number` | Pixels per frame |
+| `locked` | `boolean` (optional) | Navigate but do not edit |
+| `channels` | `ReadonlyArray<AnyKeyframeChannel>` (optional) | Show only these channels' keys. Omitted, the lane shows the union of every channel the clip keys on |
+
+Which keys are selected lives in `useKeySelectionStore`, a zustand store separate from the clip
+selection (`useSelectionStore`). It holds one clip's keys at a time: selecting a key in another
+clip replaces the selection, and deselecting the clip clears it.
+
+```ts
+import { useKeySelectionStore, keysOf } from '@elah/timeline'
+
+const clipId = useKeySelectionStore(s => s.clipId)       // clip the selected keys belong to, or null
+const frames = useKeySelectionStore(s => s.frames)       // ReadonlySet<number> of clip-relative frames
+useKeySelectionStore.getState().select(clipId, [12, 30]) // also: toggle, shift(delta), clear
+keysOf(clipId)                                           // non-reactive read: the set for that clip, else empty
+```
+
+---
+
 ## Hooks
 
 ```ts
@@ -139,7 +210,8 @@ const selectedClipIds = useSelection(s => s.selectedClipIds)
 
 These are aliases of `useTracksStore`, `usePlaybackStore` and `useSelectionStore` from `@elah/react`;
 keep the selector narrow (`usePlayback(s => s)` re-renders on every frame of playback).
-`useTimeline()` returns the `TimelineEngine` from context.
+`useTimeline()` returns the `TimelineEngine` from context. `useKeySelectionStore` (see
+[Keyframe lane](#keyframe-lane)) is the one store this package owns.
 
 ---
 

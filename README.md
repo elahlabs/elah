@@ -4,8 +4,7 @@
 
 **Open source. Renders in the browser.** New in 1.0: the motion layer.
 
-[![release](https://img.shields.io/badge/release-1.0.0-FF003C)](./CHANGELOG.md)
-[![npm](https://img.shields.io/badge/npm-%40elah%2Feditor-blue)](https://www.npmjs.com/package/@elah/editor)
+[![npm](https://img.shields.io/npm/v/@elah/editor?label=%40elah%2Feditor)](https://www.npmjs.com/package/@elah/editor)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![types](https://img.shields.io/npm/types/@elah/editor)](https://www.npmjs.com/package/@elah/editor)
 
@@ -21,7 +20,7 @@ You write motion as code, or a model does, and elah converts it into ordinary cl
 
 | 01 · GitHub stars | 02 · npm downloads | 03 · Packages · Apache-2.0 | 04 · Release |
 |---|---|---|---|
-| [![stars](https://img.shields.io/github/stars/elahlabs/elah?style=for-the-badge&label=&color=0e0e10)](https://github.com/elahlabs/elah) | [![downloads](https://img.shields.io/npm/dm/@elah/core?style=for-the-badge&label=&color=0e0e10)](https://www.npmjs.com/package/@elah/core) | **5** | **v1.0.0** |
+| [![stars](https://img.shields.io/github/stars/elahlabs/elah?style=for-the-badge&label=&color=0e0e10)](https://github.com/elahlabs/elah) | [![downloads](https://img.shields.io/npm/dm/@elah/core?style=for-the-badge&label=&color=0e0e10)](https://www.npmjs.com/package/@elah/core) | **5** | [![version](https://img.shields.io/npm/v/@elah/editor?style=for-the-badge&label=&color=0e0e10)](https://www.npmjs.com/package/@elah/editor) |
 
 | You want to… | Use | Live |
 |---|---|---|

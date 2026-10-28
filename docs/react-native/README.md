@@ -5,7 +5,9 @@
 > harness in [`apps/mobile`](../../apps/mobile/README.md) (Hermes bundles verified; first
 > on-device run owed). Contributor issues for the timeline UI: [`issues/`](./issues/README.md)
 > (RN-T4 to RN-T9).
-> **Last verified: 2026-10-06** against `dev` @ `e9fe11c` (packages 0.6.0, `@elah/cli` 0.1.2),
+> **Last verified: 2026-10-06** against `dev` @ `e9fe11c`, when the packages were 0.6.0 and
+> `@elah/cli` 0.1.2 (the four lockstep packages and the CLI are 1.0.0 as of 2026-10-28; this
+> folder has not been re-audited against 1.0.0),
 > the installed `node_modules`, and the npm registry / vendor docs cited inline.
 > Every claim in this folder was checked against the source on that date. If you find one
 > that is no longer true, fix the doc in the same PR that changed the code.
@@ -17,7 +19,7 @@ contributor who has never opened this repository can pick a workstream, build it
 when it is done.
 
 The older material in `docs/` (the June 2026 development plan, the timeline redesign, the
-dev-branch review) predates the 0.6.0 port and says nothing about mobile. Treat **this folder**
+dev-branch review) predates the 0.6.0 port and the 1.0.0 release, and says nothing about mobile. Treat **this folder**
 as the only current source for the React Native work.
 
 ---
