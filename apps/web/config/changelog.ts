@@ -29,7 +29,7 @@ export interface Release {
 export const releases: Release[] = [
   {
     version: '1.0.0',
-    date: '2026-10-22',
+    date: '2026-10-28',
     latest: true,
     summary:
       'The motion and programmatic layer: keyframes with the full ease set, springs, stagger and motion paths; HTML/CSS scenes and VideoSpec that compile to editable clips; effects, transitions, generators, compound and sequence clips, audio enhancement, Lottie and SVG import, and fonts in the package. The exported API is now a semver promise.',
@@ -78,6 +78,20 @@ export const releases: Release[] = [
       },
       {
         kind: 'added',
+        scope: '@elah/timeline',
+        items: [
+          '<KeyframeLane> and useKeySelectionStore. A selected clip shows its keyframes as diamonds on its bottom edge: click to seek and select, drag to retime with snapping (one undo step), Shift+click for multi-select.',
+        ],
+      },
+      {
+        kind: 'added',
+        scope: '@elah/react-native',
+        items: [
+          '0.1.0, a pre-release that is not published. The platform-free timeline model: lane layout, move / trim / pinch gesture reducers and a single engine-command applier, tested against the real TimelineEngine. It re-exports EditorProvider, the store hooks and the engine from @elah/core/engine, and its colour map covers the four new clip types. There is no timeline component yet. An Expo dev harness (apps/mobile) comes with it.',
+        ],
+      },
+      {
+        kind: 'added',
         scope: '@elah/timeline and @elah/editor',
         items: [
           'Projects that use the new clip types open, play, save and export without losing a clip. The timeline draws adjustment, generator, compound and sequence clips as labelled blocks; trimming lets sourceless clips grow as engine.trimClip() does; paste copies shapes, drawings and the new types with cloneClip (pasting a shape used to throw); the transition picker shows a loaded kind outside fade / slide / wipe as the active choice. There is no editing UI for the new clip types in @elah/editor yet.',
@@ -109,6 +123,7 @@ export const releases: Release[] = [
         scope: '@elah/cli',
         items: [
           '1.0.0: exports version 5 projects (shader and folder module imports, compound and sequence media, no hard-coded project version 1). Its @elah/core range is now ^1.0.0. It versions and ships on its own line.',
+          'ffmpeg encoding (--encoder auto|ffmpeg|chrome). Chrome still draws every frame, so the picture matches the editor either way; ffmpeg only compresses them. auto uses ffmpeg when it is found and can write the codec, otherwise the Chrome WebCodecs encoder. ffmpeg is always a system binary, never an npm dependency, resolved through --ffmpeg, ELAH_FFMPEG or PATH. Sources Chrome cannot decode (ProRes .mov, AVI, .mkv with AC-3/DTS, MPEG-TS) are transcoded to a near-lossless scratch MP4 first.',
         ],
       },
     ],

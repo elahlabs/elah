@@ -9,27 +9,6 @@ and the packages follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 together and share a version number. `@elah/cli` is a separate package and
 versions independently, starting from its own 0.1.0.
 
-## [Unreleased]
-
-`@elah/cli` versions independently of the four lockstep packages and is released
-separately; it is now at 1.0.0 too (see its own section below).
-
-### Added
-
-- `@elah/timeline`: `<KeyframeLane>` and `useKeySelectionStore`. A selected clip shows its keyframes as diamonds on its bottom edge: click to seek and select, drag to retime with snapping (one undo step), Shift+click for multi-select.
-
-- **`@elah/react-native` 0.1.0 (pre-release, not published).** The platform-free timeline model:
-  lane layout, move / trim / pinch gesture reducers and a single engine-command applier, tested
-  against the real `TimelineEngine`. Re-exports `EditorProvider`, the store hooks and the engine
-  from `@elah/core/engine`. No timeline component yet. Its colour map now covers the four new
-  clip types.
-- **`apps/mobile`:** an Expo dev harness for the React Native binding (own install, not a root
-  workspace member).
-
-### Changed
-
-- The root `workspaces` list names `apps/web` and `apps/server` instead of `apps/*`.
-
 ## `@elah/cli` [1.0.0] — 2026-10-27
 
 ### Added
@@ -62,7 +41,7 @@ separately; it is now at 1.0.0 too (see its own section below).
 - **1.0.0.** The CLI's command surface, build-spec format and Node API now follow semver, in step
   with the four lockstep packages. It keeps its own version line and its own `cli-v<version>` tag.
 
-## [1.0.0] — 2026-10-22
+## [1.0.0] — 2026-10-28
 
 The motion and programmatic layer. `@elah/core` is now the same engine our own
 editor runs on: keyframe animation with the full ease set, springs, stagger and
@@ -70,8 +49,8 @@ motion paths; HTML/CSS scenes and a VideoSpec document that compile to native,
 editable clips; effects, transitions, generators, compound and sequence clips,
 audio enhancement and Lottie / SVG import. 1.0.0 also makes the exported surface
 a semver promise (see Stability). `@elah/core`, `@elah/react`, `@elah/timeline`
-and `@elah/editor` ship together at 1.0.0; `@elah/cli` is not part of this
-release.
+and `@elah/editor` ship together at 1.0.0. `@elah/cli` versions independently of
+the four lockstep packages and ships its own 1.0.0 (see its section above).
 
 ### Stability
 
@@ -195,6 +174,16 @@ re-export these layers: import them from the subpaths above.
   outside fade / slide / wipe as the active choice; selecting a clip with no inspector panel
   shows a neutral message. There is no editing UI for the new clip types in `@elah/editor`
   yet (see `CURRENT_LIMITATIONS.md`).
+- **`@elah/timeline`: `<KeyframeLane>` and `useKeySelectionStore`.** A selected clip shows its
+  keyframes as diamonds on its bottom edge: click to seek and select, drag to retime with
+  snapping (one undo step), Shift+click for multi-select.
+- **`@elah/react-native` 0.1.0 (pre-release, not published).** The platform-free timeline model:
+  lane layout, move / trim / pinch gesture reducers and a single engine-command applier, tested
+  against the real `TimelineEngine`. Re-exports `EditorProvider`, the store hooks and the engine
+  from `@elah/core/engine`. No timeline component yet. Its colour map now covers the four new
+  clip types.
+- **`apps/mobile`:** an Expo dev harness for the React Native binding (own install, not a root
+  workspace member).
 
 ### Changed
 
@@ -235,6 +224,8 @@ re-export these layers: import them from the subpaths above.
   emits `*.test.tsx` files into `dist`.
 - **`@elah/editor`:** `Preview` no longer drives the CSS `TransitionOverlay` (see Breaking).
   The unused `TransitionOverlay.tsx` file is still in the tree and is not exported.
+- **Repository:** the root `workspaces` list names `apps/web` and `apps/server` instead of
+  `apps/*`.
 
 ## [0.6.0] — 2026-10-02
 
