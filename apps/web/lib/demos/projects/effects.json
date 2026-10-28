@@ -1,0 +1,154 @@
+{
+  "id": "av-pwsl45tt",
+  "fps": 30,
+  "stage": {
+    "width": 640,
+    "height": 360
+  },
+  "tracks": [
+    {
+      "id": "k9yzmg2g",
+      "name": "Background",
+      "kind": "elements",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "8zioaj4r",
+      "name": "Layer 1",
+      "kind": "elements",
+      "order": 1,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    }
+  ],
+  "clips": {
+    "k9yzmg2g": [
+      {
+        "id": "av-bzdm9lem",
+        "trackId": "k9yzmg2g",
+        "type": "shape",
+        "name": "Background",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 1.7777777777777777,
+          "scaleY": 1
+        },
+        "shapeKind": "rect",
+        "shapeFill": "#170F10",
+        "shapeStrokeWidth": 0
+      }
+    ],
+    "8zioaj4r": [
+      {
+        "id": "av-3jplrcxp",
+        "trackId": "8zioaj4r",
+        "type": "text",
+        "name": "Effects",
+        "startFrame": 0,
+        "durationFrames": 45,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 45,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "content": "Effects",
+        "transformModel": "v2",
+        "fontId": "space-grotesk",
+        "fontSize": 96,
+        "color": "#FBF3F1",
+        "effects": [
+          {
+            "id": "lklpz1sc",
+            "kind": "glow",
+            "params": {
+              "intensity": 1.5,
+              "radius": 24,
+              "color": "#ffffff"
+            }
+          }
+        ],
+        "partId": "fx-a"
+      },
+      {
+        "id": "av-az4k6y37",
+        "trackId": "8zioaj4r",
+        "type": "text",
+        "name": "Transitions",
+        "startFrame": 45,
+        "durationFrames": 45,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 45,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "content": "Transitions",
+        "transformModel": "v2",
+        "fontId": "space-grotesk",
+        "fontSize": 96,
+        "color": "#3DDC97",
+        "partId": "fx-b"
+      }
+    ]
+  },
+  "transitions": [
+    {
+      "id": "tr-zoom",
+      "kind": "zoom",
+      "fromClipId": "av-3jplrcxp",
+      "toClipId": "av-az4k6y37",
+      "trackId": "8zioaj4r",
+      "startFrame": 39,
+      "durationFrames": 12
+    }
+  ],
+  "version": 1
+}

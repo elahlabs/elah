@@ -21,9 +21,11 @@ const DOCS_PAGES = [
   'theming',
   'react',
   'agents',
+  'motion',
+  'scenes',
 ]
 
-const PLAYGROUND_PAGES = ['production', 'timeline', 'raw']
+const PLAYGROUND_PAGES = ['motion', 'production', 'timeline', 'raw']
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteConfig.url
@@ -37,6 +39,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     })),
+    { url: `${base}/motion`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${base}/claude`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${base}/playgrounds`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     { url: `${base}/examples`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     ...PLAYGROUND_PAGES.map((slug) => ({

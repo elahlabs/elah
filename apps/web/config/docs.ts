@@ -160,6 +160,19 @@ export const docsNav: DocNavSection[] = [
     ],
   },
   {
+    title: 'Motion',
+    items: [
+      { title: 'Keyframes', href: '/docs/motion' },
+      { title: 'Easing & springs', href: '/docs/motion#easing' },
+      { title: 'Expressions', href: '/docs/motion#expressions' },
+      { title: 'Stagger, repeat & yoyo', href: '/docs/motion#stagger' },
+      { title: 'Text animators', href: '/docs/motion#text' },
+      { title: 'Motion paths', href: '/docs/motion#paths' },
+      { title: '3D tilt', href: '/docs/motion#tilt' },
+      { title: 'HTML scenes & VideoSpec', href: '/docs/scenes' },
+    ],
+  },
+  {
     title: 'For Agents',
     items: [
       { title: 'Overview', href: '/docs/agents' },
@@ -219,6 +232,13 @@ export const docsHome: DocsHomeGroup[] = [
       { title: 'Frame Sequences', desc: '360 degree orbits and image sets as controllable, editable, exportable media.', href: '/docs/frame-sequences' },
       { title: 'Project Documents', desc: 'readProjectDocument, versioning, relinking media and library snapshots.', href: '/docs/project-documents' },
       { title: 'API Reference', desc: 'TimelineEngine, PlaybackEngine, resolveTimeline, GpuRenderer, hooks and types.', href: '/docs/api' },
+    ],
+  },
+  {
+    title: 'Motion',
+    cards: [
+      { title: 'Motion', desc: 'Keyframes, easing, springs, expressions, text animators, stagger and motion paths. Every key is plain data.', href: '/docs/motion' },
+      { title: 'HTML scenes & VideoSpec', desc: 'Experimental: write a scene as code and convert it to native clips and keyframes.', href: '/docs/scenes' },
     ],
   },
   {

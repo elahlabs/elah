@@ -1,0 +1,160 @@
+{
+  "id": "av-r2dna00x",
+  "fps": 30,
+  "stage": {
+    "width": 640,
+    "height": 360
+  },
+  "tracks": [
+    {
+      "id": "d6dwaykp",
+      "name": "Background",
+      "kind": "elements",
+      "order": 0,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "bhrz9d0a",
+      "name": "Layer 1",
+      "kind": "elements",
+      "order": 1,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    },
+    {
+      "id": "kguxgysq",
+      "name": "Layer 2",
+      "kind": "elements",
+      "order": 2,
+      "height": 64,
+      "locked": false,
+      "disabled": false,
+      "muted": false,
+      "solo": false,
+      "volume": 1,
+      "protected": false
+    }
+  ],
+  "clips": {
+    "d6dwaykp": [
+      {
+        "id": "av-5zoih4pb",
+        "trackId": "d6dwaykp",
+        "type": "shape",
+        "name": "Background",
+        "startFrame": 0,
+        "durationFrames": 90,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 90,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.5,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "scaleX": 1.7777777777777777,
+          "scaleY": 1
+        },
+        "shapeKind": "rect",
+        "shapeFill": "#170F10",
+        "shapeStrokeWidth": 0
+      }
+    ],
+    "bhrz9d0a": [
+      {
+        "id": "av-9wc8d3mh",
+        "trackId": "bhrz9d0a",
+        "type": "text",
+        "name": "Letters rise",
+        "startFrame": 3,
+        "durationFrames": 84,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 84,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.35,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "content": "Letters rise",
+        "transformModel": "v2",
+        "fontId": "space-grotesk",
+        "fontSize": 64,
+        "color": "#FBF3F1",
+        "textAnimator": {
+          "unit": "char",
+          "preset": "rise",
+          "staggerFrames": 1,
+          "durationFrames": 12
+        },
+        "partId": "line1"
+      }
+    ],
+    "kguxgysq": [
+      {
+        "id": "av-hh4n0euu",
+        "trackId": "kguxgysq",
+        "type": "text",
+        "name": "then words pop",
+        "startFrame": 24,
+        "durationFrames": 63,
+        "sourceStartFrame": 0,
+        "sourceDurationFrames": 63,
+        "volume": 1,
+        "opacity": 1,
+        "locked": false,
+        "disabled": false,
+        "transform": {
+          "x": 0.5,
+          "y": 0.6,
+          "scale": 1,
+          "rotation": 0,
+          "anchor": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        "content": "then words pop",
+        "transformModel": "v2",
+        "fontId": "inter",
+        "fontSize": 40,
+        "color": "#FF003C",
+        "textAnimator": {
+          "unit": "word",
+          "preset": "pop",
+          "staggerFrames": 4,
+          "durationFrames": 9
+        },
+        "partId": "line2"
+      }
+    ]
+  },
+  "transitions": [],
+  "version": 1
+}

@@ -35,6 +35,22 @@ const pkgSrcRel = (name) => {
 // `exports` map. Webpack needs a trailing `$` for that exact match; Turbopack
 // treats a key without `*` as an exact match already.
 
+// The experimental core layers have their own subpath entries. They must alias
+// to source too: a subpath that resolved to dist/ would load a second copy of
+// core, with its own module-level singletons, next to the aliased root entry.
+const coreSubpaths = {
+  '@elah/core/engine': 'engine.ts',
+  '@elah/core/spec': 'spec/index.ts',
+  '@elah/core/html': 'vector/html/index.ts',
+  '@elah/core/ops': 'ops/index.ts',
+  '@elah/core/icons': 'icons/index.ts',
+}
+const coreSubAbs = (file) => path.resolve(root, '../../packages/core/src', file)
+const coreSubRel = (file) => {
+  const rel = path.relative(root, coreSubAbs(file)).split(path.sep).join('/')
+  return rel.startsWith('.') ? rel : './' + rel
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -82,6 +98,7 @@ const nextConfig = {
       '@elah/core': pkgSrcRel('core'),
       '@elah/editor': pkgSrcRel('editor'),
       '@elah/timeline': pkgSrcRel('timeline'),
+      ...Object.fromEntries(Object.entries(coreSubpaths).map(([k, f]) => [k, coreSubRel(f)])),
     },
   },
   webpack: (config) => {
@@ -90,6 +107,7 @@ const nextConfig = {
       '@elah/core$': pkgSrcAbs('core'),
       '@elah/editor$': pkgSrcAbs('editor'),
       '@elah/timeline$': pkgSrcAbs('timeline'),
+      ...Object.fromEntries(Object.entries(coreSubpaths).map(([k, f]) => [k + '$', coreSubAbs(f)])),
     }
     return config
   },
