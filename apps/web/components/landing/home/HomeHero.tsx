@@ -113,7 +113,7 @@ export function HomeHero() {
             <span className="hidden sm:inline">{FPS} fps · 8.0 s loop</span>
           </div>
           <div className="mx-auto w-full max-w-[880px]">
-            <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={560} />
+            <LazyDemo name="hero" label="Motion piece with its timeline" timelineHeight={300} minHeight={600} editableKeys />
           </div>
           <figcaption className={`border-t border-[#2E2E33] px-4 py-3 text-[#9A9993] ${label}`}>
             Rendered by the engine. The diamonds are the keyframes, and the playhead is the timeline playing.
