@@ -2,7 +2,7 @@
 
 Each `formats/*.md` beat table names VideoSpec components. This file is the same beats for a programmatic video (`source.kind:
 "page"`, read `programmatic.md` first). Every recipe is one scene (`<section class="scene ..." data-scene="...">`) plus its CSS, and
-every block here is validated: all of them composed into one video pass `validate.mjs` with 0 errors (`scripts/validate.test.mjs`
+every block here is validated: all of them composed into one video pass `validate.mjs` with 0 errors (`plugins/elah-dev/validate.test.mjs`
 keeps it so).
 
 ## How to use a recipe

@@ -1,4 +1,4 @@
-// node --test plugins/elah/scripts/
+// node --test plugins/elah-dev/
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const run = (...args) => spawnSync(process.execPath, [join(HERE, 'validate.mjs'), ...args], { encoding: 'utf8' })
+const run = (...args) => spawnSync(process.execPath, [join(HERE, '..', 'elah', 'scripts', 'validate.mjs'), ...args], { encoding: 'utf8' })
 const fx = (name) => join(HERE, 'fixtures', name)
 
 test('valid spec: exit 0 with a one-line summary', () => {
@@ -95,7 +95,7 @@ test('page: the reference example is valid and is the programmatic/example.md ex
   const r = run(fx('valid-page.json'))
   assert.equal(r.status, 0, r.stdout + r.stderr)
   assert.match(r.stdout, /^OK: programmatic video "Orbit 2 launch", 1920x1080 @ 30 fps, 6 s, 2 scenes, 13 animations, 9 keyframe sets\n$/)
-  const md = readFileSync(join(HERE, '..', 'reference', 'programmatic', 'example.md'), 'utf8').replace(/\r\n/g, '\n')
+  const md = readFileSync(join(HERE, '..', 'elah', 'reference', 'programmatic', 'example.md'), 'utf8').replace(/\r\n/g, '\n')
   const html = md.match(/```html\n([\s\S]*?)```/)[1]
   const cssText = md.match(/```css\n([\s\S]*?)```/)[1]
   const fixture = JSON.parse(readFileSync(fx('valid-page.json'), 'utf8')).source
@@ -192,7 +192,7 @@ test('page: animation-timeline, <style>, <meta http-equiv>, javascript: links an
 })
 
 test('page: every recipe in programmatic/recipes.md composes into one video with no errors and no warnings', () => {
-  const md = readFileSync(join(HERE, '..', 'reference', 'programmatic', 'recipes.md'), 'utf8').replace(/\r\n/g, '\n')
+  const md = readFileSync(join(HERE, '..', 'elah', 'reference', 'programmatic', 'recipes.md'), 'utf8').replace(/\r\n/g, '\n')
   const htmls = [...md.matchAll(/```html\n([\s\S]*?)```/g)].map((m) => m[1])
   const csses = [...md.matchAll(/```css\n([\s\S]*?)```/g)].map((m) => m[1])
   assert.ok(htmls.length >= 19, `expected 19 recipe scenes, found ${htmls.length}`)
