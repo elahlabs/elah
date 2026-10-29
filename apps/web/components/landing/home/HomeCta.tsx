@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { GITHUB_URL } from '@/config/nav'
+import { GITHUB_URL, creatorUrl } from '@/config/nav'
 import { CropMarks, Sel, btnLarge, container, display, label, lead, sectionY } from '@/components/eb'
 
 /** Closing call to action: the last shot, on the ink stage, framed by crop marks. */
@@ -22,7 +22,14 @@ export function HomeCta() {
               elah is open source. Let Claude write the video, then edit its keyframes and export an mp4 in your browser.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <Link href="/claude" className={`${onInk} ${btnLarge} bg-[#FF003C] text-[#0E0E10] hover:bg-[#F0EFEA]`}>
+              <a href={creatorUrl('final-cut')} className={`${onInk} ${btnLarge} bg-[#FF003C] text-[#0E0E10] hover:bg-[#F0EFEA]`}>
+                Try Elah Creator
+                <ArrowRight size={15} strokeWidth={2} aria-hidden />
+              </a>
+              <Link
+                href="/claude"
+                className={`${onInk} ${btnLarge} border border-[#F0EFEA] text-[#F0EFEA] hover:bg-[#F0EFEA] hover:text-[#0E0E10]`}
+              >
                 Try the Claude plugin
                 <ArrowRight size={15} strokeWidth={2} aria-hidden />
               </Link>

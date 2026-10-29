@@ -42,8 +42,24 @@ Recap, Words in motion, Logo sting and Social. The old words still work: `style:
 folded into `/elah:motion`; their briefs work there unchanged.
 
 In the artifact: Preview, Edit (Animate tab, keyframes, curves), Export MP4 (rendered in your browser), Download project (an `.elah.json` file that opens in Elah Creator), and Try Elah (opens Elah Creator, where captions, background removal, voice-over, image and video generation, the AI Assistant and advanced editing live).
-While building, the plugin's `sfx-search.mjs` may contact api.openverse.org and cdn.freesound.org to fetch a CC0 sound the bundled pack lacks; the artifact itself never reaches the network.
+Everything the plugin can send over the network is listed under [Data and network](#data-and-network).
 The plugin never renders a video itself. Without the Artifact tool the skills write `<name>.elah-input.json` and say so.
+
+## Data and network
+
+The plugin runs on your machine and writes only into the folder you work in. It has no account, no API key, no telemetry and
+no server of its own, and it reads no environment variables. Everything that can leave your machine is below, and each one
+happens only when you ask for it.
+
+| When | Destination | What is sent |
+| --- | --- | --- |
+| `/elah:motion` or `/elah:revise` needs a sound the bundled pack lacks | api.openverse.org | The sound search words. If you pick a result, that one CC0 mp3 is downloaded from its host (cdn.freesound.org) into `assets/sfx/` in your work folder, with its credit in `assets/sfx/credits.json`. |
+| `/elah:brand` with a website URL | The site you name | Claude reads that page with Claude Code's WebFetch tool to take its colours. No image is downloaded from it. |
+| `/elah:saas` | Your npm registry | `npm install` downloads the `@elah/*` packages and the project's other dependencies. Nothing is installed if you decline. |
+| You click Try Elah in the artifact | creator.elahlabs.com | Opens the Elah Creator sign-in page in a new tab. The link carries fixed campaign tags (`utm_source=claude-plugin`, `utm_medium=artifact`, `utm_campaign=try-elah`, and `utm_content` naming where the button sits) and nothing about you or your video. |
+
+The artifact page itself makes no network requests: the engine, workers, fonts and sound pack ship inside it, and Export MP4
+renders in your browser. Its other links (www.elah.dev and the GitHub repository) are plain links that open only when clicked.
 
 ## What is inside
 
