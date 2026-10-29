@@ -24,6 +24,20 @@ export const GET_STARTED_URL = '/docs/getting-started'
 export const EDITOR_URL = '/playground/production'
 export const CONTACT_URL = 'mailto:paul@elah.dev'
 
+/**
+ * Elah Creator, the hosted editor for people making videos rather than code.
+ * Links go to `/login` because the creator's `/` redirects there and drops the
+ * query string. `placement` names the button so the UTM tags tell them apart.
+ */
+export function creatorUrl(placement: string): string {
+  const url = new URL('https://creator.elahlabs.com/login')
+  url.searchParams.set('utm_source', 'elah.dev')
+  url.searchParams.set('utm_medium', 'landing')
+  url.searchParams.set('utm_campaign', 'try-elah-creator')
+  url.searchParams.set('utm_content', placement)
+  return url.toString()
+}
+
 /** Primary header links, in display order. */
 export const navLinks: NavLink[] = [
   { label: 'Motion', href: '/motion' },

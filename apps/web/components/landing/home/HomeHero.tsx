@@ -5,10 +5,12 @@ import Link from 'next/link'
 import { ArrowRight, Check, Copy } from 'lucide-react'
 import posthog from 'posthog-js'
 import { LazyDemo } from '@/components/home/LazyDemo'
-import { CropMarks, Sel, btnLarge, btnPrimary, btnSecondary, container, display, label, lead } from '@/components/eb'
+import { CropMarks, Sel, btnLarge, btnPrimary, btnSecondary, btnSmall, container, display, label, lead } from '@/components/eb'
+import { creatorUrl } from '@/config/nav'
 
 const INSTALL = 'npm install @elah/editor'
 const CLAUDE = '/claude'
+const CREATOR = creatorUrl('hero')
 const FPS = 30
 
 /**
@@ -83,16 +85,25 @@ export function HomeHero() {
               <p className={`${lead} max-w-[440px]`}>Open source. Renders in the browser.</p>
               <p className={`m-0 text-[var(--lp-muted)] ${label}`}>New in 1.0: the motion layer.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href={CLAUDE} className={`${btnPrimary} ${btnLarge}`}>
-                Try the Claude plugin
-                <ArrowRight size={15} strokeWidth={2} aria-hidden />
-              </Link>
-              <button type="button" onClick={copy} aria-label={`Copy ${INSTALL}`} title={`Copy ${INSTALL}`} className={`${btnSecondary} ${btnLarge} !normal-case !tracking-normal`}>
-                <span aria-hidden>$</span>
-                {INSTALL}
-                {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Copy size={15} strokeWidth={2} aria-hidden />}
-              </button>
+            <div className="flex flex-col gap-4 lg:items-end">
+              <div className="flex flex-wrap items-center gap-3">
+                <a href={CREATOR} onClick={() => posthog.capture('creator_cta_clicked', { placement: 'hero' })} className={`${btnPrimary} ${btnLarge}`}>
+                  Try Elah Creator
+                  <ArrowRight size={15} strokeWidth={2} aria-hidden />
+                </a>
+                <Link href={CLAUDE} className={`${btnSecondary} ${btnLarge}`}>
+                  Try the Claude plugin
+                  <ArrowRight size={15} strokeWidth={2} aria-hidden />
+                </Link>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`text-[var(--lp-muted)] ${label}`}>Building with code?</span>
+                <button type="button" onClick={copy} aria-label={`Copy ${INSTALL}`} title={`Copy ${INSTALL}`} className={`${btnSecondary} ${btnSmall} !normal-case !tracking-normal`}>
+                  <span aria-hidden>$</span>
+                  {INSTALL}
+                  {copied ? <Check size={13} strokeWidth={2} aria-hidden /> : <Copy size={13} strokeWidth={2} aria-hidden />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
