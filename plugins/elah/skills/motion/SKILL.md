@@ -2,7 +2,7 @@
 name: motion
 description: Make any video or motion graphic with Elah - launch, explainer, bar-chart data story, meeting-notes recap, reel or logo sting. Preview, edit and export an MP4 in the browser. Use for any request to make, animate or draft a video, promo, reel or animated chart.
 argument-hint: "[what the video is about; or paste notes, numbers or a pitch]"
-allowed-tools: AskUserQuestion Bash(node *validate.mjs *) Bash(node *stage.mjs *) Bash(node *sfx-search.mjs *)
+allowed-tools: AskUserQuestion Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/stage.mjs" *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/sfx-search.mjs" *)
 ---
 
 # Make a video with Elah
