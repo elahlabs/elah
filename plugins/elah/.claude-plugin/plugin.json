@@ -1,6 +1,7 @@
 {
   "name": "elah",
-  "version": "0.2.0",
+  "displayName": "Elah",
+  "version": "0.2.1",
   "description": "Claude asks a few questions, drafts your video or motion graphic, and you preview it, edit it frame by frame and export an MP4 in your browser. Also scaffolds your own video editor app on the Elah libraries.",
   "author": {
     "name": "Elah"
