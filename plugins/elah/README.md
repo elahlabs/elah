@@ -84,9 +84,6 @@ THIRD_PARTY_NOTICES.md          the open-source guidance the craft files were ad
 scripts/validate.mjs            GENERATED validator bundle, plain Node: node validate.mjs <elah-input.json> [--json] [--notes] | --vocabulary
 scripts/stage.mjs               copies assets/artifact into a work folder and prints the Artifact `files` map
 scripts/sfx-search.mjs          searches Openverse for a CC0 sound the pack lacks and saves it to assets/sfx/ with credits
-scripts/validate.test.mjs       node --test file; scripts/fixtures/ its inputs
-src/validate.src.mjs            validator source
-build.mjs                       builds scripts/validate.mjs and copies artifact/dist into assets/artifact
 assets/artifact/                GENERATED copy of artifact/dist (the page, engine bundle, workers, fonts, MANIFEST.json)
 ```
 
@@ -104,17 +101,17 @@ Leonxlnx taste-skill (MIT). Licences, URLs and what was drawn from each are in [
 ## Build (maintainers)
 
 `scripts/validate.mjs` and `assets/artifact/` are generated and **committed**, so users can install straight from the
-repository without building. After changing the engine's spec compiler, `artifact/`, or `src/validate.src.mjs`, run from the
+repository without building. After changing the engine's spec compiler, `artifact/`, or `plugins/elah-dev/src/validate.src.mjs`, run from the
 repo root (no install needed; it uses the esbuild already in `node_modules`):
 
 ```
-node plugins/elah/build.mjs
-node --test "plugins/elah/scripts/*.test.mjs"
-claude plugin validate ./plugins/elah
-claude plugin validate .
+node plugins/elah-dev/build.mjs
+node --test plugins/elah-dev/*.test.mjs
+node tools/directory-preflight.mjs plugins/elah
+claude plugin tag --dry-run plugins/elah
 ```
 
-Then commit the regenerated files. `build.mjs` needs `artifact/dist/MANIFEST.json` from `npm run build` in `artifact/`; without it,
+Then commit the regenerated files. `plugins/elah-dev/build.mjs` needs `artifact/dist/MANIFEST.json` from `npm run build` in `artifact/`; without it,
 only the validator is rebuilt.
 
 ## Validator exit codes

@@ -1,11 +1,11 @@
 /**
  * Build the Elah Claude Code plugin's generated files. Run from anywhere:
  *
- *   node plugins/elah/build.mjs
+ *   node plugins/elah-dev/build.mjs
  *
  * 1. Bundles src/validate.src.mjs, with the engine's spec compiler and HTML-subset validator
- *    from packages/core/src, into scripts/validate.mjs (plain Node, no install needed to run it).
- * 2. Copies artifact/dist/** (built by PA-1) into assets/artifact/, so an installed plugin carries
+ *    from packages/core/src, into ../elah/scripts/validate.mjs (plain Node, no install needed to run it).
+ * 2. Copies artifact/dist/** (built by PA-1) into ../elah/assets/artifact/, so an installed plugin carries
  *    the page and the engine. Skipped with a notice when artifact/dist/MANIFEST.json does not exist.
  *
  * Both outputs are committed: a user installs the plugin straight from the repo and never builds.
@@ -18,13 +18,14 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..', '..')
+const PLUGIN = resolve(HERE, '..', 'elah')
 const require = createRequire(join(ROOT, 'packages/cli/package.json'))
 const esbuild = require('esbuild')
 
 // 1. validator bundle
 await esbuild.build({
   entryPoints: [join(HERE, 'src/validate.src.mjs')],
-  outfile: join(HERE, 'scripts/validate.mjs'),
+  outfile: join(PLUGIN, 'scripts/validate.mjs'),
   bundle: true,
   platform: 'node',
   format: 'esm',
@@ -41,11 +42,11 @@ await esbuild.build({
   },
   logLevel: 'warning',
 })
-console.log(`validator: scripts/validate.mjs (${(statSync(join(HERE, 'scripts/validate.mjs')).size / 1024).toFixed(0)} KiB)`)
+console.log(`validator: scripts/validate.mjs (${(statSync(join(PLUGIN, 'scripts/validate.mjs')).size / 1024).toFixed(0)} KiB)`)
 
 // 2. artifact assets
 const dist = join(ROOT, 'artifact/dist')
-const out = join(HERE, 'assets/artifact')
+const out = join(PLUGIN, 'assets/artifact')
 if (!existsSync(join(dist, 'MANIFEST.json'))) {
   console.log('assets: artifact/dist/MANIFEST.json not found (PA-1 has not built it). assets/artifact/ left as it is.')
 } else {

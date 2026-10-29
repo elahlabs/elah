@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { filterResults, looksLikeMp3, mergeCredits, parseArgs, rank, slugify, uniqueSlug } from './sfx-search.mjs'
+import { filterResults, looksLikeMp3, mergeCredits, parseArgs, rank, slugify, uniqueSlug } from '../elah/scripts/sfx-search.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const fixture = JSON.parse(readFileSync(join(here, 'fixtures', 'openverse-audio.json'), 'utf8'))
