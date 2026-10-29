@@ -2,7 +2,7 @@
 name: revise
 description: Change the last Elah video (shorter, new look, new wording, vertical) and update the same link, keeping edits made in the artifact. Use to revise, tweak, shorten, restyle or reformat an Elah video.
 argument-hint: "[what to change, e.g. make it 10 seconds and Poster Shout]"
-allowed-tools: Bash(node *validate.mjs *) Bash(node *stage.mjs *) Bash(node *sfx-search.mjs *)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/validate.mjs" *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/stage.mjs" *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/sfx-search.mjs" *)
 ---
 
 # Revise an Elah video
