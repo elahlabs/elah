@@ -19,6 +19,11 @@ export const API = 'https://api.openverse.org/v1/audio/'
 export const MAX_BYTES = 2 * 1048576
 export const DEFAULT_MAX_SECONDS = 3
 export const TOP = 5
+/** Openverse sometimes never answers; give up rather than hang the build. */
+export const TIMEOUT_MS = 15000
+
+const why = (e) =>
+  e instanceof Error && e.name === 'TimeoutError' ? `no answer within ${TIMEOUT_MS / 1000} s` : e instanceof Error ? e.message : String(e)
 
 /** Keep CC0 mp3 results with an https url and a duration of at most `maxSeconds`. */
 export function filterResults(results, maxSeconds = DEFAULT_MAX_SECONDS) {
@@ -119,7 +124,7 @@ async function search(query, maxSeconds) {
   url.searchParams.set('license', 'cc0')
   url.searchParams.set('extension', 'mp3')
   url.searchParams.set('page_size', '20')
-  const res = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'elah-plugin-sfx-search' } })
+  const res = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'elah-plugin-sfx-search' }, signal: AbortSignal.timeout(TIMEOUT_MS) })
   if (!res.ok) throw new Error(`Openverse answered HTTP ${res.status}`)
   const body = await res.json()
   return rank(filterResults(body.results, maxSeconds)).slice(0, TOP)
@@ -136,7 +141,7 @@ async function main(argv) {
   try {
     top = await search(args.query, args.maxSeconds)
   } catch (e) {
-    process.stderr.write(`Openverse search failed: ${e instanceof Error ? e.message : String(e)}\n`)
+    process.stderr.write(`Openverse search failed: ${why(e)}\n`)
     return 1
   }
   if (!top.length) {
@@ -154,11 +159,11 @@ async function main(argv) {
   }
   let buf
   try {
-    const res = await fetch(r.url, { headers: { 'user-agent': 'elah-plugin-sfx-search' } })
+    const res = await fetch(r.url, { headers: { 'user-agent': 'elah-plugin-sfx-search' }, signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     buf = Buffer.from(await res.arrayBuffer())
   } catch (e) {
-    process.stderr.write(`Download failed: ${e instanceof Error ? e.message : String(e)}\n`)
+    process.stderr.write(`Download failed: ${why(e)}\n`)
     return 1
   }
   if (buf.length > MAX_BYTES || buf.length === 0) {

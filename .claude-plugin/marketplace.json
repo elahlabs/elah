@@ -9,7 +9,7 @@
       "name": "elah",
       "source": "./plugins/elah",
       "description": "Claude asks a few questions, drafts your video or motion graphic, and you preview it, edit it frame by frame and export an MP4 in your browser. Also scaffolds your own video editor app on the Elah libraries.",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "homepage": "https://elah.dev",
       "license": "Apache-2.0",
       "keywords": [
