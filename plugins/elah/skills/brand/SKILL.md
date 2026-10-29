@@ -2,7 +2,6 @@
 name: brand
 description: Save a brand kit (colours, fonts, look, logo) from a hex, a logo file or a website, so every later Elah video matches it. Use when someone gives a brand colour, logo or site for their videos.
 argument-hint: "[a hex colour, a logo file path, or a website URL; optionally the brand name]"
-allowed-tools: WebFetch
 ---
 
 # Make a brand kit with Elah

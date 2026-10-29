@@ -87,7 +87,8 @@ programmatic video (`programmatic.md`, "Sound cues"), the `sfx` list in a VideoS
 Openverse while building: `node "${CLAUDE_PLUGIN_ROOT}/scripts/sfx-search.mjs" "<query>" --out <work folder>` lists five CC0
 candidates; the same command with `--pick <n>` downloads one to `assets/sfx/<name>.mp3` (credits in `assets/sfx/credits.json`).
 Use it as `data-sfx="assets/sfx/<name>.mp3"` or an `sfx` cue of the same path. At most 4 searched sounds per video, CC0 only, and
-name each searched sound and its author in the closing note.
+name each searched sound and its author in the closing note. If the search fails (it gives up after 15 s), do not retry: use the
+nearest pack word, or no sound, and say which sound is missing in the closing note.
 
 ## 3. Write and validate `elah-input.json`
 
