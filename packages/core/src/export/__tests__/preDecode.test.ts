@@ -105,6 +105,25 @@ describe('preDecodeSvgImages', () => {
     }
   })
 
+  it('also decodes data: raster sources, so the worker never fetches a data: URL', async () => {
+    const png = 'data:image/png;base64,AA'
+    const jpeg = 'data:image/jpeg;base64,BB'
+    const project = projectOf(
+      [track('v', 0)],
+      [clip('a', 'v', { src: png }), clip('b', 'v', { src: 'b.png' }), clip('c', 'v', { src: jpeg })],
+    )
+    const contentType = vi.fn(async () => 'image/png')
+    const loadImage = vi.fn(async (_src: string) => ({ source: {} as CanvasImageSource, width: 256, height: 128 }))
+    const rasterize = vi.fn(async (_s: CanvasImageSource, w: number, h: number) => new FakeBitmap(w, h) as unknown as ImageBitmap)
+
+    const out = await preDecodeSvgImages(project, undefined, { loadImage, rasterize, contentType })
+
+    expect(Object.keys(out)).toEqual([png, jpeg])
+    expect(loadImage.mock.calls.map((c) => c[0])).toEqual([png, jpeg])
+    expect(rasterize).toHaveBeenCalledWith(expect.anything(), 256, 128)
+    expect(contentType).not.toHaveBeenCalled()
+  })
+
   it('keeps an existing entry and never calls loadImage for it', async () => {
     const project = projectOf([track('v', 0)], [clip('a', 'v', { src: 'a.svg' })])
     const existingBitmap = new FakeBitmap(10, 10) as unknown as ImageBitmap
