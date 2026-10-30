@@ -8,18 +8,21 @@ export function Slate({
   n,
   label: text,
   kicker,
+  rule = true,
   onStage = false,
 }: {
   n?: number
   label: string
   kicker?: string
+  /** Draw the top hairline. The homepage turns it off. */
+  rule?: boolean
   onStage?: boolean
 }) {
   const ink = onStage ? 'text-[#F0EFEA]' : 'text-[var(--color-on-surface)]'
-  const rule = onStage ? 'border-[#F0EFEA]' : 'border-[var(--color-on-surface)]'
+  const line = !rule ? '' : onStage ? 'border-t border-[#F0EFEA]' : 'border-t border-[var(--color-on-surface)]'
   const muted = onStage ? 'text-[#9A9993]' : 'text-[var(--color-on-surface-variant)]'
   return (
-    <div className={`flex items-center justify-between gap-4 border-t py-3 ${rule} ${ink} ${label}`}>
+    <div className={`flex items-center justify-between gap-4 py-3 ${line} ${ink} ${label}`}>
       <span>
         {n != null ? (
           <>
