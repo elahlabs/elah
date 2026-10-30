@@ -7,8 +7,14 @@
  * spawns: it decodes each SVG image src through the same `<img>` path the
  * preview uses (so the rasterised bitmap is exactly the size the preview
  * places it at), draws it into a canvas of that size, and hands the resulting
- * `ImageBitmap`s to the worker via `ExportOptions.preDecoded`. Raster image
- * sources are untouched — they still fetch and decode inside the worker.
+ * `ImageBitmap`s to the worker via `ExportOptions.preDecoded`.
+ *
+ * `data:` image sources (raster ones too) take the same route. A sandboxed
+ * host can forbid the worker's `fetch` of a `data:` URL under `connect-src`
+ * (a claude.ai artifact allows only `'self'`, `blob:` and Google Fonts) while
+ * still letting an `<img>` load it under `img-src`, so decoding them here keeps
+ * export working wherever the preview does. Other raster sources are untouched
+ * — they still fetch and decode inside the worker.
  *
  * Pure with respect to the DOM only through its injected `deps`; the
  * production defaults use `document.createElement('canvas')` and the
@@ -112,8 +118,8 @@ const defaultContentType: Required<PreDecodeDeps>['contentType'] = async (src) =
 }
 
 /**
- * `existing` plus a bitmap for every SVG image src in `project` not already
- * in it.
+ * `existing` plus a bitmap for every SVG or `data:` image src in `project` not
+ * already in it.
  *
  * Sources are processed one at a time, in order (never `Promise.all`), so a
  * slow or failing decode has a clear place in the trace and in a rejection.
@@ -146,7 +152,8 @@ export async function preDecodeSvgImages(
         isSvg = false
       }
     }
-    if (!isSvg) continue
+    // A data: raster is decoded here too, at its natural size, so the worker never fetches it.
+    if (!isSvg && !src.startsWith('data:')) continue
 
     const { source, width, height } = await loadImage(src)
     let w = width
@@ -154,7 +161,7 @@ export async function preDecodeSvgImages(
     if (!w || !h) {
       w = SVG_FALLBACK_SIZE
       h = SVG_FALLBACK_SIZE
-      console.warn('[export] SVG image has no intrinsic size; rasterised at 1024×1024:', src)
+      console.warn('[export] image has no intrinsic size; rasterised at 1024×1024:', src.slice(0, 64))
     }
     out[src] = await rasterize(source, w, h)
   }

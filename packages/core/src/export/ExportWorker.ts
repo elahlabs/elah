@@ -340,8 +340,9 @@ async function runExport(project: Project, options: ExportOptions, audio: Render
   const imageBitmaps = new Map<string, ImageBitmap>()
   for (let i = 0; i < imageSrcs.length; i++) {
     const src = imageSrcs[i]
-    // PV-P6b-4: the main thread already rasterised this src (it is an SVG,
-    // which this worker cannot decode) and transferred the bitmap in with the
+    // PV-P6b-4: the main thread already rasterised this src (an SVG, which
+    // this worker cannot decode, or a data: URL, which a sandboxed host may
+    // refuse to let this worker fetch) and transferred the bitmap in with the
     // start message. Use it as-is instead of fetching/decoding again.
     const pre = options.preDecoded?.[src]
     if (pre) {
