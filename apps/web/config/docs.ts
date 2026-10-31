@@ -210,8 +210,8 @@ export const docsHome: DocsHomeGroup[] = [
     title: 'Start here',
     cards: [
       { title: 'Installation', desc: 'Install @elah/editor from npm and configure Next.js or Vite.', href: '/docs/installation' },
-      { title: 'Quick Start', desc: 'Build the full editor in under 20 lines. Wire your demuxer, render, ship.', href: '/docs/getting-started' },
-      { title: 'Architecture', desc: 'Integer frames, the one mutation funnel, the pure resolver, dumb renderers.', href: '/docs/architecture' },
+      { title: 'Quick Start', desc: 'A timeline, then a preview, then the full editor with media and export.', href: '/docs/getting-started' },
+      { title: 'Architecture', desc: 'Where state lives, how an edit flows, the playback clock and the renderer.', href: '/docs/architecture' },
     ],
   },
   {
@@ -238,7 +238,7 @@ export const docsHome: DocsHomeGroup[] = [
     title: 'Motion',
     cards: [
       { title: 'Motion', desc: 'Keyframes, easing, springs, expressions, text animators, stagger and motion paths. Every key is plain data.', href: '/docs/motion' },
-      { title: 'HTML scenes & VideoSpec', desc: 'Live in 1.0: write a scene as code and convert it to native clips and keyframes.', href: '/docs/scenes' },
+      { title: 'HTML scenes & VideoSpec', desc: 'Write a scene as HTML or JSON and turn it into editable clips and keyframes.', href: '/docs/scenes' },
     ],
   },
   {

@@ -1,9 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight, Layers, Clock, Cpu, Braces, Terminal } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { Code } from '@/components/docs/Code'
+import { C, Callout, H2, P, PropTable } from '@/components/docs/DocsKit'
+import { LazyDemo } from '@/components/home/LazyDemo'
 import { docsHome } from '@/config/docs'
 import { PageHeader } from '@/components/site/PageHeader'
+import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Documentation',
@@ -23,206 +27,138 @@ const groupId = (title: string) =>
 
 const toc = [
   { id: 'introduction', title: 'Introduction', level: 2 },
-  { id: 'architecture', title: 'Architecture', level: 2 },
+  { id: 'start', title: 'Where to start', level: 2 },
+  { id: 'how-it-works', title: 'How it works', level: 2 },
   { id: 'packages', title: 'Packages', level: 2 },
-  { id: 'design-principles', title: 'Design Principles', level: 2 },
-  ...docsHome.map((group) => ({ id: groupId(group.title), title: group.title, level: 2 })),
+  { id: 'all-docs', title: 'All docs', level: 2 },
+]
+
+const link = 'text-on-surface underline decoration-[#FF003C] underline-offset-4 hover:decoration-2'
+
+const PATHS = [
+  { title: 'Drop in a video editor', desc: 'Preview, timeline and media panel, ready to style.', href: '/docs/getting-started' },
+  { title: 'Build your own editor UI', desc: 'Use the engine and hooks under your own components.', href: '/docs/react' },
+  { title: 'Generate video from code or a model', desc: 'Write scenes as JSON or HTML, render in the browser or on a server.', href: '/docs/scenes' },
 ]
 
 export default function DocsPage() {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-      <article className="min-w-0 flex-1 max-w-3xl">
-        {/* Page header */}
+      <article className="min-w-0 max-w-3xl flex-1">
         <PageHeader
           variant="doc"
           id="introduction"
           eyebrow="elah"
-          title="Introduction"
-          lede={
-            <>
-              elah is an open, framework-agnostic architecture for building browser-native video editors. It currently ships first-class support for Next.js and React, with React Native (experimental) and more frameworks coming soon. Engine-first, renderer-agnostic, scalable from MVP to production.
-            </>
-          }
+          title="Documentation"
+          lede="elah is an open-source engine for building video editors in the browser. It gives you the timeline, the preview, the editing logic and MP4 export as React components, on top of an engine that also runs without React."
         />
 
-        {/* What is it */}
-        <section className="mb-10">
-          <p className="text-sm leading-relaxed text-on-surface-variant mb-4">
-            elah is <strong className="text-on-surface font-medium">not</strong> a drag-and-drop video editing app you open in a browser. It is the <strong className="text-on-surface font-medium">engine, resolver, and timeline SDK</strong> that any modern web-based video editor should sit on.
-          </p>
-          <p className="text-sm leading-relaxed text-on-surface-variant mb-4">
-            Three goals shape every decision:
-          </p>
-          <ol className="space-y-3 mb-6">
-            {[
-              { n: '1', title: 'Deterministic playback', desc: 'Same project + same frame = same pixels, always. Time is integer frames; never floating-point seconds.' },
-              { n: '2', title: 'Renderer-agnostic core', desc: 'The data model and timeline resolver know nothing about DOM, Canvas, WebGL, or WebGPU. Swap rendering backends without touching state.' },
-              { n: '3', title: 'Iteration speed', desc: 'Small surface area, no plugin systems, no over-engineered abstractions. You can read the entire core in one sitting.' },
-            ].map((item) => (
-              <li key={item.n} className="flex gap-3 border border-outline-variant bg-surface-low p-4">
-                <span className="label-mono mt-0.5 text-xs text-on-surface">{item.n}.</span>
-                <div>
-                  <div className="text-sm font-medium text-on-surface mb-0.5">{item.title}</div>
-                  <div className="text-xs leading-relaxed text-on-surface-variant">{item.desc}</div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <figure className="my-8 border border-outline-variant">
+          <LazyDemo name="hero" timelineHeight={130} minHeight={440} label="An elah project playing in Preview and Timeline" />
+          <figcaption className={`border-t border-outline-variant px-4 py-2.5 text-on-surface-variant ${label}`}>
+            Preview and Timeline, running on this page
+          </figcaption>
+        </figure>
 
-        {/* Architecture */}
-        <section className="mb-10">
-          <h2
-            id="architecture"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-          >
+        <Code lang="bash" code={`npm install @elah/editor lucide-react`} />
+        <P>
+          elah is not an editing app you open; it is what an editing app is built from. It works with React 18 and 19, in Next.js or Vite.
+          Everything runs in the user&apos;s browser: media is never uploaded.
+        </P>
+
+        <H2 id="start">Where to start</H2>
+        <div className="my-5 grid gap-px border border-outline-variant bg-outline-variant sm:grid-cols-3">
+          {PATHS.map((p) => (
+            <Link key={p.href} href={p.href} className="group flex flex-col gap-2 bg-surface px-4 py-4 no-underline transition-colors hover:bg-surface-low">
+              <span className="flex items-start justify-between gap-2 text-[15px] font-semibold text-on-surface">
+                {p.title}
+                <ArrowRight size={15} aria-hidden className="mt-[3px] shrink-0 text-on-surface-variant transition-transform group-hover:translate-x-0.5" />
+              </span>
+              <span className="text-[13px] leading-[1.55] text-on-surface-variant">{p.desc}</span>
+            </Link>
+          ))}
+        </div>
+        <P>
+          New here? Start with{' '}
+          <Link href="/docs/installation" className={link}>
+            Installation
+          </Link>
+          , then{' '}
+          <Link href="/docs/getting-started" className={link}>
+            Quick Start
+          </Link>
+          . Using an AI assistant? The <strong className="font-semibold text-on-surface">Ask AI</strong> button at the top of every page hands it
+          the page you are reading.
+        </P>
+
+        <H2 id="how-it-works">How it works</H2>
+        <P>
+          A project is plain data. Every edit goes through one engine. A pure function turns the project and a frame number into a{' '}
+          <C>Scene</C>, and the renderer draws that Scene. Preview, export and the server renderer all draw from the same function, which is why
+          they agree frame for frame.
+        </P>
+        <Code
+          lang="text"
+          code={`
+edit ──▶ TimelineEngine ──▶ Project (immutable, undoable)
+
+Project + frame ──▶ resolveTimeline ──▶ Scene ──┬──▶ GpuRenderer   (preview)
+                                                └──▶ export worker (MP4)`}
+        />
+        <PropTable
+          nameLabel="Rule"
+          rows={[
+            { name: 'Time is whole frames', desc: 'Positions and lengths are integer frame counts, never seconds.' },
+            { name: 'One way to change a project', desc: <>Every edit goes through <C>TimelineEngine</C>, so every edit is undoable.</> },
+            { name: 'The resolver is pure', desc: <><C>resolveTimeline</C> has no side effects; renderers read only the Scene.</> },
+          ]}
+        />
+        <P>
+          More in{' '}
+          <Link href="/docs/architecture" className={link}>
             Architecture
-          </h2>
-          <p className="text-sm leading-relaxed text-on-surface-variant mb-4">
-            A single immutable <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> tree owns all timeline data. The framework-agnostic <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code> is the only place mutations happen — every edit is an Immer-backed commit with structural sharing, history, batching, and typed events.
-          </p>
-          <p className="text-sm leading-relaxed text-on-surface-variant mb-6">
-            A pure function <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">resolveTimeline(frame, project) → Scene</code> determines what is visible and audible at any frame. This is the only thing renderers consume — the shipped renderer is a WebGL2 <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">GpuRenderer</code> that turns each <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> into sorted textured-quad draws.
-          </p>
+          </Link>
+          .
+        </P>
 
-          {/* Architecture layers diagram */}
-          <div className="overflow-hidden border border-outline-variant">
-            {[
-              { label: 'React UI Layer', items: ['Timeline', 'Preview', 'AssetPanel', 'Transform Overlays'], bg: 'bg-surface-low' },
-              { label: 'Zustand Stores', items: ['useTracksStore', 'usePlaybackStore', 'useSelectionStore', 'useTransitionsStore'], bg: 'bg-surface-lowest' },
-              { label: 'Engine Layer', items: ['TimelineEngine', 'PlaybackEngine', 'AudioPlaybackController'], bg: 'bg-surface-low' },
-              { label: 'Pure Resolver', items: ['resolveTimeline(frame, project) → Scene'], bg: 'bg-surface-lowest' },
-              { label: 'Renderer Interface', items: ['GpuRenderer (WebGL2)', 'ExportWorker (OffscreenCanvas)'], bg: 'bg-surface-low' },
-              { label: 'Media Pipeline', items: ['StreamingFrameProducer', 'WebCodecs API', 'mediabunny demux', 'ImageBitmap cache'], bg: 'bg-surface-lowest' },
-            ].map((layer) => (
-              <div key={layer.label} className={`flex flex-col gap-2 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:gap-4 ${layer.bg}`}>
-                <div className="pt-0.5 sm:w-32 sm:shrink-0">
-                  <span className="label-mono text-2xs text-on-surface-variant" style={{ opacity: 0.65 }}>
-                    {layer.label}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {layer.items.map((item) => (
-                    <span
-                      key={item}
-                      className="border border-outline-variant bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <H2 id="packages">Packages</H2>
+        <PropTable
+          nameLabel="Package"
+          rows={[
+            { name: '@elah/editor', type: 'start here', desc: 'The full SDK: EditorProvider, Preview, AssetPanel and on-canvas editing, plus everything below.' },
+            { name: '@elah/timeline', desc: 'The Timeline component: tracks, clips, trimming, snapping, zoom.' },
+            { name: '@elah/react', desc: 'Hooks over the engine, for your own UI.' },
+            { name: '@elah/core', desc: 'The engine, resolver, WebGL2 renderer and export. No React.' },
+            { name: '@elah/cli', type: 'own version', desc: 'Render on a server: build, export and an HTTP render server.' },
+          ]}
+        />
+        <P>
+          The first four are released together and share a version. All are Apache-2.0.
+        </P>
+        <Callout title="React Native is in progress">
+          <C>@elah/react-native</C> is at 0.1.0 and not published yet.
+        </Callout>
 
-        {/* Packages */}
-        <section className="mb-10">
-          <h2
-            id="packages"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-          >
-            Packages
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Five packages. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/timeline</code> and <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> are released together and share a version. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/cli</code> versions independently.
-          </p>
-          <div className="space-y-3">
-            {[
-              {
-                name: '@elah/editor',
-                desc: 'The full SDK. Exports EditorProvider, Preview, AssetPanel and the transform overlays, and re-exports core, react and timeline.',
-                icon: Layers,
-              },
-              {
-                name: '@elah/core',
-                desc: 'Framework-agnostic engine. TimelineEngine, PlaybackEngine, resolveTimeline, GpuRenderer, export pipeline. Zero React imports.',
-                icon: Cpu,
-              },
-              {
-                name: '@elah/react',
-                desc: 'React bindings. EditorContext, useEditor, the store hooks, the media library hook and the audio mixer hooks. Core stays React-free.',
-                icon: Braces,
-              },
-              {
-                name: '@elah/timeline',
-                desc: 'React timeline UI components. Timeline, Ruler, TrackRow, ClipBlock, Playhead, and all interaction hooks.',
-                icon: Clock,
-              },
-              {
-                name: '@elah/cli',
-                desc: 'Headless runtime. elah build/export/serve — render projects on your server via headless Chrome, bit-identical to browser export. Also importable as a Node library.',
-                icon: Terminal,
-              },
-            ].map(({ name, desc, icon: Icon }) => (
-              <div key={name} className="flex gap-3 border border-outline-variant bg-surface-low p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-outline-variant bg-surface-low">
-                  <Icon className="h-4 w-4 text-on-surface-variant" />
-                </div>
-                <div>
-                  <div className="mb-1 font-mono text-sm font-medium text-on-surface">{name}</div>
-                  <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Design principles */}
-        <section className="mb-10">
-          <h2
-            id="design-principles"
-            className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-          >
-            Design Principles
-          </h2>
-          <div className="space-y-2">
-            {[
-              { p: 'Engine-first', desc: 'The core is plain TypeScript. React is a consumer, not a master.' },
-              { p: 'Frames, not seconds', desc: 'Integer time eliminates a class of floating-point bugs that haunt every NLE.' },
-              { p: 'One mutation funnel', desc: 'All edits go through TimelineEngine.commit(). No back-doors.' },
-              { p: 'Pure resolver', desc: 'resolveTimeline is deterministic and side-effect-free — runs in tests, workers, and export pipelines without ceremony.' },
-              { p: 'Renderer is just a consumer', desc: 'A renderer reads Scene, writes pixels, and knows nothing else.' },
-              { p: 'Small surface area', desc: 'No plugin systems, no event buses, no dependency injection — until proven needed.' },
-            ].map(({ p, desc }) => (
-              <div key={p} className="flex gap-3 py-2">
-                <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                <div>
-                  <span className="text-sm font-medium text-on-surface">{p}. </span>
-                  <span className="text-sm text-on-surface-variant">{desc}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Where to go next: grouped cards, driven by docsHome in config/docs.ts */}
-        {docsHome.map((group) => (
-          <section key={group.title} className="mb-10 last:mb-0">
-            <h2
-              id={groupId(group.title)}
-              className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-            >
-              {group.title}
-            </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {group.cards.map(({ title, desc, href }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="group flex items-start justify-between gap-2 border border-outline-variant bg-surface-low p-4 no-underline transition-colors hover:border-outline"
-                >
-                  <div>
-                    <div className="mb-1 text-sm font-medium text-on-surface">{title}</div>
-                    <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
-                  </div>
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-on-surface-variant transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
+        <H2 id="all-docs">All docs</H2>
+        <div className="my-5 flex flex-col gap-6">
+          {docsHome.map((group) => (
+            <section key={group.title} id={groupId(group.title)} className="scroll-mt-28 md:scroll-mt-20">
+              <h3 className={`mb-2 text-on-surface-variant ${label}`}>{group.title}</h3>
+              <ul className="m-0 list-none border-t border-outline-variant p-0">
+                {group.cards.map(({ title, desc, href }) => (
+                  <li key={href} className="border-b border-outline-variant">
+                    <Link href={href} className="group flex items-baseline gap-4 py-2.5 no-underline">
+                      <span className="w-48 shrink-0 text-[14px] font-medium text-on-surface group-hover:underline group-hover:decoration-[#FF003C] group-hover:underline-offset-4">
+                        {title}
+                      </span>
+                      <span className="hidden text-[13px] leading-[1.5] text-on-surface-variant sm:block">{desc}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       </article>
 
       <DocsToc items={toc} />
