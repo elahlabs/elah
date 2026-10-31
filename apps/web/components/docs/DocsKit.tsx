@@ -118,9 +118,18 @@ export function Shortcuts({ items }: { items: [keys: string, action: string][] }
   )
 }
 
-/** Docs pages in sidebar order, one entry per page (section anchors dropped). "Overview" takes its section's name. */
+/**
+ * Docs pages in sidebar order, one entry per page (section anchors dropped). A
+ * page whose sections are also listed in the sidebar is named after its
+ * sidebar section ("Motion", not its first entry "Keyframes").
+ */
 const pages = docsNav.flatMap((s) =>
-  s.items.filter((i) => !i.href.includes('#')).map((i) => ({ href: i.href, title: i.title === 'Overview' ? s.title : i.title })),
+  s.items
+    .filter((i) => !i.href.includes('#'))
+    .map((i) => ({
+      href: i.href,
+      title: s.items.some((j) => j.href.startsWith(`${i.href}#`)) ? s.title : i.title,
+    })),
 )
 
 /** Previous / next page links at the foot of a docs page, in sidebar order. */
