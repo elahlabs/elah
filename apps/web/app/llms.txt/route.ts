@@ -37,6 +37,7 @@ const DOCS: DocLink[] = [
   { title: 'Architecture', path: '/docs/architecture', description: 'Engine design: integer frames, the one mutation funnel, pure resolver, dumb renderers.' },
   { title: 'API reference', path: '/docs/api', description: 'Public API surface across @elah/core, @elah/react, @elah/timeline, and @elah/editor.' },
   { title: 'Plugins', path: '/docs/plugins', description: 'Extension points and integration patterns.' },
+  { title: 'Analytics & tracking', path: '/docs/analytics', description: 'What the elah.dev website tracks (PostHog, Reddit Pixel), consent and Do-Not-Track, and the environment variables. The @elah/* packages have no telemetry.' },
 ]
 
 const RESOURCES: DocLink[] = [

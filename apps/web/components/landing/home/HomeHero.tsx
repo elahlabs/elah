@@ -39,6 +39,10 @@ function RecTimecode() {
  * Hero: the headline sits in a viewfinder (crop marks, a centre cross, a
  * running REC timecode), and under it the program monitor plays the engine
  * itself: an 8 s loop with its timeline, keyframe diamonds and playhead.
+ *
+ * On desktop the headline and its padding scale with the viewport height, so
+ * the viewfinder and the changelog strip fit in one screen between the sticky
+ * nav and the scrub bar (148px type from about 830px tall, smaller below).
  */
 export function HomeHero() {
   const [copied, setCopied] = useState(false)
@@ -57,7 +61,7 @@ export function HomeHero() {
   }
 
   return (
-    <header data-scene="Open" className="pt-6 sm:pt-8">
+    <header data-scene="Open" className="pt-6 sm:pt-8 lg:pt-[clamp(8px,2svh,32px)]">
       <div className={container}>
         <div className={`flex items-center justify-between gap-4 py-3 text-[var(--lp-ink)] ${label}`}>
           <span className="flex items-center gap-2">
@@ -67,12 +71,12 @@ export function HomeHero() {
           <span className="hidden text-[var(--lp-muted)] sm:inline">Open source · Apache-2.0</span>
         </div>
 
-        <div className="relative px-5 py-12 sm:px-10 sm:py-16 lg:py-20">
+        <div className="relative px-5 py-12 sm:px-10 sm:py-16 lg:py-[clamp(20px,4.5svh,80px)]">
           <CropMarks size={18} />
           <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[22px] w-px -translate-y-1/2 bg-[var(--lp-line)]" />
           <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-px w-[22px] -translate-x-1/2 bg-[var(--lp-line)]" />
 
-          <h1 className={`relative m-0 text-[64px] font-extrabold leading-[0.86] tracking-[-0.5px] text-[var(--lp-ink)] sm:text-[112px] lg:text-[148px] ${display}`}>
+          <h1 className={`relative m-0 text-[64px] font-extrabold leading-[0.86] tracking-[-0.5px] text-[var(--lp-ink)] sm:text-[112px] lg:text-[clamp(72px,calc((100svh_-_440px)/2.6),148px)] ${display}`}>
             <span className="block">Write motion</span>
             <span className="block">
               as <Sel>code.</Sel>
@@ -80,7 +84,7 @@ export function HomeHero() {
             <span className="block">It stays editable.</span>
           </h1>
 
-          <div className="relative mt-10 flex flex-col gap-6 lg:mt-12 lg:flex-row lg:items-end lg:justify-between">
+          <div className="relative mt-10 flex flex-col gap-6 lg:mt-[clamp(16px,3.5svh,48px)] lg:flex-row lg:items-end lg:justify-between">
             <div className="flex flex-col gap-3">
               <p className={`${lead} max-w-[440px]`}>Open source. Renders in the browser.</p>
               <p className={`m-0 text-[var(--lp-muted)] ${label}`}>New in 1.0: the motion layer.</p>

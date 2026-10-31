@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { Code } from '@/components/docs/Code'
+import { C, Callout, DocsPager, H2, H3, P, PropTable, Shortcuts } from '@/components/docs/DocsKit'
+import { LazyDemo } from '@/components/home/LazyDemo'
 import { PageHeader } from '@/components/site/PageHeader'
+import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Timeline',
@@ -12,49 +15,46 @@ export const metadata: Metadata = {
 }
 
 const toc = [
-  { id: 'overview', title: 'Overview', level: 2 },
-  { id: 'tracks-and-clips', title: 'Tracks & Clips', level: 2 },
+  { id: 'overview', title: 'Add a timeline', level: 2 },
+  { id: 'tracks-and-clips', title: 'Tracks & clips', level: 2 },
+  { id: 'editing-clips', title: 'Editing clips', level: 2 },
   { id: 'playback', title: 'Playback', level: 2 },
-  { id: 'zooming', title: 'Zooming & Snapping', level: 2 },
-  { id: 'multiple-video-tracks', title: 'Multiple Video Tracks', level: 2 },
-  { id: 'virtualization', title: 'Clip Virtualization', level: 2 },
+  { id: 'zooming', title: 'Zoom & snapping', level: 2 },
+  { id: 'multiple-video-tracks', title: 'Multiple video tracks', level: 2 },
+  { id: 'virtualization', title: 'Clip virtualization', level: 2 },
   { id: 'transitions', title: 'Transitions', level: 2 },
-  { id: 'shortcuts', title: 'Keyboard Shortcuts', level: 2 },
+  { id: 'shortcuts', title: 'Keyboard shortcuts', level: 2 },
 ]
+
+const link = 'text-on-surface underline decoration-[#FF003C] underline-offset-4 hover:decoration-2'
 
 export default function TimelinePage() {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-      <article className="min-w-0 flex-1 max-w-3xl">
+      <article className="min-w-0 max-w-3xl flex-1">
         <PageHeader
           variant="doc"
           eyebrow="Timeline"
           title="Timeline"
-          lede={
-            <>
-              The Timeline component is a fully interactive NLE timeline. Tracks, clips, drag-to-trim, drag-to-move, snapping, zoom, and the full keyboard shortcut set.
-            </>
-          }
+          lede="A drag-and-drop editing timeline for React: tracks, clips, trimming, snapping, zoom and keyboard shortcuts."
         />
 
-        {/* Overview */}
-        <section className="mb-10">
-          <h2 id="overview" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Overview
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Timeline</code> component reads state from <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTracksStore</code> and dispatches mutations through <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. It is fully controlled by the Zustand stores — you can read or write those stores directly to drive the timeline from outside.
-          </p>
-          <CodeBlock
-            language="tsx"
-            filename="Example: Timeline only"
-            code={`import { useRef } from 'react'
-import {
-  EditorProvider,
-  Timeline,
-  type TimelineRef,
-  type InitialTrackConfig,
-} from '@elah/editor'
+        <figure className="my-8 border border-outline-variant">
+          <LazyDemo name="hero" preview={false} timelineHeight={200} minHeight={200} label="The Timeline component, running live" />
+          <figcaption className={`border-t border-outline-variant px-4 py-2.5 text-on-surface-variant ${label}`}>
+            The real Timeline component, running on this page
+          </figcaption>
+        </figure>
+
+        <H2 id="overview">Add a timeline</H2>
+        <P>
+          Put <C>Timeline</C> inside an <C>EditorProvider</C>. The provider holds the project; the timeline shows it and edits it.
+        </P>
+        <Code
+          title="TimelineOnly.tsx"
+          highlight={[11, 12, 13]}
+          code={`
+import { EditorProvider, Timeline, type InitialTrackConfig } from '@elah/editor'
 
 const TRACKS: InitialTrackConfig[] = [
   { kind: 'video', name: 'Video / Image' },
@@ -62,273 +62,217 @@ const TRACKS: InitialTrackConfig[] = [
   { kind: 'elements', name: 'Elements' },
 ]
 
-export default function TimelineOnlyDemo() {
-  const ref = useRef<TimelineRef>(null)
-
+export default function App() {
   return (
     <EditorProvider fps={30} initialTracks={TRACKS}>
-      <Timeline
-        ref={ref}
-        fps={30}
-        style={{ height: 260 }}
-      />
+      <Timeline fps={30} style={{ height: 260 }} />
     </EditorProvider>
   )
 }`}
-          />
-        </section>
+        />
+        <Callout title="Anything inside the provider stays in sync">
+          The timeline reads the editor&apos;s stores (<C>useTracksStore</C>) and makes every change through <C>TimelineEngine</C>. A{' '}
+          <C>Preview</C> or your own buttons inside the same provider see the same project.
+        </Callout>
 
-        {/* Tracks & Clips */}
-        <section className="mb-10">
-          <h2 id="tracks-and-clips" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Tracks & Clips
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Each <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track</code> has a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">kind</code>: <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">video</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">audio</code>, or <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> (text, shapes, and freehand live on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">elements</code> tracks). A project can have any number of tracks of any kind, including several video tracks; <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">initialTracks</code> on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">EditorProvider</code> sets the starting layout. Clips are stored on the <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> keyed by track id (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">project.clips[trackId]</code>).
-          </p>
-          <CodeBlock
-            language="typescript"
-            filename="types.ts (data model)"
-            code={`interface Track {
-  id: string
-  name: string
-  kind: 'video' | 'audio' | 'elements'
-  order: number          // lower = closer to top of timeline
-  height: number         // px
-  locked: boolean
-  disabled: boolean
-  muted: boolean
-  solo: boolean
-  volume?: number        // 0..2, linear
-  protected?: boolean    // the user cannot remove this track
-  pinned?: 'bottom'      // addTrack keeps this lane below every non-pinned track
-}
+        <H2 id="tracks-and-clips">Tracks &amp; clips</H2>
+        <P>
+          A project has any number of tracks, and each track has a <C>kind</C>: <C>video</C>, <C>audio</C> or <C>elements</C>. Text, shapes and
+          freehand drawings go on <C>elements</C> tracks. <C>initialTracks</C> on the provider sets the starting layout.
+        </P>
 
-interface Clip {
-  id: string
-  trackId: string
-  type: 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
-      | 'adjustment' | 'generator' | 'compound' | 'sequence'
-  name: string
-  src?: string                  // URL or blob ref for video/audio/image
-  startFrame: number            // integer — position on the timeline
-  durationFrames: number        // integer — length on the timeline
-  sourceStartFrame: number      // trim in-point into the source asset
-  sourceDurationFrames: number  // source length (used for trim constraints)
-  transform?: Transform         // position, scale, rotation (optional)
-  opacity?: number              // 0..1, managed by the transition system
-  speed?: number                // video only; 0.25..4, default 1
-  crop?: { x: number; y: number; width: number; height: number } // 0..1 of the source
-  cornerRadius?: number         // video/image; 0..0.5 of the shorter side
-  // Text clips carry flat style fields (content, fontSize, color, ...).
-}
+        <H3>Track</H3>
+        <PropTable
+          rows={[
+            { name: 'id', type: 'string', desc: 'Unique id.' },
+            { name: 'name', type: 'string', desc: 'Label on the track header.' },
+            { name: 'kind', type: "'video' | 'audio' | 'elements'", desc: 'What the track holds.' },
+            { name: 'order', type: 'number', desc: 'Stacking position. Lower is closer to the top of the timeline.' },
+            { name: 'height', type: 'number', desc: 'Row height in pixels.' },
+            { name: 'locked · disabled · muted · solo', type: 'boolean', desc: 'Per-track toggles. A locked track rejects clip moves.' },
+            { name: 'volume', type: 'number', optional: true, desc: 'Linear gain, from 0 to 2.' },
+            { name: 'protected', type: 'boolean', optional: true, desc: 'The user cannot remove this track.' },
+            { name: 'pinned', type: "'bottom'", optional: true, desc: 'addTrack keeps this lane below every non-pinned track.' },
+          ]}
+        />
 
-// Clips are NOT nested on Track. The Project stores them keyed by track:
-//   project.clips: Record<string /* trackId */, Clip[]>`}
-          />
-          <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Add and remove clips via the engine:
-          </p>
-          <CodeBlock
-            language="tsx"
-            code={`const engine = useTimelineEngine()
+        <H3>Clip</H3>
+        <PropTable
+          rows={[
+            { name: 'id · trackId', type: 'string', desc: 'The clip, and the track it sits on.' },
+            { name: 'type', type: "'video' | 'audio' | 'text' | …", desc: 'One of video, audio, text, image, shape, freehand, adjustment, generator, compound or sequence.' },
+            { name: 'name', type: 'string', desc: 'Label on the clip.' },
+            { name: 'src', type: 'string', optional: true, desc: 'URL or blob reference, for video, audio and image clips.' },
+            { name: 'startFrame', type: 'number', desc: 'Where the clip starts on the timeline, in whole frames.' },
+            { name: 'durationFrames', type: 'number', desc: 'How long it lasts on the timeline, in whole frames.' },
+            { name: 'sourceStartFrame', type: 'number', desc: 'Trim in-point into the source media.' },
+            { name: 'sourceDurationFrames', type: 'number', desc: 'Length of the source, which limits how far a trim can go.' },
+            { name: 'transform', type: 'Transform', optional: true, desc: 'Position, scale and rotation.' },
+            { name: 'opacity', type: 'number', optional: true, desc: 'From 0 to 1. Managed by the transition system.' },
+            { name: 'speed', type: 'number', optional: true, desc: 'Video only. From 0.25 to 4, default 1.' },
+            { name: 'crop', type: '{ x, y, width, height }', optional: true, desc: 'Fractions (0 to 1) of the source.' },
+            { name: 'cornerRadius', type: 'number', optional: true, desc: 'Video and image. From 0 to 0.5 of the shorter side.' },
+          ]}
+          footer="Text clips also carry flat style fields: content, fontSize, color and so on."
+        />
+        <Callout kind="warning" title="Clips are not stored inside tracks">
+          The project keeps them in a record keyed by track id: <C>project.clips[trackId]</C> is the array of clips on that track.
+        </Callout>
 
-// Add a video clip
+        <H2 id="editing-clips">Editing clips</H2>
+        <P>
+          Every edit goes through the engine. Get it with <C>useTimelineEngine()</C> inside the provider, then add a clip:
+        </P>
+        <Code
+          code={`
+const engine = useTimelineEngine()
+
 engine.addClip({
   trackId: videoTrack.id,
   type: 'video',
   src: 'https://example.com/video.mp4',
   startFrame: 0,
-  durationFrames: 150, // 5 seconds at 30fps
+  durationFrames: 150, // 5 seconds at 30 fps
   name: 'Intro',
-})
+})`}
+        />
+        <P>The other everyday edits:</P>
+        <PropTable
+          nameLabel="Call"
+          rows={[
+            { name: 'engine.moveClip(clipId, fromTrackId, toTrackId, startFrame)', desc: 'Move a clip in time. Pass a different toTrackId to move it to another track.' },
+            { name: 'engine.removeClip(clipId, trackId)', desc: 'Delete a clip.' },
+            { name: 'splitClipAtPlayhead(engine)', desc: <>Split the selected clip at the playhead. Import it from <C>@elah/editor</C>.</> },
+          ]}
+        />
+        <Callout title="Some edits are refused on purpose">
+          <C>moveClip</C> does nothing if the clip would overlap another clip on the target track, or if either track is locked.{' '}
+          <C>splitClipAtPlayhead</C> needs exactly one selected clip, the playhead inside it, and playback paused. It returns{' '}
+          <C>{'{ ok: false, reason }'}</C> when it cannot split.
+        </Callout>
 
-// Move a clip to a new start frame (same track here — pass the target
-// track id as the 3rd arg to move it across tracks).
-engine.moveClip(clipId, videoTrack.id, videoTrack.id, 30)
-
-// Remove a clip
-engine.removeClip(clipId, trackId)
-
-// Split the selected clip at the current playhead. Reads the selection
-// and playhead from the stores — just hand it the engine.
-import { splitClipAtPlayhead } from '@elah/editor'
-splitClipAtPlayhead(engine)`}
-          />
-        </section>
-
-        {/* Playback */}
-        <section className="mb-10">
-          <h2 id="playback" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Playback
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">PlaybackEngine</code> owns the RAF clock and publishes <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React reads playback state via <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>:
-          </p>
-          <CodeBlock
-            language="tsx"
-            filename="TransportControls.tsx"
-            code={`import {
-  usePlaybackStore,
-  useTracksStore,
-  framesToTimecode,
-} from '@elah/editor'
+        <H2 id="playback">Playback</H2>
+        <P>
+          <C>PlaybackEngine</C> runs the clock. Read the current frame and play state from <C>usePlaybackStore</C> to build your own transport
+          controls:
+        </P>
+        <Code
+          title="TransportControls.tsx"
+          highlight={[4, 5, 6]}
+          code={`
+import { usePlaybackStore, framesToTimecode } from '@elah/editor'
 
 export function TransportControls({ fps = 30 }) {
   const isPlaying = usePlaybackStore((s) => s.isPlaying)
   const togglePlayPause = usePlaybackStore((s) => s.togglePlayPause)
   const currentFrame = usePlaybackStore((s) => s.currentFrame)
-  const setCurrentFrame = usePlaybackStore((s) => s.setCurrentFrame)
-  const totalFrames = useTracksStore((s) => s.totalFrames)
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <button onClick={() => setCurrentFrame(0)}>⏮</button>
-      <button onClick={togglePlayPause}>
-        {isPlaying ? '⏸ Pause' : '▶ Play'}
-      </button>
-      <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
-        {framesToTimecode(currentFrame, fps)}
-        {' / '}
-        {framesToTimecode(totalFrames, fps)}
-      </span>
+    <div>
+      <button onClick={togglePlayPause}>{isPlaying ? 'Pause' : 'Play'}</button>
+      <span>{framesToTimecode(currentFrame, fps)}</span>
     </div>
   )
 }`}
-          />
-        </section>
+        />
 
-        {/* Zooming & snapping */}
-        <section className="mb-10">
-          <h2 id="zooming" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Zooming & Snapping
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The timeline supports <strong className="text-on-surface font-medium">Ctrl/Cmd + scroll</strong> to zoom, anchored on the pointer, and pinch to zoom on touch, anchored on the finger midpoint. Clips snap to other clip edges, the playhead, and track boundaries. The snap tolerance is configurable:
-          </p>
-          <CodeBlock
-            language="tsx"
-            code={`// Snapping is on by default. Ctrl/Cmd + scroll zooms the timeline.
-<Timeline ref={ref} fps={30} style={{ height: 240 }} />
-
-// The snap utilities are exported for custom drag implementations.
-// buildSnapPoints takes the project's clips record (project.clips),
-// snapFrame snaps a frame to the nearest point within a pixel threshold.
-import {
-  snapFrame,
-  buildSnapPoints,
-  DEFAULT_OVERLAP_TOLERANCE,
-} from '@elah/editor'
-
-const snapPoints = buildSnapPoints(project.clips, excludeClipId)
-const snappedFrame = snapFrame(frame, snapPoints, threshold)`}
-          />
-          <p className="mt-4 mb-4 text-sm leading-relaxed text-on-surface-variant">
-            For toolbar buttons and sliders, use the imperative handle rather than writing the zoom store directly. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">zoomAtAnchor(nextZoom)</code> sets the zoom in pixels per frame, clamped by the store, and keeps the view anchored: the playhead stays where it is on screen when it is visible, and the viewport centre does otherwise, so zooming never scrolls the playhead out of view. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">fitToWindow()</code> zooms so the whole timeline fits the visible track area.
-          </p>
-          <CodeBlock
-            language="tsx"
-            code={`const ref = useRef<TimelineRef>(null)
+        <H2 id="zooming">Zoom &amp; snapping</H2>
+        <P>
+          Users zoom with <C>Ctrl/Cmd + scroll</C> (anchored on the pointer) or a pinch on touch screens (anchored between the fingers).
+          While dragging, clips snap to other clip edges, the playhead and track boundaries. Snapping is on by default.
+        </P>
+        <P>To zoom from your own buttons or sliders, use the timeline&apos;s ref:</P>
+        <Code
+          code={`
+const ref = useRef<TimelineRef>(null)
 
 <Timeline ref={ref} fps={30} />
 
-// TimelineRef: { engine, playback, fitToWindow, zoomAtAnchor }
-ref.current?.zoomAtAnchor(8)   // 8 px per frame, anchored on the playhead
-ref.current?.fitToWindow()`}
-          />
-        </section>
+ref.current?.zoomAtAnchor(8) // 8 pixels per frame
+ref.current?.fitToWindow()   // fit the whole timeline in view`}
+          highlight={[5, 6]}
+        />
+        <Callout title="Prefer zoomAtAnchor over writing the zoom store">
+          It clamps the zoom and keeps the view anchored: on the playhead when it is visible, otherwise on the centre. Zooming never scrolls
+          the playhead out of view.
+        </Callout>
+        <P>Building your own drag interaction? The snap helpers are exported:</P>
+        <Code
+          code={`
+import { buildSnapPoints, snapFrame } from '@elah/editor'
 
-        {/* Multiple video tracks */}
-        <section className="mb-10">
-          <h2 id="multiple-video-tracks" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Multiple Video Tracks
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            As of 0.6.0 a project can have more than one video track. <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">engine.addTrack(&apos;video&apos;)</code> adds another lane instead of returning the existing one. Each lane is its own row in the timeline, and overlapping clips on separate video lanes layer instead of conflicting. Lanes composite in track order, so the topmost lane draws on top, and a new video track is placed directly below the last one. See <Link href="/docs/clips#multiple-video-tracks" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips &amp; Tracks</Link> for placement, reordering, and the protected and pinned track options.
-          </p>
-        </section>
+const points = buildSnapPoints(project.clips, excludeClipId)
+const snapped = snapFrame(frame, points, threshold)`}
+        />
 
-        {/* Virtualization */}
-        <section className="mb-10">
-          <h2 id="virtualization" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Clip Virtualization
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            On a long timeline, mounting every clip would dominate the render cost. The timeline mounts only the clips inside the scrolled viewport, plus a margin so clips do not visibly pop in during a fast scroll or drag. Nothing needs to be enabled and there is no prop for it.
-          </p>
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              The visible window is quantized to 200 pixel steps, so rows re-render once per step of scrolling rather than on every pixel.
+        <H2 id="multiple-video-tracks">Multiple video tracks</H2>
+        <P>
+          A project can have more than one video track. <C>engine.addTrack(&apos;video&apos;)</C> adds a new lane, placed directly below the last
+          video track. Clips that overlap on different lanes layer instead of conflicting, and the top lane draws on top. See{' '}
+          <Link href="/docs/clips#multiple-video-tracks" className={link}>
+            Clips &amp; Tracks
+          </Link>{' '}
+          for reordering and the protected and pinned options.
+        </P>
+
+        <H2 id="virtualization">Clip virtualization</H2>
+        <P>On a long timeline, only the clips near the visible area are mounted. There is nothing to enable.</P>
+        <ul className="my-4 list-none space-y-2 p-0 text-[15px] leading-[1.75] text-on-surface/85">
+          {[
+            'The visible window moves in 200-pixel steps, so rows re-render once per step of scrolling, not on every pixel.',
+            'The window is rounded outward, so a clip that is actually on screen is never skipped.',
+            'A margin around the window stops clips from popping in during a fast scroll or drag.',
+            'The window covers the clip lanes only, not the track-label column on the left.',
+          ].map((t) => (
+            <li key={t} className="flex gap-3">
+              <span aria-hidden className="mt-[11px] h-[5px] w-[5px] shrink-0 bg-on-surface" />
+              {t}
             </li>
-            <li>
-              The window is rounded outward (start down, end up), so it is always a superset of the true viewport and never culls a clip that is actually visible.
-            </li>
-            <li>
-              The window is measured from the lane area only. The sticky track-label sidebar covers the left part of the viewport, so it is excluded.
-            </li>
-          </ul>
-        </section>
+          ))}
+        </ul>
 
-        {/* Transitions */}
-        <section className="mb-10">
-          <h2 id="transitions" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Transitions
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Transitions are defined on the <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> level and stored in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">useTransitionsStore</code>. There are nine kinds (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">fade</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">slide</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">wipe</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">zoom</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">spin</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">whip</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">glitchCut</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">warpDissolve</code> and <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">lumaWipe</code>), all drawn by the WebGL2 renderer in the preview and in export; see <Link href="/docs/editor#transitions" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Editor: Transitions</Link>.
-          </p>
-          <CodeBlock
-            language="tsx"
-            code={`const engine = useTimelineEngine()
-
-// Add a fade transition between two adjacent clips on the same track.
-// trackId is required.
+        <H2 id="transitions">Transitions</H2>
+        <P>
+          Add a transition between two neighbouring clips on the same track. The WebGL2 renderer draws it in the preview and in export. More
+          in{' '}
+          <Link href="/docs/editor#transitions" className={link}>
+            Editor: Transitions
+          </Link>
+          .
+        </P>
+        <Code
+          highlight={[5]}
+          code={`
 engine.addTransition({
   fromClipId: clip1.id,
   toClipId: clip2.id,
-  trackId: track.id,
-  kind: 'fade',        // 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
-                       // | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
-  durationFrames: 15, // 0.5 seconds at 30fps
+  trackId: track.id,   // required
+  kind: 'fade',
+  durationFrames: 15,  // 0.5 seconds at 30 fps
   easing: 'ease-out',  // 'linear' | 'ease-in' | 'ease-out'
-})
+})`}
+        />
+        <P>
+          There are nine kinds: <C>fade</C> <C>slide</C> <C>wipe</C> <C>zoom</C> <C>spin</C> <C>whip</C> <C>glitchCut</C> <C>warpDissolve</C>{' '}
+          <C>lumaWipe</C>.
+        </P>
 
-// resolveTimeline(frame, project) → Scene lists the active transition in
-// scene.transitions with its eased progress t (0 → 1). Both clips stay in
-// the scene; the WebGL2 renderer composites them through the transition,
-// in preview and in export, with their effects intact.`}
-          />
-        </section>
+        <H2 id="shortcuts">Keyboard shortcuts</H2>
+        <Shortcuts
+          items={[
+            ['Space', 'Play or pause'],
+            ['S', 'Split the selected clip at the playhead'],
+            ['Delete', 'Delete the selected clips (Backspace works too)'],
+            ['Ctrl/Cmd + C', 'Copy the selected clips'],
+            ['Ctrl/Cmd + V', 'Paste at the playhead'],
+            ['Ctrl/Cmd + Z', 'Undo'],
+            ['Ctrl/Cmd + Shift + Z', 'Redo'],
+            ['Ctrl/Cmd + Scroll', 'Zoom the timeline'],
+            ['← / →', 'Step one frame'],
+          ]}
+        />
 
-        {/* Shortcuts */}
-        <section className="mb-10">
-          <h2 id="shortcuts" className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Keyboard Shortcuts
-          </h2>
-          <div className="overflow-hidden border border-outline-variant">
-            {[
-              ['Space', 'Play / Pause'],
-              ['S', 'Split selected clip at playhead'],
-              ['Delete / Backspace', 'Delete selected clip(s)'],
-              ['Ctrl/Cmd + C', 'Copy selected clip(s)'],
-              ['Ctrl/Cmd + V', 'Paste at playhead'],
-              ['Ctrl/Cmd + Z', 'Undo'],
-              ['Ctrl/Cmd + Shift + Z', 'Redo'],
-              ['Ctrl/Cmd + Scroll', 'Zoom timeline'],
-              ['← / →', 'Step one frame'],
-            ].map(([key, action], i) => (
-              <div
-                key={key}
-                className={`flex flex-col items-start gap-1.5 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-center sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
-              >
-                <kbd className="min-w-0 border border-outline-variant bg-surface-container px-2.5 py-1 font-mono text-xs text-on-surface whitespace-nowrap">
-                  {key}
-                </kbd>
-                <span className="text-sm text-on-surface-variant">{action}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <DocsPager href="/docs/timeline" />
       </article>
 
       <DocsToc items={toc} />

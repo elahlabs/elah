@@ -5,7 +5,7 @@ import { currentVersion } from '@/config/changelog'
 import { getSiteStats, toDisplay } from '@/lib/stats'
 import { HomeNav } from '@/components/landing/home/HomeNav'
 import { HomeHero } from '@/components/landing/home/HomeHero'
-import { HomeStats } from '@/components/landing/home/HomeStats'
+import { HomePartners } from '@/components/landing/home/HomePartners'
 import { HomeSteps } from '@/components/landing/home/HomeSteps'
 import { HomeBinding } from '@/components/landing/home/HomeBinding'
 import { HomeCapabilities } from '@/components/landing/home/HomeCapabilities'
@@ -49,7 +49,7 @@ export default async function HomePage() {
       <HomeNav stars={stats.stars} />
       <main id="main">
         <HomeHero />
-        <HomeStats stats={stats} />
+        <HomePartners />
         <HomeSteps />
         <HomeBinding />
         <HomeCapabilities />

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { Code } from '@/components/docs/Code'
+import { C, Callout, DocsPager, H2, H3, P, PropTable } from '@/components/docs/DocsKit'
 import { PageHeader } from '@/components/site/PageHeader'
 
 export const metadata: Metadata = {
@@ -20,508 +21,325 @@ const toc = [
   { id: 'types', title: 'Types', level: 2 },
 ]
 
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-12">
-      <h2
-        id={id}
-        className="mb-5 border-b border-outline-variant pb-3 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-      >
-        {title}
-      </h2>
-      {children}
-    </section>
-  )
-}
-
-function ApiEntry({ name, signature, description, params }: {
-  name: string
-  signature: string
-  description: string
-  params?: { name: string; type: string; desc: string }[]
-}) {
-  return (
-    <div className="mb-6 border border-outline-variant bg-surface-low overflow-hidden">
-      <div className="border-b border-outline-variant bg-surface-low px-4 py-2.5">
-        <span className="font-mono text-sm font-medium text-on-surface">{name}</span>
-      </div>
-      <div className="p-4">
-        <div className="mb-3 border border-outline-variant bg-surface-container px-3 py-2">
-          <code className="font-mono text-xs text-on-surface">{signature}</code>
-        </div>
-        <p className="mb-3 text-sm text-on-surface-variant">{description}</p>
-        {params && params.length > 0 && (
-          <div className="space-y-1.5">
-            {params.map((p) => (
-              <div key={p.name} className="flex flex-col gap-0.5 text-xs sm:flex-row sm:gap-3">
-                <code className="font-mono text-on-surface sm:w-32 sm:shrink-0">{p.name}</code>
-                <code className="font-mono text-on-surface-variant sm:w-28 sm:shrink-0">{p.type}</code>
-                <span className="text-on-surface-variant">{p.desc}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+const link = 'text-on-surface underline decoration-[#FF003C] underline-offset-4 hover:decoration-2'
 
 export default function ApiPage() {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-      <article className="min-w-0 flex-1 max-w-3xl">
+      <article className="min-w-0 max-w-3xl flex-1">
         <PageHeader
           variant="doc"
           eyebrow="Reference"
           title="API Reference"
-          lede={
-            <>
-              Complete reference for TimelineEngine, PlaybackEngine, resolveTimeline, GpuRenderer, React hooks, and TypeScript types.
-            </>
-          }
+          lede="The engine's main classes and functions on one page: what each call takes and what it does. The guides link here for exact signatures."
         />
+        <P>
+          Everything below is exported by <C>@elah/core</C> and re-exported by <C>@elah/editor</C>; the hooks come from <C>@elah/react</C>.
+        </P>
 
-        {/* TimelineEngine */}
-        <Section id="timeline-engine" title="TimelineEngine">
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The single mutation funnel. All edits go through <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">TimelineEngine</code>. Backed by Immer for structural sharing; every commit produces a new Project snapshot.
-          </p>
+        <H2 id="timeline-engine">TimelineEngine</H2>
+        <P>
+          Every change to a project goes through the engine. Each change makes a new immutable <C>Project</C> and an undo step. Get it with{' '}
+          <C>useTimelineEngine()</C> inside an <C>EditorProvider</C>.
+        </P>
+        <Callout kind="warning" title="Clip calls take the track id too">
+          Clips are stored per track, so most clip methods need both <C>clipId</C> and <C>trackId</C>.
+        </Callout>
 
-          <ApiEntry
-            name="addClip"
-            signature="engine.addClip(options: CreateClipOptions): Clip"
-            description="Adds a new clip to a track. The clip is placed at startFrame and returns the created Clip object."
-            params={[
-              { name: 'trackId', type: 'string', desc: 'Target track ID' },
-              { name: 'type', type: 'ClipType', desc: "'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand' | 'adjustment' | 'generator' | 'compound' | 'sequence'" },
-              { name: 'startFrame', type: 'number', desc: 'Position on the timeline (integer frames)' },
-              { name: 'durationFrames', type: 'number', desc: 'Length of the clip (integer frames)' },
-              { name: 'src', type: 'string?', desc: 'URL or blob ref for video/audio/image clips' },
-              { name: 'text', type: 'TextClipMetadata?', desc: 'Content + style; required when type is \'text\'' },
-              { name: 'generator', type: 'ClipGenerator?', desc: 'Which generator and its params; required when type is \'generator\'' },
-              { name: 'compound', type: 'ClipCompound?', desc: 'The nested project; required when type is \'compound\'' },
-              { name: 'sequence', type: 'ClipSequence?', desc: 'An animated image or numbered frames; required when type is \'sequence\'' },
-            ]}
-          />
+        <H3>Clips</H3>
+        <PropTable
+          nameLabel="Method"
+          rows={[
+            { name: 'addClip(options)', type: '→ Clip', desc: <>Add a clip. <C>trackId</C>, <C>type</C>, <C>startFrame</C> and <C>durationFrames</C> are required, plus <C>text</C>, <C>generator</C>, <C>compound</C> or <C>sequence</C> for those clip types.</> },
+            { name: 'updateClip(clipId, trackId, changes)', type: '→ void', desc: 'Change any fields: transform, text, opacity, keyframes…' },
+            { name: 'moveClip(clipId, fromTrackId, toTrackId, startFrame)', type: '→ void', desc: 'Move in time or to another track. Ignored if it would overlap a clip or either track is locked.' },
+            { name: 'trimClip(clipId, trackId, startFrame, durationFrames)', type: '→ void', desc: 'Set a new start and length.' },
+            { name: 'splitClip(clipId, trackId, atFrame)', type: '→ [leftId, rightId] | null', desc: 'Cut a clip in two. null if it could not split, for example on a locked track.' },
+            { name: 'removeClip(clipId, trackId)', type: '→ void', desc: 'Delete a clip.' },
+            { name: 'setClipSpeed(clipId, trackId, speed)', type: '→ void', desc: <>Video only, 0.25 to 4. Also updates the clip&apos;s length. See <Link href="/docs/clips#speed" className={link}>Speed</Link>.</> },
+          ]}
+        />
+        <H3>Drags</H3>
+        <PropTable
+          nameLabel="Method"
+          rows={[
+            { name: 'previewClip(clipId, trackId, changes)', type: '→ void', desc: 'Show a change while the user is still dragging, without an undo step.' },
+            { name: 'commitInteraction(description?)', type: '→ void', desc: 'Finish the drag as one undo step.' },
+          ]}
+        />
+        <H3>Tracks</H3>
+        <PropTable
+          nameLabel="Method"
+          rows={[
+            { name: 'addTrack(kind, options?)', type: '→ Track', desc: <>Options: <C>name</C>, <C>height</C> (default 64), <C>order</C>, <C>protected</C>, <C>pinned</C>. A new video track goes below the last video track. See <Link href="/docs/clips#multiple-video-tracks" className={link}>Multiple video tracks</Link>.</> },
+            { name: 'updateTrack(trackId, changes)', type: '→ void', desc: 'Rename, resize, lock, mute and so on.' },
+            { name: 'reorderTracks(orderedIds)', type: '→ void', desc: 'Pass every track id, topmost first.' },
+            { name: 'removeTrack(trackId)', type: '→ void', desc: 'Does nothing for a protected track.' },
+          ]}
+        />
+        <H3>Transitions</H3>
+        <PropTable
+          nameLabel="Method"
+          rows={[
+            { name: 'addTransition({ fromClipId, toClipId, trackId, kind, durationFrames, easing?, direction? })', type: '→ Transition | null', desc: <>Between two neighbouring clips on one track. null if the clips are not on that track. Kinds are listed on <Link href="/docs/editor#transitions" className={link}>Editor: Transitions</Link>.</> },
+            { name: 'removeTransition(id)', type: '→ void', desc: 'Delete a transition.' },
+          ]}
+        />
+        <H3>Project &amp; history</H3>
+        <PropTable
+          nameLabel="Method"
+          rows={[
+            { name: 'getProject()', type: '→ Project', desc: 'The current project. Immutable: never edit it in place.' },
+            { name: 'loadProject(project, { transport?, history? })', type: '→ void', desc: <>Replace everything. Pass the result of <C>readProjectDocument</C>. See <Link href="/docs/project-documents#load-project" className={link}>loadProject</Link>.</> },
+            { name: 'setStage(width, height)', type: '→ void', desc: 'Change the frame size. Positions are fractions of the stage, so clips refit on their own.' },
+            { name: 'setMasterVolume(value)', type: '→ void', desc: 'Saved on the project, so it is exported too.' },
+            { name: 'batch(fn, description?)', type: '→ void', desc: 'Every change inside fn becomes one undo step.' },
+            { name: 'undo() · redo()', type: '→ boolean', desc: 'True if a step was applied. Use canUndo() and canRedo() to enable buttons.' },
+          ]}
+        />
+        <H3>Events</H3>
+        <Code
+          code={`
+const onChange = (project) => save(project)
+engine.on('change', onChange)
+engine.off('change', onChange)`}
+        />
+        <P>
+          <C>change</C> · <C>history:change</C> · <C>project:loaded</C> · <C>track:added</C> · <C>track:removed</C> · <C>clip:added</C> ·{' '}
+          <C>clip:removed</C> · <C>clip:updated</C> · <C>clip:split</C> · <C>transition:added</C> · <C>transition:removed</C>
+        </P>
 
-          <ApiEntry
-            name="moveClip"
-            signature="engine.moveClip(clipId: string, fromTrackId: string, toTrackId: string, startFrame: number): void"
-            description="Moves a clip to a new start frame, optionally onto a different track. Pass the same id for fromTrackId and toTrackId to move within a track. No-ops if the move would overlap a neighbour or either track is locked."
-          />
+        <H2 id="playback-engine">PlaybackEngine</H2>
+        <P>
+          The clock. It decides which frame is showing and whether it is playing. In React you normally read it through <C>usePlaybackStore</C>;
+          use it directly outside React or for a custom transport.
+        </P>
+        <Code
+          highlight={[3, 4, 5, 6]}
+          code={`
+import { PlaybackEngine, tracksStore } from '@elah/core'
 
-          <ApiEntry
-            name="removeClip"
-            signature="engine.removeClip(clipId: string, trackId: string): void"
-            description="Removes a clip from a track."
-          />
-
-          <ApiEntry
-            name="updateClip"
-            signature="engine.updateClip(clipId: string, trackId: string, updates: Partial<Clip>): void"
-            description="Updates any fields on a clip. Common use: transform, text content, opacity. During drag/trim gestures prefer previewClip() + commitInteraction() so the interaction is a single undo entry."
-          />
-
-          <ApiEntry
-            name="addTrack"
-            signature="engine.addTrack(kind: TrackKind, options?: Partial<CreateTrackOptions>): Track"
-            description="Adds a new track. Any number of tracks of any kind is allowed. Video tracks composite in track order (the topmost lane draws on top) and a new video track is placed directly below the last existing one; other kinds append, above any bottom-pinned lane."
-            params={[
-              { name: 'name', type: 'string?', desc: 'Display name; defaults to a kind-based name' },
-              { name: 'height', type: 'number?', desc: 'Lane height in px (default 64)' },
-              { name: 'order', type: 'number?', desc: 'Explicit render order; normally left to the engine' },
-              { name: 'protected', type: 'boolean?', desc: 'When true, the user cannot remove the track' },
-              { name: 'pinned', type: "'bottom'?", desc: 'Keeps the lane below every non-pinned track, whatever is added later' },
-            ]}
-          />
-
-          <ApiEntry
-            name="loadProject"
-            signature="engine.loadProject(project: Project, options?: { transport?: 'rewind' | 'keep'; history?: 'reset' | 'keep' }): void"
-            description="Replaces the whole composition. Pass the result of readProjectDocument(json), which throws ProjectDocumentError for an unreadable or too-new document. By default undo history is cleared and the playhead rewinds; { transport: 'keep', history: 'keep' } is for the relinkProjectMedia repair pass over a composition that is already on screen. Emits 'change' then 'project:loaded'."
-            params={[
-              { name: 'transport', type: "'rewind' | 'keep'", desc: "'rewind' (default) stops and returns to frame 0; 'keep' leaves the playhead alone" },
-              { name: 'history', type: "'reset' | 'keep'", desc: "'reset' (default) clears undo/redo; 'keep' preserves the stacks and any open batch or drag" },
-            ]}
-          />
-
-          <ApiEntry
-            name="setClipSpeed"
-            signature="engine.setClipSpeed(clipId: string, trackId: string, speed: number): void"
-            description="Sets a video clip's playback multiplier, clamped to 0.25–4. The clip's on-timeline length follows the new speed; growth is clamped to the gap before the next clip."
-          />
-
-          <ApiEntry
-            name="addTransition"
-            signature="engine.addTransition(options): Transition | null"
-            description="Adds a transition between two adjacent clips on the same track. Returns the created Transition, or null if the clips aren't found on that track."
-            params={[
-              { name: 'fromClipId', type: 'string', desc: 'The outgoing clip' },
-              { name: 'toClipId', type: 'string', desc: 'The incoming clip' },
-              { name: 'trackId', type: 'string', desc: 'Track both clips live on (required)' },
-              { name: 'kind', type: 'TransitionKind', desc: "'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'" },
-              { name: 'durationFrames', type: 'number', desc: 'How many frames the transition spans' },
-              { name: 'easing', type: 'TransitionEasing?', desc: "'linear' | 'ease-in' | 'ease-out'" },
-            ]}
-          />
-
-          <ApiEntry
-            name="batch"
-            signature="engine.batch(fn: () => void, label?: string): void"
-            description="Groups multiple mutations into a single undo entry. All mutations inside fn() are committed atomically."
-          />
-
-          <ApiEntry
-            name="undo / redo"
-            signature="engine.undo(): boolean | engine.redo(): boolean"
-            description="Step backwards/forwards through the commit history. Returns true if a step was applied (use canUndo() / canRedo() to gate UI)."
-          />
-
-          <ApiEntry
-            name="getProject"
-            signature="engine.getProject(): Project"
-            description="Returns the current immutable Project snapshot."
-          />
-
-          <ApiEntry
-            name="setStage"
-            signature="engine.setStage(width: number, height: number): void"
-            description="Sets the canvas output dimensions. Clips re-fit to the new stage on the next resolve — placement is normalized, so no per-clip migration is needed."
-          />
-        </Section>
-
-        {/* PlaybackEngine */}
-        <Section id="playback-engine" title="PlaybackEngine">
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            Owns the RAF clock. Emits <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">(frame, isPlaying)</code> snapshots. React consumes it via <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">usePlaybackStore</code>.
-          </p>
-          <CodeBlock
-            language="typescript"
-            code={`// Direct usage (advanced — usually use usePlaybackStore instead)
-import { PlaybackEngine } from '@elah/core'
-
-const engine = new PlaybackEngine({ fps: 30 })
-
-engine.play()
-engine.pause()
-engine.seek(frame)
-
-// Subscribe to playback ticks
-const unsub = engine.subscribe((snapshot) => {
-  console.log(snapshot.frame, snapshot.isPlaying)
-})`}
-          />
-        </Section>
-
-        {/* resolveTimeline */}
-        <Section id="resolve-timeline" title="resolveTimeline()">
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The pure, deterministic resolver. Consumes a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Project</code> and frame index; produces a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code>. No side effects, no imports, safe to call in tests, workers, and export pipelines.
-          </p>
-          <CodeBlock
-            language="typescript"
-            code={`import { resolveTimeline, type Scene } from '@elah/core'
-
-const scene: Scene = resolveTimeline(currentFrame, project)
-
-// Scene shape:
-interface Scene {
-  frame: number
-  fps: number
-  stage: { width: number; height: number }
-  videos: ActiveVideoClip[]
-  audios: ActiveAudioClip[]
-  texts: ActiveTextClip[]
-  images: ActiveImageClip[]
-  shapes: ActiveShapeClip[]
-  freehand: ActiveFreehandClip[]
-  transitions: ActiveTransition[]
-}
-
-// Fields shared by every active clip:
-interface ActiveClipBase {
-  id: string
-  trackId: string
-  name: string
-  sourceFrame: number      // source-asset frame at the current playhead
-  opacity: number          // 0..1, modified by transitions
-  zIndex: number           // higher = closer to viewer (front)
-  transform?: Transform    // undefined → renderer default (contain-fit)
-}
-
-// Each ActiveVideoClip adds:
-interface ActiveVideoClip extends ActiveClipBase {
-  type: 'video'
-  src: string
-  volume: number           // 0..1, after track mute
-}`}
-          />
-        </Section>
-
-        {/* GpuRenderer */}
-        <Section id="gpu-renderer" title="GpuRenderer">
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            The shipped WebGL2 renderer. Accepts a <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Scene</code> and draws sorted textured quads. Can be replaced with any <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Renderer</code>-conforming implementation.
-          </p>
-          <CodeBlock
-            language="typescript"
-            code={`import { GpuRenderer, type Renderer } from '@elah/core'
-
-// The Renderer interface
-interface Renderer {
-  mount(container: HTMLElement): void
-  resize(cssWidth: number, cssHeight: number, dpr?: number): void
-  render(scene: Scene): void
-  prewarm?(scene: Scene): void   // optional decode look-ahead
-  dispose(): void
-}
-
-// Direct usage (usually consumed through <Preview>)
-// The constructor takes RendererOptions — the stage size comes from the
-// Scene each tick, not the constructor. Pass a demuxerFactory to enable
-// the real WebCodecs decode pipeline.
-const renderer = new GpuRenderer({
-  demuxerFactory: () => createMediabunnyBackend(mediabunny),
+const playback = new PlaybackEngine({
+  fps: 30,
+  getTotalFrames: () => tracksStore.getState().totalFrames, // when to stop or loop
 })
 
-renderer.mount(containerEl)      // attach to the DOM once
-renderer.resize(1920, 1080, window.devicePixelRatio)
-renderer.render(scene)           // called each RAF tick
-renderer.dispose()               // cleanup on unmount`}
-          />
-        </Section>
+playback.play()
+playback.seek(90)
 
-        {/* Hooks */}
-        <Section id="hooks" title="Hooks">
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            All hooks below live in <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> and are re-exported by <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/editor</code> — install <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/react</code> directly if you&apos;re building custom UI on <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">@elah/core</code> without the full editor SDK. The <Link href="/docs/react" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/react page</Link> covers the context, the store hooks, the audio hooks and using the same stores without React in detail.
-          </p>
-          <div className="space-y-4">
-            {[
-              {
-                hook: 'useTimelineEngine()',
-                returns: 'TimelineEngine',
-                desc: 'Access the TimelineEngine from any child of EditorProvider. Use this for mutations.',
-              },
-              {
-                hook: 'usePlaybackEngine()',
-                returns: 'PlaybackEngine',
-                desc: 'Access the PlaybackEngine directly. Usually prefer usePlaybackStore for state.',
-              },
-              {
-                hook: 'useTracksStore(selector)',
-                returns: 'T',
-                desc: 'Zustand store for tracks, clips, totalFrames. Reactive to all engine mutations.',
-              },
-              {
-                hook: 'usePlaybackStore(selector)',
-                returns: 'T',
-                desc: 'Zustand store for currentFrame, isPlaying, togglePlayPause, setCurrentFrame.',
-              },
-              {
-                hook: 'useSelectionStore(selector)',
-                returns: 'T',
-                desc: 'Zustand store for selected clip IDs.',
-              },
-              {
-                hook: 'useTransitionsStore(selector)',
-                returns: 'T',
-                desc: 'Zustand store for all transitions.',
-              },
-              {
-                hook: 'useTextStylePresetsStore(selector)',
-                returns: 'T',
-                desc: 'Zustand store for reusable text looks: the built-in presets plus any the user saves.',
-              },
-              {
-                hook: 'useClipLoadStore(selector)',
-                returns: 'T',
-                desc: "Zustand store of which clips the preview cannot draw yet: byClipId[id] is 'loading' or 'error'. Renderer state only; never saved or undoable.",
-              },
-              {
-                hook: 'useMediaLibrary()',
-                returns: 'UseMediaLibraryApi',
-                desc: 'Access the media library. Returns { assets, getAsset, removeAsset, updateAsset, importFiles, importUrl, importBlob }.',
-              },
-              {
-                hook: 'useAudioMixer(controller)',
-                returns: 'AudioMixerApi',
-                desc: 'Click-free master/track gain controls for an AudioPlaybackController. Pass null while the controller isn’t initialized yet — methods become no-ops.',
-              },
-              {
-                hook: 'useMasterVolume(controller, engine)',
-                returns: 'MasterVolumeApi',
-                desc: 'Master volume with both immediate audio-graph control and persistence to the project model.',
-              },
-              {
-                hook: 'useTrackLevels(controller)',
-                returns: 'Map<string, TrackLevel>',
-                desc: 'Polls per-track RMS levels on every animation frame, for building level meters.',
-              },
-            ].map(({ hook, returns, desc }) => (
-              <div key={hook} className="border border-outline-variant bg-surface-low p-4">
-                <div className="mb-1.5 flex flex-wrap items-start gap-x-3 gap-y-1.5">
-                  <code className="font-mono text-sm font-medium text-on-surface">{hook}</code>
-                  <span className="mt-0.5 min-w-0 max-w-full break-words bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface-variant">
-                    → {returns}
-                  </span>
-                </div>
-                <p className="text-xs text-on-surface-variant">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </Section>
+const unsubscribe = playback.subscribe(({ currentFrame, isPlaying }) => {
+  render(currentFrame)
+})`}
+        />
+        <PropTable
+          nameLabel="Member"
+          rows={[
+            { name: 'new PlaybackEngine({ fps, getTotalFrames })', desc: <><C>getTotalFrames</C> is required: the clock asks it each tick to know when to stop or loop.</> },
+            { name: 'play() · pause() · seek(frame)', desc: 'Transport.' },
+            { name: 'setLoop(loop) · setPlaybackRate(rate)', desc: 'Looping and speed.' },
+            { name: 'subscribe(fn)', desc: <>Called with <C>{'{ currentFrame, isPlaying, playbackRate, loop, epoch }'}</C>. Returns an unsubscribe function.</> },
+            { name: 'isPlaying', desc: 'Whether it is playing now.' },
+            { name: 'destroy()', desc: 'Stop the clock for good.' },
+          ]}
+        />
 
-        {/* Types */}
-        <Section id="types" title="Types">
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The clip and track fields added in 0.6.0 (<code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.speed</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.crop</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Clip.cornerRadius</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track.protected</code>, <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">Track.pinned</code>) are explained on <Link href="/docs/clips" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips &amp; Tracks</Link>. Layered text motion is on <Link href="/docs/text-templates-and-motion" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Text Templates &amp; Motion</Link>.
-          </p>
-          <CodeBlock
-            language="typescript"
-            filename="types.ts"
-            code={`// Time
-type FrameCount = number // always integer
+        <H2 id="resolve-timeline">resolveTimeline()</H2>
+        <P>
+          Turns a project and a frame number into a <C>Scene</C>: everything visible and audible at that frame. It has no side effects, so it
+          runs the same in tests, workers and export. The preview and the exporter both draw from it.
+        </P>
+        <Code
+          highlight={[3]}
+          code={`
+import { resolveTimeline, type Scene } from '@elah/core'
 
-type ClipType =
-  | 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
-  | 'adjustment' | 'generator' | 'compound' | 'sequence'
-type TrackKind = 'video' | 'audio' | 'elements'
+const scene: Scene = resolveTimeline(frame, project)`}
+        />
+        <PropTable
+          nameLabel="Scene field"
+          rows={[
+            { name: 'frame · fps · stage', desc: 'Where and what size.' },
+            { name: 'videos · images · texts · shapes · freehand', desc: 'The clips on screen, each with its id, source frame, opacity, z-index and transform.' },
+            { name: 'audios', desc: 'The clips that are playing sound, with volume after track mute.' },
+            { name: 'transitions', desc: 'Active transitions, with their eased progress.' },
+            { name: 'adjustments · rotoMasks', type: 'optional', desc: 'Adjustment layers and masks, when the project has them.' },
+          ]}
+        />
 
-// Core data types
+        <H2 id="gpu-renderer">GpuRenderer</H2>
+        <P>
+          The WebGL2 renderer that <C>Preview</C> uses. It draws a <C>Scene</C>, and nothing else. You can swap in your own renderer by
+          implementing the same <C>Renderer</C> interface; see{' '}
+          <Link href="/docs/plugins" className={link}>
+            Plugins
+          </Link>
+          .
+        </P>
+        <Code
+          highlight={[3]}
+          code={`
+import { GpuRenderer, createDefaultDemuxerFactory } from '@elah/core'
+
+const renderer = new GpuRenderer({ demuxerFactory: createDefaultDemuxerFactory() })
+renderer.mount(containerEl)
+renderer.resize(width, height, window.devicePixelRatio)
+renderer.render(scene) // every frame
+renderer.dispose()     // on unmount`}
+        />
+        <PropTable
+          nameLabel="Renderer method"
+          rows={[
+            { name: 'mount(container)', desc: 'Attach to a DOM element, once.' },
+            { name: 'resize(cssWidth, cssHeight, dpr?)', desc: 'The canvas size in CSS pixels. The stage is fitted inside, letterboxed.' },
+            { name: 'render(scene)', desc: 'Draw one frame.' },
+            { name: 'prewarm?(scene)', desc: 'Optional: start decoding a frame ahead of time.' },
+            { name: 'dispose()', desc: 'Release everything.' },
+          ]}
+        />
+        <Callout title="The stage size comes from the Scene">
+          The constructor takes options such as <C>demuxerFactory</C>, not a size. Without a demuxer factory, video shows placeholder frames
+          instead of decoding.
+        </Callout>
+
+        <H2 id="hooks">Hooks</H2>
+        <P>
+          From <C>@elah/react</C>, re-exported by <C>@elah/editor</C>. The{' '}
+          <Link href="/docs/react" className={link}>
+            @elah/react page
+          </Link>{' '}
+          explains each in detail.
+        </P>
+        <PropTable
+          nameLabel="Hook"
+          rows={[
+            { name: 'useTimelineEngine()', type: '→ TimelineEngine', desc: 'For edits.' },
+            { name: 'usePlaybackEngine()', type: '→ PlaybackEngine', desc: 'The clock itself. Usually read usePlaybackStore instead.' },
+            { name: 'useEditor()', type: '→ { engine, playback }', desc: 'Both.' },
+            { name: 'useTracksStore(selector)', desc: 'Tracks, clips, stage, totalFrames, canUndo, canRedo.' },
+            { name: 'usePlaybackStore(selector)', desc: 'Current frame, playing, rate, loop, volume, zoom, and transport actions.' },
+            { name: 'useSelectionStore(selector)', desc: 'Selected clips and the active track.' },
+            { name: 'useTransitionsStore(selector)', desc: 'All transitions.' },
+            { name: 'useMediaLibrary()', desc: 'Assets, plus importFiles, importUrl and importBlob.' },
+            { name: 'useClipLoadStore(selector)', desc: 'Which clips cannot be drawn yet.' },
+            { name: 'useTextStylePresetsStore(selector)', desc: 'The user’s saved text styles.' },
+            { name: 'useAudioMixer · useMasterVolume · useTrackLevels', desc: 'Gain, master volume and level meters for an AudioPlaybackController.' },
+          ]}
+        />
+
+        <H2 id="types">Types</H2>
+        <P>
+          The data model. Field-by-field tables with descriptions are on{' '}
+          <Link href="/docs/timeline#tracks-and-clips" className={link}>
+            Timeline: Tracks &amp; clips
+          </Link>
+          ,{' '}
+          <Link href="/docs/editor#transforms" className={link}>
+            Editor: Transforms
+          </Link>{' '}
+          and{' '}
+          <Link href="/docs/text-templates-and-motion#motion-spec" className={link}>
+            MotionSpec
+          </Link>
+          ; export options are on{' '}
+          <Link href="/docs/export#export-video" className={link}>
+            Export
+          </Link>
+          .
+        </P>
+        <Code
+          title="Project & Track"
+          code={`
 interface Project {
   id: string
   fps: number
   stage: { width: number; height: number }
   tracks: Track[]
-  // Clips are stored keyed by trackId, NOT nested on Track.
-  clips: Record<string, Clip[]>
+  clips: Record<string, Clip[]> // keyed by track id, not nested in Track
   transitions: Transition[]
   version: number
-  masterVolume?: number   // 0..2, linear
+  masterVolume?: number         // 0..2
 }
+
+type TrackKind = 'video' | 'audio' | 'elements'
 
 interface Track {
   id: string
   name: string
   kind: TrackKind
-  order: number           // lower = closer to top of timeline
-  height: number          // px
+  order: number                 // lower = higher on the timeline
+  height: number
   locked: boolean
   disabled: boolean
   muted: boolean
   solo: boolean
-  volume?: number         // 0..2, linear
-  protected?: boolean     // the user cannot remove this track
-  pinned?: 'bottom'       // addTrack keeps this lane below every non-pinned track
-}
+  volume?: number               // 0..2
+  protected?: boolean
+  pinned?: 'bottom'
+}`}
+        />
+        <Code
+          title="Clip"
+          code={`
+type ClipType =
+  | 'video' | 'audio' | 'text' | 'image' | 'shape' | 'freehand'
+  | 'adjustment' | 'generator' | 'compound' | 'sequence'
 
 interface Clip {
   id: string
   trackId: string
   type: ClipType
   name: string
-  startFrame: FrameCount        // position on the timeline
-  durationFrames: FrameCount    // length on the timeline
-  sourceStartFrame: FrameCount  // trim in-point into the source
-  sourceDurationFrames: FrameCount
+  startFrame: number            // whole frames
+  durationFrames: number
+  sourceStartFrame: number      // trim in-point
+  sourceDurationFrames: number
   src?: string
   assetId?: string
   transform?: Transform
   opacity?: number              // 0..1
-  volume?: number               // 0..1
-  speed?: number                // video only; 0.25..4, default 1
-  cornerRadius?: number         // video/image; 0..0.5 of the shorter side
-  crop?: { x: number; y: number; width: number; height: number } // 0..1 of the source
+  volume?: number
+  speed?: number                // video; 0.25..4
+  crop?: { x: number; y: number; width: number; height: number }
+  cornerRadius?: number         // 0..0.5
   locked?: boolean
   disabled?: boolean
-  // Text clips (flat fields, not a nested object):
-  content?: string
-  fontSize?: number
-  color?: string
-  fontFamily?: string
-  fontWeight?: 'normal' | 'bold'
-  textAlign?: 'left' | 'center' | 'right'
+  // text clips: content, fontSize, color, fontFamily, fontWeight, textAlign
   textAnimation?: TextAnimation
   shapeAnimation?: TextAnimation
-  // Shape / freehand clips have their own shape*/stroke*/pathData fields.
-}
-
+}`}
+        />
+        <Code
+          title="Transform & Transition"
+          code={`
 interface Transform {
-  x: number        // 0..1, normalized to stage width
-  y: number        // 0..1, normalized to stage height
-  scale: number    // 1 = native size
-  scaleX?: number  // extra horizontal stretch on top of scale; omitted = 1
-  scaleY?: number  // extra vertical stretch on top of scale; omitted = 1
-  rotation: number // radians, positive = clockwise
-  anchor: { x: number; y: number } // 0..1 within the clip box
-}
-
-// Entry/exit ramp for text (and shape) clips.
-type TextAnimationKind = 'fade' | 'spin' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right'
-
-interface TextAnimation {
-  in?: TextAnimationKind
-  out?: TextAnimationKind
-  durationFrames: number
-  // Layered motion. When present it replaces in / out; used by text templates.
-  inMotion?: MotionSpec
-  outMotion?: MotionSpec
-}
-
-// One end of a layered animation: the state at the FAR end of the ramp.
-// The near end is always the clip's resting state. Omitted channels stay at rest.
-interface MotionSpec {
-  opacity?: number       // 0..1
-  offsetX?: number       // fraction of stage width
-  offsetY?: number       // fraction of stage height
-  scale?: number         // multiplier on the authored scale
-  rotation?: number      // radians
-  ease?: TextAnimationEasing        // geometry channels
-  opacityEase?: TextAnimationEasing // default 'linear'
+  x: number                     // 0..1 of stage width
+  y: number                     // 0..1 of stage height
+  scale: number                 // 1 = native size
+  scaleX?: number
+  scaleY?: number
+  rotation: number              // radians, clockwise
+  anchor: { x: number; y: number }
 }
 
 interface Transition {
   id: string
-  kind: 'fade' | 'slide' | 'wipe'
-      | 'zoom' | 'spin' | 'whip' | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
+  kind: 'fade' | 'slide' | 'wipe' | 'zoom' | 'spin' | 'whip'
+      | 'glitchCut' | 'warpDissolve' | 'lumaWipe'
   fromClipId: string
   toClipId: string
   trackId: string
-  startFrame: FrameCount   // = toClip.startFrame - durationFrames / 2
-  durationFrames: FrameCount
+  startFrame: number
+  durationFrames: number
   direction?: 'left' | 'right' | 'up' | 'down'
   easing?: 'linear' | 'ease-in' | 'ease-out'
-}
-
-// Export — fps is read from project.fps; the export worker uses
-// mediabunny directly, so there is no demuxerFactory here.
-type ExportVideoCodec = 'avc' | 'hevc' | 'av1' | 'vp9' | 'vp8' // where the browser can encode it
-type ExportAudioCodec = 'aac' | 'opus'
-type ExportContainer = 'mp4' | 'webm' | 'png-sequence' | 'gif'
-
-interface ExportOptions {
-  videoCodec?: ExportVideoCodec   // default 'avc'
-  audioCodec?: ExportAudioCodec
-  container?: ExportContainer     // default 'mp4'
-  transparent?: boolean           // webm only, where the browser's own check passes
-  range?: 'all' | 'inOut'         // default 'all'
-  gifFps?: number                 // gif only, default 15
-  videoBitrate?: number           // bits/s, default 8 Mbps
-  audioBitrate?: number           // bits/s, default 128 kbps
-  outputHeight?: number           // target SHORT edge in px (1080 = 1080p in either
-                                  // orientation); other edge is rounded to even.
-                                  // Default = the stage's own short edge
-  onProgress?: (p: ExportProgress) => void
-  signal?: AbortSignal
-}
-
-interface ExportProgress {
-  frame: number
-  totalFrames: number
 }`}
-          />
-        </Section>
+        />
+        <Callout title="Time is always whole frames">
+          Every position and length in a project is an integer frame count. Convert at the edges with <C>secondsToFrames</C> and{' '}
+          <C>framesToSeconds</C>.
+        </Callout>
+
+        <DocsPager href="/docs/api" />
       </article>
 
       <DocsToc items={toc} />

@@ -210,8 +210,8 @@ export const docsHome: DocsHomeGroup[] = [
     title: 'Start here',
     cards: [
       { title: 'Installation', desc: 'Install @elah/editor from npm and configure Next.js or Vite.', href: '/docs/installation' },
-      { title: 'Quick Start', desc: 'Build the full editor in under 20 lines. Wire your demuxer, render, ship.', href: '/docs/getting-started' },
-      { title: 'Architecture', desc: 'Integer frames, the one mutation funnel, the pure resolver, dumb renderers.', href: '/docs/architecture' },
+      { title: 'Quick Start', desc: 'A timeline, then a preview, then the full editor with media and export.', href: '/docs/getting-started' },
+      { title: 'Architecture', desc: 'Where state lives, how an edit flows, the playback clock and the renderer.', href: '/docs/architecture' },
     ],
   },
   {
@@ -222,7 +222,7 @@ export const docsHome: DocsHomeGroup[] = [
       { title: '@elah/react', desc: 'EditorContext, useEditor, the store hooks and the audio mixer hooks.', href: '/docs/react' },
       { title: 'Text Templates & Motion', desc: 'Layered MotionSpec animation, easings, and 14 built-in text templates.', href: '/docs/text-templates-and-motion' },
       { title: 'Theming', desc: 'The --elah-* tokens, the classNames slot API, and the three stylesheets.', href: '/docs/theming' },
-      { title: 'Plugins', desc: 'Custom renderers, custom layers and custom demuxers.', href: '/docs/plugins' },
+      { title: 'Plugins', desc: 'Custom renderers and custom demuxers, and what is not public yet.', href: '/docs/plugins' },
     ],
   },
   {
@@ -238,7 +238,7 @@ export const docsHome: DocsHomeGroup[] = [
     title: 'Motion',
     cards: [
       { title: 'Motion', desc: 'Keyframes, easing, springs, expressions, text animators, stagger and motion paths. Every key is plain data.', href: '/docs/motion' },
-      { title: 'HTML scenes & VideoSpec', desc: 'Live in 1.0: write a scene as code and convert it to native clips and keyframes.', href: '/docs/scenes' },
+      { title: 'HTML scenes & VideoSpec', desc: 'Write a scene as HTML or JSON and turn it into editable clips and keyframes.', href: '/docs/scenes' },
     ],
   },
   {
