@@ -802,3 +802,36 @@
     }
   }
 }
+
+/*
+ * Docs code (components/docs/Code.tsx). Shiki emits both themes as CSS
+ * variables; the light one shows by default and `.dark` swaps in the other.
+ * `.hl` lines get a faint red wash and a red rail.
+ */
+.docs-code pre {
+  margin: 0;
+  padding: 14px 0;
+  overflow-x: auto;
+  background: transparent !important;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.docs-code code {
+  display: grid;
+  min-width: max-content;
+}
+.docs-code .line {
+  min-height: 1.7em;
+  padding: 0 16px;
+}
+.docs-code .line span {
+  color: var(--shiki-light);
+}
+.dark .docs-code .line span {
+  color: var(--shiki-dark);
+}
+.docs-code .line.hl {
+  background: color-mix(in srgb, #ff003c 7%, transparent);
+  box-shadow: inset 2px 0 #ff003c;
+}
