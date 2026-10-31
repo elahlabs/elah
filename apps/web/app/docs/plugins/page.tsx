@@ -167,8 +167,12 @@ const myDemuxerFactory: DemuxerFactory = () => ({
         <H2 id="custom-layers">Custom GPU layers</H2>
         <Callout kind="warning" title="Not a public API yet">
           The built-in renderer draws each clip type with an internal layer (video, image, text, shape, generator…). They are registered inside{' '}
-          <C>@elah/core</C>, and there is no exported way to add your own.
+          <C>@elah/core</C>, and there is no exported way to add your own: <C>GpuRenderer</C> has no method or option that takes a layer.
         </Callout>
+        <P>
+          <C>RotoMaskLayer</C> and <C>SequenceLayer</C> are exported, but they are the built-in layers for mask and sequence clips, not a plug-in
+          point. Nothing accepts a layer you construct.
+        </P>
         <P>For custom visuals today:</P>
         <PropTable
           nameLabel="Option"
