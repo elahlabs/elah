@@ -49,7 +49,7 @@ export default function EditorPage() {
         <H2 id="editor-provider">EditorProvider</H2>
         <P>
           <C>EditorProvider</C> creates the <C>TimelineEngine</C>, the <C>PlaybackEngine</C> and the stores, and connects them. Wrap your whole
-          editor in it.
+          editor in it. It comes from <C>@elah/react</C>; <C>@elah/editor</C> re-exports it.
         </P>
         <Code
           highlight={[11, 12, 13]}
@@ -74,7 +74,10 @@ function App() {
           nameLabel="Prop"
           rows={[
             { name: 'fps', type: 'number', desc: 'Frames per second, such as 24, 30 or 60. Required.' },
-            { name: 'initialTracks', type: 'InitialTrackConfig[]', desc: 'The track layout the engine starts with.' },
+            { name: 'initialTracks', type: 'InitialTrackConfig[]', optional: true, desc: 'The track layout the engine starts with.' },
+            { name: 'stage', type: '{ width, height }', optional: true, desc: 'The video frame size. Default 1080 × 1920 (portrait).' },
+            { name: 'defaultTrackHeight', type: 'number', optional: true, desc: 'Height of new tracks, in pixels. Default 64.' },
+            { name: 'maxHistorySize', type: 'number', optional: true, desc: 'How many undo steps to keep. Default 100.' },
             { name: 'children', type: 'ReactNode', desc: 'Everything that uses the engine.' },
           ]}
         />
