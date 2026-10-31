@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { Code } from '@/components/docs/Code'
+import { C, Callout, DocsPager, H2, H3, P, PropTable } from '@/components/docs/DocsKit'
+import { EasingCurves } from '@/components/docs/EasingCurves'
 import { PageHeader } from '@/components/site/PageHeader'
-import { label } from '@/components/eb'
 
 export const metadata: Metadata = {
   title: 'Text Templates & Motion',
@@ -16,23 +18,12 @@ const toc = [
   { id: 'motion-spec', title: 'MotionSpec', level: 2 },
   { id: 'easings', title: 'Easings', level: 2 },
   { id: 'sampling', title: 'Sampling', level: 2 },
-  { id: 'built-in-templates', title: 'Built-in Templates', level: 2 },
-  { id: 'apply-template', title: 'Applying a Template', level: 2 },
-  { id: 'style-presets', title: 'Style Presets', level: 2 },
+  { id: 'built-in-templates', title: 'Built-in templates', level: 2 },
+  { id: 'apply-template', title: 'Applying a template', level: 2 },
+  { id: 'style-presets', title: 'Style presets', level: 2 },
 ]
 
-const EASINGS = [
-  'linear',
-  'quad-in',
-  'quad-out',
-  'quad-in-out',
-  'cubic-out',
-  'expo-out',
-  'back-in',
-  'back-out',
-  'elastic-out',
-  'bounce-out',
-]
+const link = 'text-on-surface underline decoration-[#FF003C] underline-offset-4 hover:decoration-2'
 
 const TEMPLATES: Array<[string, string, string]> = [
   ['Title Card', 'template-title-card', 'Display title that punches up into place and drifts away. Opens a section.'],
@@ -51,81 +42,38 @@ const TEMPLATES: Array<[string, string, string]> = [
   ['Period Title', 'template-period-title', 'Warm serif easing down out of nothing over a long dissolve. Film-title feel.'],
 ]
 
-function H2({ id, children }: { id: string; children: React.ReactNode }) {
+function Bullets({ items }: { items: ReactNode[] }) {
   return (
-    <h2
-      id={id}
-      className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-    >
-      {children}
-    </h2>
+    <ul className="my-4 list-none space-y-3 p-0 text-[15px] leading-[1.75] text-on-surface/85">
+      {items.map((t, i) => (
+        <li key={i} className="flex gap-3">
+          <span aria-hidden className="mt-[11px] h-[5px] w-[5px] shrink-0 bg-on-surface" />
+          <span>{t}</span>
+        </li>
+      ))}
+    </ul>
   )
-}
-
-function C({ children }: { children: React.ReactNode }) {
-  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
-}
-
-function P({ children }: { children: React.ReactNode }) {
-  return <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">{children}</p>
 }
 
 export default function TextTemplatesAndMotionPage() {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-      <article className="min-w-0 flex-1 max-w-3xl">
+      <article className="min-w-0 max-w-3xl flex-1">
         <PageHeader
           variant="doc"
           eyebrow="Build the editor"
           title="Text Templates &amp; Motion"
-          lede={
-            <>
-              One end of an animation can now drive several channels at once. 0.6.0 adds layered text and shape motion, the pure helpers that sample it, and 14 built-in text templates that bundle a look with its motion.
-            </>
-          }
+          lede="Animate how text and shapes enter and leave. Describe each end once with a MotionSpec, pick an easing curve, or apply one of 14 built-in templates."
         />
 
-        {/* MotionSpec */}
-        <section className="mb-10">
-          <H2 id="motion-spec">MotionSpec</H2>
-          <P>
-            <C>TextAnimation</C> still has <C>in</C> and <C>out</C>, the one-kind-per-end enum that the properties panel writes (<C>fade</C>, <C>spin</C>, <C>slide-up</C>, <C>slide-down</C>, <C>slide-left</C>, <C>slide-right</C>). It now also has <C>inMotion</C> and <C>outMotion</C>. Each is a <C>MotionSpec</C> and, when present, replaces the enum for that end. The enum is resolved into a <C>MotionSpec</C> internally, so there is one sampling path, not two.
-          </P>
-          <CodeBlock
-            language="typescript"
-            filename="@elah/core (types)"
-            code={`interface MotionSpec {
-  /** Opacity at the extreme, 0..1. Rest is 1. Omitted = no opacity ramp. */
-  opacity?: number
-  /** Horizontal offset from rest at the extreme, normalized 0..1 of stage width. */
-  offsetX?: number
-  /** Vertical offset from rest at the extreme, normalized 0..1 of stage height. */
-  offsetY?: number
-  /** Scale MULTIPLIER on the authored scale. 0.8 = 80% of whatever size the author chose. */
-  scale?: number
-  /** Rotation delta from rest at the extreme, in radians. Positive = clockwise. */
-  rotation?: number
-  /** Curve for the geometric channels. Defaults: 'quad-out' on an entry, 'quad-in' on an exit. */
-  ease?: TextAnimationEasing
-  /** Curve for opacity. Defaults to 'linear'. */
-  opacityEase?: TextAnimationEasing
-}
-
-interface TextAnimation {
-  in?: TextAnimationKind
-  out?: TextAnimationKind
-  durationFrames: number       // ramp length in frames, shared by both ends
-  inMotion?: MotionSpec        // replaces \`in\` when present
-  outMotion?: MotionSpec       // replaces \`out\` when present
-}`}
-          />
-          <P>
-            A spec stores only the far end of the ramp, because the near end is always the clip&apos;s authored resting state. On an entry the clip starts at the extreme and arrives at rest as the ramp closes. On an exit it starts at rest and departs to the extreme. Any channel you omit stays at rest.
-          </P>
-          <CodeBlock
-            language="typescript"
-            code={`// Rise 5% of stage height, grow from 86%, fade in, with a springy overshoot.
-// Leave by continuing upward and shrinking a touch.
+        <H2 id="motion-spec">MotionSpec</H2>
+        <P>
+          A clip&apos;s <C>textAnimation</C> has two ends: how it comes in and how it goes out. Describe each end with a <C>MotionSpec</C>: where
+          the clip is at the far end of the move. This one rises, grows and fades in with a little overshoot, then keeps rising as it leaves:
+        </P>
+        <Code
+          highlight={[4, 5]}
+          code={`
 engine.updateClip(clip.id, trackId, {
   textAnimation: {
     durationFrames: 12,
@@ -133,163 +81,178 @@ engine.updateClip(clip.id, trackId, {
     outMotion: { opacity: 0, offsetY: -0.04, scale: 0.96, ease: 'quad-in' },
   },
 })`}
-          />
-          <P>
-            Motion applies to shape clips too. They carry the same structure on <C>Clip.shapeAnimation</C>. One caveat: <C>spin</C> is still offered for text only (see <C>appliesTo</C> in <C>TEXT_ANIMATION_KINDS</C>). Since 1.0.0 the shape painter does apply <C>transform.rotation</C>, so a rotation channel in a <C>MotionSpec</C> turns a shape.
-          </P>
-        </section>
+        />
+        <Callout title="A spec only stores the far end">
+          The near end is always the clip&apos;s own resting state. An entry starts at the spec and arrives at rest; an exit starts at rest and
+          leaves for the spec. Any channel you leave out stays at rest.
+        </Callout>
 
-        {/* Easings */}
-        <section className="mb-10">
-          <H2 id="easings">Easings</H2>
-          <P>
-            <C>TextAnimationEasing</C> is one of ten curves, and <C>TEXT_ANIMATION_EASINGS</C> lists them in declaration order, so a picker can render the list without drifting from the type.
-          </P>
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            {EASINGS.map((name) => (
-              <span
-                key={name}
-                className="border border-outline-variant bg-surface-container px-2 py-0.5 font-mono text-xs text-on-surface"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-          <P>
-            <C>back-in</C>, <C>back-out</C> and <C>elastic-out</C> overshoot, returning values outside 0 to 1 partway through. That is most of what makes motion look designed rather than a linear slide. <C>bounce-out</C> settles with a series of decaying bounces. Because geometry can pass its target and come back, opacity is clamped where it is used, and <C>opacityEase</C> exists so opacity can stay linear while the geometry overshoots.
-          </P>
-        </section>
+        <H3>MotionSpec</H3>
+        <PropTable
+          rows={[
+            { name: 'opacity', type: 'number', optional: true, desc: 'Opacity at the far end, 0 to 1. Leave it out for no fade.' },
+            { name: 'offsetX · offsetY', type: 'number', optional: true, desc: 'Distance from rest, as a fraction of the stage width or height.' },
+            { name: 'scale', type: 'number', optional: true, desc: 'A multiplier on the clip’s own scale. 0.8 is 80% of whatever size it was given.' },
+            { name: 'rotation', type: 'number', optional: true, desc: 'Turn from rest, in radians. Positive is clockwise.' },
+            { name: 'ease', type: 'TextAnimationEasing', optional: true, desc: <>Curve for movement, scale and rotation. Default <C>quad-out</C> on entry, <C>quad-in</C> on exit.</> },
+            { name: 'opacityEase', type: 'TextAnimationEasing', optional: true, desc: <>Curve for opacity. Default <C>linear</C>.</> },
+          ]}
+        />
 
-        {/* Sampling */}
-        <section className="mb-10">
-          <H2 id="sampling">Sampling</H2>
-          <P>
-            The resolver turns an animation into an opacity and, for kinds that move or rotate the clip, a concrete <C>Transform</C>. Renderers stay animation-unaware, so GPU preview and export agree. The same pure helpers are public, for custom previews and pickers:
-          </P>
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <C>sampleTextAnimation(args)</C> returns <C>{'{ opacity, transform? }'}</C> for one frame. <C>transform</C> is present only when the animation moves or rotates the clip. When it is absent, leave the clip&apos;s own transform alone.
-            </li>
-            <li>
-              <C>resolveRampFrames(durationFrames)</C> clamps a stored ramp length to a whole number of frames of at least 1. Zero, negatives, fractions, <C>NaN</C> and <C>Infinity</C> all collapse safely.
-            </li>
-            <li>
-              <C>motionForKind(kind, &apos;in&apos; | &apos;out&apos;)</C> returns the <C>MotionSpec</C> that one of the enum kinds is shorthand for.
-            </li>
-            <li>
-              <C>TEXT_ANIMATION_KINDS</C> is the list of kinds with a <C>label</C> and an <C>appliesTo</C> of <C>&apos;both&apos;</C> or <C>&apos;text-only&apos;</C>.
-            </li>
-            <li>
-              <C>DEFAULT_TEXT_TRANSFORM</C> and <C>DEFAULT_SHAPE_TRANSFORM</C> are the transforms the renderer applies to a clip that has none. Pass the right one as <C>defaultTransform</C>. They differ: a text clip defaults to <C>scale: 1</C>, a shape to <C>scale: 0.5</C>. <C>SLIDE_TRAVEL_NORMALIZED</C> (0.15) and <C>SPIN_TRAVEL_RADIANS</C> (a quarter turn) are the travel distances the enum kinds use.
-            </li>
-          </ul>
-          <CodeBlock
-            language="typescript"
-            code={`import { sampleTextAnimation, DEFAULT_TEXT_TRANSFORM } from '@elah/editor'
+        <H3>TextAnimation</H3>
+        <PropTable
+          rows={[
+            { name: 'durationFrames', type: 'number', desc: 'Length of each ramp in frames, shared by both ends.' },
+            { name: 'inMotion · outMotion', type: 'MotionSpec', optional: true, desc: 'The entry and exit. When set, each replaces in or out.' },
+            { name: 'in · out', type: 'TextAnimationKind', optional: true, desc: <>A one-word shortcut, as written by the properties panel: <C>fade</C>, <C>spin</C>, <C>slide-up</C>, <C>slide-down</C>, <C>slide-left</C> or <C>slide-right</C>.</> },
+          ]}
+        />
+        <P>The one-word kinds are turned into a <C>MotionSpec</C> internally, so both forms play through the same code.</P>
+        <Callout title="Shapes animate the same way">
+          Shape clips take the same structure on <C>shapeAnimation</C>. The <C>spin</C> kind is offered for text only, but a <C>rotation</C>{' '}
+          channel in a MotionSpec does turn a shape.
+        </Callout>
+
+        <H2 id="easings">Easings</H2>
+        <P>
+          An easing curve shapes how a move speeds up and slows down. There is <C>linear</C>, plus ten families that each come as <C>-in</C>,{' '}
+          <C>-out</C> and <C>-in-out</C>. <C>TEXT_ANIMATION_EASINGS</C> lists every name, for building a picker. These are drawn by the engine
+          itself:
+        </P>
+        <EasingCurves />
+        <Callout title="back and elastic overshoot on purpose">
+          They pass the target and come back, which is a lot of what makes motion look designed. Opacity is clamped so it never goes past 0 or 1,
+          and <C>opacityEase</C> lets the fade stay linear while the movement overshoots.
+        </Callout>
+
+        <H2 id="sampling">Sampling</H2>
+        <P>
+          The engine turns an animation into an opacity and a position for each frame, before anything is drawn. That is why the preview and the
+          export always match. The same helper is public, for your own previews or pickers:
+        </P>
+        <Code
+          highlight={[3, 10, 11]}
+          code={`
+import { sampleTextAnimation, DEFAULT_TEXT_TRANSFORM } from '@elah/editor'
 
 const sample = sampleTextAnimation({
   animation: clip.textAnimation,
-  localFrame: currentFrame - clip.startFrame, // frames since the clip started
+  localFrame: currentFrame - clip.startFrame,
   clipDurationFrames: clip.durationFrames,
   transform: clip.transform,
-  defaultTransform: DEFAULT_TEXT_TRANSFORM,   // required, so it cannot be forgotten
+  defaultTransform: DEFAULT_TEXT_TRANSFORM,
 })
-
 const opacity = Math.min(clip.opacity ?? 1, sample.opacity)
 const placed = sample.transform ?? clip.transform`}
-          />
-          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            The entry ramp covers the first <C>durationFrames</C> of the clip and the exit ramp the last. When the two overlap on a short clip, the opacity ramps take the minimum and the travel vectors add, so the clip passes smoothly through rest instead of popping at the crossover.
-          </p>
-        </section>
+        />
+        <Callout kind="warning" title="Pass the right default transform">
+          <C>defaultTransform</C> is required. Use <C>DEFAULT_TEXT_TRANSFORM</C> for text (scale 1) and <C>DEFAULT_SHAPE_TRANSFORM</C> for shapes
+          (scale 0.5). If <C>sample.transform</C> is missing, the animation does not move the clip: keep the clip&apos;s own transform.
+        </Callout>
+        <PropTable
+          nameLabel="Export"
+          rows={[
+            { name: 'sampleTextAnimation(args)', desc: <>Returns <C>{'{ opacity, transform? }'}</C> for one frame.</> },
+            { name: 'resolveRampFrames(n)', desc: 'Turns a stored ramp length into a whole number of frames, at least 1. Zero, negatives, fractions, NaN and Infinity are all handled.' },
+            { name: "motionForKind(kind, 'in' | 'out')", desc: 'The MotionSpec that a one-word kind stands for.' },
+            { name: 'TEXT_ANIMATION_KINDS', desc: <>Every kind, with a <C>label</C> and <C>appliesTo</C> (<C>&apos;both&apos;</C> or <C>&apos;text-only&apos;</C>).</> },
+            { name: 'SLIDE_TRAVEL_NORMALIZED', desc: 'How far the slide kinds travel: 0.15 of the stage.' },
+            { name: 'SPIN_TRAVEL_RADIANS', desc: 'How far spin turns: a quarter turn.' },
+          ]}
+        />
+        <P>
+          The entry covers the first <C>durationFrames</C> of the clip and the exit the last. On a short clip where they overlap, opacity takes the
+          lower of the two and the movements add up, so the clip passes smoothly through rest instead of jumping.
+        </P>
 
-        {/* Built-in templates */}
-        <section className="mb-10">
-          <H2 id="built-in-templates">Built-in Templates</H2>
-          <P>
-            A text template is a named, applyable look: a style, a motion and sometimes a placement. <C>BUILT_IN_TEXT_TEMPLATES</C> holds 14, ordered as a picker should show them (general looks first, positional and decorative after). Look one up by id with <C>findTextTemplate(id)</C>, which returns <C>undefined</C> for an id the package does not ship.
-          </P>
-          <div className="mb-4 overflow-hidden border border-outline-variant">
-            {TEMPLATES.map(([name, id, description], i) => (
-              <div
-                key={id}
-                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
-              >
-                <div className="sm:w-40 sm:shrink-0">
-                  <div className="text-xs font-medium text-on-surface">{name}</div>
-                  <code className="font-mono text-2xs text-on-surface-variant">{id}</code>
-                </div>
-                <div className="text-xs leading-relaxed text-on-surface-variant">{description}</div>
-              </div>
-            ))}
-          </div>
-          <P>
-            Each <C>TextTemplate</C> has an <C>id</C>, <C>name</C>, <C>description</C>, a <C>style</C> (<C>TextTemplateStyle</C>), an <C>animation</C> (<C>TextTemplateAnimation</C>) and optional <C>stagger</C>, <C>tracking</C> and <C>placement</C>. Templates describe their ramp as a fraction of the clip, <C>rampFraction</C>, and never touch <C>content</C>: applying one restyles the words, it does not rewrite them.
-          </P>
-          <div className="border border-outline-variant bg-surface-low p-4">
-            <div className={`${label} mb-1 text-on-surface-variant`}>Stagger and tracking are descriptive</div>
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              <C>stagger</C> (break one line into several clips that enter in turn) and <C>tracking: &apos;wide&apos;</C> (fake letterspacing by respacing the characters) are part of what makes some looks what they are, but a single clip cannot express either. <C>applyTextTemplate</C> ignores both, and nothing in the packages executes them. A host that builds a timeline from a template has to implement them itself.
-            </p>
-          </div>
-        </section>
+        <H2 id="built-in-templates">Built-in templates</H2>
+        <P>
+          A template is a ready-made look: a text style, its motion, and sometimes a position. <C>BUILT_IN_TEXT_TEMPLATES</C> has 14, in the order
+          a picker should show them. Find one with <C>findTextTemplate(id)</C>; it returns <C>undefined</C> for an unknown id.
+        </P>
+        <PropTable nameLabel="Template" rows={TEMPLATES.map(([name, id, desc]) => ({ name, type: id, desc }))} />
+        <P>
+          Each template has an <C>id</C>, <C>name</C>, <C>description</C>, <C>style</C> and <C>animation</C>, and may have <C>stagger</C>,{' '}
+          <C>tracking</C> and <C>placement</C>. Its ramp is a fraction of the clip (<C>rampFraction</C>). A template never changes the words
+          (<C>content</C>), only how they look and move.
+        </P>
+        <Callout kind="warning" title="stagger and tracking are not applied for you">
+          <C>stagger</C> (split a line into several clips that enter in turn) and <C>tracking: &apos;wide&apos;</C> (extra letter spacing) are
+          part of some looks, but one clip cannot express them. <C>applyTextTemplate</C> ignores both, and nothing in the packages runs them. If
+          you build a timeline from a template, implement them yourself.
+        </Callout>
 
-        {/* Apply template */}
-        <section className="mb-10">
-          <H2 id="apply-template">Applying a Template</H2>
-          <P>
-            <C>applyTextTemplate(template, clip)</C> is pure. It reads the clip and returns a <C>Partial&lt;Clip&gt;</C> patch. Hand the patch to <C>engine.updateClip</C> and the change lands on the undo stack and in the saved document like any other edit. Playback and export need nothing extra, because the patch is ordinary clip fields.
-          </P>
-          <CodeBlock
-            language="typescript"
-            code={`import { applyTextTemplate, findTextTemplate } from '@elah/editor'
+        <H2 id="apply-template">Applying a template</H2>
+        <P>
+          <C>applyTextTemplate(template, clip)</C> returns the changes to make; it does not change anything itself. Pass them to{' '}
+          <C>engine.updateClip</C> and the edit is undoable and saved like any other.
+        </P>
+        <Code
+          highlight={[5]}
+          code={`
+import { applyTextTemplate, findTextTemplate } from '@elah/editor'
 
 const template = findTextTemplate('template-lower-third')
 if (template) {
   engine.updateClip(clip.id, trackId, applyTextTemplate(template, clip))
 }`}
-          />
-          <ul className="mt-4 mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <strong className="text-on-surface font-medium">Switching is clean, not cumulative.</strong> Every optional box field (<C>backgroundColor</C>, <C>backgroundOpacity</C>, <C>padding</C>, <C>borderRadius</C>, <C>borderWidth</C>, <C>borderColor</C>) is present in the patch, set to <C>undefined</C> when the template does not use it. Quote (a panel) followed by Title Card (no panel) does not leave the panel behind. The author&apos;s own edits to those fields are replaced, which is what applying a template means.
-            </li>
-            <li>
-              <strong className="text-on-surface font-medium">Placement merges.</strong> A template that sets <C>placement</C> overrides only x and y, keeping the clip&apos;s scale, rotation and anchor. A clip with no transform starts from <C>DEFAULT_TEXT_TRANSFORM</C>, so it does not jump. This is correct for text clips only, because shapes default to a different scale.
-            </li>
-            <li>
-              <strong className="text-on-surface font-medium">The ramp is resolved per clip.</strong> The patch carries <C>textAnimation</C> with <C>inMotion</C>, <C>outMotion</C> and a <C>durationFrames</C> computed for this clip&apos;s length.
-            </li>
-          </ul>
-          <P>
-            <C>resolveTemplateRamp(rampFraction, clipDurationFrames)</C> is that computation, public for hosts that build a timeline from a template instead of applying one to a selected clip. It returns a whole number of frames that is at most half the clip, at most <C>MAX_TEMPLATE_RAMP_FRAMES</C> (30) and at least <C>MIN_TEMPLATE_RAMP_FRAMES</C> (1). Half the clip is the cap because beyond it the entry and exit overlap and the text never reaches full opacity.
-          </P>
-        </section>
+        />
+        <Bullets
+          items={[
+            <>
+              <strong className="font-semibold text-on-surface">Switching templates starts clean.</strong> Box fields the new template does not use
+              (background, padding, border) are cleared, so going from Quote (with a panel) to Title Card (without) leaves no panel behind. Hand edits to
+              those fields are replaced too.
+            </>,
+            <>
+              <strong className="font-semibold text-on-surface">Position is merged.</strong> A template with a <C>placement</C> sets only x and y;
+              scale, rotation and anchor stay. A clip with no transform starts from <C>DEFAULT_TEXT_TRANSFORM</C>, so it does not jump. Use it on
+              text clips only.
+            </>,
+            <>
+              <strong className="font-semibold text-on-surface">The ramp fits the clip.</strong> The changes include a <C>textAnimation</C> whose
+              length is worked out from this clip&apos;s duration.
+            </>,
+          ]}
+        />
+        <H3>Building a timeline from a template</H3>
+        <P>
+          <C>resolveTemplateRamp(rampFraction, clipDurationFrames)</C> is that ramp calculation on its own. It returns whole frames: at most half
+          the clip, at most <C>MAX_TEMPLATE_RAMP_FRAMES</C> (30), and at least <C>MIN_TEMPLATE_RAMP_FRAMES</C> (1). Past half the clip the entry
+          and exit would overlap and the text would never be fully visible.
+        </P>
 
-        {/* Style presets */}
-        <section className="mb-10">
-          <H2 id="style-presets">Style Presets</H2>
-          <P>
-            A <C>TextStylePreset</C> is smaller than a template: six style fields (<C>fontFamily</C>, <C>fontWeight</C>, <C>fontSize</C>, <C>textAlign</C>, <C>color</C>, <C>opacity</C>) plus an <C>id</C> and <C>name</C>. It cannot express motion, placement or a background chip. The two coexist: presets are the quick &ldquo;restyle these glyphs&rdquo; affordance, and templates are the production-ready unit.
-          </P>
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <C>BUILT_IN_TEXT_STYLE_PRESETS</C> is a plain array of five looks (Subtitle, Title, Caption, Elegant, Highlight). It is not stored and not removable.
-            </li>
-            <li>
-              <C>textStylePresetsStore</C> holds the user-saved ones. It starts empty and has <C>addPreset(preset)</C>, which assigns the <C>id</C>, and <C>removePreset(id)</C>. It does no persistence of its own.
-            </li>
-            <li>
-              In React, use <C>useTextStylePresetsStore</C> from <Link href="/docs/react#load-and-presets" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/react</Link>.
-            </li>
-          </ul>
-          <CodeBlock
-            language="typescript"
-            code={`import {
-  BUILT_IN_TEXT_STYLE_PRESETS,
-  textStylePresetsStore,
-} from '@elah/editor'
+        <H2 id="style-presets">Style presets</H2>
+        <P>
+          A <C>TextStylePreset</C> is smaller than a template: just six style fields (<C>fontFamily</C>, <C>fontWeight</C>, <C>fontSize</C>,{' '}
+          <C>textAlign</C>, <C>color</C>, <C>opacity</C>) plus an <C>id</C> and <C>name</C>. No motion, position or background. Use presets to
+          quickly restyle text; use templates for a finished look.
+        </P>
+        <PropTable
+          nameLabel="Export"
+          rows={[
+            { name: 'BUILT_IN_TEXT_STYLE_PRESETS', desc: 'Five fixed looks: Subtitle, Title, Caption, Elegant and Highlight.' },
+            { name: 'textStylePresetsStore', desc: <>The user&apos;s saved presets. Starts empty. <C>addPreset(preset)</C> assigns the id; <C>removePreset(id)</C> deletes one. It does not save anything to disk itself.</> },
+            {
+              name: 'useTextStylePresetsStore',
+              desc: (
+                <>
+                  The React hook for it, from{' '}
+                  <Link href="/docs/react#load-and-presets" className={link}>
+                    @elah/react
+                  </Link>
+                  .
+                </>
+              ),
+            },
+          ]}
+        />
+        <Code
+          highlight={[15, 16]}
+          code={`
+import { BUILT_IN_TEXT_STYLE_PRESETS, textStylePresetsStore } from '@elah/editor'
 
-// Save the clip's current look as a preset.
+// Save a look.
 textStylePresetsStore.getState().addPreset({
   name: 'My title',
   fontFamily: 'Impact',
@@ -300,11 +263,12 @@ textStylePresetsStore.getState().addPreset({
   opacity: 1,
 })
 
-// Apply a preset: copy its style fields onto the clip.
+// Apply one: copy its style fields onto the clip.
 const { id, name, ...style } = BUILT_IN_TEXT_STYLE_PRESETS[0]
 engine.updateClip(clip.id, trackId, style)`}
-          />
-        </section>
+        />
+
+        <DocsPager href="/docs/text-templates-and-motion" />
       </article>
 
       <DocsToc items={toc} />
