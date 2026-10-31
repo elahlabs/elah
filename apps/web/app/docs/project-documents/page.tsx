@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { CodeBlock } from '@/components/docs/CodeBlock'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { Code } from '@/components/docs/Code'
+import { C, Callout, DocsPager, H2, H3, P, PropTable } from '@/components/docs/DocsKit'
 import { PageHeader } from '@/components/site/PageHeader'
 import { label } from '@/components/eb'
 
@@ -13,291 +15,346 @@ export const metadata: Metadata = {
 }
 
 const toc = [
-  { id: 'reading-a-document', title: 'Reading a Document', level: 2 },
+  { id: 'overview', title: 'Opening a saved project', level: 2 },
+  { id: 'reading-a-document', title: 'Reading a document', level: 2 },
   { id: 'versioning', title: 'Versioning', level: 2 },
-  { id: 'relinking-media', title: 'Relinking Media', level: 2 },
+  { id: 'relinking-media', title: 'Relinking media', level: 2 },
   { id: 'load-project', title: 'loadProject & project:loaded', level: 2 },
-  { id: 'media-library-snapshots', title: 'Media Library Snapshots', level: 2 },
-  { id: 'browser-persistence', title: 'Browser Persistence', level: 2 },
+  { id: 'media-library-snapshots', title: 'Media library snapshots', level: 2 },
+  { id: 'browser-persistence', title: 'Browser persistence', level: 2 },
 ]
 
-function H2({ id, children }: { id: string; children: React.ReactNode }) {
+const link = 'text-on-surface underline decoration-[#FF003C] underline-offset-4 hover:decoration-2'
+
+function Bullets({ items }: { items: ReactNode[] }) {
   return (
-    <h2
-      id={id}
-      className="mb-4 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20"
-    >
-      {children}
-    </h2>
+    <ul className="my-4 list-none space-y-3 p-0 text-[15px] leading-[1.75] text-on-surface/85">
+      {items.map((t, i) => (
+        <li key={i} className="flex gap-3">
+          <span aria-hidden className="mt-[11px] h-[5px] w-[5px] shrink-0 bg-on-surface" />
+          <span>{t}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
-function C({ children }: { children: React.ReactNode }) {
-  return <code className="bg-surface-container px-1.5 py-0.5 text-xs font-mono">{children}</code>
+function Steps({ items }: { items: ReactNode[] }) {
+  return (
+    <ol className="my-5 list-none space-y-0 border border-outline-variant p-0">
+      {items.map((t, i) => (
+        <li key={i} className="flex gap-4 border-b border-outline-variant px-4 py-3 text-[15px] leading-[1.7] text-on-surface/85 last:border-b-0">
+          <span className={`mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center border border-on-surface text-[11px] text-on-surface ${label}`}>{i + 1}</span>
+          <span>{t}</span>
+        </li>
+      ))}
+    </ol>
+  )
 }
 
-function P({ children }: { children: React.ReactNode }) {
-  return <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">{children}</p>
+/** What readProjectDocument repairs versus what it refuses, side by side. */
+function RepairOrRefuse() {
+  const col = (title: string, note: string, items: string[], warn = false) => (
+    <div className="flex flex-col gap-2 bg-surface px-4 py-4">
+      <span className={`flex items-center gap-2 ${label} ${warn ? 'text-[#FF003C]' : 'text-on-surface'}`}>
+        <span aria-hidden className={`h-[7px] w-[7px] ${warn ? 'bg-[#FF003C]' : 'bg-on-surface'}`} />
+        {title}
+      </span>
+      <span className="text-[13px] text-on-surface-variant">{note}</span>
+      <ul className="m-0 mt-1 list-none space-y-1.5 p-0 text-[14px] leading-[1.5] text-on-surface/85">
+        {items.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ul>
+    </div>
+  )
+  return (
+    <div className="my-6 grid gap-px border border-outline-variant bg-outline-variant sm:grid-cols-2">
+      {col('Repaired', 'Defaulting loses nothing, and the project opens.', [
+        'Missing stage → 1080 × 1920',
+        'Missing transitions → empty list',
+        'Track without a volume → 1',
+        'Track with no usable height → 64',
+        'Positions and lengths → whole frames',
+      ])}
+      {col('Refused', 'Opening these as empty would be a lie the first autosave makes permanent.', [
+        'Not an object, or no frame rate',
+        'tracks is not a list',
+        'clips is not keyed by track id',
+        'Two tracks with the same id',
+        'A track of unknown kind',
+        'A clip with an unknown type, no position or no length',
+      ], true)}
+    </div>
+  )
 }
 
 export default function ProjectDocumentsPage() {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-      <article className="min-w-0 flex-1 max-w-3xl">
+      <article className="min-w-0 max-w-3xl flex-1">
         <PageHeader
           variant="doc"
           eyebrow="Engine &amp; data"
           title="Project Documents"
-          lede={
-            <>
-              A project that has been through <C>JSON.stringify</C> and back is not a <C>Project</C>. It is <C>unknown</C>. 0.6.0 adds the primitives for turning a stored document back into one safely, re-attaching its media, and carrying the media library across a page load.
-            </>
-          }
+          lede="Save a project, then open it again safely: check the stored document, load it, and reconnect its media and thumbnails."
         />
 
-        {/* Reading */}
-        <section className="mb-10">
-          <H2 id="reading-a-document">Reading a Document</H2>
-          <P>
-            <C>readProjectDocument(document, options?)</C> takes anything you read back from storage and returns a <C>Project</C> every consumer can dereference, or throws <C>ProjectDocumentError</C>. It is total: it never returns half a project. The only option is <C>defaultTrackHeight</C> (default 64), used for a track whose stored height is missing or nonsense.
-          </P>
-          <CodeBlock
-            language="typescript"
-            code={`import {
-  readProjectDocument,
-  isReadableProjectDocument,
-  ProjectDocumentError,
-} from '@elah/editor'
+        <H2 id="overview">Opening a saved project</H2>
+        <P>
+          A project that went through <C>JSON.stringify</C> and back is not a <C>Project</C> any more; it is <C>unknown</C>. Opening one takes
+          four steps, each covered below:
+        </P>
+        <Steps
+          items={[
+            <>
+              <C>readProjectDocument</C> checks the stored document and turns it back into a <C>Project</C>, or throws.
+            </>,
+            <>
+              <C>engine.loadProject</C> puts it in the editor.
+            </>,
+            <>
+              <C>hydrateMediaLibrary</C> restores the media library: filmstrips, waveforms, real sizes.
+            </>,
+            <>
+              <C>relinkProjectMedia</C> reconnects clips to their media, and tells you which files are gone.
+            </>,
+          ]}
+        />
+
+        <H2 id="reading-a-document">Reading a document</H2>
+        <P>
+          <C>readProjectDocument</C> takes whatever you read from storage and returns a complete <C>Project</C>, or throws a{' '}
+          <C>ProjectDocumentError</C>. It never returns half a project.
+        </P>
+        <Code
+          highlight={[4, 7]}
+          code={`
+import { readProjectDocument, ProjectDocumentError } from '@elah/editor'
 
 try {
   const project = readProjectDocument(JSON.parse(stored))
   engine.loadProject(project)
 } catch (err) {
-  if (err instanceof ProjectDocumentError) {
-    // err.code is 'unreadable' | 'unsupported-version'
-    // err.documentVersion is the stamped version when it had a readable one
-    showMessage(err.code)   // decide what to say from the code, not message text
-  } else {
-    throw err               // e.g. JSON.parse failed
-  }
-}
+  if (err instanceof ProjectDocumentError) showMessage(err.code)
+  else throw err // for example, JSON.parse failed
+}`}
+        />
+        <PropTable
+          nameLabel="err.code"
+          rows={[
+            { name: "'unreadable'", desc: 'The document is broken in a way that cannot be repaired.' },
+            { name: "'unsupported-version'", desc: <>It was saved by a newer build. <C>err.documentVersion</C> says which version.</> },
+          ]}
+        />
+        <Callout title="Decide what to say from err.code, not the message">
+          The code is stable; the message text is not. <C>isReadableProjectDocument(stored)</C> gives the same answer as a boolean, for deciding
+          what to show before you try.
+        </Callout>
 
-// Boolean form, for deciding what to show. Restore with readProjectDocument itself.
-isReadableProjectDocument(stored)`}
-          />
-          <P>
-            The split of responsibility is deliberate. <strong className="text-on-surface font-medium">Missing things are repaired</strong>, because defaulting them loses nothing and opens the project. A missing <C>stage</C> becomes 1080 by 1920, missing <C>transitions</C> become an empty list, a track without a volume gets 1, and positions and lengths are rounded to integer frames. <strong className="text-on-surface font-medium">Wrong things are refused</strong>, because opening them as empty would be a lie that the first autosave makes permanent. That covers a document that is not an object, has no frame rate, whose <C>tracks</C> is not a list, whose <C>clips</C> is not indexed by track id, that has two tracks with the same id, a track of unknown kind, or a clip with an unknown type, no position or no length.
-          </P>
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <strong className="text-on-surface font-medium">Clips are never dropped.</strong> A clip whose media has gone missing is still the user&apos;s work. See relinking below.
-            </li>
-            <li>
-              A transition is dropped, not refused, when it no longer makes sense (an unknown kind, or either clip gone). Nothing of the user&apos;s is lost, because the clips themselves are untouched.
-            </li>
-            <li>
-              Clip buckets keyed by a track that no longer exists are dropped, because they would stretch the timeline to a length with nothing in it.
-            </li>
-          </ul>
-        </section>
+        <H3>What gets repaired, what gets refused</H3>
+        <RepairOrRefuse />
+        <Bullets
+          items={[
+            <>
+              <strong className="font-semibold text-on-surface">Clips are never dropped.</strong> A clip whose media is missing is still the
+              user&apos;s work; see relinking below.
+            </>,
+            'A transition that no longer makes sense (unknown kind, or a clip gone) is dropped quietly. The clips are untouched, so nothing is lost.',
+            'Clips filed under a track that no longer exists are dropped, because they would stretch the timeline with nothing in it.',
+          ]}
+        />
+        <P>
+          The one option is <C>defaultTrackHeight</C> (default 64), for tracks whose stored height is missing or nonsense.
+        </P>
 
-        {/* Versioning */}
-        <section className="mb-10">
-          <H2 id="versioning">Versioning</H2>
-          <P>
-            <C>PROJECT_VERSION</C> is the newest schema version this build reads, currently 5. A saved project is stamped with the <strong className="text-on-surface font-medium">lowest</strong> version that can hold what it uses, so a project without the newer features stays readable by older builds. It is a promise to every build that reads the document, not the version of your app. The project&apos;s own <C>version</C> field carries the stamp.
-          </P>
-          <div className="mb-4 overflow-hidden border border-outline-variant">
-            {[
-              ['1', 'The 0.6.x model: video, audio, text, image, shape and freehand clips, and the fade, slide and wipe transitions. A document with no version stamp reads as 1.'],
-              ['2', 'Adjustment clips (effects applied to everything beneath them).'],
-              ['3', 'Generator clips, shape draw-on, and the six newer transitions (zoom, spin, whip, glitchCut, warpDissolve, lumaWipe).'],
-              ['4', 'Compound clips (a nested project played as one clip).'],
-              ['5', 'Sequence clips (an animated image or a numbered frame set).'],
-            ].map(([v, desc], i) => (
-              <div
-                key={v}
-                className={`flex flex-col gap-1 border-b border-outline-variant p-3 last:border-0 sm:flex-row sm:items-start sm:gap-4 ${i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-lowest'}`}
-              >
-                <code className="font-mono text-xs font-medium text-on-surface sm:w-20 sm:shrink-0">version {v}</code>
-                <div className="text-xs leading-relaxed text-on-surface-variant">{desc}</div>
-              </div>
-            ))}
-          </div>
-          <P>
-            Everything else added since 0.6.x (keyframes, text animators, effects on a clip, audio settings, masks, motion paths) is an optional field that an older build ignores, so it does not raise the stamp. The stamp rises only when a document holds a clip type or transition kind an older build would refuse. A 0.6.x build opens version 1 only; a version 2 to 5 document throws <C>ProjectDocumentError</C> there. Every 0.6.x document opens unchanged in 1.0.0.
-          </P>
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              A document with <strong className="text-on-surface font-medium">no <C>version</C></strong> predates the stamp and is read as version 1. Refusing it would strand the earliest saved projects.
-            </li>
-            <li>
-              A document <strong className="text-on-surface font-medium">from a newer build</strong> throws <C>ProjectDocumentError</C> with <C>code: &apos;unsupported-version&apos;</C>. The fields this build does not know about are exactly the ones it would drop on the next autosave, so it refuses instead.
-            </li>
-            <li>
-              A version that is not a whole number of at least 1 is <C>&apos;unreadable&apos;</C>.
-            </li>
-          </ul>
-          <P>
-            <C>serializeProject(engine)</C> and <C>deserializeProject(engine, json)</C> are still the simple save and restore pair. They are now a facade over <C>readProjectDocument</C>. <C>deserializeProject</C> throws <C>Not valid project JSON: ...</C> for bad JSON and <C>ProjectDocumentError</C> for an unreadable or too-new document, and leaves the engine untouched in either case. The one behavioural difference from before is the unversioned-document rule above.
-          </P>
-        </section>
+        <H2 id="versioning">Versioning</H2>
+        <P>
+          <C>PROJECT_VERSION</C> is the newest version this build can read: currently 5. A saved project is stamped with the{' '}
+          <strong className="font-semibold text-on-surface">lowest</strong> version that can hold what it uses, so a project without newer
+          features stays readable by older builds.
+        </P>
+        <PropTable
+          nameLabel="Version"
+          rows={[
+            { name: '1', desc: 'Video, audio, text, image, shape and freehand clips, and the fade, slide and wipe transitions. A document with no version stamp reads as 1.' },
+            { name: '2', desc: 'Adds adjustment clips, which apply effects to everything beneath them.' },
+            { name: '3', desc: 'Adds generator clips, shape draw-on, and the zoom, spin, whip, glitchCut, warpDissolve and lumaWipe transitions.' },
+            { name: '4', desc: 'Adds compound clips: a nested project played as one clip.' },
+            { name: '5', desc: 'Adds sequence clips: an animated image or a numbered frame set.' },
+          ]}
+        />
+        <P>
+          Keyframes, text animators, effects, audio settings, masks and motion paths are optional fields that an older build ignores, so they do
+          not raise the stamp. Every 0.6.x document opens unchanged in 1.0; a 0.6.x build opens only version 1.
+        </P>
+        <Callout kind="warning" title="A document from a newer build is refused">
+          It throws <C>&apos;unsupported-version&apos;</C>. The fields this build does not understand are exactly the ones it would delete on the
+          next autosave, so it refuses rather than open and damage it. A version that is not a whole number of at least 1 is{' '}
+          <C>&apos;unreadable&apos;</C>.
+        </Callout>
+        <H3>The simple pair</H3>
+        <P>
+          <C>serializeProject(engine)</C> and <C>deserializeProject(engine, json)</C> still save and restore in one call each, using{' '}
+          <C>readProjectDocument</C> underneath. On bad JSON or an unreadable document, <C>deserializeProject</C> throws and leaves the engine as it
+          was.
+        </P>
 
-        {/* Relinking */}
-        <section className="mb-10">
-          <H2 id="relinking-media">Relinking Media</H2>
-          <P>
-            A clip carries both a <C>src</C> (what the renderer plays) and an <C>assetId</C> (what the timeline reads its filmstrip and intrinsic size from). Only <C>src</C> survives a save. The media library is rebuilt on every page load and hands out fresh ids, so a restored clip&apos;s <C>assetId</C> names an asset that no longer exists. The composition still plays, because the resolver reads <C>src</C>, but the clip has no filmstrip and its selection box falls back to the whole stage.
-          </P>
-          <P>
-            <C>relinkProjectMedia(project, assets)</C> repairs that by matching on <C>src</C> against whatever the library holds. It is pure, so you decide when to apply it, which matters because the library fills asynchronously after the composition is already on screen.
-          </P>
-          <CodeBlock
-            language="typescript"
-            code={`import {
-  relinkProjectMedia,
-  missingMediaSummary,
-  isRecoverableMediaSrc,
-  mediaLibraryStore,
-} from '@elah/editor'
+        <H2 id="relinking-media">Relinking media</H2>
+        <P>
+          A clip stores its <C>src</C> (what plays) and an <C>assetId</C> (where its filmstrip and size come from). The media library gives out
+          new ids on every page load, so after a reload the <C>assetId</C> points at nothing. The video still plays, but the clip has no
+          thumbnails and its selection box covers the whole stage.
+        </P>
+        <P>
+          <C>relinkProjectMedia</C> fixes that by matching clips to library assets on <C>src</C>:
+        </P>
+        <Code
+          highlight={[4, 7]}
+          code={`
+import { relinkProjectMedia, missingMediaSummary, mediaLibraryStore } from '@elah/editor'
 
 const assets = Object.values(mediaLibraryStore.getState().assets)
 const { project, relinked, missing } = relinkProjectMedia(engine.getProject(), assets)
 
-// project is the SAME object reference as the input when nothing changed.
 if (relinked > 0) {
   engine.loadProject(project, { transport: 'keep', history: 'keep' })
 }
 
-// missing: { clipId, clipName, kind: 'video' | 'audio' | 'image' }[]
-const names = missingMediaSummary(missing) // null | 'A' | 'A and B' | 'A, B and 3 more'
-if (names) showToast(\`Re-add the files for: \${names}\`)
+const names = missingMediaSummary(missing) // null, 'A', 'A and B', or 'A, B and 3 more'
+if (names) showToast(\`Re-add the files for: \${names}\`)`}
+        />
+        <Bullets
+          items={[
+            <>
+              It changes nothing itself, so you choose when to apply it. That matters because the library fills in after the project is already
+              on screen. If nothing changed, it returns the same project object.
+            </>,
+            <>
+              <C>missing</C> lists each clip whose file is gone (<C>clipId</C>, <C>clipName</C>, <C>kind</C>). Those clips stay exactly where they
+              are, with their name, position and length.
+            </>,
+            <>
+              <C>missingMediaSummary</C> keeps the message short on a project with thirty broken clips: it names up to two and counts the rest.
+            </>,
+          ]}
+        />
+        <Callout kind="warning" title="Files imported from the user's device do not survive a reload">
+          They play from a <C>blob:</C> (or <C>data:</C>) URL that dies with the page. <C>isRecoverableMediaSrc(src)</C> tells you which sources
+          can be fetched again: <C>false</C> for <C>blob:</C> and <C>data:</C>, <C>true</C> for <C>https:</C>. To keep local files, store their
+          bytes yourself, as described under browser persistence.
+        </Callout>
 
-isRecoverableMediaSrc('blob:https://example.com/abc') // false
-isRecoverableMediaSrc('https://cdn.example.com/a.mp4') // true`}
-          />
-          <ul className="mt-4 mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              A <C>blob:</C> or <C>data:</C> source cannot be fetched again in a later session. It was minted by <C>URL.createObjectURL</C> when the user imported a file from their device and dies with the page that created it. <C>isRecoverableMediaSrc(src)</C> names that case.
-            </li>
-            <li>
-              Clips whose source cannot be recovered are reported in <C>missing</C> and left exactly where they are, with name, position and length intact. They are never dropped, because that is the one outcome the user can neither see nor undo.
-            </li>
-            <li>
-              <C>missingMediaSummary</C> encodes the rule that keeps the message readable on a project with thirty broken clips: name up to two, count the rest. It returns <C>null</C> for an empty list.
-            </li>
-          </ul>
-        </section>
-
-        {/* loadProject */}
-        <section className="mb-10">
-          <H2 id="load-project">loadProject &amp; project:loaded</H2>
-          <P>
-            <C>engine.loadProject(project, options?)</C> replaces the whole composition. It takes a valid <C>Project</C>, so anything that arrived as JSON goes through <C>readProjectDocument</C> first. That is where an unreadable or too-new document is refused, and it is separate so the refusal can be shown before the editor&apos;s contents are thrown away.
-          </P>
-          <CodeBlock
-            language="typescript"
-            code={`type LoadProjectTransport = 'rewind' | 'keep'
-type LoadProjectHistory = 'reset' | 'keep'
-
-engine.loadProject(project, {
-  transport: 'rewind', // default. 'keep' leaves the playhead where it is
-  history: 'reset',    // default. 'keep' leaves undo/redo and any open drag intact
-})
-
-// Emitted after 'change' and 'history:change', so stores are already synced.
+        <H2 id="load-project">loadProject &amp; project:loaded</H2>
+        <P>
+          <C>engine.loadProject(project, options)</C> replaces the whole composition. It expects a valid <C>Project</C>, so anything from JSON goes
+          through <C>readProjectDocument</C> first; that way a refusal can be shown before the editor&apos;s contents are thrown away.
+        </P>
+        <PropTable
+          nameLabel="Option"
+          rows={[
+            { name: 'transport', type: "'rewind' | 'keep'", desc: <>Default <C>rewind</C>: stop and go back to frame 0. <C>keep</C> leaves the playhead where it is.</> },
+            { name: 'history', type: "'reset' | 'keep'", desc: <>Default <C>reset</C>: the new project is the start of undo history. <C>keep</C> leaves undo, redo and any drag in progress alone.</> },
+          ]}
+        />
+        <P>Opening a document should use the defaults. The engine then emits <C>project:loaded</C>:</P>
+        <Code
+          code={`
 engine.on('project:loaded', ({ project, transport }) => {
-  // ProjectLoadedEvent = { project: Project; transport: LoadProjectTransport }
+  // Fires after 'change' and 'history:change', so the stores are already up to date.
 })`}
-          />
-          <P>
-            Opening or reloading a document uses the defaults. The playhead belonged to a composition that is gone, so it should stop and return to frame 0, and the document that just arrived is the history&apos;s starting point, so ctrl+Z must not walk back into the empty timeline that existed before it. <C>PlaybackEngine</C> is a separate object that the engine deliberately does not know about, which is why <C>project:loaded</C> carries the <C>transport</C> instruction. <C>EditorProvider</C> subscribes to it and does the rewind for you. If you build your own composition layer, do the same.
-          </P>
-          <div className="border border-outline-variant bg-surface-low p-4">
-            <div className={`${label} mb-1 text-on-surface-variant`}>Why the relink pass uses history: &apos;keep&apos;</div>
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              The relink pass does not bring a new composition. It hands back the one already on screen with internal library references repaired, and it lands whenever the project&apos;s assets finish importing, which can be long after the open. By then the user may have trimmed a clip, added a title, or be mid-drag. Resetting history would throw away real undo steps to swap an internal reference, and an open drag still has a <C>commitInteraction()</C> coming. So pass <C>{"{ transport: 'keep', history: 'keep' }"}</C>: the playhead does not jump, and the undo stacks, the interaction snapshot and any open batch survive. Entries already on the stacks still hold the pre-repair references. Undoing past the repair costs a filmstrip, not work, and those ids are session-scoped anyway.
-            </p>
-          </div>
-        </section>
+        />
+        <Callout title="EditorProvider rewinds the playhead for you">
+          The engine does not know about the <C>PlaybackEngine</C>, so <C>project:loaded</C> carries the <C>transport</C> instruction and{' '}
+          <C>EditorProvider</C> acts on it. If you build your own editor shell, do the same.
+        </Callout>
+        <Callout title="Why relinking uses keep / keep">
+          Relinking can land long after the project opened, when the user may have edited it or be mid-drag. Resetting history would throw away
+          real undo steps just to repair an internal reference. Undoing past the repair costs a filmstrip, never work.
+        </Callout>
 
-        {/* Snapshots */}
-        <section className="mb-10">
-          <H2 id="media-library-snapshots">Media Library Snapshots</H2>
-          <P>
-            The media library is module-scoped and starts empty on every load. A clip plays from its own <C>src</C> and never asks the library for anything, so what does not survive is everything only the library held: the filmstrip, the waveform, the real duration and dimensions. A restored composition comes back with grey boxes where the thumbnails were. Two functions carry the library across, and storing the result is up to you.
-          </P>
-          <CodeBlock
-            language="typescript"
-            code={`import {
+        <H2 id="media-library-snapshots">Media library snapshots</H2>
+        <P>
+          The media library starts empty on every page load. Clips still play from their own <C>src</C>, but the filmstrips, waveforms and real
+          sizes are gone, so a restored project shows grey boxes. Snapshot the library when you save and restore it when you open:
+        </P>
+        <Code
+          highlight={[9, 16]}
+          code={`
+import {
   mediaLibraryStore,
   snapshotMediaLibrary,
   hydrateMediaLibrary,
   refreshMissingThumbnails,
 } from '@elah/editor'
 
-// Save: something storable. Assets still being probed (status 'pending') are skipped,
-// because their duration and size are provisional guesses.
+// Save
 const entries = snapshotMediaLibrary(mediaLibraryStore.getState())
 await myStore.put(entries)
 
-// Restore: keeps the stored ids, so restored clips' assetId references resolve directly.
+// Restore
 const referencedSrcs = new Set(
   Object.values(project.clips).flat().flatMap((c) => (c.src ? [c.src] : [])),
 )
-const { hydrated, needsThumbnail } = hydrateMediaLibrary(await myStore.get(), {
-  referencedSrcs,
-})
+const { needsThumbnail } = hydrateMediaLibrary(await myStore.get(), { referencedSrcs })
+refreshMissingThumbnails(needsThumbnail) // fire and forget`}
+        />
+        <Bullets
+          items={[
+            'The snapshot skips assets still loading, because their duration and size are only guesses.',
+            <>
+              <C>hydrateMediaLibrary</C> keeps the stored ids, so clips&apos; <C>assetId</C> references work again straight away. It never overwrites
+              an asset already loaded this session.
+            </>,
+            <>
+              An entry whose file is gone (<C>blob:</C>, <C>data:</C>) is restored only if a clip still uses it, which is what{' '}
+              <C>referencedSrcs</C> is for. Its saved filmstrip is all that keeps that clip from being a grey box.
+            </>,
+            <>
+              <C>refreshMissingThumbnails</C> redraws thumbnails that did not come back. It is cosmetic: the project plays either way.{' '}
+              <C>relinkProjectMedia</C> still catches anything that matches by <C>src</C> instead of id.
+            </>,
+          ]}
+        />
+        <H3>Related helpers</H3>
+        <PropTable
+          nameLabel="Export"
+          rows={[
+            {
+              name: 'beginImportUrl(url)',
+              desc: (
+                <>
+                  Adds a remote URL as a pending asset right away and finishes loading it in the background. See{' '}
+                  <Link href="/docs/clips#growing-clips" className={link}>
+                    Growing clips
+                  </Link>
+                  .
+                </>
+              ),
+            },
+            { name: 'probeHasAudio(src)', desc: 'Reads only the file header (with range requests over http) to tell whether a video has sound.' },
+            { name: 'determineAssetHasAudio(assetId)', desc: 'Runs that once per asset and saves the answer as hasAudio in the library.' },
+            { name: 'hasAudioDetermined(assetId)', desc: <>Whether the header check has answered yet. Exported from <C>@elah/core</C> only, not <C>@elah/editor</C>.</> },
+          ]}
+        />
 
-// Fire-and-forget: decode thumbnails for entries that came back without them.
-refreshMissingThumbnails(needsThumbnail)`}
-          />
-          <ul className="mt-4 mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <C>hydrateMediaLibrary</C> never overwrites. An asset already registered under the same id or the same <C>src</C> came from this session and is fresher than anything stored.
-            </li>
-            <li>
-              An entry whose source is dead (<C>blob:</C> or <C>data:</C>) is restored only when a clip still points at it, which is what <C>referencedSrcs</C> is for. Its stored filmstrip is the one thing that keeps that clip from being an anonymous grey rectangle.
-            </li>
-            <li>
-              <C>needsThumbnail</C> lists hydrated ids that came back without thumbnails and whose source can still be fetched. <C>refreshMissingThumbnails(ids, schedule?)</C> asks for a decode of each. It is cosmetic: the composition plays whether or not they land. <C>scheduleThumbnailById(assetId)</C> is the single-asset call it uses.
-            </li>
-            <li>
-              <C>relinkProjectMedia</C> stays the fallback for anything that comes back by <C>src</C> rather than by id, such as a re-import or a snapshot that predates the clip.
-            </li>
-          </ul>
-          <P>
-            Related media-library helpers added in 0.6.0, covered with the clip workflow on the <Link href="/docs/clips#growing-clips" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">Clips page</Link>: <C>beginImportUrl(url, opts?)</C> registers a remote URL as a <C>status: &apos;pending&apos;</C> asset immediately and resolves it later. <C>probeHasAudio(src)</C> reads the container header (range requests for http sources, so not the media payload) and answers whether a video carries an audio track. <C>determineAssetHasAudio(assetId)</C> memoizes that per asset and writes <C>hasAudio</C> back to the library, and <C>hasAudioDetermined(assetId)</C> says whether the container probe has already answered, so weaker signals do not overwrite it (it is exported from <C>@elah/core</C> but not re-exported by the <C>@elah/editor</C> barrel). <C>beginImportUrl</C> starts the determination itself for video, so a caller that imports and inserts in one click gets a real answer rather than the placeholder.
-          </P>
-        </section>
+        <H2 id="browser-persistence">Browser persistence</H2>
+        <Callout kind="warning" title="Storage is yours to build">
+          The packages give you the snapshot and relink tools, and deliberately know nothing about IndexedDB or accounts. The saving on elah.dev
+          is application code, not part of <C>@elah/*</C>.
+        </Callout>
+        <P>For reference, here is how the elah.dev playground does it (in the repository under <C>apps/web</C>):</P>
+        <PropTable
+          nameLabel="File"
+          rows={[
+            { name: 'lib/local-project.ts', desc: <>Keeps the project in <C>localStorage</C> as the raw <C>Project</C>. A document this build cannot read is copied to a backup key first, never overwritten.</> },
+            { name: 'lib/media-file-storage.ts', desc: <>Keeps imported files&apos; bytes in IndexedDB, so a reload can create a new URL for each. This is what makes local files survive at all.</> },
+            { name: 'lib/media-library-snapshot.ts', desc: <>Stores the library snapshot in a separate IndexedDB database. Thumbnails are about 40 KB per video, too big for <C>localStorage</C>.</> },
+          ]}
+        />
+        <P>All of it fails softly: in private mode, with blocked storage or a full quota, you lose thumbnails and nothing else.</P>
 
-        {/* Browser persistence */}
-        <section className="mb-10">
-          <H2 id="browser-persistence">Browser Persistence</H2>
-          <div className="mb-4 border border-outline-variant bg-surface-low p-4">
-            <div className={`${label} mb-1 text-on-surface-variant`}>Not part of the packages</div>
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              The IndexedDB persistence on elah.dev itself is <strong className="text-on-surface font-medium">application code</strong>, not part of <C>@elah/*</C>. The packages give you the snapshot and relink primitives above. They deliberately know nothing about IndexedDB, tenants or projects. You build the storage adapter.
-            </p>
-          </div>
-          <P>
-            For reference, the playground here wires them together in the web app (see the repository under <C>apps/web</C>):
-          </P>
-          <ul className="mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <C>lib/local-project.ts</C> keeps the composition in <C>localStorage</C>. The document is the raw <C>Project</C>, because it already carries <C>version</C> and <C>readProjectDocument</C> already owns versioning, repair and refusal. A document this build cannot read is copied to a backup key before the editor carries on, never written over.
-            </li>
-            <li>
-              <C>lib/media-file-storage.ts</C> keeps imported files&apos; bytes in IndexedDB, so a refresh can mint a fresh object URL for each. This is what makes a locally imported file recoverable at all, since the original <C>blob:</C> URL is dead.
-            </li>
-            <li>
-              <C>lib/media-library-snapshot.ts</C> stores the output of <C>snapshotMediaLibrary</C> in a separate IndexedDB database. It is IndexedDB rather than <C>localStorage</C> because thumbnails are base64 strings of roughly 40 KB per video asset, and a library of any size would push the origin toward its storage budget and risk losing the timeline to save its thumbnails.
-            </li>
-          </ul>
-          <P>
-            All of it fails soft: private mode, blocked storage or a full quota loses filmstrips and nothing else.
-          </P>
-        </section>
+        <DocsPager href="/docs/project-documents" />
       </article>
 
       <DocsToc items={toc} />
