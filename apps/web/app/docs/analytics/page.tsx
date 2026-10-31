@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { DocsToc } from '@/components/docs/DocsToc'
+import { C, Callout, DocsPager, H2, H3, P, PropTable } from '@/components/docs/DocsKit'
 import { PageHeader } from '@/components/site/PageHeader'
 
 export const metadata: Metadata = {
@@ -11,14 +12,12 @@ export const metadata: Metadata = {
 
 const toc = [
   { id: 'what-we-track', title: 'What we track', level: 2 },
-  { id: 'env', title: 'Environment variables', level: 2 },
   { id: 'consent', title: 'Consent & Do-Not-Track', level: 2 },
   { id: 'opt-out', title: 'Changing your choice', level: 2 },
   { id: 'pwa', title: 'Install & offline', level: 2 },
+  { id: 'env', title: 'Environment variables', level: 2 },
   { id: 'self-hosting', title: 'Self-hosting', level: 2 },
 ]
-
-const mono = 'bg-surface-container px-1.5 py-0.5 text-xs font-mono'
 
 export default function AnalyticsDocsPage() {
   return (
@@ -28,126 +27,102 @@ export default function AnalyticsDocsPage() {
           variant="doc"
           eyebrow="Privacy"
           title="Analytics &amp; Tracking"
-          lede={
-            <>
-              The elah.dev website uses two analytics tools. Both are opt-in: nothing loads or sends data until
-            you accept the consent banner, and neither runs if your browser sends a Do-Not-Track signal. The
-            elah libraries themselves (<code className={mono}>@elah/core</code> and the rest) contain no
-            telemetry — this applies only to the marketing site.
-            </>
-          }
+          lede="What the elah.dev website measures, and how to say no. Nothing is sent until you accept the consent banner, and nothing at all if your browser sends Do-Not-Track."
+        />
+        <Callout title="The libraries have no telemetry">
+          <C>@elah/core</C>, <C>@elah/editor</C> and the other packages send nothing anywhere. This page is only about the elah.dev website.
+        </Callout>
+
+        <H2 id="what-we-track">What we track</H2>
+        <PropTable
+          nameLabel="Tool"
+          rows={[
+            { name: 'PostHog', type: 'product analytics', desc: <>Page views, PostHog&apos;s automatic click capture, JavaScript errors, and the named events below. Sent through <C>/ingest</C> on this site rather than to PostHog directly.</> },
+            { name: 'Reddit Pixel', type: 'ad measurement', desc: <>A <C>PageVisit</C> on each page, plus a few events mapped to Reddit&apos;s conversion types. Only a small, fixed set of fields is sent with each, never the PostHog properties.</> },
+          ]}
         />
 
-        <section className="mb-10">
-          <h2 id="what-we-track" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface">
-            What we track
-          </h2>
-          <ul className="space-y-3 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <strong className="text-on-surface">PostHog</strong> — privacy-friendly product analytics:
-              page views and a few interaction events (install-command copies, playground launches, export
-              flow, and the PWA install prompt — <code className={mono}>pwa_install_prompt_shown</code>,{' '}
-              <code className={mono}>pwa_install_clicked</code>, <code className={mono}>pwa_installed</code>,{' '}
-              <code className={mono}>pwa_install_dismissed</code>). Reverse-proxied through{' '}
-              <code className={mono}>/ingest</code> so it is resilient to ad-blockers.
-            </li>
-            <li>
-              <strong className="text-on-surface">Reddit Pixel</strong> — fires a{' '}
-              <code className={mono}>PageVisit</code> event on load and on client-side route changes, used to
-              measure Reddit ad campaigns. The PWA install prompt above also maps to Reddit&apos;s conversion
-              events (<code className={mono}>ViewContent</code>, <code className={mono}>Lead</code>,{' '}
-              <code className={mono}>SignUp</code>, and a <code className={mono}>Custom</code> event for
-              dismissals) — only a small metadata object is forwarded for each, never the full PostHog
-              payload.
-            </li>
-          </ul>
-        </section>
+        <H3>Named events</H3>
+        <PropTable
+          nameLabel="Event"
+          rows={[
+            { name: 'install_command_copied', desc: 'Copying an npm install command.' },
+            { name: 'creator_cta_clicked', desc: 'Clicking “Try Elah Creator”.' },
+            { name: 'playground_launched', type: 'Reddit: Lead', desc: 'Opening a playground.' },
+            { name: 'export_modal_opened · export_started · export_completed · export_failed', desc: 'The export flow in the editor.' },
+            { name: 'aspect_ratio_changed · editor_panel_switched', desc: 'Editor interactions.' },
+            { name: 'docs_ask_ai_clicked', desc: 'Using the Ask AI button on a docs page, with which tool and page.' },
+            { name: 'discord_clicked', desc: 'Following the Discord link.' },
+            { name: 'pwa_install_prompt_shown', type: 'Reddit: ViewContent', desc: 'The install banner appeared.' },
+            { name: 'pwa_install_dismissed', type: 'Reddit: Custom', desc: '“Not now” on the install banner.' },
+          ]}
+          footer="Events without a Reddit type go to PostHog only."
+        />
 
-        <section className="mb-10">
-          <h2 id="env" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface">
-            Environment variables
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            Each tool is inert unless its variable is set. All are <code className={mono}>NEXT_PUBLIC_</code>{' '}
-            (exposed to the browser, as the client SDKs require) and are read from the repo-root{' '}
-            <code className={mono}>.env</code> — see <code className={mono}>.env.example</code>.
-          </p>
-          <ul className="space-y-2 text-sm leading-relaxed text-on-surface-variant">
-            <li>
-              <code className={mono}>NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN</code> — PostHog project token.
-            </li>
-            <li>
-              <code className={mono}>NEXT_PUBLIC_POSTHOG_HOST</code> — PostHog host (e.g.{' '}
-              <code className={mono}>https://us.i.posthog.com</code>).
-            </li>
-            <li>
-              <code className={mono}>NEXT_PUBLIC_REDDIT_PIXEL_ID</code> — Reddit advertiser pixel id.
-            </li>
-          </ul>
-          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
-            Leave any of them unset and that tool is never loaded — a clean way to run the site with no
-            tracking at all.
-          </p>
-        </section>
+        <H2 id="consent">Consent &amp; Do-Not-Track</H2>
+        <PropTable
+          nameLabel="Your choice"
+          rows={[
+            { name: 'Not chosen yet', desc: 'PostHog is loaded but opted out, so it sends nothing. The Reddit script is not loaded at all.' },
+            { name: 'Accept', desc: 'PostHog starts capturing and the Reddit pixel loads.' },
+            { name: 'Decline', desc: 'Both stay off.' },
+            { name: 'Do-Not-Track on', desc: 'Treated as decline. The banner never appears, and nothing is saved.' },
+          ]}
+        />
+        <P>
+          Your choice is saved in <C>localStorage</C> under <C>elah-analytics-consent</C> and remembered next time.
+        </P>
 
-        <section className="mb-10">
-          <h2 id="consent" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface">
-            Consent &amp; Do-Not-Track
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            On first visit a banner asks to accept or decline. Until you choose, PostHog is initialised{' '}
-            <em>opted-out</em> and the Reddit pixel script is never injected — so no analytics network request
-            happens pre-consent. Accepting opts PostHog in and loads the pixel; declining keeps both off. Your
-            choice is stored in <code className={mono}>localStorage</code> (<code className={mono}>elah-analytics-consent</code>) and remembered on return.
-          </p>
-          <p className="text-sm leading-relaxed text-on-surface-variant">
-            If your browser sends <strong className="text-on-surface">Do-Not-Track</strong>, both tools stay
-            off and the banner never appears — the signal is treated as a decline.
-          </p>
-        </section>
+        <H2 id="opt-out">Changing your choice</H2>
+        <PropTable
+          nameLabel="To…"
+          rows={[
+            { name: 'See the banner again', desc: <>Clear <C>elah-analytics-consent</C> from the site&apos;s storage (or all of it) and reload.</> },
+            { name: 'Turn everything off now', desc: 'Enable Do-Not-Track in your browser.' },
+            { name: 'Reset the install banner', desc: <>Clear <C>elah-pwa-install-dismissed-until</C> and <C>elah-pwa-installed</C>.</> },
+          ]}
+        />
 
-        <section className="mb-10">
-          <h2 id="opt-out" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface">
-            Changing your choice
-          </h2>
-          <p className="text-sm leading-relaxed text-on-surface-variant">
-            Clearing the site&apos;s <code className={mono}>localStorage</code> (or the{' '}
-            <code className={mono}>elah-analytics-consent</code> key) resets the banner on next load. Enabling
-            Do-Not-Track in your browser disables both tools immediately. Also clearing{' '}
-            <code className={mono}>elah-pwa-install-dismissed-until</code> and{' '}
-            <code className={mono}>elah-pwa-installed</code> resets the install prompt banner described below.
-          </p>
-        </section>
+        <H2 id="pwa">Install &amp; offline</H2>
+        <P>
+          elah.dev can be installed as an app in desktop and Android Chromium browsers. A small service worker at <C>/sw.js</C> registers for
+          every visitor, whatever your analytics choice, because it is not tracking: it stores only an offline page and the site logo, never your
+          pages, and sends nothing. Remove it any time in your browser&apos;s DevTools (Application → Service Workers → Unregister).
+        </P>
+        <PropTable
+          nameLabel="Install banner"
+          rows={[
+            { name: 'When it shows', desc: 'Once you have made a consent choice, either way, on browsers that can install. Never on editor or playground pages.' },
+            { name: 'What it sends', desc: 'An impression and a dismissal event, only if you accepted analytics. If you declined, it shows but sends nothing.' },
+            { name: '“Not now”', desc: 'Hides it for 14 days.' },
+          ]}
+        />
 
-        <section className="mb-10">
-          <h2 id="pwa" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface">
-            Install &amp; offline
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            elah.dev can be installed as an app on desktop and Android Chromium browsers. A small service
-            worker at <code className={mono}>/sw.js</code> registers for <strong className="text-on-surface">every</strong>{' '}
-            visitor, regardless of your analytics choice — it is not tracking. It only stores an offline
-            fallback page and the site logo, sends nothing anywhere, and can be removed at any time from your
-            browser&apos;s DevTools (Application → Service Workers → Unregister).
-          </p>
-          <p className="text-sm leading-relaxed text-on-surface-variant">
-            The install banner itself only appears after you accept the consent banner above, so its{' '}
-            <code className={mono}>ViewContent</code> impression event is never sent before the Reddit pixel
-            is loaded.
-          </p>
-        </section>
+        <H2 id="env">Environment variables</H2>
+        <P>
+          For anyone running the site. Each tool stays off unless its variable is set. They are read from the repo-root <C>.env</C> (see{' '}
+          <C>.env.example</C>) and are <C>NEXT_PUBLIC_</C> because the browser SDKs need them.
+        </P>
+        <PropTable
+          nameLabel="Variable"
+          rows={[
+            { name: 'NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN', desc: 'PostHog project token. Unset: no PostHog, in the browser or on the server.' },
+            { name: 'NEXT_PUBLIC_POSTHOG_HOST', desc: <>PostHog host, for example <C>https://us.i.posthog.com</C>.</> },
+            { name: 'NEXT_PUBLIC_REDDIT_PIXEL_ID', desc: 'Reddit pixel id. Unset: the pixel never loads.' },
+            { name: 'NEXT_PUBLIC_ENABLE_SW', type: '1', desc: 'Register the service worker in development. It is on in production and off in dev by default.' },
+            { name: 'NEXT_PUBLIC_DISABLE_SW', type: '1', desc: 'Kill switch: unregister any installed service worker instead of registering one.' },
+          ]}
+        />
 
-        <section className="mb-10">
-          <h2 id="self-hosting" className="mb-4 scroll-mt-28 md:scroll-mt-20 text-xl font-semibold tracking-tight text-on-surface">
-            Self-hosting
-          </h2>
-          <p className="text-sm leading-relaxed text-on-surface-variant">
-            If you deploy your own copy of the site, simply omit the three variables above and no analytics
-            code runs. One known gap: PostHog capture in the AI topics API route
-            (<code className={mono}>app/api/ai/topics/route.ts</code>) is server-side and fires on that explicit
-            action; it is not covered by the client consent gate.
-          </p>
-        </section>
+        <H2 id="self-hosting">Self-hosting</H2>
+        <P>Deploying your own copy? Leave the PostHog and Reddit variables unset and no analytics code runs.</P>
+        <Callout kind="warning" title="One event is not covered by the consent banner">
+          When the AI topics feature generates suggestions, the server records <C>ai_topics_generated</C> (just the number of options) in PostHog
+          from <C>app/api/ai/topics/route.ts</C>. It runs on the server, so the browser&apos;s consent choice does not reach it. Unsetting the
+          PostHog token turns it off.
+        </Callout>
+
+        <DocsPager href="/docs/analytics" />
       </article>
 
       <DocsToc items={toc} />
