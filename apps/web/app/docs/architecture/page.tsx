@@ -2,11 +2,7 @@ import type { Metadata } from 'next'
 import { DocsToc } from '@/components/docs/DocsToc'
 import { MermaidDiagram } from '@/components/docs/MermaidDiagram'
 import { PageHeader } from '@/components/site/PageHeader'
-
-/** `color` at `pct`% opacity; works with CSS-variable colours, unlike hex+alpha. */
-const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
-/** Two palette tokens blended, so six layers stay inside the cool accent family. */
-const mix = (a: string, b: string) => `color-mix(in oklab, ${a} 55%, ${b})`
+import { C, Callout, DocsPager, H2, P, PropTable } from '@/components/docs/DocsKit'
 
 export const metadata: Metadata = {
   title: 'Architecture',
@@ -16,11 +12,12 @@ export const metadata: Metadata = {
 }
 
 const toc = [
-  { id: 'ring-states', title: 'Three-Ring State Model', level: 2 },
-  { id: 'timeline-engine', title: 'Timeline Engine', level: 2 },
-  { id: 'playback-clock', title: 'Playback Engine & Clock', level: 2 },
-  { id: 'rendering-engine', title: 'Rendering Engine', level: 2 },
-  { id: 'overview', title: 'Layer Reference', level: 2 },
+  { id: 'invariants', title: 'Three rules', level: 2 },
+  { id: 'ring-states', title: 'Where state lives', level: 2 },
+  { id: 'timeline-engine', title: 'Timeline engine', level: 2 },
+  { id: 'playback-clock', title: 'Playback clock', level: 2 },
+  { id: 'rendering-engine', title: 'Rendering', level: 2 },
+  { id: 'overview', title: 'Layer reference', level: 2 },
 ]
 
 const ringStatesDiagram = `
@@ -61,9 +58,9 @@ sequenceDiagram
 
 const playbackClockDiagram = `
 flowchart TD
-    A(["play() / seek(frame)"]) --> B["Set anchorFrame + anchorTime\n= current frame + performance.now()"]
+    A(["play() / seek(frame)"]) --> B["Set anchorFrame + anchorTime\n= current frame + now()"]
     B --> C["RAF tick"]
-    C --> D["currentFrame =\nanchorFrame + (now − anchorTime) × fps × rate"]
+    C --> D["currentFrame =\nanchorFrame + (now − anchorTime) × fps × rate\nnow = audio clock, else performance.now()"]
     D --> E{"integer frame\nchanged?"}
     E -->|no| C
     E -->|yes| F["Notify subscribers"]
@@ -95,200 +92,111 @@ flowchart LR
 export default function ArchitecturePage() {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-      <article className="min-w-0 flex-1 max-w-3xl">
+      <article className="min-w-0 max-w-3xl flex-1">
         <PageHeader
           variant="doc"
           eyebrow="Architecture"
-          title="Architecture Overview"
-          lede={
-            <>
-              Four diagrams covering the state model, timeline mutations, the playback clock, and the GPU rendering pipeline.
-            </>
-          }
+          title="Architecture"
+          lede="How the engine is put together: where state lives, how an edit flows, how the clock keeps time, and how a frame reaches the screen."
         />
 
-        {/* ── Ring States ── */}
-        <section className="mb-12">
-          <h2 id="ring-states" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Three-Ring State Model
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            State lives in three concentric rings. Ring 0 is the single source of truth — a plain TypeScript class with no framework dependencies. Ring 1 mirrors it into Zustand so React can subscribe. Ring 2 holds ephemeral UI state (selection, drag) that never persists to history.
-          </p>
-          <MermaidDiagram chart={ringStatesDiagram} />
-          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Why keep Ring 0 framework-free?</strong> The engine runs in Node, Web Workers, or headless Chrome with no changes — <a href="/docs/cli" className="text-on-surface underline decoration-primary underline-offset-4 hover:decoration-2">@elah/cli</a> ships exactly this, driving the same export pipeline server-side. Tests import it directly without mounting any React tree.
-            </p>
-          </div>
-        </section>
+        <H2 id="invariants">Three rules</H2>
+        <P>Everything else on this page follows from three rules that hold across every package:</P>
+        <PropTable
+          nameLabel="Rule"
+          rows={[
+            { name: 'Time is whole frames', desc: <>Positions and lengths are integer frame counts, never seconds. Convert at the edges with <C>secondsToFrames</C> and <C>framesToSeconds</C>. A whole class of floating-point drift bugs cannot happen.</> },
+            { name: 'One way to change a project', desc: <>Every edit goes through <C>TimelineEngine</C>. The stores are read-only copies; writing to them breaks undo.</> },
+            { name: 'The resolver is pure', desc: <><C>resolveTimeline(frame, project)</C> returns a <C>Scene</C> with no side effects. Renderers read the Scene and nothing else.</> },
+          ]}
+        />
 
-        {/* ── Timeline Engine ── */}
-        <section className="mb-12">
-          <h2 id="timeline-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Timeline Engine
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            All project mutations — adding clips, trimming, splitting, undo/redo — go through one method: <code className="bg-surface-container px-1.5 py-0.5 font-mono">commit()</code>. Immer applies the draft, records a history entry, and emits a <code className="bg-surface-container px-1.5 py-0.5 font-mono">&apos;change&apos;</code> event. Zustand listeners pick it up and React re-renders only the changed slices.
-          </p>
-          <MermaidDiagram chart={timelineEngineDiagram} />
-          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Single mutation funnel.</strong> There is no direct way to mutate the <code className="bg-surface-container px-1.5 py-0.5 font-mono">Project</code> from outside the engine. Every edit automatically lands in the undo history and notifies all subscribers.
-            </p>
-          </div>
-        </section>
+        <H2 id="ring-states">Where state lives</H2>
+        <P>
+          State sits in three rings. The engine is the truth, the stores mirror it for React, and components hold only short-lived state such as
+          a drag in progress.
+        </P>
+        <MermaidDiagram chart={ringStatesDiagram} />
+        <PropTable
+          nameLabel="Ring"
+          rows={[
+            { name: '0 · Engines', desc: <><C>TimelineEngine</C> and <C>PlaybackEngine</C>. Plain TypeScript, no framework. The only source of truth.</> },
+            { name: '1 · Stores', desc: <>Zustand stores that mirror the engines so React can subscribe. Selection also lives here; it is UI state and never enters undo history.</> },
+            { name: '2 · Components', desc: 'Timeline, Preview, panels. They read stores and call the engine directly to make changes.' },
+          ]}
+        />
+        <Callout title="Why the engine has no framework">
+          The same engine runs in Node, Web Workers and headless Chrome unchanged. That is how{' '}
+          <a href="/docs/cli" className="text-on-surface underline decoration-[#FF003C] underline-offset-4">
+            @elah/cli
+          </a>{' '}
+          renders on a server, and why tests can use it without mounting React. A test enforces that <C>@elah/core</C> never imports React.
+        </Callout>
 
-        {/* ── Playback Clock ── */}
-        <section className="mb-12">
-          <h2 id="playback-clock" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Playback Engine & Clock
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The clock uses an <em>anchor-and-integrate</em> model rather than a counter. On every <code className="bg-surface-container px-1.5 py-0.5 font-mono">play()</code> or <code className="bg-surface-container px-1.5 py-0.5 font-mono">seek()</code>, it records the current frame and wall-clock time. Each RAF tick derives the current frame from that anchor — no accumulated drift, and rate changes are instantaneous.
-          </p>
-          <MermaidDiagram chart={playbackClockDiagram} />
-          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Tab visibility.</strong> When the tab is hidden, the engine freezes the anchor frame so playback does not fast-forward on resume. Audio syncs to the same anchor so there is no A/V drift.
-            </p>
-          </div>
-        </section>
+        <H2 id="timeline-engine">Timeline engine</H2>
+        <P>
+          Every public edit method (<C>addClip</C>, <C>trimClip</C>, <C>undo</C>…) ends in one private <C>commit()</C>. It applies the change
+          with Immer, which produces a new immutable project and shares every unchanged part with the old one; records an undo step; and emits{' '}
+          <C>change</C>. The stores pick that up and only components subscribed to the changed part re-render.
+        </P>
+        <MermaidDiagram chart={timelineEngineDiagram} />
+        <Callout title="Every edit is undoable by construction">
+          Because there is no other way to change a project, every edit lands in history and every subscriber hears about it. Drags use{' '}
+          <C>previewClip</C> and <C>commitInteraction</C> so a whole drag is one undo step.
+        </Callout>
 
-        {/* ── Rendering Engine ── */}
-        <section className="mb-12">
-          <h2 id="rendering-engine" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Rendering Engine
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            The renderer receives a <code className="bg-surface-container px-1.5 py-0.5 font-mono">Scene</code> — a plain list of active layers — and draws textured quads to a WebGL2 canvas. It knows nothing about the project, history, or React. Video frames are decoded asynchronously into a ring-buffer cache; the render call itself is synchronous and stays under 1 ms on the main thread.
-          </p>
-          <MermaidDiagram chart={renderingEngineDiagram} />
-          <div className="mt-4 border border-outline-variant bg-surface-low p-4">
-            <p className="text-xs leading-relaxed text-on-surface-variant">
-              <strong className="text-on-surface font-medium">Cache miss graceful degradation.</strong> On a seek or cold start the <code className="bg-surface-container px-1.5 py-0.5 font-mono">FrameCache</code> may not have the target frame yet. The renderer shows the last cached frame while the async decoder catches up — no blank frames, no stalls.
-            </p>
-          </div>
-        </section>
+        <H2 id="playback-clock">Playback clock</H2>
+        <P>
+          The clock does not count ticks. On every <C>play()</C> or <C>seek()</C> it records an anchor: the current frame and the current time.
+          Each animation frame it works out the position from that anchor, so error never builds up and a rate change takes effect at once.
+        </P>
+        <MermaidDiagram chart={playbackClockDiagram} />
+        <PropTable
+          nameLabel="Detail"
+          rows={[
+            { name: 'Audio clock first', desc: <>While audio is running, &ldquo;now&rdquo; is the sound card&apos;s clock (<C>AudioContext.currentTime</C>), not <C>performance.now()</C>. Picture follows sound, so they cannot drift apart.</> },
+            { name: 'Hidden tab', desc: 'When the tab is hidden the position freezes; when it comes back the clock restarts from there instead of jumping ahead.' },
+            { name: 'Whole-frame updates', desc: 'Subscribers hear about it only when the integer frame changes, not on every animation frame.' },
+          ]}
+        />
 
-        {/* ── Layer Reference ── */}
-        <section className="mb-12">
-          <h2 id="overview" className="mb-1 text-xl font-semibold tracking-tight text-on-surface scroll-mt-28 md:scroll-mt-20">
-            Layer Reference
-          </h2>
-          <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-            Six vertical layers. Each layer only talks to the one directly below it — the React UI never touches WebGL; the renderer never imports React.
-          </p>
+        <H2 id="rendering-engine">Rendering</H2>
+        <P>
+          The renderer gets a <C>Scene</C>, a plain list of what is visible, and draws it as textured quads on a WebGL2 canvas. It knows nothing
+          about the project, history or React. <C>render()</C> is synchronous and never waits: video frames are decoded in the background into a
+          cache, and the render call takes whatever is ready.
+        </P>
+        <MermaidDiagram chart={renderingEngineDiagram} />
+        <Callout title="A missing frame never flashes black">
+          If the frame is not decoded yet, after a seek or at a cold start, the layer keeps its last uploaded picture until the decoder catches
+          up. At a direct cut between two videos, the outgoing clip&apos;s last frame is held for a few frames while the new one starts decoding.
+        </Callout>
+        <P>
+          Export uses the same <C>resolveTimeline</C> in a worker, which is why a file matches the preview. See{' '}
+          <a href="/docs/export#worker" className="text-on-surface underline decoration-[#FF003C] underline-offset-4">
+            Export: how it works
+          </a>
+          .
+        </P>
 
-          <div className="overflow-hidden border border-outline-variant text-xs">
-            {[
-              {
-                label: 'React UI',
-                color: 'var(--color-primary)',
-                items: [
-                  { name: 'Timeline', note: '@elah/timeline' },
-                  { name: 'Preview', note: '' },
-                  { name: 'AssetPanel', note: '' },
-                  { name: 'Transform / Text Overlays', note: '' },
-                ],
-                desc: 'React components. All reads go through Zustand hooks — no direct engine calls from render.',
-              },
-              {
-                label: 'Zustand Stores',
-                color: 'var(--color-secondary)',
-                items: [
-                  { name: 'useTracksStore', note: 'tracks, clips, stage' },
-                  { name: 'usePlaybackStore', note: 'currentFrame, isPlaying' },
-                  { name: 'useSelectionStore', note: 'selectedClipIds' },
-                  { name: 'useTransitionsStore', note: 'transitions[]' },
-                ],
-                desc: 'Thin reactive bridges. Populated by engine event subscribers — not owned by any component.',
-              },
-              {
-                label: 'Engine Layer',
-                color: 'var(--color-tertiary)',
-                items: [
-                  { name: 'TimelineEngine', note: 'Immer + history + events' },
-                  { name: 'PlaybackEngine', note: 'anchor-integrate clock' },
-                  { name: 'AudioPlaybackController', note: 'WebAudio scheduling' },
-                ],
-                desc: 'Framework-agnostic TypeScript. All mutations funnel through engine.commit(). No React imports.',
-              },
-              {
-                label: 'Pure Resolver',
-                color: mix('var(--color-primary)', 'var(--color-secondary)'),
-                items: [
-                  { name: 'resolveTimeline(frame, project)', note: '→ Scene' },
-                ],
-                desc: 'A pure function. Given a frame number and the immutable Project, returns the exact Scene to render. Deterministic, side-effect-free, runnable in tests or workers.',
-              },
-              {
-                label: 'Renderer',
-                color: mix('var(--color-tertiary)', 'var(--color-primary)'),
-                items: [
-                  { name: 'GpuRenderer', note: 'WebGL2 — live preview' },
-                  { name: 'RenderGraph', note: 'layer sort + blend' },
-                  { name: 'VideoLayer / ImageLayer / TextLayer', note: '' },
-                ],
-                desc: 'Reads Scene, writes pixels. Knows nothing about the project, history, or React.',
-              },
-              {
-                label: 'Media Pipeline',
-                color: mix('var(--color-secondary)', 'var(--color-tertiary)'),
-                items: [
-                  { name: 'StreamingFrameProducer', note: 'per-clip orchestrator' },
-                  { name: 'VideoDecoderManager', note: 'WebCodecs VideoDecoder' },
-                  { name: 'FrameCache', note: 'ImageBitmap ring buffer' },
-                  { name: 'mediabunny demuxer', note: 'MP4 / WebM container' },
-                  { name: 'AudioPlaybackController', note: 'WebAudio AudioBuffer' },
-                ],
-                desc: 'Async decode pipeline feeding ImageBitmaps to the GPU textures and PCM chunks to WebAudio.',
-              },
-            ].map((layer, i) => (
-              <div key={layer.label} className={`border-b border-outline-variant last:border-0 ${i % 2 === 0 ? 'bg-surface-lowest dark:bg-surface-container' : 'bg-surface-low dark:bg-surface-high'}`}>
-                <div className="flex gap-0 sm:gap-4">
-                  <div
-                    className="flex w-8 shrink-0 items-stretch sm:w-28"
-                    style={{ borderRight: `2px solid ${tint(layer.color, 13)}` }}
-                  >
-                    <div
-                      className="flex w-1 shrink-0 sm:w-1.5"
-                      style={{ backgroundColor: layer.color }}
-                    />
-                    <div className="hidden sm:flex items-center px-3 py-3">
-                      <span
-                        className="label-mono text-2xs font-semibold text-on-surface"
-                        style={{ writingMode: 'horizontal-tb' }}
-                      >
-                        {layer.label}
-                      </span>
-                    </div>
-                  </div>
+        <H2 id="overview">Layer reference</H2>
+        <PropTable
+          nameLabel="Layer"
+          rows={[
+            { name: 'React UI', type: 'Timeline · Preview · AssetPanel · overlays', desc: 'Reads stores through hooks; calls the engine to change things.' },
+            { name: 'Stores', type: 'tracks · playback · selection · transitions', desc: 'Mirrors filled by engine events. Not owned by any component.' },
+            { name: 'Engines', type: 'TimelineEngine · PlaybackEngine · AudioPlaybackController', desc: 'Plain TypeScript. All edits go through commit().' },
+            { name: 'Resolver', type: 'resolveTimeline(frame, project) → Scene', desc: 'Pure and deterministic. Runs in tests, workers and export.' },
+            { name: 'Renderer', type: 'GpuRenderer · RenderGraph · one layer per clip type', desc: 'Reads a Scene, writes pixels.' },
+            { name: 'Media', type: 'StreamingFrameProducer · VideoDecoderManager · FrameCache · mediabunny', desc: 'Background decode (WebCodecs) into a bounded cache of ImageBitmaps.' },
+          ]}
+        />
+        <P>
+          Each subsystem has a longer write-up next to its code, for example <C>packages/core/src/renderer/architecture.md</C> and{' '}
+          <C>packages/core/src/export/Architecture.md</C>.
+        </P>
 
-                  <div className="flex flex-1 flex-col gap-2 px-3 py-3 sm:flex-row sm:items-start sm:gap-6">
-                    <div className="flex flex-1 flex-wrap gap-1">
-                      {layer.items.map((item) => (
-                        <div
-                          key={item.name}
-                          className="flex items-baseline gap-1 border px-2 py-0.5"
-                          style={{ borderColor: tint(layer.color, 19), backgroundColor: tint(layer.color, 3) }}
-                        >
-                          <span className="font-mono text-xs text-on-surface">{item.name}</span>
-                          {item.note && (
-                            <span className="text-2xs text-on-surface-variant opacity-90">{item.note}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="w-full text-2xs leading-relaxed text-on-surface-variant sm:w-48 sm:shrink-0">
-                      {layer.desc}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <DocsPager href="/docs/architecture" />
       </article>
 
       <DocsToc items={toc} />
