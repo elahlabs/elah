@@ -222,7 +222,7 @@ export const docsHome: DocsHomeGroup[] = [
       { title: '@elah/react', desc: 'EditorContext, useEditor, the store hooks and the audio mixer hooks.', href: '/docs/react' },
       { title: 'Text Templates & Motion', desc: 'Layered MotionSpec animation, easings, and 14 built-in text templates.', href: '/docs/text-templates-and-motion' },
       { title: 'Theming', desc: 'The --elah-* tokens, the classNames slot API, and the three stylesheets.', href: '/docs/theming' },
-      { title: 'Plugins', desc: 'Custom renderers, custom layers and custom demuxers.', href: '/docs/plugins' },
+      { title: 'Plugins', desc: 'Custom renderers and custom demuxers, and what is not public yet.', href: '/docs/plugins' },
     ],
   },
   {
